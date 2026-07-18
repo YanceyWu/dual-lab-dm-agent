@@ -47,6 +47,15 @@ that intent to the real repository and decides how to implement it locally.
 - `templates/`: sanitized feedback and implementation-pack templates.
 - `research-input/`: manually reconstructed, sanitized facts from the company environment.
 
+## Start here
+
+1. Read `docs/DUAL_LAB_OPERATING_MODEL.md` for the one-way workflow.
+2. Transfer the relevant architecture kit and prompt into the company environment.
+3. Run `prompts/TECHNICAL_RECONSTRUCTION_SCREENSHOT.md` internally when a
+   sanitized implementation baseline is needed.
+4. Use `implementation-packs/` for bounded migration work.
+5. Validate every pack with the independent reviewer prompt before promotion.
+
 ## Initial migration strategy
 
 1. Establish behavior snapshots, execution tracing, and smoke tests.
@@ -62,4 +71,3 @@ Never commit company source code, internal names, URLs, credentials, real issue
 content, employee data, customer data, internal architecture identifiers, or
 screenshots captured in violation of company policy. Company policy takes
 precedence over personal privacy settings and repository visibility.
-
