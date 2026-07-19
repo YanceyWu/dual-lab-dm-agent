@@ -18,8 +18,10 @@ from pm_agent.use_cases import (
     resource_planning_service,
     team_workload_service,
     weekly_report_service,
+    use_case_executor,
 )
 from pm_agent.use_cases.resource_planning import AllocationRequest
+from pm_agent.use_cases.service import ServiceResponse, UseCaseRequest
 from pm_agent.cli.commands.common import console, spin
 from pm_agent.rules import scoring as scoring_core
 from pm_agent.rules.validation import validate_member, validate_project
@@ -201,11 +203,19 @@ def register(app: typer.Typer) -> None:
         member: Optional[str] = typer.Option(None, "--member", "-m", help="查看特定成员"),
     ):
         """查看团队工作负载"""
-        result = (
-            team_workload_service.member_detail(member)
-            if member
-            else team_workload_service.overview(team_filter=team)
-        )
+        if member:
+            result = team_workload_service.member_detail(member)
+        else:
+            execution = use_case_executor.execute(
+                UseCaseRequest(
+                    use_case_id="team-workload-overview",
+                    parameters={"team": team} if team else {},
+                )
+            )
+            if execution.status != "success":
+                console.print(f"[red]{'; '.join(execution.warnings)}[/red]")
+                raise typer.Exit(1)
+            result = ServiceResponse(success=True, data=execution.data)
 
         if not result.success:
             console.print(f"[red]{result.message}[/red]")

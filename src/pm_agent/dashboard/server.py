@@ -20,6 +20,8 @@ from flask import Flask, jsonify, request, send_from_directory
 from pm_agent.config import get_database_path
 from pm_agent.connectors import jira as jira_connector
 from pm_agent.database import repository
+from pm_agent.use_cases import use_case_executor
+from pm_agent.use_cases.service import UseCaseRequest
 
 APP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = APP_DIR.parents[1]
@@ -455,6 +457,21 @@ def employees():
         result.append(emp)
     c.close()
     return jsonify(result)
+
+
+@app.route("/api/use-cases/team-workload-overview")
+def team_workload_overview():
+    """Renderer-neutral workload result for external or future agent clients."""
+    team = request.args.get("team")
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id="team-workload-overview",
+            actor="dashboard",
+            parameters={"team": team} if team else {},
+            requested_output="json",
+        )
+    )
+    return jsonify(result.model_dump())
 
 @app.route("/api/hiref")
 def hiref():

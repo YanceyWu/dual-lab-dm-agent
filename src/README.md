@@ -124,6 +124,9 @@ pm connector status
 
 ```bash
 pm workload
+pm tool list
+pm tool describe team-workload-overview
+pm tool query team-workload-overview
 pm capacity --month aug
 pm hiref summary
 pm project list

@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+
+from typer.testing import CliRunner
+
+from pm_agent.cli import app as app_module
+from pm_agent.dashboard import server as dashboard_server
+from pm_agent.database import repository
+from pm_agent.use_cases import use_case_executor
+from pm_agent.use_cases.service import UseCaseRequest
+from pm_agent.use_cases.tool_transport import ToolTransport
+from scripts import seed
+
+
+def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated_db) -> None:
+    seed.main()
+
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id="team-workload-overview",
+            actor="contract-test",
+            requested_output="json",
+        )
+    )
+
+    assert result.status == "success"
+    assert result.contract_version == "1.0"
+    assert result.proposed_writes == []
+    assert result.evidence[0]["source_kind"] == "local_sqlite"
+    assert result.execution_metadata["use_case_id"] == "team-workload-overview"
+    assert result.execution_metadata["actor"] == "contract-test"
+    assert result.execution_metadata["execution_id"]
+    assert {item["state"] for item in result.freshness} == {"unknown"}
+    assert result.warnings
+
+
+def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
+    seed.main()
+    source_id = "import-resource-portal"
+    run_id = repository.start_sync_run(source_id, triggered_by="test")
+    repository.finish_sync_run(run_id, status="success")
+
+    result = use_case_executor.execute(
+        UseCaseRequest(use_case_id="team-workload-overview", correlation_id="trace-test")
+    )
+    trace = use_case_executor.get_result(result.execution_metadata["execution_id"])
+
+    assert trace is not None
+    assert trace.status == "success"
+    assert trace.data == {}
+    assert trace.execution_metadata["correlation_id"] == "trace-test"
+    assert trace.execution_metadata["duration_ms"] >= 0
+    assert trace.evidence[0] == {
+        "evidence_id": "team-workload-members",
+        "source_kind": "local_sqlite",
+        "entity_kind": "employees",
+        "record_count": 4,
+        "applied_filters": {"team": None},
+    }
+    assert not hasattr(trace, "members")
+
+
+def test_workload_freshness_distinguishes_stale_and_unavailable_sources(isolated_db) -> None:
+    seed.main()
+    stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
+    repository.finish_sync_run(stale_id, status="success")
+    failed_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
+    repository.fail_sync_run(failed_id, "synthetic failure")
+
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="team-workload-overview"))
+    states = {item["source_id"]: item["state"] for item in result.freshness}
+
+    assert states["import-resource-portal"] == "fresh"
+    assert states["import-skills-matrix"] == "unavailable"
+    assert "freshness:import-skills-matrix:unavailable" in result.warnings
+
+
+def test_workload_freshness_distinguishes_stale_and_partial_sources(isolated_db) -> None:
+    seed.main()
+    stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
+    repository.finish_sync_run(stale_id, status="success")
+    partial_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
+    repository.finish_sync_run(partial_id, status="partial")
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            "UPDATE sync_runs SET finished_at = datetime('now', '-1000 hours') WHERE id = ?",
+            [stale_id],
+        )
+
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="team-workload-overview"))
+    states = {item["source_id"]: item["state"] for item in result.freshness}
+
+    assert states == {
+        "import-resource-portal": "stale",
+        "import-skills-matrix": "partial",
+    }
+
+
+def test_execution_trace_retention_is_bounded(isolated_db, monkeypatch) -> None:
+    seed.main()
+    monkeypatch.setattr(repository, "EXECUTION_TRACE_RETENTION", 2)
+    for number in range(3):
+        repository.save_execution_trace(
+            {
+                "execution_id": f"trace-{number}",
+                "use_case_id": "team-workload-overview",
+                "operation": "query",
+                "status": "success",
+                "started_at": f"2026-07-19T00:00:0{number}+00:00",
+                "finished_at": f"2026-07-19T00:00:0{number}+00:00",
+                "duration_ms": 1,
+            }
+        )
+
+    with sqlite3.connect(isolated_db) as connection:
+        retained = connection.execute(
+            "SELECT execution_id FROM execution_traces ORDER BY execution_id"
+        ).fetchall()
+    assert retained == [("trace-1",), ("trace-2",)]
+
+
+def test_unknown_use_case_is_returned_as_a_result() -> None:
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="unknown"))
+
+    assert result.status == "unavailable"
+    assert result.warnings == ["Unknown use case: unknown"]
+    assert result.execution_metadata["use_case_id"] == "unknown"
+
+
+def test_cli_workload_uses_reference_contract(isolated_db) -> None:
+    seed.main()
+
+    result = CliRunner().invoke(app_module.app, ["workload"])
+
+    assert result.exit_code == 0, result.output
+    assert "团队负载概览" in result.output
+
+
+def test_dashboard_team_workload_endpoint_uses_reference_contract(isolated_db) -> None:
+    seed.main()
+    client = dashboard_server.app.test_client()
+
+    response = client.get("/api/use-cases/team-workload-overview")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "success"
+    assert payload["execution_metadata"]["use_case_id"] == "team-workload-overview"
+    assert payload["execution_metadata"]["actor"] == "dashboard"
+
+
+def test_tool_transport_lists_and_describes_without_operational_data() -> None:
+    transport = ToolTransport(use_case_executor)
+
+    listed = transport.handle(UseCaseRequest(operation="list", actor="contract-test"))
+    described = transport.handle(
+        UseCaseRequest(
+            operation="describe",
+            use_case_id="team-workload-overview",
+            actor="contract-test",
+        )
+    )
+
+    assert listed.status == "success"
+    assert listed.data["use_cases"][0]["use_case_id"] == "team-workload-overview"
+    assert described.status == "success"
+    assert described.data["use_case"]["parameter_schema"]["team"]["required"] is False
+
+
+def test_tool_transport_returns_structured_invalid_and_unavailable_results() -> None:
+    transport = ToolTransport(use_case_executor)
+
+    invalid = transport.handle(UseCaseRequest(operation="delete"))
+    unavailable = transport.handle(UseCaseRequest(operation="describe", use_case_id="unknown"))
+
+    assert invalid.status == "invalid"
+    assert unavailable.status == "unavailable"
+
+
+def test_tool_cli_query_is_json_and_matches_direct_executor(isolated_db) -> None:
+    seed.main()
+    runner = CliRunner()
+
+    command = runner.invoke(
+        app_module.app,
+        ["tool", "query", "team-workload-overview", "--actor", "copilot-test"],
+    )
+    direct = use_case_executor.execute(
+        UseCaseRequest(
+            operation="query",
+            use_case_id="team-workload-overview",
+            actor="copilot-test",
+            requested_output="json",
+        )
+    )
+
+    assert command.exit_code == 0, command.output
+    payload = json.loads(command.output)
+    assert payload["status"] == direct.status == "success"
+    assert payload["data"] == direct.data
+    assert payload["execution_metadata"]["operation"] == "query"

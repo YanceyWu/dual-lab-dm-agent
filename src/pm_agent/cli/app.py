@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from pm_agent.cli.commands import dashboard as dashboard_commands
-from pm_agent.cli.commands import governance, integrations, operations, planning, setup
+from pm_agent.cli.commands import governance, integrations, operations, planning, setup, tool_transport
 
 app = typer.Typer(help="PM Toolkit — 项目管理工作台", no_args_is_help=True)
 
@@ -24,6 +24,7 @@ app.add_typer(setup.connector_app, name="connector")
 app.add_typer(integrations.confluence_app, name="confluence")
 app.add_typer(integrations.health_app, name="health")
 app.add_typer(dashboard_commands.dashboard_app, name="dashboard")
+app.add_typer(tool_transport.tool_app, name="tool")
 
 setup.register(app)
 operations.register(app)

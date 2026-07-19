@@ -24,9 +24,11 @@ DM
   -> structured service result or rendered UI response
 ```
 
-There is no single application execution contract across all entry points yet.
-Some CLI paths call use-case services, while other CLI and dashboard paths call
-repositories, SQL, or integration workflows directly.
+IP-001 has introduced a single application execution contract for one
+low-risk, read-only reference slice: `team-workload-overview`. Both the CLI
+workload overview and the Dashboard JSON endpoint invoke the same registered
+implementation. Other CLI and dashboard paths still call services,
+repositories, SQL, or integration workflows directly and remain unmigrated.
 
 ## 3. Current component classification
 
@@ -75,6 +77,17 @@ The current use-case package provides:
 - a central `SERVICES` registry
 - service-specific request models
 - deterministic scoring and validation results
+- `UseCaseRequest` and `UseCaseResult` version `1.0`
+- a `UseCaseExecutor` with explicit registration
+
+The executor adds a generated execution ID and records use-case ID, actor,
+requested output, contract version, read-only status, timing, and outcome. The
+reference result also reports bounded local SQLite evidence, source freshness,
+assumptions, warnings, alternatives, and no proposed writes. A local trace
+summary is retrievable by execution ID without retaining business result rows or
+connector configuration. Existing `ServiceRequest` and `ServiceResponse` remain
+in place behind the migrated slice so the migration does not change its workload
+semantics.
 
 These are the correct seams to evolve. They should not be replaced wholesale.
 The current `ServiceResponse` is still too small to be a stable Copilot tool

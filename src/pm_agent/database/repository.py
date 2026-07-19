@@ -63,6 +63,7 @@ def _json_loads_or(value: Any, default: Any) -> Any:
 
 _GROUP_JOIN_SEPARATOR = "|||"
 _FIELD_JOIN_SEPARATOR = ":::"
+EXECUTION_TRACE_RETENTION = 500
 
 
 def _split_joined_values(value: Any, separator: str = _GROUP_JOIN_SEPARATOR) -> list[str]:
@@ -1099,6 +1100,71 @@ def get_data_source_freshness(active_only: bool = True) -> list[dict]:
         row["freshness_state"] = freshness_state
         row["is_stale"] = is_stale
         result.append(row)
+    return result
+
+
+# ──────────────────────────────────────────────
+# Safe use-case execution traces
+# ──────────────────────────────────────────────
+
+def save_execution_trace(trace: dict[str, Any]) -> None:
+    """Persist a bounded, payload-free execution trace when storage is available."""
+    with _conn() as con:
+        if not _table_exists(con, "execution_traces"):
+            return
+        con.execute(
+            """
+            INSERT OR REPLACE INTO execution_traces
+                (execution_id, use_case_id, operation, actor, correlation_id, status,
+                 started_at, finished_at, duration_ms, evidence_summary_json,
+                 freshness_summary_json, warning_codes_json, proposed_write_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                trace["execution_id"],
+                trace["use_case_id"],
+                trace["operation"],
+                trace.get("actor", ""),
+                trace.get("correlation_id") or "",
+                trace["status"],
+                trace["started_at"],
+                trace["finished_at"],
+                trace["duration_ms"],
+                json.dumps(trace.get("evidence_summary", []), ensure_ascii=False),
+                json.dumps(trace.get("freshness_summary", []), ensure_ascii=False),
+                json.dumps(trace.get("warning_codes", []), ensure_ascii=False),
+                trace.get("proposed_write_count", 0),
+            ],
+        )
+        con.execute(
+            """
+            DELETE FROM execution_traces
+            WHERE execution_id NOT IN (
+                SELECT execution_id
+                FROM execution_traces
+                ORDER BY finished_at DESC, execution_id DESC
+                LIMIT ?
+            )
+            """,
+            [EXECUTION_TRACE_RETENTION],
+        )
+
+
+def get_execution_trace(execution_id: str) -> dict | None:
+    """Return a persisted trace without business payloads or connector configuration."""
+    with _conn() as con:
+        if not _table_exists(con, "execution_traces"):
+            return None
+        row = con.execute(
+            "SELECT * FROM execution_traces WHERE execution_id = ?",
+            [execution_id],
+        ).fetchone()
+    if not row:
+        return None
+    result = dict(row)
+    result["evidence_summary"] = _json_loads_or(result.pop("evidence_summary_json"), [])
+    result["freshness_summary"] = _json_loads_or(result.pop("freshness_summary_json"), [])
+    result["warning_codes"] = _json_loads_or(result.pop("warning_codes_json"), [])
     return result
 
 

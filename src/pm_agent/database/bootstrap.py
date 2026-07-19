@@ -290,6 +290,26 @@ EXTRA_DDL = """
 -- V1.5 / RUNTIME TABLES
 -- ────────────────────────────────────────────
 
+CREATE TABLE IF NOT EXISTS execution_traces (
+    execution_id       TEXT PRIMARY KEY,
+    use_case_id        TEXT NOT NULL,
+    operation          TEXT NOT NULL,
+    actor              TEXT DEFAULT '',
+    correlation_id     TEXT DEFAULT '',
+    status             TEXT NOT NULL,
+    started_at         TEXT NOT NULL,
+    finished_at        TEXT NOT NULL,
+    duration_ms        INTEGER NOT NULL DEFAULT 0,
+    evidence_summary_json  TEXT NOT NULL DEFAULT '[]',
+    freshness_summary_json TEXT NOT NULL DEFAULT '[]',
+    warning_codes_json     TEXT NOT NULL DEFAULT '[]',
+    proposed_write_count   INTEGER NOT NULL DEFAULT 0,
+    created_at         TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_execution_traces_use_case_finished
+    ON execution_traces(use_case_id, finished_at);
+
 CREATE TABLE IF NOT EXISTS employee_external_ids (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     employee_id     TEXT NOT NULL REFERENCES employees(id),

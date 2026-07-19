@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-19
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-000 — Baseline and Private-State Safety`
-Gate status: `G0 PASSED`
-Git state: committed locally as `fbc3fc2`; not pushed
+Current implementation pack: `IP-003 — Evidence, Freshness, and Execution Trace Envelope`
+Gate status: `G2 VALIDATED LOCALLY — OWNER REVIEW REQUIRED`
+Git state: IP-001 through IP-003 changes are committed locally on this branch; not pushed
 
 ## Read this first
 
@@ -96,8 +96,10 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Review the G0 evidence and intentionally commit the approved portable paths.
-2. Begin IP-001 with one low-risk read-only use case.
+1. Independently review the G2 evidence and intentionally commit the approved
+   portable paths.
+2. Assess IP-004 against the finalized result envelope; do not migrate another
+   business use case or any write path before that review.
 
 ## Decisions in force
 
@@ -210,5 +212,91 @@ Execute in this order:
 - Final evidence passed: 42 runtime tests, 18 tool tests, static compilation,
   portable-only audit, repository-boundary check, synthetic-sample check, and
   diff check.
-- G0 evidence is committed locally as `fbc3fc2` and remains unpushed. The next
+- G0 evidence is committed locally as `1c151c8` and remains unpushed. The next
   action is IP-001 planning and implementation on a clean working tree.
+
+### 2026-07-19 — IP-001 unified read-only execution slice
+
+- Added versioned `UseCaseRequest` and `UseCaseResult` envelopes plus a
+  registry-based `UseCaseExecutor` with generated execution IDs.
+- Migrated only `team-workload-overview`, preserving its existing deterministic
+  service and CLI Rich rendering.
+- The CLI workload overview and Dashboard JSON endpoint now invoke the same
+  registered reference implementation; member detail and all other use cases
+  remain unmigrated.
+- The reference result provides local SQLite evidence and explicitly returns no
+  proposed writes. No database schema or write behavior changed.
+- Validation passed: 17 focused runtime/interface tests, 46 full runtime tests,
+  18 repository tool tests (19 subtests), static compilation, portable-only
+  audit, repository-boundary check, synthetic-sample check, and diff check.
+  The new IP-001 implementation report records rollback and remaining risks.
+- Changes are uncommitted and unpushed. Next action: independent G1 review,
+  then prepare IP-002 and IP-003.
+
+### 2026-07-19 — G1 review and G2 pack specification
+
+- Rechecked the IP-001 implementation against its pack and G1 exit criteria:
+  CLI and Dashboard reuse the same registered read-only implementation, while
+  workload calculation and database schema remain unchanged.
+- Recorded the local G1 review separately. It confirms local validation but
+  retains human-owner review and an intentional commit as promotion conditions.
+- Authored IP-002 for structured read-only Copilot tool transport and IP-003 for
+  bounded evidence, freshness, and durable execution traces. Both packs define
+  discovery, contracts, acceptance scenarios, non-goals, tests, and rollback.
+- Neither G2 pack is implemented or authorized for implementation. The next
+  action is owner review of the two pack scopes and acceptance scenarios.
+
+### 2026-07-19 — IP-002 VS Code Copilot interaction clarification
+
+- Clarified the intended IP-002 user experience: a Delivery Manager asks a
+  natural-language question or issues an approved command in VS Code Copilot.
+  Copilot interprets and normalizes it to the same bounded, read-only tool call.
+- Kept the architectural boundary unchanged: Copilot provides interpretation and
+  explanation; the local executor owns validation, deterministic workload facts,
+  and persistence boundaries. The final VS Code Copilot customization mechanism
+  remains a local-discovery decision, not a product-core dependency.
+
+### 2026-07-19 — IP-002 structured Copilot transport
+
+- Added a local `pm tool` JSON transport with read-only `list`, `describe`, and
+  `query` operations for `team-workload-overview`; it reuses the IP-001 executor
+  and does not calculate workload or permit writes.
+- Added use-case descriptors, request operation and correlation-ID metadata, and
+  structured invalid/unavailable results. The existing CLI workload renderer and
+  Dashboard endpoint remain unchanged.
+- Added portable VS Code Copilot repository instructions and a workload prompt.
+  They direct natural-language and command-oriented requests to the same
+  structured local query rather than direct SQLite inspection or CLI parsing.
+- Validation passed: 14 focused tests, 49 full runtime tests, 18 repository
+  tool tests (19 subtests), static compilation, portable-only audit,
+  repository-boundary check, synthetic-sample check, diff check, and a
+  JSON-only demo smoke query through the current module entry point.
+- IP-003 remains required for freshness, assumptions, alternatives, evidence
+  redaction, and durable execution trace retrieval; G2 is not complete.
+
+### 2026-07-19 — IP-003 evidence, freshness, and execution trace
+
+- Added first-class freshness, assumptions, and alternatives fields to the
+  shared result envelope. The workload reference now emits bounded evidence,
+  explicit source-state freshness, an active-assignment assumption, and warning
+  codes without changing workload calculations.
+- Added a local, payload-free `execution_traces` table and executor trace
+  retrieval by execution ID. Stored traces contain metadata, safe evidence and
+  freshness summaries, warnings, and write counts only; result rows, connector
+  configuration, endpoints, credentials, and raw payloads are excluded.
+- Mapped the workload reference only to the registered resource-portal and
+  skills imports. Missing or never-synced data is `unknown`, failures are
+  `unavailable`, and fresh/stale/partial remain distinct.
+- Retention is bounded to the 500 most recently completed traces. No existing
+  business table or workload calculation changed.
+- Validation passed: 26 focused tests, 53 full runtime tests, 18 repository
+  tool tests (19 subtests), static compilation, portable-only audit,
+  repository-boundary check, synthetic-sample check, and diff check.
+- G2 is locally validated but requires owner review and an intentional commit
+  before IP-004 assessment.
+
+### 2026-07-19 — Local commit
+
+- Committed the approved IP-001 through IP-003 implementation, documentation,
+  Copilot guidance, and test changes locally after all recorded validation
+  passed. The branch has not been pushed.
