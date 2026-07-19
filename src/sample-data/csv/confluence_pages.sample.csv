@@ -1,0 +1,4 @@
+id,board_id,title,page_type,last_synced,last_modified,content_summary
+page-syn-atlas,atlas-board,Project Atlas Weekly Status,status_page,2026-07-10T08:40:00Z,2026-07-10T08:35:00Z,SYNTHETIC_DATASET_V1 fictional weekly status for Project Atlas
+page-syn-beacon,beacon-board,Project Beacon Weekly Status,status_page,2026-07-10T08:50:00Z,2026-07-10T08:45:00Z,SYNTHETIC_DATASET_V1 fictional weekly status for Project Beacon
+page-syn-cedar,cedar-board,Project Cedar Recovery Plan,recovery_page,2026-07-10T09:00:00Z,2026-07-10T08:55:00Z,SYNTHETIC_DATASET_V1 fictional recovery plan for Project Cedar

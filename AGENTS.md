@@ -29,3 +29,15 @@ This repository governs a portable Delivery Management intelligence system.
 - Every implementation pack must be independently reviewable and reversible.
 - Use `UNKNOWN` instead of guessing about the company repository.
 
+## Progress continuity
+
+- Read `PROGRESS.md` before starting repository work in every new session.
+- Update `PROGRESS.md` after every material code, architecture, test, security,
+  data-model, or migration change.
+- Record what changed, validation evidence, decisions, unresolved risks, and the
+  exact next recommended action.
+- Keep the current-state summary accurate; append concise entries to the change
+  log instead of relying on chat history.
+- Never put confidential values or company-derived details in the progress log.
+- Before ending a development turn, verify that `PROGRESS.md` reflects the actual
+  working tree and whether changes were committed or pushed.

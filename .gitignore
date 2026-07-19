@@ -4,9 +4,60 @@
 *.log
 .env
 .env.*
+!.env.example
+!src/.env.example
 secrets/
 company-source/
 company-data/
 screenshots/
 raw-exports/
 .local-tools/
+**/__pycache__/
+*.py[cod]
+
+# Portable runtime: local private state must never be versioned.
+src/data/
+src/data-feed/
+src/.auth/
+src/.venv/
+src/backups/
+src/exports/
+src/logs/
+src/.pytest_cache/
+
+# Database files are private by default, including SQLite sidecars.
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Approved portable product paths. Internal documentation and company
+# configuration remain excluded below; private runtime state stays excluded above.
+!src/pyproject.toml
+!src/README.md
+!src/.env.example
+!src/pm_agent/
+!src/pm_agent/**
+!src/scripts/
+!src/scripts/**
+!src/tests/
+!src/tests/**
+!src/sample-data/
+!src/sample-data/**
+
+# Permanent internal-only units, retained when runtime quarantine is narrowed.
+src/configs/company/
+src/configs/teams/
+src/configs/projects/
+src/docs/
+src/docs/history/
+src/docs/current/*UAT*
+
+# Re-assert generated artifacts after the approved-source allow-list above.
+**/__pycache__/
+*.py[cod]
+
+# Keep generated OS metadata excluded even inside approved sample paths.
+.DS_Store

@@ -1,0 +1,4 @@
+Number,Short Description,State,Priority,Change Type,Assignment Group,Assigned To,Requested By,Planned Start Date,Planned End Date,Project
+CHG-SYN-001,SYNTHETIC_DATASET_V1 Project Atlas release rehearsal,Implement,2 - High,Normal,Synthetic Delivery Team,Alex Example,Requestor Example,2026-08-03 09:00:00,2026-08-03 11:00:00,Project Atlas
+CHG-SYN-002,SYNTHETIC_DATASET_V1 Project Beacon data refresh,Assess,3 - Moderate,Normal,Synthetic Analytics Team,Casey Example,Requestor Example,2026-08-10 09:00:00,2026-08-10 10:00:00,Project Beacon
+CHG-SYN-003,SYNTHETIC_DATASET_V1 Project Cedar access update,Scheduled,2 - High,Standard,Synthetic Platform Team,Drew Example,Requestor Example,2026-08-17 09:00:00,2026-08-17 10:00:00,Project Cedar

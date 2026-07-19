@@ -2,18 +2,21 @@
 
 ## Constraint
 
-Company source code, operational data, internal identifiers, and detailed
-artifacts remain in the company environment. Approved external architecture
-material may flow inward. Any outward feedback is optional, manually sanitized,
-and subject to company policy.
+Company-specific source code, operational data, internal identifiers, and
+detailed artifacts remain in the company environment. Approved portable product
+code, domain models, architecture, tests, and synthetic sample data may be
+developed externally and transferred inward through GitHub. Any outward feedback
+is optional, manually sanitized, and subject to company policy.
 
 ## Roles
 
 ### External architecture lab
 
 Owns the north star, principles, contracts, migration order, implementation-pack
-templates, evaluation standards, and internal model prompts. It defines required
-outcomes without inventing repository-specific file changes.
+templates, evaluation standards, internal model prompts, and portable reference
+implementations. It may implement and test source-independent slices using only
+synthetic data. It does not implement company authentication, internal endpoints,
+or company-specific mappings.
 
 ### Internal repository architect
 
@@ -34,13 +37,16 @@ tests, behavior preservation, and rollback requirements.
 ## Standard flow
 
 ```text
-External architecture kit and implementation pack
+External architecture kit, portable implementation, and synthetic tests
+                    |
+                    v
+GitHub portable branch or release artifact
                     |
                     v
 Internal repository assessment (no edits)
                     |
                     v
-Bounded implementation and focused tests
+Internal adapter integration and focused tests
                     |
                     v
 Independent internal validation
@@ -55,12 +61,39 @@ Optional policy-approved sanitized feedback
 ## Governance rules
 
 - Use strangler migration; do not rewrite the usable base.
+- Develop portable core behavior externally when it can be validated with
+  synthetic data and source-independent contracts.
+- Keep company adapters, credentials, real configuration, operational databases,
+  raw exports, and internal test evidence inside the company environment.
 - Define architecture intent, contracts, constraints, and acceptance criteria.
 - Let the internal model decide repository-specific implementation details.
 - Separate analysis, implementation, and validation into distinct runs.
 - Prefer one read-only reference migration before high-value write paths.
 - Use `UNKNOWN` when evidence is unavailable.
 - Never treat screenshots or manual transcription as permission to bypass DLP.
+
+## Transfer classification
+
+### Allowed into GitHub after review
+
+- portable runtime and domain code;
+- source-independent connector interfaces;
+- generic migrations and schemas;
+- Copilot instructions, playbooks, and skills;
+- synthetic sample data and sanitized fixtures;
+- automated tests that contain no internal identifiers;
+- architecture and implementation packs.
+
+### Company-local only
+
+- operational databases and database copies;
+- raw exports and downloaded source documents;
+- credentials, tokens, cookies, and authentication caches;
+- internal URLs, board/page identifiers, and system names;
+- employee, project, customer, vendor, or issue records;
+- company-specific connector implementations and mappings unless explicitly
+  approved and sanitized;
+- logs, screenshots, and test evidence containing real context.
 
 ## Two delivery tracks
 
