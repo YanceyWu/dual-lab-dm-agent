@@ -67,6 +67,7 @@ class UseCaseResult(BaseModel):
     assumptions: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     alternatives: list[dict[str, Any]] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
     proposed_writes: list[dict[str, Any]] = Field(default_factory=list)
     execution_metadata: dict[str, Any] = Field(default_factory=dict)
 

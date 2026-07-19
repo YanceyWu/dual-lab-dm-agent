@@ -10,6 +10,7 @@ from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
+from pm_agent.use_cases.team_capacity_context import build_team_capacity_context
 from pm_agent.use_cases.tool_transport import ToolTransport
 from scripts import seed
 
@@ -34,6 +35,9 @@ def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated
     assert result.execution_metadata["execution_id"]
     assert {item["state"] for item in result.freshness} == {"unknown"}
     assert result.warnings
+    assert result.context["context_type"] == "team_capacity"
+    assert result.context["requested_scope"]["effective_period"] == "current"
+    assert result.context["members"][0]["availability_classification"] == "available"
 
 
 def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
@@ -119,6 +123,33 @@ def test_execution_trace_retention_is_bounded(isolated_db, monkeypatch) -> None:
             "SELECT execution_id FROM execution_traces ORDER BY execution_id"
         ).fetchall()
     assert retained == [("trace-1",), ("trace-2",)]
+
+
+def test_team_capacity_context_is_deterministic_and_explicitly_truncated() -> None:
+    members = [
+        {"id": f"member-{index:02d}", "name": f"Member {index}", "current_load": index / 100,
+         "active_projects": 1}
+        for index in range(21)
+    ]
+    context = build_team_capacity_context(
+        data={"members": list(reversed(members)), "stats": {"total": 21}},
+        evidence=[{"applied_filters": {"team": "Example Delivery Team"}}],
+        freshness=[{"source_id": "source-a", "state": "fresh"}],
+        assumptions=[],
+        warnings=[],
+        alternatives=[],
+        execution_metadata={"use_case_id": "team-workload-overview", "requested_output": "json"},
+    )
+
+    assert [item["member_id"] for item in context["members"]] == [
+        f"member-{index:02d}" for index in range(20)
+    ]
+    assert context["truncation"] == {
+        "is_truncated": True,
+        "omitted_member_count": 1,
+        "maximum_members": 20,
+    }
+    assert context["requested_scope"]["team"] == "Example Delivery Team"
 
 
 def test_unknown_use_case_is_returned_as_a_result() -> None:

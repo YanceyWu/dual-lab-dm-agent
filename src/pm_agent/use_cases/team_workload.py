@@ -11,6 +11,7 @@ from pm_agent.use_cases.service import (
     new_execution_metadata,
 )
 from pm_agent.database import repository
+from pm_agent.use_cases.team_capacity_context import build_team_capacity_context
 
 
 class TeamWorkloadService(BaseService):
@@ -65,7 +66,7 @@ def execute_team_workload_overview(request: UseCaseRequest) -> UseCaseResult:
 
     members = response.data["members"]
     freshness, freshness_warnings = _workload_freshness()
-    return UseCaseResult(
+    result = UseCaseResult(
         status="success",
         data=response.data,
         evidence=[
@@ -89,6 +90,16 @@ def execute_team_workload_overview(request: UseCaseRequest) -> UseCaseResult:
         alternatives=[],
         execution_metadata=metadata,
     )
+    result.context = build_team_capacity_context(
+        data=result.data,
+        evidence=result.evidence,
+        freshness=result.freshness,
+        assumptions=result.assumptions,
+        warnings=result.warnings,
+        alternatives=result.alternatives,
+        execution_metadata=result.execution_metadata,
+    )
+    return result
 
 
 def _workload_freshness() -> tuple[list[dict], list[str]]:

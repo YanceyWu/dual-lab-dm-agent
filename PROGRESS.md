@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-19
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-003 — Evidence, Freshness, and Execution Trace Envelope`
-Gate status: `G2 VALIDATED LOCALLY — OWNER REVIEW REQUIRED`
-Git state: IP-001 through IP-003 changes are committed locally on this branch; not pushed
+Current implementation pack: `IP-008 — Staffing Golden Scenarios and Manager Confirmation Playbook`
+Gate status: `G3 VALIDATED LOCALLY — COMMITTED AND PUSHED`
+Git state: IP-004 through IP-008 are committed locally and pushed to `origin`; IP-001 through IP-003 are included in branch history
 
 ## Read this first
 
@@ -96,10 +96,9 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Independently review the G2 evidence and intentionally commit the approved
-   portable paths.
-2. Assess IP-004 against the finalized result envelope; do not migrate another
-   business use case or any write path before that review.
+1. Review and intentionally commit the IP-004 through IP-008 local changes to
+   promote the validated G3 staffing workflow.
+2. Assess IP-009 as the next independent, read-only Project Health use case.
 
 ## Decisions in force
 
@@ -300,3 +299,83 @@ Execute in this order:
 - Committed the approved IP-001 through IP-003 implementation, documentation,
   Copilot guidance, and test changes locally after all recorded validation
   passed. The branch has not been pushed.
+
+### 2026-07-19 — IP-004 context-package assessment
+
+- Assessed the committed G2 reference result and specified IP-004 around one
+  `TeamCapacityContext` for `team-workload-overview` only.
+- The context is explicitly current-state only: it uses active-assignment facts
+  and does not infer next-week capacity, future plans, or staffing decisions.
+- The pack requires deterministic classification, bounded/truncated context,
+  source-state propagation, and a VS Code Copilot playbook that explains rather
+  than calculates facts.
+- IP-004 remains unimplemented and uncommitted. Next action: implement its
+  context builder and synthetic scenario coverage without expanding to another
+  use case or write path.
+
+### 2026-07-19 — IP-004 team capacity context and Copilot playbook
+
+- Added a deterministic, bounded `TeamCapacityContext` to the workload reference
+  result. It reuses existing result facts and does not perform additional data
+  access or business calculations.
+- Context scope is explicitly `current`, based on active assignments only.
+  Members are classified by the existing workload thresholds and limited to 20
+  with deterministic sorting and visible truncation.
+- Updated the VS Code Copilot workload prompt to use the structured context,
+  identify evidence/freshness/assumptions/warnings/execution ID, and qualify any
+  non-fresh result before a management commitment.
+- Validation passed: 25 focused tests, 54 full runtime tests, 18 repository
+  tool tests (19 subtests), static compilation, portable-only audit,
+  repository-boundary check, synthetic-sample check, and diff check.
+- IP-004 changes are uncommitted and require owner review. IP-005 remains a
+  separate future pack for canonical, period-aware staffing facts.
+
+### 2026-07-19 — IP-005 to IP-007 staffing core
+
+- Added a period-aware staffing read model that adapts active members, monthly
+  allocation, plan version, skills, and contractor coverage without renaming
+  existing tables.
+- Added deterministic demand feasibility checks for skills, active status,
+  capacity, contract coverage, allocation minimum, splitability, maximum people,
+  and total effort. Results expose selected and rejected candidates with reasons.
+- Added immutable expiring staffing proposals, preview, confirmation-time
+  revalidation, and atomic SQLite persistence of planned assignments, monthly
+  allocations, decision log, and proposal status. Repeated confirmation is
+  idempotent; changed facts are rejected before domain writes.
+- Validation passed: 4 new staffing scenarios, 10 focused regression scenarios,
+  58 full runtime tests, 18 repository tool tests (19 subtests), static
+  compilation, portable-only audit, repository-boundary check, synthetic-sample
+  check, and diff check.
+- G3 was not yet claimed at this point; IP-008 provides the remaining scenario
+  and manager-confirmation evidence below.
+
+### 2026-07-19 — IP-008 and G3 local validation
+
+- Added a local manager-facing JSON command group for staffing assessment,
+  proposal, preview, explicit confirmation, cancellation, and rejection. The
+  command group is not a write-capable Copilot transport.
+- Added proposal cancellation/rejection, expiry persistence, and rule-version
+  evidence. Cancelled, rejected, expired, and changed proposals cannot create
+  staffing-domain writes.
+- Added 23 synthetic staffing scenarios covering time, effort, skills, contract,
+  overload/capacity, split demand, source-state visibility, expiry, cancellation,
+  rejection, and changed-fact/idempotency behavior.
+- Validation passed: 23 staffing scenarios, 77 full runtime tests, 18 repository
+  tool tests (19 subtests), static compilation, portable-only audit,
+  repository-boundary check, synthetic-sample check, and diff check.
+- G3 is validated locally. Owner review and an intentional commit remain
+  required before promotion; next architecture work is IP-009 Project Health.
+
+### 2026-07-19 — IP-004 to IP-008 handoff commit
+
+- Committed and pushed the validated IP-004 through IP-008 implementation on
+  `codex/ip-000-baseline-safety`, including the structured workload context,
+  staffing read/feasibility/proposal flow, and the G3 scenario evidence.
+- The repository is ready for model-agnostic continuation: begin with this
+  file, then read the numbered implementation packs and implementation reports
+  before modifying the next pack. The operating boundary remains Copilot (or a
+  compatible model interface) for reasoning and deterministic local code for
+  facts and writes.
+- Next recommended action: assess IP-009 Project Health as a separate,
+  independently reviewable implementation pack; do not expand the staffing
+  write scope without a new contract, scenarios, and tests.

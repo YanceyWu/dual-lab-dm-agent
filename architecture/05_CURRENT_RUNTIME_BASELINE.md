@@ -89,6 +89,10 @@ connector configuration. Existing `ServiceRequest` and `ServiceResponse` remain
 in place behind the migrated slice so the migration does not change its workload
 semantics.
 
+The reference result also includes a bounded `TeamCapacityContext` for Copilot
+explanation. It classifies only current active-assignment workload and explicitly
+does not represent future-period capacity or staffing recommendations.
+
 These are the correct seams to evolve. They should not be replaced wholesale.
 The current `ServiceResponse` is still too small to be a stable Copilot tool
 contract: it does not consistently expose evidence, freshness, warnings,

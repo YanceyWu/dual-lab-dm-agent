@@ -1367,6 +1367,149 @@ def get_capacity_rows(
     return _rows_to_list(rows), default_version
 
 
+def get_staffing_facts(
+    year: int,
+    month: int,
+    plan_version_id: str | None = None,
+) -> tuple[list[dict], dict | None]:
+    """Return period-aware member, allocation, and contract facts for staffing rules."""
+    rows, plan_version = get_capacity_rows(year, month, plan_version_id)
+    with _conn() as con:
+        facts: list[dict] = []
+        for row in rows:
+            employee = con.execute(
+                "SELECT * FROM employees WHERE id = ?",
+                [row["id"]],
+            ).fetchone()
+            if not employee:
+                continue
+            item = dict(employee)
+            item["skills"] = _json_loads_or(item.get("skills"), {})
+            item["month_load"] = float(row.get("month_load") or 0.0)
+            item["plan_version_id"] = (plan_version or {}).get("plan_version_id")
+            hiref_id = item.get("current_hiref") or ""
+            hiref = None
+            if hiref_id:
+                hiref_row = con.execute("SELECT * FROM hiref WHERE id = ?", [hiref_id]).fetchone()
+                hiref = dict(hiref_row) if hiref_row else None
+            item["contract"] = hiref
+            facts.append(item)
+    return facts, plan_version
+
+
+def create_staffing_proposal(record: dict[str, Any]) -> None:
+    with _conn() as con:
+        con.execute(
+            """
+            INSERT INTO staffing_proposals
+                (proposal_id, expires_at, confirmation_token, request_json, evidence_json, proposal_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                record["proposal_id"], record["expires_at"], record["confirmation_token"],
+                json.dumps(record["request"], ensure_ascii=False),
+                json.dumps(record["evidence"], ensure_ascii=False),
+                json.dumps(record["proposal"], ensure_ascii=False),
+            ],
+        )
+
+
+def get_staffing_proposal(proposal_id: str) -> dict | None:
+    with _conn() as con:
+        if not _table_exists(con, "staffing_proposals"):
+            return None
+        row = con.execute("SELECT * FROM staffing_proposals WHERE proposal_id = ?", [proposal_id]).fetchone()
+    if not row:
+        return None
+    item = dict(row)
+    for key in ("request", "evidence", "proposal"):
+        item[key] = _json_loads_or(item.pop(f"{key}_json"), {})
+    return item
+
+
+def confirm_staffing_proposal(
+    proposal_id: str,
+    confirmation_token: str,
+    revalidated_proposal: dict[str, Any],
+) -> dict:
+    """Atomically persist planned assignments, monthly allocations, and a decision record."""
+    with _conn() as con:
+        row = con.execute("SELECT * FROM staffing_proposals WHERE proposal_id = ?", [proposal_id]).fetchone()
+        if not row:
+            raise ValueError("Unknown staffing proposal")
+        stored = dict(row)
+        if stored["confirmation_token"] != confirmation_token:
+            raise ValueError("Invalid confirmation token")
+        if stored["status"] == "confirmed":
+            return {"status": "confirmed", "decision_id": stored["decision_id"], "idempotent": True}
+        if stored["status"] != "proposed":
+            raise ValueError(f"Proposal is not confirmable: {stored['status']}")
+        if datetime.fromisoformat(stored["expires_at"]) <= datetime.now():
+            con.execute("UPDATE staffing_proposals SET status='expired' WHERE proposal_id=?", [proposal_id])
+            return {"status": "expired", "decision_id": None, "idempotent": False}
+
+        request = _json_loads_or(stored["request_json"], {})
+        project = con.execute("SELECT name FROM projects WHERE id = ?", [request["project_id"]]).fetchone()
+        if not project:
+            raise ValueError("Target project no longer exists")
+        selections = revalidated_proposal["selections"]
+        for selection in selections:
+            con.execute(
+                """
+                INSERT INTO assignments (employee_id, project_id, role, allocation, start_date, status)
+                VALUES (?, ?, ?, ?, ?, 'planned')
+                ON CONFLICT(employee_id, project_id, status) DO UPDATE SET
+                    role=excluded.role, allocation=excluded.allocation, start_date=excluded.start_date
+                """,
+                [selection["member_id"], request["project_id"], request.get("role") or "developer",
+                 selection["allocation"], request["start_period"] + "-01"],
+            )
+            for period in revalidated_proposal["periods"]:
+                con.execute(
+                    """
+                    INSERT INTO monthly_allocations (employee_id, project_id, year, month, allocation, plan_version_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    [selection["member_id"], request["project_id"], period["year"], period["month"],
+                     selection["allocation"], revalidated_proposal.get("plan_version_id") or ""],
+                )
+        decision = con.execute(
+            """
+            INSERT INTO decision_log (type, description, context, candidates, chosen, alternatives, project_id, member_ids)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                "staffing_proposal",
+                f"Confirmed staffing proposal {proposal_id} for [{project['name']}]",
+                json.dumps(request, ensure_ascii=False),
+                json.dumps(revalidated_proposal.get("candidates", []), ensure_ascii=False),
+                json.dumps({"selections": selections}, ensure_ascii=False),
+                json.dumps([], ensure_ascii=False), request["project_id"],
+                json.dumps([selection["member_id"] for selection in selections], ensure_ascii=False),
+            ],
+        )
+        decision_id = decision.lastrowid
+        con.execute(
+            """UPDATE staffing_proposals SET status='confirmed', confirmed_at=datetime('now'),
+               decision_id=? WHERE proposal_id=?""",
+            [decision_id, proposal_id],
+        )
+    return {"status": "confirmed", "decision_id": decision_id, "idempotent": False}
+
+
+def resolve_staffing_proposal(proposal_id: str, action: str, reason: str = "") -> bool:
+    """Cancel or reject a still-unconfirmed proposal without touching domain allocations."""
+    if action not in {"cancelled", "rejected"}:
+        raise ValueError("Proposal action must be cancelled or rejected")
+    with _conn() as con:
+        cur = con.execute(
+            """UPDATE staffing_proposals SET status=?, failure_reason=?
+               WHERE proposal_id=? AND status='proposed'""",
+            [action, reason, proposal_id],
+        )
+    return cur.rowcount == 1
+
+
 # ──────────────────────────────────────────────
 # Project snapshots
 # ──────────────────────────────────────────────

@@ -310,6 +310,23 @@ CREATE TABLE IF NOT EXISTS execution_traces (
 CREATE INDEX IF NOT EXISTS idx_execution_traces_use_case_finished
     ON execution_traces(use_case_id, finished_at);
 
+CREATE TABLE IF NOT EXISTS staffing_proposals (
+    proposal_id          TEXT PRIMARY KEY,
+    status               TEXT NOT NULL DEFAULT 'proposed',
+    created_at           TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at           TEXT NOT NULL,
+    confirmed_at         TEXT DEFAULT '',
+    confirmation_token   TEXT NOT NULL UNIQUE,
+    request_json         TEXT NOT NULL,
+    evidence_json        TEXT NOT NULL DEFAULT '{}',
+    proposal_json        TEXT NOT NULL,
+    decision_id          INTEGER REFERENCES decision_log(id),
+    failure_reason       TEXT DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_staffing_proposals_status_expiry
+    ON staffing_proposals(status, expires_at);
+
 CREATE TABLE IF NOT EXISTS employee_external_ids (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     employee_id     TEXT NOT NULL REFERENCES employees(id),
