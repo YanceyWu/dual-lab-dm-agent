@@ -31,7 +31,7 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-013 | Action Follow-up Use Case | G2 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
 | IP-013 | Action Follow-up Use Case | G2 | G4 | QUEUED |
 | IP-014 | Connector Contract Reference Migration | G4 | Connector hardening | FIRST SLICE VALIDATED — OWNER REVIEW PENDING |
-| IP-015 | Local Product Packaging and Upgrade Lifecycle | G4 | G5 | QUEUED |
+| IP-015 | Local Product Packaging and Upgrade Lifecycle | G4 | G5 | LIFECYCLE REFERENCE VALIDATED — OWNER RELEASE REVIEW PENDING |
 
 ## Pack sizing rule
 

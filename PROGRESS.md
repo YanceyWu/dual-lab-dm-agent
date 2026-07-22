@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-014 — Connector Contract Reference Migration`
-Gate status: `CONNECTOR STATUS REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Current implementation pack: `IP-015 — Local Product Packaging and Upgrade Lifecycle`
+Gate status: `G5 LIFECYCLE REFERENCE VALIDATED LOCALLY — OWNER RELEASE REVIEW PENDING`
 Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for later delivery records
 
 ## Read this first
@@ -96,8 +96,8 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Obtain owner review of the credential-free IP-014 connector-status contract.
-2. After approval, assess IP-015 local packaging and upgrade lifecycle.
+1. Obtain owner review of the IP-014 connector contract and IP-015 upgrade/recovery lifecycle.
+2. Decide whether to publish a versioned product release; live upgrades remain local operator actions.
 
 ## Decisions in force
 
@@ -445,3 +445,8 @@ Execute in this order:
 
 - Added `connector-status-review`, a credential-free structured view of connector validation, local source freshness, and latest local sync state.
 - It performs no connector invocation, sync, network call, or configuration inspection. Validation passed: 80 runtime tests, 18 repository-tool tests (19 subtests), static compilation, and all repository safety checks.
+
+### 2026-07-22 — IP-015 local lifecycle reference
+
+- Added a versioned install, upgrade, validation, recovery, and private-state lifecycle for the existing Poetry package and local backup mechanism.
+- No package was published and no operational database/configuration was changed.
