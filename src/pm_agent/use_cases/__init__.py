@@ -1,6 +1,7 @@
 """PM use-case services."""
 
 from pm_agent.use_cases.action_items import ActionItemsService
+from pm_agent.use_cases.action_followup import execute_action_followup
 from pm_agent.use_cases.contract_continuity import execute_contract_continuity_review
 from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.hiref_management import HirefManagementService
@@ -9,6 +10,7 @@ from pm_agent.use_cases.project_health import execute_project_health_review
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
 from pm_agent.use_cases.weekly_report import WeeklyReportService
+from pm_agent.use_cases.weekly_brief import execute_weekly_dm_brief
 
 resource_planning_service = ResourcePlanningService()
 team_workload_service = TeamWorkloadService()
@@ -61,6 +63,8 @@ use_case_executor.register(
     ),
     execute_contract_continuity_review,
 )
+use_case_executor.register(UseCaseDescriptor(use_case_id="weekly-dm-brief", purpose="Return a structured weekly Delivery Manager brief from local facts.", parameter_schema={}), execute_weekly_dm_brief)
+use_case_executor.register(UseCaseDescriptor(use_case_id="action-followup", purpose="Return open actions requiring follow-up without changing them.", parameter_schema={}), execute_action_followup)
 
 __all__ = [
     "resource_planning_service",

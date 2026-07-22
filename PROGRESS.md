@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `Batch C — IP-010 Management Attention and IP-012 Contract Continuity`
-Gate status: `G4 READ-ONLY SLICES VALIDATED LOCALLY — OWNER REVIEW PENDING`
-Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for IP-009 and Batch C delivery records
+Current implementation pack: `Batch D — IP-011 Weekly DM Brief and IP-013 Action Follow-up`
+Gate status: `G4 EXTENDED READ-ONLY SLICES VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; Batch D implementation is in progress
 
 ## Read this first
 
@@ -96,10 +96,9 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Obtain owner review of IP-009, IP-010, and IP-012 read-only semantics,
-   especially deterministic priority rules and treatment of non-fresh evidence.
-2. After G4 review, assess IP-011 Weekly DM Brief and IP-013 Action Follow-up.
-   Do not extend staffing writes.
+1. Implement IP-011 Weekly DM Brief and IP-013 Action Follow-up as read-only
+   use cases; do not extend staffing writes.
+2. After their owner review, assess IP-014 connector-contract migration.
 
 ## Decisions in force
 
@@ -430,3 +429,15 @@ Execute in this order:
   synthetic-sample check, and diff check.
 - Both packs are technically validated and await owner review before G4
   promotion and Batch D assessment.
+
+### 2026-07-22 — G4 owner approval and Batch D start
+
+- The human owner approved the IP-009/IP-010/IP-012 read-only semantics,
+  including local-evidence-only behavior and the documented priority rules.
+- G4 is promoted. Began IP-011 Weekly DM Brief and IP-013 Action Follow-up;
+  both remain read-only structured use cases.
+
+### 2026-07-22 — Batch D implementation
+
+- Added `weekly-dm-brief` and `action-followup` as read-only structured use cases.
+- Validation passed: 80 runtime tests, 18 repository-tool tests (19 subtests), static compilation, portability audit, boundary check, synthetic-sample check, and diff check.
