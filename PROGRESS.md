@@ -4,7 +4,7 @@ Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
 Current implementation pack: `IP-015 — Local Product Packaging and Upgrade Lifecycle`
 Gate status: `G5 LIFECYCLE REFERENCE VALIDATED LOCALLY — OWNER RELEASE REVIEW PENDING`
-Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for later delivery records
+Git state: independent candidate branch `codex/ip-000-baseline-safety` is pushed at `457061b`; it must not be merged into `main`
 
 ## Read this first
 
@@ -96,8 +96,8 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Obtain owner review of the IP-014 connector contract and IP-015 upgrade/recovery lifecycle.
-2. Decide whether to publish a versioned product release; live upgrades remain local operator actions.
+1. Review the independent-branch release-candidate report and IP-014/IP-015 lifecycle materials.
+2. Explicitly authorize a tag, package publication, or local upgrade rehearsal only if desired; do not merge into `main`.
 
 ## Decisions in force
 
@@ -450,3 +450,12 @@ Execute in this order:
 
 - Added a versioned install, upgrade, validation, recovery, and private-state lifecycle for the existing Poetry package and local backup mechanism.
 - No package was published and no operational database/configuration was changed.
+
+### 2026-07-22 — independent release-candidate revalidation
+
+- Revalidated the candidate branch: 80 runtime tests, 18 repository-tool tests
+  (19 subtests), portability audit, boundary check, synthetic-sample check, and
+  diff check all passed.
+- Confirmed `main` has no merge base with this branch. The candidate remains
+  independently published on its own branch; no merge, tag, package release,
+  backup, or live upgrade was performed.
