@@ -334,3 +334,18 @@ def test_connector_sync_results_normalize_latest_run_without_raw_error(isolated_
         "error_present": True, "refresh_sla_hours": 24,
     }
     assert "confidential" not in str(result.model_dump())
+
+
+def test_dashboard_project_snapshots_uses_shared_executor(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("INSERT INTO projects (id, name, status, priority) VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)")
+        con.execute("INSERT INTO project_snapshots (id, project_id, snapshot_date, artifact_kind, artifact_state, health, title, summary) VALUES ('snapshot-1', 'project-atlas-990001', '2026-07-22', 'plan', 'draft', 'amber', 'Synthetic', 'Synthetic summary')")
+
+    client = dashboard_server.app.test_client()
+    response = client.get("/api/project-snapshots?project_id=project-atlas-990001&health=amber")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload[0]["id"] == "snapshot-1"
+    assert payload[0]["project_name"] == "Project Atlas"

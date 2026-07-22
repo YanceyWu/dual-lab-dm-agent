@@ -509,49 +509,16 @@ def allocations():
 
 @app.route("/api/project-snapshots")
 def project_snapshots():
-    c = db()
-    if not table_exists(c, "project_snapshots"):
-        c.close()
-        return jsonify([])
     project_id = request.args.get("project_id", "").strip()
     limit = int_arg("limit", default=20, minimum=1, maximum=200)
     artifact_kind = request.args.get("kind", "").strip()
     artifact_state = request.args.get("state", request.args.get("status", "")).strip()
     health = request.args.get("health", "").strip()
     horizon = request.args.get("horizon", "").strip()
-    clauses = []
-    params = []
-    if project_id:
-        clauses.append("ps.project_id = ?")
-        params.append(project_id)
-    if artifact_kind:
-        clauses.append("ps.artifact_kind = ?")
-        params.append(artifact_kind)
-    if artifact_state:
-        clauses.append("ps.artifact_state = ?")
-        params.append(artifact_state)
-    if health:
-        clauses.append("ps.health = ?")
-        params.append(health)
-    if horizon:
-        clauses.append("ps.horizon = ?")
-        params.append(horizon)
-    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-    rows = c.execute(f"""
-        SELECT
-            ps.*,
-            p.name AS project_name
-        FROM project_snapshots ps
-        JOIN projects p ON p.id = ps.project_id
-        {where}
-        ORDER BY ps.snapshot_date DESC, ps.created_at DESC
-        LIMIT ?
-    """, params + [limit]).fetchall()
-    c.close()
-    result = []
-    for row in rows:
-        result.append(normalize_project_snapshot(dict(row)))
-    return jsonify(result)
+    parameters = {key: value for key, value in {"project_id": project_id, "artifact_kind": artifact_kind, "artifact_state": artifact_state, "health": health, "horizon": horizon}.items() if value}
+    parameters["limit"] = limit
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="project-snapshot-list", actor="dashboard", parameters=parameters, requested_output="json"))
+    return jsonify(result.data["snapshots"])
 
 
 @app.route("/api/project-plans")

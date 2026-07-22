@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-016 — Connector Sync Result Contract`
-Gate status: `CONNECTOR SYNC CONTRACT VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Current implementation pack: `IP-019 — Interface-to-Executor Migration`
+Gate status: `INTERFACE REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
 Git state: independent candidate branch `codex/ip-000-baseline-safety` is pushed at `457061b`; it must not be merged into `main`
 
 ## Read this first

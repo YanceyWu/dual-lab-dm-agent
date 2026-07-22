@@ -9,6 +9,7 @@ from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.management_attention import execute_management_attention
 from pm_agent.use_cases.project_health import execute_project_health_review
+from pm_agent.use_cases.project_snapshots import execute_project_snapshot_list
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
 from pm_agent.use_cases.weekly_report import WeeklyReportService
@@ -69,6 +70,7 @@ use_case_executor.register(UseCaseDescriptor(use_case_id="weekly-dm-brief", purp
 use_case_executor.register(UseCaseDescriptor(use_case_id="action-followup", purpose="Return open actions requiring follow-up without changing them.", parameter_schema={}), execute_action_followup)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-status-review", purpose="Return credential-free connector readiness and source freshness.", parameter_schema={"connector": {"type": "string", "required": False, "description": "Optional connector name."}}), execute_connector_status_review)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-sync-results", purpose="Return normalized latest local connector sync outcomes without credentials or raw errors.", parameter_schema={"connector": {"type": "string", "required": False, "description": "Optional connector name."}}), execute_connector_sync_results)
+use_case_executor.register(UseCaseDescriptor(use_case_id="project-snapshot-list", purpose="List stored project snapshots through the shared read-only contract.", parameter_schema={"project_id": {"type": "string", "required": False, "description": "Optional exact project ID."}, "artifact_kind": {"type": "string", "required": False, "description": "Optional snapshot kind."}, "artifact_state": {"type": "string", "required": False, "description": "Optional snapshot state."}, "health": {"type": "string", "required": False, "description": "Optional health filter."}, "horizon": {"type": "string", "required": False, "description": "Optional horizon filter."}, "limit": {"type": "integer", "required": False, "description": "Maximum snapshots, 1 to 200."}}), execute_project_snapshot_list)
 
 __all__ = [
     "resource_planning_service",

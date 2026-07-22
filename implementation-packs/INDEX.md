@@ -32,6 +32,7 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-014 | Connector Contract Reference Migration | G4 | Connector hardening | FIRST SLICE VALIDATED — OWNER REVIEW PENDING |
 | IP-015 | Local Product Packaging and Upgrade Lifecycle | G4 | G5 | LIFECYCLE REFERENCE VALIDATED — OWNER RELEASE REVIEW PENDING |
 | IP-016 | Connector Sync Result Contract | IP-014 | Connector hardening | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
+| IP-019 | Interface-to-Executor Migration | G4 | Interface hardening | REFERENCE SLICE VALIDATED — OWNER REVIEW PENDING |
 
 ## Pack sizing rule
 
