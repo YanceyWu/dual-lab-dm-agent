@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `Batch D — IP-011 Weekly DM Brief and IP-013 Action Follow-up`
-Gate status: `G4 EXTENDED READ-ONLY SLICES VALIDATED LOCALLY — OWNER REVIEW PENDING`
-Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; Batch D implementation is in progress
+Current implementation pack: `IP-014 — Connector Contract Reference Migration`
+Gate status: `CONNECTOR STATUS REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for later delivery records
 
 ## Read this first
 
@@ -96,9 +96,8 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Implement IP-011 Weekly DM Brief and IP-013 Action Follow-up as read-only
-   use cases; do not extend staffing writes.
-2. After their owner review, assess IP-014 connector-contract migration.
+1. Obtain owner review of the credential-free IP-014 connector-status contract.
+2. After approval, assess IP-015 local packaging and upgrade lifecycle.
 
 ## Decisions in force
 
@@ -441,3 +440,8 @@ Execute in this order:
 
 - Added `weekly-dm-brief` and `action-followup` as read-only structured use cases.
 - Validation passed: 80 runtime tests, 18 repository-tool tests (19 subtests), static compilation, portability audit, boundary check, synthetic-sample check, and diff check.
+
+### 2026-07-22 — IP-014 connector status reference slice
+
+- Added `connector-status-review`, a credential-free structured view of connector validation, local source freshness, and latest local sync state.
+- It performs no connector invocation, sync, network call, or configuration inspection. Validation passed: 80 runtime tests, 18 repository-tool tests (19 subtests), static compilation, and all repository safety checks.

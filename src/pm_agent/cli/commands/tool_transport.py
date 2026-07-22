@@ -56,6 +56,7 @@ def query_use_case(
     project_id: Optional[str] = typer.Option(None, "--project", help="Exact project ID"),
     days: Optional[int] = typer.Option(None, "--days", help="Review window in days"),
     limit: Optional[int] = typer.Option(None, "--limit", help="Maximum returned items"),
+    connector: Optional[str] = typer.Option(None, "--connector", help="Exact connector name"),
     actor: str = typer.Option("copilot", "--actor"),
     correlation_id: Optional[str] = typer.Option(None, "--correlation-id"),
 ):
@@ -65,7 +66,7 @@ def query_use_case(
             operation="query",
             use_case_id=use_case_id,
             actor=actor,
-            parameters={key: value for key, value in {"team": team, "project_id": project_id, "days": days, "limit": limit}.items() if value is not None},
+            parameters={key: value for key, value in {"team": team, "project_id": project_id, "days": days, "limit": limit, "connector": connector}.items() if value is not None},
             requested_output="json",
             correlation_id=correlation_id,
         )
