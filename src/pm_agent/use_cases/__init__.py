@@ -3,6 +3,7 @@
 from pm_agent.use_cases.action_items import ActionItemsService
 from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.hiref_management import HirefManagementService
+from pm_agent.use_cases.project_health import execute_project_health_review
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
 from pm_agent.use_cases.weekly_report import WeeklyReportService
@@ -31,6 +32,16 @@ use_case_executor.register(
         },
     ),
     execute_team_workload_overview,
+)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="project-health-review",
+        purpose="Return the latest locally stored project-health observations and their freshness.",
+        parameter_schema={
+            "project_id": {"type": "string", "required": False, "description": "Exact active project ID."},
+        },
+    ),
+    execute_project_health_review,
 )
 
 __all__ = [

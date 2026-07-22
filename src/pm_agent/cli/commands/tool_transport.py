@@ -53,6 +53,7 @@ def describe_use_case(
 def query_use_case(
     use_case_id: str = typer.Argument(..., help="Stable use-case ID"),
     team: Optional[str] = typer.Option(None, "--team", help="Exact team filter"),
+    project_id: Optional[str] = typer.Option(None, "--project", help="Exact project ID"),
     actor: str = typer.Option("copilot", "--actor"),
     correlation_id: Optional[str] = typer.Option(None, "--correlation-id"),
 ):
@@ -62,7 +63,7 @@ def query_use_case(
             operation="query",
             use_case_id=use_case_id,
             actor=actor,
-            parameters={"team": team} if team else {},
+            parameters={key: value for key, value in {"team": team, "project_id": project_id}.items() if value},
             requested_output="json",
             correlation_id=correlation_id,
         )

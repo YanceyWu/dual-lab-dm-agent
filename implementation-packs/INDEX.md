@@ -8,8 +8,8 @@ itself.
 
 `IP-000` through `IP-008` have complete implementation-pack documents. IP-005
 through IP-008 form a technically validated staffing workflow, committed and
-pushed in `3873edb`; human-owner sign-off remains required before operational
-G3 promotion.
+pushed in `3873edb`; the human owner approved operational G3 promotion on
+2026-07-22.
 
 ## Queue
 
@@ -20,11 +20,11 @@ G3 promotion.
 | IP-002 | Structured Copilot Tool Transport | IP-001 | G2 | IMPLEMENTED LOCALLY — G2 REVIEW REQUIRED |
 | IP-003 | Evidence, Freshness, and Execution Trace Envelope | IP-001 | G2 | IMPLEMENTED LOCALLY — G2 REVIEW REQUIRED |
 | IP-004 | Team Capacity Context and Copilot Playbook | IP-002, IP-003 | G2 | IMPLEMENTED LOCALLY — OWNER REVIEW REQUIRED |
-| IP-005 | Canonical Staffing Read Model | G2 | G3 | TECHNICALLY VALIDATED — COMMITTED — OWNER SIGN-OFF PENDING |
-| IP-006 | Demand and Staffing Feasibility Rules | IP-005 | G3 | TECHNICALLY VALIDATED — COMMITTED — OWNER SIGN-OFF PENDING |
-| IP-007 | Staffing Proposal and Atomic Confirmation | IP-006 | G3 | TECHNICALLY VALIDATED — COMMITTED — OWNER SIGN-OFF PENDING |
-| IP-008 | Staffing Golden Scenarios and Manager Confirmation Playbook | IP-006, IP-007 | G3 | TECHNICALLY VALIDATED — COMMITTED — OWNER SIGN-OFF PENDING |
-| IP-009 | Project Health Context and Use Case | G3 | G4 | QUEUED |
+| IP-005 | Canonical Staffing Read Model | G2 | G3 | G3 PROMOTED — COMMITTED |
+| IP-006 | Demand and Staffing Feasibility Rules | IP-005 | G3 | G3 PROMOTED — COMMITTED |
+| IP-007 | Staffing Proposal and Atomic Confirmation | IP-006 | G3 | G3 PROMOTED — COMMITTED |
+| IP-008 | Staffing Golden Scenarios and Manager Confirmation Playbook | IP-006, IP-007 | G3 | G3 PROMOTED — COMMITTED |
+| IP-009 | Project Health Context and Use Case | G3 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
 | IP-010 | Management Attention Use Case | IP-009 | G4 | QUEUED |
 | IP-011 | Weekly DM Brief Use Case | IP-009, IP-010 | G4 | QUEUED |
 | IP-012 | Contract Continuity Use Case | G3 | G4 | QUEUED |

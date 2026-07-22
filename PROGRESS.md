@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `Batch A — G3 Technical Revalidation and Owner Sign-off`
-Gate status: `G3 TECHNICALLY VALIDATED — COMMITTED AND PUSHED — OWNER SIGN-OFF PENDING`
-Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; inspect `git status` for any later documentation records
+Current implementation pack: `IP-009 — Project Health Context and Use Case`
+Gate status: `G4 REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for the IP-009 delivery record
 
 ## Read this first
 
@@ -96,10 +96,10 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Obtain human-owner sign-off for the G3 staffing workflow. This is a business
-   acceptance decision, not a technical check that can be inferred from tests.
-2. After that sign-off, assess IP-009 as the next independent, read-only
-   Project Health use case.
+1. Obtain owner review of the IP-009 read-only Project Health contract and
+   evidence/freshness semantics.
+2. After G4 review, assess IP-010 Management Attention and IP-012 Contract
+   Continuity as separate read-only packs. Do not extend staffing writes.
 
 ## Decisions in force
 
@@ -392,3 +392,26 @@ Execute in this order:
 - G3 remains **technically validated but owner-sign-off pending**. Only a human
   owner may approve the manager-facing confirmation workflow for operational
   use. Do not claim that business acceptance without that explicit decision.
+
+### 2026-07-22 — G3 owner sign-off and Batch B start
+
+- The human owner explicitly approved the G3 staffing workflow for operational
+  use after reviewing the technical revalidation record.
+- G3 is promoted. Began IP-009 assessment as the first G4, read-only Project
+  Health vertical slice; it must not broaden the staffing write scope.
+
+### 2026-07-22 — Batch B IP-009 Project Health reference slice
+
+- Added `project-health-review` to the shared executor and structured local
+  tool transport. It adapts active projects, board mappings, latest local JIRA
+  health snapshots, Confluence status snapshots, and source freshness without
+  triggering a sync or changing domain data.
+- The result distinguishes observed RED/AMBER/GREEN states from `unknown` when
+  no local evidence exists. It reports component scores, snapshot dates,
+  evidence, freshness, assumptions, warnings, rule version, and bounded
+  `ProjectHealthContext`; JIRA grade takes precedence over a status-page RAG
+  label without hiding the conflicting local observation.
+- Validation passed: 79 runtime tests, 18 repository-tool tests (19 subtests),
+  static compilation, portable-only audit, repository-boundary check,
+  synthetic-sample check, and diff check.
+- IP-009 is technically validated and awaits owner review before G4 promotion.

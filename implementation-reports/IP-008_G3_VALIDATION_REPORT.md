@@ -1,6 +1,6 @@
 # IP-008 G3 Validation Report
 
-Status: `G3 TECHNICALLY VALIDATED — COMMITTED AND PUSHED — OWNER SIGN-OFF PENDING`
+Status: `G3 PROMOTED — OWNER SIGN-OFF RECORDED 2026-07-22`
 Date: 2026-07-22 (implementation completed 2026-07-19)
 
 ## G3 checklist
@@ -39,7 +39,7 @@ action; they are not a write-capable Copilot transport.
 ## Remaining operational responsibility
 
 The implementation was committed and pushed in `3873edb` after the original
-validation. A human owner must still approve the manager-facing confirmation
-workflow before treating G3 as operationally promoted. A confirmed planned
-allocation remains a meaningful local domain change and requires an explicit
-manager reversal if it must be undone.
+validation. The human owner approved the manager-facing confirmation workflow
+for operational use on 2026-07-22. A confirmed planned allocation remains a
+meaningful local domain change and requires an explicit manager reversal if it
+must be undone.

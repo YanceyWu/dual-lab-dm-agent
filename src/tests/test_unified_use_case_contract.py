@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 from pm_agent.cli import app as app_module
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
+from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
 from pm_agent.use_cases.team_capacity_context import build_team_capacity_context
@@ -195,7 +196,9 @@ def test_tool_transport_lists_and_describes_without_operational_data() -> None:
     )
 
     assert listed.status == "success"
-    assert listed.data["use_cases"][0]["use_case_id"] == "team-workload-overview"
+    assert {item["use_case_id"] for item in listed.data["use_cases"]} >= {
+        "team-workload-overview", "project-health-review"
+    }
     assert described.status == "success"
     assert described.data["use_case"]["parameter_schema"]["team"]["required"] is False
 
@@ -232,3 +235,56 @@ def test_tool_cli_query_is_json_and_matches_direct_executor(isolated_db) -> None
     assert payload["status"] == direct.status == "success"
     assert payload["data"] == direct.data
     assert payload["execution_metadata"]["operation"] == "query"
+
+
+def test_project_health_review_is_read_only_evidence_rich_and_available_to_tool_cli(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            "INSERT INTO projects (id, name, status, priority) VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)"
+        )
+        con.execute(
+            """INSERT INTO jira_board_configs (id, name, project_key, base_jql, pm_project_id, active)
+               VALUES ('atlas-board', 'Atlas Board', 'ATL', 'project = ATL', 'project-atlas-990001', 1)"""
+        )
+        con.execute(
+            """INSERT INTO jira_health_snapshots
+               (board_id, snapshot_date, overall_score, overall_grade, velocity_score, sprint_score, defect_score, scope_score, risks_json)
+               VALUES ('atlas-board', '2026-07-22', 42, 'RED', 30, 40, 50, 60, '[{\"type\":\"scope\",\"msg\":\"Synthetic risk\"}]')"""
+        )
+        con.execute(
+            """INSERT INTO confluence_status_snapshots
+               (board_id, snapshot_date, rag_status, risks_text) VALUES ('atlas-board', '2026-07-22', 'GREEN', 'Synthetic status risk')"""
+        )
+        before = con.execute("SELECT COUNT(*) FROM jira_health_snapshots").fetchone()[0]
+
+    direct = use_case_executor.execute(
+        UseCaseRequest(use_case_id="project-health-review", parameters={"project_id": "project-atlas-990001"})
+    )
+    command = CliRunner().invoke(
+        app_module.app,
+        ["tool", "query", "project-health-review", "--project", "project-atlas-990001"],
+    )
+
+    assert direct.status == "success"
+    assert direct.proposed_writes == []
+    assert direct.data["summary"] == {"project_count": 1, "green_count": 0, "amber_count": 0, "red_count": 1, "unknown_count": 0}
+    assert direct.data["projects"][0]["health_state"] == "red"
+    assert direct.context["context_type"] == "project_health"
+    assert direct.context["projects"][0]["boards"][0]["overall_grade"] == "RED"
+    assert command.exit_code == 0, command.output
+    assert json.loads(command.output)["data"] == direct.data
+    with sqlite3.connect(isolated_db) as con:
+        assert con.execute("SELECT COUNT(*) FROM jira_health_snapshots").fetchone()[0] == before
+
+
+def test_project_health_review_returns_unknown_for_missing_local_snapshot(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("INSERT INTO projects (id, name, status, priority) VALUES ('project-beacon-990002', 'Project Beacon', 'active', 1)")
+
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="project-health-review"))
+
+    assert result.status == "success"
+    assert result.data["projects"][0]["health_state"] == "unknown"
+    assert result.warnings == ["freshness:confluence-status-batch:unknown", "health_snapshot_missing:project-beacon-990002"]

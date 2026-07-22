@@ -1201,6 +1201,85 @@ def get_project(project_id: str) -> dict | None:
     return p
 
 
+def get_project_health_facts(project_id: str | None = None) -> list[dict]:
+    """Return the latest local health observations without triggering a sync."""
+    with _conn() as con:
+        clauses = ["p.status = 'active'"]
+        params: list[Any] = []
+        if project_id:
+            clauses.append("p.id = ?")
+            params.append(project_id)
+        rows = con.execute(
+            f"""
+            SELECT
+                p.id AS project_id, p.name AS project_name, p.status AS project_status,
+                p.priority AS project_priority, p.jira_key,
+                b.id AS board_id, b.name AS board_name,
+                h.id AS health_snapshot_id, h.snapshot_date AS health_snapshot_date,
+                h.overall_score, h.overall_grade, h.velocity_score, h.sprint_score,
+                h.defect_score, h.scope_score, h.sprint_name, h.risks_json,
+                cs.id AS status_snapshot_id, cs.snapshot_date AS status_snapshot_date,
+                cs.rag_status, cs.risks_text, cs.impact_text
+            FROM projects p
+            LEFT JOIN jira_board_configs b
+              ON b.pm_project_id = p.id AND b.active = 1
+            LEFT JOIN jira_health_snapshots h
+              ON h.id = (
+                SELECT latest_h.id FROM jira_health_snapshots latest_h
+                WHERE latest_h.board_id = b.id
+                ORDER BY latest_h.snapshot_date DESC, latest_h.id DESC LIMIT 1
+              )
+            LEFT JOIN confluence_status_snapshots cs
+              ON cs.id = (
+                SELECT latest_cs.id FROM confluence_status_snapshots latest_cs
+                WHERE latest_cs.board_id = b.id
+                ORDER BY latest_cs.snapshot_date DESC, latest_cs.id DESC LIMIT 1
+              )
+            WHERE {' AND '.join(clauses)}
+            ORDER BY p.priority, p.name, b.name
+            """,
+            params,
+        ).fetchall()
+
+    grouped: dict[str, dict] = {}
+    for row in _rows_to_list(rows):
+        project = grouped.setdefault(
+            row["project_id"],
+            {
+                "project_id": row["project_id"],
+                "project_name": row["project_name"],
+                "project_status": row["project_status"],
+                "project_priority": row["project_priority"],
+                "jira_key": row["jira_key"],
+                "boards": [],
+            },
+        )
+        if not row.get("board_id"):
+            continue
+        project["boards"].append(
+            {
+                "board_id": row["board_id"],
+                "board_name": row["board_name"],
+                "health_snapshot_id": row["health_snapshot_id"],
+                "health_snapshot_date": row["health_snapshot_date"],
+                "overall_score": row["overall_score"],
+                "overall_grade": row["overall_grade"],
+                "velocity_score": row["velocity_score"],
+                "sprint_score": row["sprint_score"],
+                "defect_score": row["defect_score"],
+                "scope_score": row["scope_score"],
+                "sprint_name": row["sprint_name"],
+                "risks": _json_loads_or(row["risks_json"], []),
+                "status_snapshot_id": row["status_snapshot_id"],
+                "status_snapshot_date": row["status_snapshot_date"],
+                "rag_status": row["rag_status"],
+                "risks_text": row["risks_text"] or "",
+                "impact_text": row["impact_text"] or "",
+            }
+        )
+    return list(grouped.values())
+
+
 def upsert_project(data: dict) -> None:
     data["tech_stack"] = json.dumps(data.get("tech_stack", []))
     data["updated_at"] = datetime.now().isoformat()
