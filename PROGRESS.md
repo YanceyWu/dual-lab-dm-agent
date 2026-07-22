@@ -1,10 +1,10 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-19
+Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-008 — Staffing Golden Scenarios and Manager Confirmation Playbook`
-Gate status: `G3 VALIDATED LOCALLY — COMMITTED AND PUSHED`
-Git state: IP-004 through IP-008 are committed locally and pushed to `origin`; IP-001 through IP-003 are included in branch history
+Current implementation pack: `Batch A — G3 Technical Revalidation and Owner Sign-off`
+Gate status: `G3 TECHNICALLY VALIDATED — COMMITTED AND PUSHED — OWNER SIGN-OFF PENDING`
+Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; inspect `git status` for any later documentation records
 
 ## Read this first
 
@@ -96,9 +96,10 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Review and intentionally commit the IP-004 through IP-008 local changes to
-   promote the validated G3 staffing workflow.
-2. Assess IP-009 as the next independent, read-only Project Health use case.
+1. Obtain human-owner sign-off for the G3 staffing workflow. This is a business
+   acceptance decision, not a technical check that can be inferred from tests.
+2. After that sign-off, assess IP-009 as the next independent, read-only
+   Project Health use case.
 
 ## Decisions in force
 
@@ -379,3 +380,15 @@ Execute in this order:
 - Next recommended action: assess IP-009 Project Health as a separate,
   independently reviewable implementation pack; do not expand the staffing
   write scope without a new contract, scenarios, and tests.
+
+### 2026-07-22 — Batch A G3 technical revalidation
+
+- Re-ran the committed G3 evidence on the current branch: 77 runtime tests,
+  18 repository-tool tests (19 subtests), source-portability audit,
+  repository-boundary check, synthetic-sample check, and diff check all passed.
+- Corrected the record: IP-004 through IP-008 were already committed and
+  pushed in `3873edb`; no technical evidence remains that the implementation is
+  merely an uncommitted local change.
+- G3 remains **technically validated but owner-sign-off pending**. Only a human
+  owner may approve the manager-facing confirmation workflow for operational
+  use. Do not claim that business acceptance without that explicit decision.
