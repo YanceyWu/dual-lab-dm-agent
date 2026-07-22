@@ -4,6 +4,7 @@ from pm_agent.use_cases.action_items import ActionItemsService
 from pm_agent.use_cases.action_followup import execute_action_followup
 from pm_agent.use_cases.contract_continuity import execute_contract_continuity_review
 from pm_agent.use_cases.connector_status import execute_connector_status_review
+from pm_agent.use_cases.connector_sync_results import execute_connector_sync_results
 from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.management_attention import execute_management_attention
@@ -67,6 +68,7 @@ use_case_executor.register(
 use_case_executor.register(UseCaseDescriptor(use_case_id="weekly-dm-brief", purpose="Return a structured weekly Delivery Manager brief from local facts.", parameter_schema={}), execute_weekly_dm_brief)
 use_case_executor.register(UseCaseDescriptor(use_case_id="action-followup", purpose="Return open actions requiring follow-up without changing them.", parameter_schema={}), execute_action_followup)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-status-review", purpose="Return credential-free connector readiness and source freshness.", parameter_schema={"connector": {"type": "string", "required": False, "description": "Optional connector name."}}), execute_connector_status_review)
+use_case_executor.register(UseCaseDescriptor(use_case_id="connector-sync-results", purpose="Return normalized latest local connector sync outcomes without credentials or raw errors.", parameter_schema={"connector": {"type": "string", "required": False, "description": "Optional connector name."}}), execute_connector_sync_results)
 
 __all__ = [
     "resource_planning_service",

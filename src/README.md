@@ -133,6 +133,7 @@ pm tool query contract-continuity-review --days 180
 pm tool query weekly-dm-brief
 pm tool query action-followup
 pm tool query connector-status-review --connector jira
+pm tool query connector-sync-results --connector jira
 pm staffing assess --project project-atlas-990001 --start 2026-08 --end 2026-08 --effort 0.6 --skills python --maximum-people 2
 pm capacity --month aug
 pm hiref summary

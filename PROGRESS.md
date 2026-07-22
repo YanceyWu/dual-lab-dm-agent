@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-015 — Local Product Packaging and Upgrade Lifecycle`
-Gate status: `G5 LIFECYCLE REFERENCE VALIDATED LOCALLY — OWNER RELEASE REVIEW PENDING`
+Current implementation pack: `IP-016 — Connector Sync Result Contract`
+Gate status: `CONNECTOR SYNC CONTRACT VALIDATED LOCALLY — OWNER REVIEW PENDING`
 Git state: independent candidate branch `codex/ip-000-baseline-safety` is pushed at `457061b`; it must not be merged into `main`
 
 ## Read this first
@@ -459,3 +459,10 @@ Execute in this order:
 - Confirmed `main` has no merge base with this branch. The candidate remains
   independently published on its own branch; no merge, tag, package release,
   backup, or live upgrade was performed.
+
+### 2026-07-22 — IP-016 connector sync-result contract
+
+- Added a credential-free, raw-error-redacted view of the latest local
+  connector sync outcome, including freshness, rows, target tables, and retry
+  recommendation. Validation passed: 81 runtime tests and all repository
+  safety checks.

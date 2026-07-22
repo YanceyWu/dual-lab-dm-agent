@@ -314,3 +314,23 @@ def test_management_attention_and_contract_continuity_are_read_only(isolated_db)
     with sqlite3.connect(isolated_db) as con:
         assert con.execute("SELECT COUNT(*) FROM action_items").fetchone()[0] == action_count
         assert con.execute("SELECT COUNT(*) FROM hiref").fetchone()[0] == hiref_count
+
+
+def test_connector_sync_results_normalize_latest_run_without_raw_error(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("INSERT INTO data_sources (id, source_type, source_name, refresh_sla_hours, active) VALUES ('jira-health-atlas', 'jira', 'Atlas health', 24, 1)")
+        con.execute("""INSERT INTO sync_runs (id, source_id, run_type, started_at, finished_at, status, rows_in, rows_changed, target_tables_json, error_message)
+                     VALUES ('run-jira-atlas', 'jira-health-atlas', 'incremental', '2026-07-22T10:00:00', '2026-07-22T10:01:00', 'failed', 12, 3, '[\"jira_health_snapshots\"]', 'synthetic confidential error text')""")
+
+    result = use_case_executor.execute(UseCaseRequest(use_case_id="connector-sync-results", parameters={"connector": "jira"}))
+
+    assert result.status == "success"
+    item = result.data["sync_results"][0]
+    assert item == {
+        "connector": "jira", "source_id": "jira-health-atlas", "outcome": "failed", "freshness_state": "failed",
+        "started_at": "2026-07-22T10:00:00", "finished_at": "2026-07-22T10:01:00", "rows_observed": 12,
+        "rows_changed": 3, "target_tables": ["jira_health_snapshots"], "retry_recommended": True,
+        "error_present": True, "refresh_sla_hours": 24,
+    }
+    assert "confidential" not in str(result.model_dump())
