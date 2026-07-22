@@ -466,3 +466,11 @@ Execute in this order:
   connector sync outcome, including freshness, rows, target tables, and retry
   recommendation. Validation passed: 81 runtime tests and all repository
   safety checks.
+
+### 2026-07-22 — real-environment UAT runbook
+
+- Added a portable runbook for isolated setup, backup, local configuration,
+  read-only checks, controlled connector/staffing UAT, stop conditions, and
+  sanitized feedback.
+- It explicitly preserves the independent branch boundary and excludes real
+  configuration, records, connector output, screenshots, and logs.
