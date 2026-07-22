@@ -128,6 +128,8 @@ pm tool list
 pm tool describe team-workload-overview
 pm tool query team-workload-overview
 pm tool query project-health-review --project project-atlas-990001
+pm tool query management-attention --limit 10
+pm tool query contract-continuity-review --days 180
 pm staffing assess --project project-atlas-990001 --start 2026-08 --end 2026-08 --effort 0.6 --skills python --maximum-people 2
 pm capacity --month aug
 pm hiref summary

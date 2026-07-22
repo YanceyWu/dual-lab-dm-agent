@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-22
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-009 — Project Health Context and Use Case`
-Gate status: `G4 REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
-Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for the IP-009 delivery record
+Current implementation pack: `Batch C — IP-010 Management Attention and IP-012 Contract Continuity`
+Gate status: `G4 READ-ONLY SLICES VALIDATED LOCALLY — OWNER REVIEW PENDING`
+Git state: IP-004 through IP-008 implementation is committed and pushed at `3873edb`; Batch A revalidation is committed and pushed at `cfaa52b`; inspect Git history for IP-009 and Batch C delivery records
 
 ## Read this first
 
@@ -96,10 +96,10 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Obtain owner review of the IP-009 read-only Project Health contract and
-   evidence/freshness semantics.
-2. After G4 review, assess IP-010 Management Attention and IP-012 Contract
-   Continuity as separate read-only packs. Do not extend staffing writes.
+1. Obtain owner review of IP-009, IP-010, and IP-012 read-only semantics,
+   especially deterministic priority rules and treatment of non-fresh evidence.
+2. After G4 review, assess IP-011 Weekly DM Brief and IP-013 Action Follow-up.
+   Do not extend staffing writes.
 
 ## Decisions in force
 
@@ -415,3 +415,18 @@ Execute in this order:
   static compilation, portable-only audit, repository-boundary check,
   synthetic-sample check, and diff check.
 - IP-009 is technically validated and awaits owner review before G4 promotion.
+
+### 2026-07-22 — Batch C IP-010 and IP-012 read-only slices
+
+- Owner approved IP-009 semantics and authorized Batch C.
+- Added `management-attention`: deterministic attention ranking from locally
+  observed project health, overdue action items, and non-fresh health sources.
+  The use case never creates an action or predicts a risk.
+- Added `contract-continuity-review`: a bounded review of existing HIREF
+  coverage, expiry, next-contract linkage, and project alignment for active
+  STFTE staff. It never creates a contract, assignment, proposal, or action.
+- Validation passed: 80 runtime tests, 18 repository-tool tests (19 subtests),
+  static compilation, portable-only audit, repository-boundary check,
+  synthetic-sample check, and diff check.
+- Both packs are technically validated and await owner review before G4
+  promotion and Batch D assessment.

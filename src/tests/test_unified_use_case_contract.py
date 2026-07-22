@@ -288,3 +288,29 @@ def test_project_health_review_returns_unknown_for_missing_local_snapshot(isolat
     assert result.status == "success"
     assert result.data["projects"][0]["health_state"] == "unknown"
     assert result.warnings == ["freshness:confluence-status-batch:unknown", "health_snapshot_missing:project-beacon-990002"]
+
+
+def test_management_attention_and_contract_continuity_are_read_only(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("INSERT INTO projects (id, name, status, priority) VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)")
+        con.execute("INSERT INTO jira_board_configs (id, name, project_key, base_jql, pm_project_id, active) VALUES ('atlas-board', 'Atlas Board', 'ATL', 'project = ATL', 'project-atlas-990001', 1)")
+        con.execute("INSERT INTO jira_health_snapshots (board_id, snapshot_date, overall_score, overall_grade) VALUES ('atlas-board', '2026-07-22', 30, 'RED')")
+        con.execute("INSERT INTO action_items (title, source, priority, due_date) VALUES ('Synthetic overdue action', 'test', 'high', '2000-01-01')")
+        con.execute("INSERT INTO employees (id, name, status, resource_type, current_hiref) VALUES ('990104', 'Drew Example', 'active', 'STFTE', 'HIREF-990104')")
+        con.execute("INSERT INTO hiref (id, project, request_type, start_date, end_date) VALUES ('HIREF-990104', 'Project Atlas', 'extend', '2025-01-01', '2025-01-02')")
+        action_count = con.execute("SELECT COUNT(*) FROM action_items").fetchone()[0]
+        hiref_count = con.execute("SELECT COUNT(*) FROM hiref").fetchone()[0]
+
+    attention = use_case_executor.execute(UseCaseRequest(use_case_id="management-attention", parameters={"limit": 10}))
+    continuity = use_case_executor.execute(UseCaseRequest(use_case_id="contract-continuity-review", parameters={"days": 180}))
+    cli = CliRunner().invoke(app_module.app, ["tool", "query", "contract-continuity-review", "--days", "180"])
+
+    assert attention.status == continuity.status == "success"
+    assert {item["reason_code"] for item in attention.data["items"]} >= {"project_health_red", "action_overdue"}
+    assert continuity.data["summary"]["attention_count"] == 1
+    assert continuity.data["contracts"][0]["employee_id"] == "990104"
+    assert cli.exit_code == 0, cli.output
+    with sqlite3.connect(isolated_db) as con:
+        assert con.execute("SELECT COUNT(*) FROM action_items").fetchone()[0] == action_count
+        assert con.execute("SELECT COUNT(*) FROM hiref").fetchone()[0] == hiref_count

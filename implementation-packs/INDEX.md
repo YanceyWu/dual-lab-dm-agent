@@ -25,9 +25,9 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-007 | Staffing Proposal and Atomic Confirmation | IP-006 | G3 | G3 PROMOTED — COMMITTED |
 | IP-008 | Staffing Golden Scenarios and Manager Confirmation Playbook | IP-006, IP-007 | G3 | G3 PROMOTED — COMMITTED |
 | IP-009 | Project Health Context and Use Case | G3 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
-| IP-010 | Management Attention Use Case | IP-009 | G4 | QUEUED |
+| IP-010 | Management Attention Use Case | IP-009 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
 | IP-011 | Weekly DM Brief Use Case | IP-009, IP-010 | G4 | QUEUED |
-| IP-012 | Contract Continuity Use Case | G3 | G4 | QUEUED |
+| IP-012 | Contract Continuity Use Case | G3 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
 | IP-013 | Action Follow-up Use Case | G2 | G4 | QUEUED |
 | IP-014 | Connector Contract Reference Migration | G4 | Connector hardening | QUEUED |
 | IP-015 | Local Product Packaging and Upgrade Lifecycle | G4 | G5 | QUEUED |

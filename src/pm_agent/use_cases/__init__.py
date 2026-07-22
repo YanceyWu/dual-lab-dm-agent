@@ -1,8 +1,10 @@
 """PM use-case services."""
 
 from pm_agent.use_cases.action_items import ActionItemsService
+from pm_agent.use_cases.contract_continuity import execute_contract_continuity_review
 from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.hiref_management import HirefManagementService
+from pm_agent.use_cases.management_attention import execute_management_attention
 from pm_agent.use_cases.project_health import execute_project_health_review
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
@@ -42,6 +44,22 @@ use_case_executor.register(
         },
     ),
     execute_project_health_review,
+)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="management-attention",
+        purpose="Rank locally observed delivery issues that need Delivery Manager attention.",
+        parameter_schema={"limit": {"type": "integer", "required": False, "description": "Maximum items, 1 to 20."}},
+    ),
+    execute_management_attention,
+)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="contract-continuity-review",
+        purpose="Review recorded HIREF coverage and continuity risks for active STFTE staff.",
+        parameter_schema={"days": {"type": "integer", "required": False, "description": "Review window in days, 1 to 365."}},
+    ),
+    execute_contract_continuity_review,
 )
 
 __all__ = [
