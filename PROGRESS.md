@@ -2,13 +2,13 @@
 
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current base commit: `c2c0b16`
+Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-026 — Release Engineering`
-Gate status: `CONTEXT CLEANUP VALIDATED — COMMIT/PUSH, TAG, AND REAL UAT PENDING`
-Git state: base commit is pushed and GitHub Actions is green on Python 3.10 and
-3.12; the validated context-cleanup working tree is not yet committed or
-pushed; do not merge into `main`
+Gate status: `CONTEXT CLEANUP PUSHED — FINAL CI, TAG, AND REAL UAT PENDING`
+Git state: context cleanup commit `c068beb` is pushed; this progress-only status
+record follows it on the same independent branch; final remote-HEAD CI remains
+to be confirmed; do not merge into `main`
 
 ## Read this first
 
@@ -39,7 +39,7 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-The pushed `c2c0b16` base passed:
+The pre-cleanup `c2c0b16` candidate passed:
 
 - 115 isolated runtime tests;
 - 21 repository-tool tests, including 19 repository-boundary subtests;
@@ -70,7 +70,8 @@ wheel installation, isolated synthetic database upgrade, and rollback.
 
 ## Open gates and risks
 
-1. This validated context-cleanup change remains uncommitted and unpushed.
+1. Context cleanup commit `c068beb` is pushed; final remote-HEAD GitHub Actions
+   validation remains to be confirmed.
 2. Historical IP-000 through IP-023 and IP-025 packs/reports were deliberately
    removed from the candidate checkout; Git history remains the archive.
 3. Annotated tag `v0.2.0-rc.1` is reserved but has not been created.
@@ -80,11 +81,10 @@ wheel installation, isolated synthetic database upgrade, and rollback.
 
 ## Exact next actions
 
-1. Review, commit, and push the validated cleanup only with owner authorization.
-2. Wait for GitHub Actions on the exact pushed commit.
-3. Create and push immutable tag `v0.2.0-rc.1` only with separate explicit owner
+1. Wait for GitHub Actions on the exact final remote HEAD.
+2. Create and push immutable tag `v0.2.0-rc.1` only with separate explicit owner
    authorization.
-4. On the work computer, follow `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`: back up,
+3. On the work computer, follow `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`: back up,
    migrate an isolated operational-database copy, verify it, and then run
    controlled real-environment UAT.
 
@@ -133,3 +133,6 @@ wheel installation, isolated synthetic database upgrade, and rollback.
   compilation, boundary and synthetic checks, package build/inspection,
   temporary wheel installation, isolated synthetic database upgrade, and
   rollback.
+- Context cleanup was committed as `c068beb` and pushed to
+  `origin/codex/ip-000-baseline-safety`; no PR, tag, main-branch merge,
+  publication, or deployment was performed.
