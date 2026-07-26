@@ -1472,6 +1472,15 @@ def get_staffing_facts(
                 hiref_row = con.execute("SELECT * FROM hiref WHERE id = ?", [hiref_id]).fetchone()
                 hiref = dict(hiref_row) if hiref_row else None
             item["contract"] = hiref
+            next_hiref_id = item.get("next_hiref") or ""
+            next_hiref = None
+            if next_hiref_id:
+                next_hiref_row = con.execute(
+                    "SELECT * FROM hiref WHERE id = ?",
+                    [next_hiref_id],
+                ).fetchone()
+                next_hiref = dict(next_hiref_row) if next_hiref_row else None
+            item["next_contract"] = next_hiref
             facts.append(item)
     return facts, plan_version
 
@@ -1562,7 +1571,30 @@ def confirm_staffing_proposal(
                 f"Confirmed staffing proposal {proposal_id} for [{project['name']}]",
                 json.dumps(request, ensure_ascii=False),
                 json.dumps(revalidated_proposal.get("candidates", []), ensure_ascii=False),
-                json.dumps({"selections": selections}, ensure_ascii=False),
+                json.dumps(
+                    {
+                        "selections": selections,
+                        "decision_safety": {
+                            "decision_fingerprint": revalidated_proposal.get(
+                                "decision_fingerprint"
+                            ),
+                            "rule_version": revalidated_proposal.get("rule_version"),
+                            "source_states": revalidated_proposal.get(
+                                "source_states", []
+                            ),
+                            "freshness_override": revalidated_proposal.get(
+                                "freshness_override"
+                            ),
+                            "hiref_action_acknowledgement": (
+                                revalidated_proposal.get(
+                                    "hiref_action_acknowledgement"
+                                )
+                            ),
+                            "role_policy": revalidated_proposal.get("role_policy"),
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
                 json.dumps([], ensure_ascii=False), request["project_id"],
                 json.dumps([selection["member_id"] for selection in selections], ensure_ascii=False),
             ],

@@ -1,10 +1,10 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-22
+Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-019 — Interface-to-Executor Migration`
-Gate status: `INTERFACE REFERENCE SLICE VALIDATED LOCALLY — OWNER REVIEW PENDING`
-Git state: independent candidate branch `codex/ip-000-baseline-safety` is pushed at `457061b`; it must not be merged into `main`
+Current implementation pack: `IP-020 — Staffing Fail-Closed Safety`
+Gate status: `OWNER APPROVED — COMMITTED LOCALLY`
+Git state: IP-020 is committed locally on `codex/ip-000-baseline-safety` and remains unpushed; do not merge into `main`
 
 ## Read this first
 
@@ -96,8 +96,12 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Review the independent-branch release-candidate report and IP-014/IP-015 lifecycle materials.
-2. Explicitly authorize a tag, package publication, or local upgrade rehearsal only if desired; do not merge into `main`.
+1. Assess IP-021 to separate offline connector status from explicit network and
+   credential probing.
+2. Push the current branch only when explicitly authorized; do not merge into
+   `main`.
+3. Run real-environment staffing assessment/proposal UAT before authorizing any
+   confirmation.
 
 ## Decisions in force
 
@@ -474,3 +478,31 @@ Execute in this order:
   sanitized feedback.
 - It explicitly preserves the independent branch boundary and excludes real
   configuration, records, connector output, screenshots, and logs.
+
+### 2026-07-26 — IP-020 staffing fail-closed safety
+
+- Confirmed with the owner that recorded roles are reference-only because
+  cross-functional skills may be more relevant than a job-profile label.
+- Clarified HIREF as an SFTE/STFTE project charge-code authorization over a
+  start/end period. Staffing now evaluates current plus next/extend HIREF
+  coverage against the target project and requested months.
+- Owner confirmed that an existing HIREF number means the charge code is usable
+  for its recorded project and date range; no separate pending/approved state
+  is inferred.
+- Missing, mismatched, or partial HIREF no longer disqualifies a candidate.
+  Covered options rank first; selecting an option with a gap requires an
+  explicit DM action note for submitting/extending HIREF or changing the plan.
+- Resource, skill, and HIREF freshness block proposals by default, with a
+  deliberate, reason-bearing DM exception. Invalid plan versions and unknown
+  target projects remain non-overridable.
+- Added a deterministic decision fingerprint and retained safety decisions in
+  proposal evidence and the confirmed decision log. Pre-IP-020 proposals must
+  be recreated before confirmation.
+- Validation passed: 34 focused staffing tests, 93 runtime tests, 18 repository
+  tool tests (19 subtests), touched-file Ruff, static compilation,
+  portable-only audit, repository-boundary check, synthetic-sample check, and
+  diff check.
+- Owner approved IP-020 for commit on 2026-07-26. The implementation is
+  committed locally and remains unpushed; do not merge it into `main`.
+- Exact next action: assess IP-021 read-only connector contract repair, while
+  preserving IP-020 for real-environment staffing UAT.

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date
+import json
 
 import pytest
 from typer.testing import CliRunner
 
 from pm_agent.cli import app as app_module
+from pm_agent.database import repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases.staffing import StaffingDemand, StaffingProposalService, assess_feasibility, staffing_read_model
 
@@ -19,18 +20,22 @@ def _seed_staffing_facts(db_path) -> None:
             "INSERT INTO plan_versions (plan_version_id, version_name, version_status) VALUES ('plan-2026-08', 'Plan', 'active')"
         )
         con.execute(
-            "INSERT INTO projects (id, name, status, priority) VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)"
+            """INSERT INTO projects
+               (id, name, status, priority, tech_stack)
+               VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1,
+                       '["python", "react"]')"""
         )
         con.executemany(
             """
-            INSERT INTO employees (id, wd_id, name, status, resource_type, skills, current_hiref)
-            VALUES (?, ?, ?, 'active', ?, ?, ?)
+            INSERT INTO employees
+                (id, wd_id, name, role, status, resource_type, skills, current_hiref)
+            VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
             """,
             [
-                ('990101', '990101', 'Alex Example', 'LTFTE', '{"python": 0.9}', ''),
-                ('990102', '990102', 'Blair Example', 'LTFTE', '{"python": 0.8}', ''),
-                ('990103', '990103', 'Casey Example', 'LTFTE', '{"react": 0.9}', ''),
-                ('990104', '990104', 'Drew Example', 'STFTE', '{"python": 0.9}', 'HIREF-990104'),
+                ('990101', '990101', 'Alex Example', 'Back-end Engineer', 'LTFTE', '{"python": 0.9}', ''),
+                ('990102', '990102', 'Blair Example', 'Front-end Engineer', 'LTFTE', '{"python": 0.8}', ''),
+                ('990103', '990103', 'Casey Example', 'Front-end Engineer', 'LTFTE', '{"react": 0.9}', ''),
+                ('990104', '990104', 'Drew Example', 'Back-end Engineer', 'STFTE', '{"python": 0.9}', 'HIREF-990104'),
             ],
         )
         con.execute(
@@ -47,6 +52,28 @@ def _seed_staffing_facts(db_path) -> None:
         con.commit()
     finally:
         con.close()
+    _mark_staffing_sources_fresh()
+
+
+def _mark_staffing_sources_fresh() -> None:
+    for source_id in (
+        "import-resource-portal",
+        "import-skills-matrix",
+        "import-hiref-report",
+    ):
+        run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
+        repository.finish_sync_run(run_id, status="success")
+
+
+def _fail_source(db_path, source_id: str) -> None:
+    with sqlite3.connect(db_path) as con:
+        con.execute(
+            "UPDATE sync_runs SET started_at='2000-01-01', finished_at='2000-01-01' "
+            "WHERE source_id=?",
+            [source_id],
+        )
+    run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
+    repository.fail_sync_run(run_id, "synthetic failure")
 
 
 def _demand() -> StaffingDemand:
@@ -70,7 +97,7 @@ def test_period_aware_staffing_read_model_distinguishes_contract_and_plan(isolat
     assert drew['periods']['2026-08']['contract']['end_date'] == '2026-08-15'
 
 
-def test_feasibility_accepts_capacity_and_rejects_skill_and_contract_gaps(isolated_db) -> None:
+def test_feasibility_accepts_capacity_and_surfaces_skill_and_hiref_context(isolated_db) -> None:
     _seed_staffing_facts(isolated_db)
 
     result = assess_feasibility(_demand())
@@ -82,7 +109,12 @@ def test_feasibility_accepts_capacity_and_rejects_skill_and_contract_gaps(isolat
         {'member_id': '990102', 'name': 'Blair Example', 'allocation': 0.2},
     ]
     assert candidates['990103']['reasons'] == ['missing_required_skills']
-    assert candidates['990104']['reasons'] == ['contract_not_covered']
+    assert candidates['990104']['reasons'] == []
+    assert candidates['990104']['hiref_context']['status'] == 'partial_coverage'
+    assert (
+        candidates['990104']['hiref_context']['recommended_action']
+        == 'submit_or_extend_hiref'
+    )
 
 
 def test_proposal_preview_confirm_is_atomic_and_idempotent(isolated_db) -> None:
@@ -201,8 +233,8 @@ def test_golden_staffing_feasibility_matrix(isolated_db, overrides, expected_fea
     result = assess_feasibility(demand)
 
     assert result['feasible'] is expected_feasible
-    assert result['rule_version'] == 'staffing-feasibility-v1'
-    assert {item['state'] for item in result['source_states']} == {'never_synced'}
+    assert result['rule_version'] == 'staffing-feasibility-v2'
+    assert {item['state'] for item in result['source_states']} == {'fresh'}
     if expected_reason:
         assert expected_reason in {reason for candidate in result['candidates'] for reason in candidate['reasons']}
 
@@ -235,3 +267,290 @@ def test_manager_cli_assess_is_read_only_json(isolated_db) -> None:
     )
     assert result.exit_code == 0, result.output
     assert '"feasible": true' in result.output
+
+
+def test_manager_cli_records_hiref_action_for_conditional_proposal(
+    isolated_db,
+) -> None:
+    _seed_staffing_facts(isolated_db)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            "UPDATE employees SET skills='{}' WHERE id IN ('990101','990102')"
+        )
+
+    result = CliRunner().invoke(
+        app_module.app,
+        [
+            "staffing",
+            "propose",
+            "--project",
+            "project-atlas-990001",
+            "--start",
+            "2026-08",
+            "--end",
+            "2026-08",
+            "--effort",
+            "0.4",
+            "--skills",
+            "python",
+            "--maximum-people",
+            "1",
+            "--plan-version",
+            "plan-2026-08",
+            "--acknowledge-hiref-actions",
+            "--hiref-action-note",
+            "Submit an extend HIREF before charge-code use.",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["status"] == "proposed"
+    assert (
+        payload["preview"]["hiref_action_acknowledgement"]["note"]
+        == "Submit an extend HIREF before charge-code use."
+    )
+
+
+def test_role_is_visible_reference_context_but_never_filters_or_ranks(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+
+    result = assess_feasibility(
+        _demand().model_copy(update={"role": "architect"})
+    )
+
+    assert result["feasible"] is True
+    assert result["decision_ready"] is True
+    assert [item["member_id"] for item in result["selections"]] == [
+        "990101",
+        "990102",
+    ]
+    candidates = {item["member_id"]: item for item in result["candidates"]}
+    assert candidates["990101"]["role"] == "Back-end Engineer"
+    assert candidates["990102"]["role"] == "Front-end Engineer"
+    assert candidates["990102"]["role_reference"] == {
+        "requested_role": "architect",
+        "member_role": "Front-end Engineer",
+        "policy": "reference_only",
+        "affects_eligibility": False,
+        "affects_ranking": False,
+    }
+    assert candidates["990101"]["monthly_context"] == [
+        {
+            "period": "2026-08",
+            "current_load": 0.6,
+            "available_allocation": 0.4,
+        }
+    ]
+    assert result["project_context"]["tech_stack"] == ["python", "react"]
+
+
+def test_non_fresh_sources_allow_assessment_but_block_proposal_by_default(
+    isolated_db,
+) -> None:
+    _seed_staffing_facts(isolated_db)
+    _fail_source(isolated_db, "import-skills-matrix")
+    service = StaffingProposalService()
+
+    assessment = assess_feasibility(_demand())
+    proposed = service.propose(_demand())
+
+    assert assessment["feasible"] is True
+    assert assessment["decision_ready"] is False
+    assert {
+        (item.get("source_id"), item.get("state"))
+        for item in assessment["safety_blockers"]
+    } >= {("import-skills-matrix", "failed")}
+    assert proposed["status"] == "blocked"
+    with sqlite3.connect(isolated_db) as con:
+        assert con.execute("SELECT COUNT(*) FROM staffing_proposals").fetchone()[0] == 0
+
+
+def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
+    isolated_db,
+) -> None:
+    _seed_staffing_facts(isolated_db)
+    _fail_source(isolated_db, "import-skills-matrix")
+    service = StaffingProposalService()
+
+    proposed = service.propose(
+        _demand(),
+        allow_non_fresh=True,
+        freshness_override_reason="DM reviewed the current local skills evidence.",
+    )
+    confirmed = service.confirm(
+        proposed["proposal_id"],
+        proposed["confirmation_token"],
+    )
+
+    assert proposed["status"] == "proposed"
+    assert proposed["preview"]["freshness_override"]["authorized"] is True
+    assert confirmed["status"] == "confirmed"
+    with sqlite3.connect(isolated_db) as con:
+        chosen = json.loads(
+            con.execute(
+                "SELECT chosen FROM decision_log WHERE id=?",
+                [confirmed["decision_id"]],
+            ).fetchone()[0]
+        )
+    safety = chosen["decision_safety"]
+    assert safety["decision_fingerprint"] == proposed["preview"]["decision_fingerprint"]
+    assert (
+        safety["freshness_override"]["reason"]
+        == "DM reviewed the current local skills evidence."
+    )
+    assert {
+        item["state"] for item in safety["source_states"]
+    } == {"fresh", "failed"}
+
+
+def test_non_fresh_override_requires_both_flag_and_reason(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    _fail_source(isolated_db, "import-resource-portal")
+    service = StaffingProposalService()
+
+    flag_only = service.propose(_demand(), allow_non_fresh=True)
+    reason_only = service.propose(
+        _demand(),
+        freshness_override_reason="Reviewed by the Delivery Manager.",
+    )
+
+    assert flag_only["status"] == reason_only["status"] == "blocked"
+
+
+def test_source_run_change_after_proposal_invalidates_confirmation(
+    isolated_db,
+) -> None:
+    _seed_staffing_facts(isolated_db)
+    service = StaffingProposalService()
+    proposed = service.propose(_demand())
+    _fail_source(isolated_db, "import-skills-matrix")
+
+    result = service.confirm(
+        proposed["proposal_id"],
+        proposed["confirmation_token"],
+    )
+
+    assert result["status"] == "invalid"
+    assert "facts changed" in result["warning"]
+    with sqlite3.connect(isolated_db) as con:
+        assert con.execute("SELECT COUNT(*) FROM assignments").fetchone()[0] == 0
+
+
+def test_stfte_without_hiref_remains_visible_with_action_context(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("UPDATE employees SET current_hiref='' WHERE id='990104'")
+
+    result = assess_feasibility(_demand())
+    candidates = {item["member_id"]: item for item in result["candidates"]}
+
+    assert candidates["990104"]["reasons"] == []
+    assert candidates["990104"]["hiref_context"]["status"] == "missing"
+    assert (
+        candidates["990104"]["hiref_context"]["recommended_action"]
+        == "submit_new_hiref"
+    )
+
+
+def test_selected_stfte_hiref_gap_requires_dm_action_note(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            "UPDATE employees SET skills='{}' WHERE id IN ('990101','990102')"
+        )
+    demand = _demand().model_copy(
+        update={"effort": 0.4, "maximum_people": 1}
+    )
+    service = StaffingProposalService()
+
+    assessment = assess_feasibility(demand)
+    blocked = service.propose(demand)
+    proposed = service.propose(
+        demand,
+        acknowledge_hiref_actions=True,
+        hiref_action_note="Submit an extend HIREF before charge-code use.",
+    )
+    confirmed = service.confirm(
+        proposed["proposal_id"],
+        proposed["confirmation_token"],
+    )
+
+    assert assessment["feasible"] is True
+    assert assessment["decision_ready"] is False
+    assert assessment["selections"][0]["member_id"] == "990104"
+    assert assessment["decision_conditions"] == [
+        {
+            "code": "hiref_action_required",
+            "member_id": "990104",
+            "hiref_status": "partial_coverage",
+            "recommended_action": "submit_or_extend_hiref",
+        }
+    ]
+    assert blocked["status"] == "blocked"
+    assert proposed["status"] == "proposed"
+    assert confirmed["status"] == "confirmed"
+    assert (
+        proposed["preview"]["hiref_action_acknowledgement"]["note"]
+        == "Submit an extend HIREF before charge-code use."
+    )
+    with sqlite3.connect(isolated_db) as con:
+        chosen = json.loads(
+            con.execute(
+                "SELECT chosen FROM decision_log WHERE id=?",
+                [confirmed["decision_id"]],
+            ).fetchone()[0]
+        )
+    assert (
+        chosen["decision_safety"]["hiref_action_acknowledgement"]["note"]
+        == "Submit an extend HIREF before charge-code use."
+    )
+
+
+def test_current_and_next_hiref_can_jointly_cover_target_period(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """INSERT INTO hiref
+               (id, project, request_type, start_date, end_date)
+               VALUES ('HIREF-990104-NEXT', 'Project Atlas', 'extend',
+                       '2026-08-16', '2026-12-31')"""
+        )
+        con.execute(
+            "UPDATE employees SET next_hiref='HIREF-990104-NEXT' "
+            "WHERE id='990104'"
+        )
+
+    result = assess_feasibility(_demand())
+    candidates = {item["member_id"]: item for item in result["candidates"]}
+
+    assert candidates["990104"]["hiref_context"]["status"] == "covered"
+    assert [record["request_type"] for record in candidates["990104"]["hiref_context"]["records"]] == [
+        "extend",
+        "extend",
+    ]
+
+
+def test_unknown_plan_version_blocks_proposal(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    demand = _demand().model_copy(update={"plan_version_id": "unknown-plan"})
+
+    assessment = assess_feasibility(demand)
+    proposed = StaffingProposalService().propose(demand)
+
+    assert assessment["decision_ready"] is False
+    assert {"code": "requested_plan_version_not_found"} in assessment["safety_blockers"]
+    assert proposed["status"] == "blocked"
+    with sqlite3.connect(isolated_db) as con:
+        assert con.execute("SELECT COUNT(*) FROM staffing_proposals").fetchone()[0] == 0
+
+
+def test_unknown_target_project_blocks_proposal(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    demand = _demand().model_copy(update={"project_id": "project-unknown"})
+
+    assessment = assess_feasibility(demand)
+    proposed = StaffingProposalService().propose(demand)
+
+    assert {"code": "target_project_not_found"} in assessment["safety_blockers"]
+    assert proposed["status"] == "blocked"

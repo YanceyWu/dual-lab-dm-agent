@@ -49,9 +49,49 @@ def propose(
     minimum: float = typer.Option(0.1, "--minimum"), maximum_people: int = typer.Option(1, "--maximum-people"),
     splittable: bool = typer.Option(True, "--splittable/--no-split"), plan_version: Optional[str] = typer.Option(None, "--plan-version"),
     expires_minutes: int = typer.Option(30, "--expires-minutes", min=1, max=1440),
+    allow_non_fresh: bool = typer.Option(
+        False,
+        "--allow-non-fresh",
+        help="Explicitly allow a DM-reviewed proposal using non-fresh source facts.",
+    ),
+    freshness_override_reason: str = typer.Option(
+        "",
+        "--freshness-override-reason",
+        help="Required audit reason when --allow-non-fresh is used.",
+    ),
+    acknowledge_hiref_actions: bool = typer.Option(
+        False,
+        "--acknowledge-hiref-actions",
+        help="Acknowledge that selected SFTE/STFTE options require HIREF action.",
+    ),
+    hiref_action_note: str = typer.Option(
+        "",
+        "--hiref-action-note",
+        help="Required DM plan for submitting, extending, or changing HIREF.",
+    ),
 ):
     """Create an expiring staffing proposal; no assignment is written."""
-    _emit(service.propose(_demand(project, start, end, effort, role, skills, minimum, maximum_people, splittable, plan_version), expires_minutes))
+    _emit(
+        service.propose(
+            _demand(
+                project,
+                start,
+                end,
+                effort,
+                role,
+                skills,
+                minimum,
+                maximum_people,
+                splittable,
+                plan_version,
+            ),
+            expires_minutes,
+            allow_non_fresh=allow_non_fresh,
+            freshness_override_reason=freshness_override_reason,
+            acknowledge_hiref_actions=acknowledge_hiref_actions,
+            hiref_action_note=hiref_action_note,
+        )
+    )
 
 
 @staffing_app.command("preview")
