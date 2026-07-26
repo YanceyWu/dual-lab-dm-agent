@@ -1,213 +1,185 @@
-# PM Toolkit Starter Repo
+# Local Delivery Manager Runtime
 
-This repo is a practical **local-first Delivery Manager toolkit baseline** that
-each DM can clone, configure, run, and extend on their own workstation.
+`ai-pm-agent` is a local-first Delivery Manager toolkit. It exposes deterministic
+SQLite-backed management use cases through the `pm` CLI and a loopback Dashboard.
+VS Code Copilot provides natural-language interpretation through the repository's
+`Delivery Manager` custom agent.
 
-## What this starter repo already does
+## Install
 
-- Resource allocation and capacity planning
-- Weekly project status reporting
-- HIREF / staffing tracking
-- Project snapshot and planning artifact management
-- JIRA release tracking and project health scoring
-- Use case registry and sync freshness tracking
-
-## Quick start
-
-### 1. Install
-
-Use Python 3.10+.
+Python 3.10 or newer is required.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
+pm version
 ```
 
-After the editable install, the primary CLI is available as:
+When the package has not been installed, commands can be inspected from this
+directory with:
 
 ```bash
-pm --help
+PYTHONPATH=. python3 -m pm_agent.cli.app --help
 ```
 
-If you do not want an editable install yet, you can still run commands with:
-
-```bash
-python3 -m pm_agent.cli.app --help
-```
-
-### 2. Bootstrap the local starter repo
+## Initialize local state
 
 ```bash
 pm init
+pm config validate
+pm connector validate --portable
 ```
 
-This will:
+`pm init` initializes the configured SQLite database and creates generic starter
+configuration when needed. Add operational paths, endpoints, credentials, and
+company-specific mappings only to ignored local files.
 
-- scaffold `.env` from `.env.example` if needed
-- ensure starter config files exist under `configs/`
-- initialize the SQLite database safely
-
-### 2.5 Load the committed demo data (recommended for first-time review)
+For a synthetic first run:
 
 ```bash
 python3 scripts/load_sample_data.py --force
+DATABASE_PATH=sample-data/demo/sample_pm.db pm tool list
+DATABASE_PATH=sample-data/demo/sample_pm.db pm tool query team-workload-overview
 ```
 
-This creates a separate demo DB under `sample-data/demo/sample_pm.db` so you can review the toolkit without touching your live `data/pm.db`.
+The demo database and fixtures use fictional names, `.invalid` domains, and
+reserved synthetic identifiers.
 
-Use it like this:
+## Structured read-only interface
+
+These commands are the authoritative interface for Copilot and other automated
+consumers:
 
 ```bash
-DATABASE_PATH=sample-data/demo/sample_pm.db pm workload
-DATABASE_PATH=sample-data/demo/sample_pm.db pm hiref summary
-DATABASE_PATH=sample-data/demo/sample_pm.db pm report
-DATABASE_PATH=sample-data/demo/sample_pm.db python3 -m pm_agent.dashboard
+pm tool list
+pm tool describe <use-case-id>
+pm tool query <use-case-id>
 ```
 
-For the full source-file map and DB cleanup notes, see:
+Registered use cases cover:
 
-- `docs/README.md`
-- `docs/current/PM_AGENT_DB_REVIEW_AND_ONBOARDING.md`
+- `team-workload-overview`
+- `project-health-review`
+- `management-attention`
+- `contract-continuity-review`
+- `weekly-dm-brief`
+- `action-followup`
+- `connector-status-review`
+- `connector-sync-results`
+- `project-snapshot-list`
 
-### 3. Update local settings
+`pm tool query` returns structured JSON with evidence, freshness, warnings,
+assumptions, execution metadata, and stable error codes. Missing or stale data
+must not be interpreted as zero, healthy, available, or safe.
 
-- Fill in local connector endpoints and credentials in `.env`; no company
-  endpoint is pre-filled.
-- Keep company configuration local and outside the portable repository.
-- Copy and adapt:
-  - `configs/teams/example-team.yaml`
-  - `configs/projects/example-project.yaml`
+## Staffing workflow
 
-### 4. Validate
+Start with deterministic read-only assessment:
 
 ```bash
-pm config validate
-pm connector validate
-pm validate
+pm staffing assess \
+  --project <project-id> \
+  --start <YYYY-MM> \
+  --end <YYYY-MM> \
+  --effort <0-1> \
+  --skills "<comma-separated skills>" \
+  --maximum-people <count>
 ```
 
-### 5. Launch the local dashboard
+Role is optional reference context rather than a hard eligibility constraint.
+For STFTE staff, a recorded HIREF number indicates usable charge-code coverage
+only for its recorded project and date interval.
+
+Writes use:
+
+```text
+assess → propose → preview → explicit manager confirmation → persist
+```
+
+Never confirm without reviewing the exact proposal and runtime-issued one-time
+token. Do not invent freshness overrides or HIREF acknowledgements. `cancel` and
+`reject` close unconfirmed proposals without changing assignments.
+
+## Connector boundary
+
+Offline inspection:
+
+```bash
+pm connector validate --portable
+pm sync status
+pm tool query connector-status-review
+pm tool query connector-sync-results
+```
+
+Use `pm connector probe <jira|confluence|servicenow>` only for an explicitly
+requested live check with approved local configuration. OAuth refresh is
+automatic; safe results may report that refresh occurred but never expose
+tokens, endpoints, local paths, cloud IDs, or raw errors.
+
+## Dashboard
 
 ```bash
 pm dashboard serve
 ```
 
-You can also start it directly with:
+The Dashboard binds to loopback by default. Remote binding requires the explicit
+operator option and an approved network scope. Write-capable routes use preview,
+explicit confirmation, one-time tokens, idempotency, and audit records.
 
-```bash
-python3 -m pm_agent.dashboard
-```
+## Existing operational database
 
-## Config model
+Do not run a new candidate against the active database first.
 
-Practical v1 uses four layers:
+1. Create a local recovery point with `pm backup create`.
+2. Copy the snapshot to an approved temporary location outside the repository.
+3. Point `DATABASE_PATH` at the copy and run `pm init`.
+4. Verify integrity, foreign keys, dependent views, token schema, and aggregate
+   counts.
+5. Approve the active-database migration only after the rehearsal passes.
 
-1. generic code defaults
-2. optional local company baseline
-3. local team and project configuration
-4. local `.env` secrets and runtime overrides
-
-Useful commands:
-
-```bash
-pm config show
-pm config effective
-pm config validate
-pm connector list
-pm connector validate
-pm connector status
-```
-
-## Common commands
-
-```bash
-pm workload
-pm tool list
-pm tool describe team-workload-overview
-pm tool query team-workload-overview
-pm tool query project-health-review --project project-atlas-990001
-pm tool query management-attention --limit 10
-pm tool query contract-continuity-review --days 180
-pm tool query weekly-dm-brief
-pm tool query action-followup
-pm tool query connector-status-review --connector jira
-pm tool query connector-sync-results --connector jira
-pm tool query project-snapshot-list --project project-atlas-990001
-pm tool query project-snapshot-list --param health=amber --param artifact_kind=plan
-pm staffing assess --project project-atlas-990001 --start 2026-08 --end 2026-08 --effort 0.6 --skills python --maximum-people 2
-pm capacity --month aug
-pm hiref summary
-pm project list
-pm report
-pm usecase list
-pm sync status
-pm planning list
-pm backup create --label before-change
-```
-
-## Repository layout
-
-```text
-pm_agent/            Canonical runtime package
-  use_cases/         PM-facing features such as allocate, workload, report, action items
-  rules/             Shared business logic: scoring, validation, identifier cleanup
-  database/          Database bootstrap plus all SQLite reads and writes
-  repo_tools/        Local repo setup, effective config, and backup helpers
-  cli/               Typer CLI wiring and command modules
-  connectors/        Per-system entrypoints and self-checks
-  dashboard/         Packaged Flask dashboard API + web assets
-  sync/              Low-level sync/import implementations for JIRA and ServiceNow
-scripts/             Thin wrappers plus import/migration/admin entry points
-configs/             Shared company/team/project starter config
-docs/                Current docs, share packs, history, and diagrams
-  current/           Authoritative starter-repo docs and current schema
-  share/             PM sharing artifacts and Confluence-ready material
-  history/           Older reference packs kept for migration/redesign context
-  diagrams/          Draw.io and markdown diagram sources
-data/                Local SQLite database (ignored by git)
-data-feed/           Imported raw files (ignored by git)
-sample-data/         Committed onboarding samples and demo DB workspace
-```
-
-## Optional runtime tools
-
-Some connector workflows require extra local setup beyond the core package:
-
-- Playwright for browser-assisted ServiceNow sync flows
-- Local Atlassian OAuth or API-token credentials for JIRA / Confluence
-- Repo-local Atlassian token cache under `.auth/atlassian/` (with compatibility fallback from older skill folders)
-
-The core PM workflows remain local-first and SQLite-backed.
+The source checkout's `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` contains the exact
+commands and stop conditions.
 
 ## Contributor validation
 
-If you are modifying the starter repo itself, install a repo-local venv and run
-the unified release checks from the repository root:
+From the repository root:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -r ../tools/validation-requirements.txt
-.venv/bin/python -m pip install -e .
-cd ..
+python3 -m venv src/.venv
+src/.venv/bin/python -m pip install --upgrade pip
+src/.venv/bin/python -m pip install -r tools/validation-requirements.txt
+src/.venv/bin/python -m pip install -e src
 make validate
 make rehearse-release
 ```
 
-Use `pm version` to identify the installed candidate. See
-`docs/RELEASE_ENGINEERING.md` and `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` before
-tagging or testing against an operational database.
+`make validate` runs isolated tests, repository checks, Ruff, compilation, and
+package inspection. `make rehearse-release` builds and installs the wheel in a
+temporary target, rehearses a synthetic legacy-database upgrade, and proves
+rollback.
 
-## Documentation map
+## Package layout
 
-If you want to understand or reuse this starter repo, start here:
+```text
+pm_agent/
+  cli/          CLI composition and command modules
+  use_cases/    Structured execution contracts and management capabilities
+  rules/        Deterministic staffing, HIREF, identity, and validation rules
+  database/     SQLite bootstrap, migration, repositories, and decision log
+  connectors/   Generic connector contracts and locally configured adapters
+  sync/         Connector synchronization workflows
+  dashboard/    Local API, controlled writes, and packaged web assets
+  repo_tools/   Bootstrap, configuration, and backup helpers
+scripts/        Import, sample-data, report, bootstrap, and optional sync entrypoints
+sample-data/    Synthetic onboarding fixtures and demo database
+tests/          Isolated portable regression suite
+```
 
-- `docs/README.md`
-- `docs/current/PM_AGENT_DB_REVIEW_AND_ONBOARDING.md`
-- `docs/current/PM_AGENT_CURRENT_SCHEMA.sql`
-- `docs/current/PM_AGENT_UAT_RESULTS_2026-07-13.md`
-- `docs/current/PM_AGENT_UAT_RETEST_2026-07-13_ALLOCATE_WEEKLY.md`
-- `docs/share/PM_AGENT_CONFLUENCE_ONE_PAGER.txt`
-- `docs/history/v17/PM_AGENT_V17_TABLE_FUNCTION_REFERENCE.md`
+## Information boundary
+
+Never add real records, employee or project names, internal identifiers,
+endpoints, credentials, database copies, raw exports, logs, screenshots, or
+connector payloads to the portable repository. Keep company adaptations and
+real-environment evidence inside the approved work environment.

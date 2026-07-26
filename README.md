@@ -1,105 +1,134 @@
-# Dual-Lab Delivery Manager Agent
+# Local Delivery Manager
 
-This repository is the external architecture control plane and portable product
-lab for a Delivery Management Decision Support System developed under a
-restricted information-flow model.
+This repository contains a portable, local-first Delivery Manager decision
+support system. VS Code Copilot is the reasoning interface; deterministic Python
+code owns data access, filtering, calculations, validation, freshness, and
+persistence. SQLite and locally configured connectors provide operational
+context.
 
-Company-specific source, company data, credentials, internal identifiers, and
-private runtime state never enter this repository. Portable product-core code,
-domain models, architecture, contracts, prompts, tests, implementation packs,
-and sanitized sample data may be developed and versioned here, then downloaded
-into the company environment for internal integration and validation.
+The repository contains no company records, credentials, internal endpoints, or
+company-specific configuration. Those values must remain only on the approved
+work computer.
 
-## Mission
+## What the product supports
 
-Build an internally usable and shareable Delivery Manager system that:
+- team workload and capacity review;
+- staffing assessment and controlled staffing proposals;
+- project health and management-attention review;
+- STFTE HIREF/charge-code continuity review;
+- weekly Delivery Manager briefs and action follow-up;
+- connector status, sync-result, and project-snapshot review;
+- a local Dashboard and structured CLI;
+- evidence, freshness, warnings, execution traces, and deterministic validation.
 
-- consolidates project, people, assignment, capacity, contract, risk, action,
-  decision, and release information;
-- maps source-specific records into a canonical delivery model;
-- supports recurring Delivery Manager use cases;
-- combines deterministic calculations with grounded model reasoning;
-- evolves from the existing usable base through incremental migration.
+## Start on the work computer
 
-## Dual-Lab operating model
+Use the independent `codex/ip-000-baseline-safety` branch or an explicitly
+approved immutable release-candidate tag. Do not merge or rebase it into `main`.
 
-```text
-Personal AI Lab / Codex
-  architecture, portable core, models, packs, tests, governance
-                    |
-                    | GitHub transfer of approved portable artifacts
-                    v
-Company Environment
-  internal adapters, real data, local adaptation, validation, debugging
-                    |
-                    v
-Sanitized human-reviewed feedback (only when policy permits)
-```
-
-The external lab may implement portable, synthetic-data-tested slices. The
-internal model maps them to approved company integrations, runs real-environment
-validation, and reports only policy-approved sanitized feedback.
-
-## Repository map
-
-- `architecture/`: north star, component model, domain model, decisions.
-- `standards/`: use-case, connector, AI reasoning, and validation standards.
-- `implementation-packs/`: bounded changes for the internal implementation model.
-- `prompts/`: reusable internal architect, implementer, reviewer, and reconstruction prompts.
-- `templates/`: sanitized feedback and implementation-pack templates.
-- `research-input/`: manually reconstructed, sanitized facts from the company environment.
-- `tools/`: repository-boundary and synthetic-sample preflight checks.
-
-## Start here
-
-1. Read `docs/DUAL_LAB_OPERATING_MODEL.md` for the one-way workflow.
-2. Read `architecture/04_COPILOT_LOCAL_AGENT_ARCHITECTURE.md` for the detailed
-   local product and Copilot Agent design.
-3. Use `ROADMAP.md` and `implementation-packs/INDEX.md` for the gated migration
-   sequence.
-4. Transfer the relevant architecture kit and prompt into the company environment.
-5. Run `prompts/TECHNICAL_RECONSTRUCTION_SCREENSHOT.md` internally when a
-   sanitized implementation baseline is needed.
-6. Use `implementation-packs/` for bounded migration work.
-7. Validate every pack with the independent reviewer prompt before promotion.
-
-## Local development safety checks
-
-Run these before any staging or transfer:
+### 1. Install locally
 
 ```bash
-python3 tools/check_repository_boundary.py
-python3 tools/check_synthetic_samples.py
-PYTHONPATH=src src/.venv/bin/python -m pytest -q src/tests
+cd src
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -e .
+pm version
 ```
 
-For the complete release-candidate contract, including Ruff, compilation,
-repository-tool tests, and package build inspection, run:
+### 2. Create local configuration
+
+```bash
+pm init
+pm config validate
+pm connector validate --portable
+```
+
+`pm init` creates generic starter configuration when needed. Add approved
+database paths, endpoints, and credentials only to local ignored files. Never
+commit or copy those values back to this repository.
+
+Before pointing the candidate at an existing operational database, follow
+`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`: create a backup, rehearse migration on an
+isolated copy, verify integrity and aggregate counts, and obtain operator
+approval before touching the active database.
+
+### 3. Use natural language in VS Code Copilot
+
+Open the repository root in VS Code, open Copilot Chat, and select the workspace
+agent named `Delivery Manager`. In customization diagnostics, confirm these are
+loaded:
+
+- `.github/agents/delivery-manager.agent.md`
+- `.github/copilot-instructions.md`
+
+You can then ask questions such as:
+
+- “下个月哪些同事还有容量？”
+- “项目 Atlas 当前有哪些需要管理层关注的问题？”
+- “未来 90 天有哪些 STFTE 的 HIREF 需要处理？”
+- “为这个项目评估 0.6 FTE 的人员安排。”
+- “生成本周 DM brief。”
+
+The agent maps the question to approved structured `pm` commands. Read-only
+queries may run directly. Staffing writes follow
+`assess → propose → preview → explicit confirmation → persist`; the agent must
+not invent confirmation or override missing/freshness/HIREF decisions.
+
+Keep terminal approval enabled during real-environment UAT. Do not use global
+auto-approval or unrestricted Autopilot against operational data.
+
+## Direct CLI
+
+Useful structured commands include:
+
+```bash
+pm tool list
+pm tool describe team-workload-overview
+pm tool query team-workload-overview
+pm tool query project-health-review
+pm tool query management-attention --limit 10
+pm tool query contract-continuity-review --days 180
+pm tool query weekly-dm-brief
+pm tool query action-followup
+pm tool query connector-status-review
+pm tool query connector-sync-results
+pm tool query project-snapshot-list
+```
+
+Run `pm staffing assess --help` before a staffing assessment. Use
+`pm connector probe <connector-name>` only for an explicitly requested live
+connector check.
+
+The complete package command and configuration guide is in `src/README.md`.
+
+## Release and validation
+
+From the repository root:
 
 ```bash
 make validate
 make rehearse-release
 ```
 
-The current `src/` tree is intentionally transfer-quarantined. Do not narrow its
-ignore rule until the relevant unit has an approval entry in
-`docs/SOURCE_PORTABILITY_REVIEW.md`. The synthetic-data contract is defined in
-`standards/SYNTHETIC_DATA_STANDARD.md`.
+The first command runs portable source, tests, Ruff, compilation, repository
+boundary, synthetic-data, and package checks. The second installs the built
+wheel into a temporary target and rehearses database upgrade and rollback using
+synthetic data.
 
-## Initial migration strategy
+Read:
 
-1. Establish behavior snapshots, execution tracing, and smoke tests.
-2. Introduce one shared use-case execution contract using a read-only use case.
-3. Separate user use cases, domain services, platform services, and connectors.
-4. Establish the canonical delivery model without a full database rewrite.
-5. Migrate staffing recommendation as the first high-value reference use case.
-6. Add scenario-based evaluation before expanding internal adoption.
+- `PROGRESS.md` for the exact current state and next action;
+- `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` before real-data validation;
+- `docs/RELEASE_ENGINEERING.md` before tagging or promotion;
+- `docs/DUAL_LAB_OPERATING_MODEL.md` for the information boundary;
+- `architecture/04_COPILOT_LOCAL_AGENT_ARCHITECTURE.md` for the product design.
 
-## Security boundary
+## Safety boundary
 
-Never commit company-specific source code, internal names, URLs, credentials,
-real databases, raw exports, real issue content, employee data, customer data,
-internal architecture identifiers, or screenshots captured in violation of
-company policy. Portable code must use abstract connector contracts, generic
-configuration, and synthetic fixtures. Company policy takes precedence over
-personal privacy settings and repository visibility.
+Never commit company source, real records, employee or project names, internal
+IDs, endpoints, credentials, database copies, exports, logs, screenshots, or raw
+connector payloads. Use synthetic data and stable anonymous identifiers in
+portable tests and documentation. Any feedback leaving the work environment
+must be manually sanitized and permitted by company policy.

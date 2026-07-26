@@ -1,73 +1,36 @@
-# Implementation Pack Queue
+# Current Implementation Pack Index
 
-## Purpose
+Status: `0.2.0rc1 CANDIDATE — REAL-ENVIRONMENT UAT PENDING`
+Last updated: 2026-07-26
 
-This index converts the roadmap into small, ordered units that a repository-aware
-implementation model can execute without making the major architecture decisions
-itself.
+This checkout intentionally contains only implementation material that remains
+useful for the current release gate. Completed IP-000 through IP-023 and IP-025
+specifications and reports were removed from the candidate checkout to prevent
+coding agents from treating historical intermediate states as current work.
+They remain recoverable from Git history.
 
-`IP-000` through `IP-008` have complete implementation-pack documents. IP-005
-through IP-008 form a technically validated staffing workflow, committed and
-pushed in `3873edb`; the human owner approved operational G3 promotion on
-2026-07-22.
+## Active material
 
-## Queue
+| Pack | Purpose | Current state | Report |
+| --- | --- | --- | --- |
+| IP-024 | Database integrity, concurrency, token migration, and isolated operational-copy rehearsal | Synthetic rehearsal passed; real-environment rehearsal pending | `implementation-reports/IP-024_IMPLEMENTATION_REPORT.md` |
+| IP-026 | Package identity, validation toolchain, CI, candidate tagging, release rehearsal, and rollback | Portable validation green; immutable tag and real UAT pending | `implementation-reports/IP-026_IMPLEMENTATION_REPORT.md` |
 
-| Pack | Title | Depends on | Primary gate | Status |
-| --- | --- | --- | --- | --- |
-| IP-000 | Baseline, Private-State Boundary, and Regression Safety | None | G0 | READY FOR LOCAL ASSESSMENT |
-| IP-001 | Unified Use Case Execution Contract | IP-000 | G1 | LOCALLY VALIDATED — OWNER REVIEW REQUIRED |
-| IP-002 | Structured Copilot Tool Transport | IP-001 | G2 | IMPLEMENTED LOCALLY — G2 REVIEW REQUIRED |
-| IP-003 | Evidence, Freshness, and Execution Trace Envelope | IP-001 | G2 | IMPLEMENTED LOCALLY — G2 REVIEW REQUIRED |
-| IP-004 | Team Capacity Context and Copilot Playbook | IP-002, IP-003 | G2 | IMPLEMENTED LOCALLY — OWNER REVIEW REQUIRED |
-| IP-005 | Canonical Staffing Read Model | G2 | G3 | G3 PROMOTED — COMMITTED |
-| IP-006 | Demand and Staffing Feasibility Rules | IP-005 | G3 | G3 PROMOTED — COMMITTED |
-| IP-007 | Staffing Proposal and Atomic Confirmation | IP-006 | G3 | G3 PROMOTED — COMMITTED |
-| IP-008 | Staffing Golden Scenarios and Manager Confirmation Playbook | IP-006, IP-007 | G3 | G3 PROMOTED — COMMITTED |
-| IP-009 | Project Health Context and Use Case | G3 | G4 | G4 PROMOTED — COMMITTED |
-| IP-010 | Management Attention Use Case | IP-009 | G4 | G4 PROMOTED — COMMITTED |
-| IP-011 | Weekly DM Brief Use Case | IP-009, IP-010 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
-| IP-012 | Contract Continuity Use Case | G3 | G4 | G4 PROMOTED — COMMITTED |
-| IP-013 | Action Follow-up Use Case | G2 | G4 | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
-| IP-014 | Connector Contract Reference Migration | G4 | Connector hardening | FIRST SLICE VALIDATED — OWNER REVIEW PENDING |
-| IP-015 | Local Product Packaging and Upgrade Lifecycle | G4 | G5 | LIFECYCLE REFERENCE VALIDATED — OWNER RELEASE REVIEW PENDING |
-| IP-016 | Connector Sync Result Contract | IP-014 | Connector hardening | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
-| IP-019 | Interface-to-Executor Migration | G4 | Interface hardening | REFERENCE SLICE VALIDATED — OWNER REVIEW PENDING |
-| IP-020 | Staffing Fail-Closed Safety | IP-005, IP-006, IP-007, IP-008 | Staffing hardening | OWNER APPROVED — COMMITTED |
-| IP-021 | Read-Only Connector Contract Repair | IP-014, IP-016 | Connector hardening | OWNER APPROVED — COMMITTED |
-| IP-022 | Dashboard Write Boundary | IP-021 | Interface hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
-| IP-023 | Executor Contract Enforcement | IP-003 | Contract hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
-| IP-024 | Data Integrity and Concurrency | IP-020, IP-023 | Persistence hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
-| IP-025 | Interface Completion | IP-019, IP-023 | Interface hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
-| IP-026 | Release Engineering | IP-022, IP-023, IP-024, IP-025 | Release candidate | TECHNICALLY VALIDATED — COMMIT/CI/TAG PENDING |
+## Current execution order
 
-## Pack sizing rule
+1. Validate the exact candidate checkout with `make validate` and
+   `make rehearse-release`.
+2. Commit and push only after reviewing the portable change scope.
+3. Create annotated tag `v0.2.0-rc.1` only with explicit owner authorization.
+4. On the work computer, follow `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` and
+   rehearse IP-024 against an isolated operational-database copy.
+5. Run controlled read-only, connector, staffing, and Dashboard UAT.
+6. Promote locally or create a new release candidate from sanitized failure
+   evidence. Do not move an existing tag.
 
-A pack should normally change one architectural boundary or migrate one vertical
-slice. Split the pack when it would:
+## Boundary
 
-- migrate more than one business use case;
-- migrate more than one connector;
-- introduce a shared framework and change business behavior together;
-- require multiple independent schema migrations;
-- mix write-path changes with unrelated presentation work;
-- require more than one rollback strategy.
-
-## Promotion rule
-
-A queued pack becomes ready only after:
-
-1. its dependencies have passed independent validation;
-2. the current repository state has been assessed without edits;
-3. conflicts and unknowns have been reviewed by the human owner;
-4. acceptance scenarios and rollback are concrete;
-5. no real data is required outside the local environment.
-
-## Recommended immediate sequence
-
-1. Assess, implement, and independently validate IP-000.
-2. Re-assess the existing IP-001 against the current source baseline.
-3. Implement and validate IP-001 using exactly one read-only reference use case.
-4. Obtain human-owner sign-off for the committed IP-005 through IP-008 staffing
-   workflow before operational promotion.
-5. After G3 promotion, assess IP-009 as the next read-only vertical slice.
+Do not restore historical implementation material merely for model context.
+Consult Git history deliberately when a specific design decision must be
+investigated. Never transfer operational data, configuration, credentials, raw
+logs, screenshots, or internal identifiers into an implementation report.

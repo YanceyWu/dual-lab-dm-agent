@@ -1,22 +1,29 @@
-# Delivery Manager operating mode
+# Delivery Manager workspace instructions
 
-For normal Delivery Manager operations, prefer the workspace `Delivery Manager`
-custom agent. It provides the bounded intent-to-command routing and write
-workflow. Use the standard coding agent for source-code or platform changes.
+Use the workspace `Delivery Manager` custom agent for normal DM operations. Use
+the standard coding agent only for source, test, architecture, configuration, or
+repository changes.
 
-For Delivery Manager questions in this repository, do not inspect SQLite,
-connector configuration, raw exports, or formatted CLI output directly.
+For DM operations:
 
-Use the structured local tool commands instead:
+- use only the structured commands and routing defined in
+  `.github/agents/delivery-manager.agent.md`;
+- treat returned JSON, evidence, freshness, warnings, and execution metadata as
+  the sole factual basis;
+- never inspect SQLite, credentials, connector configuration, raw exports,
+  connector payloads, or human-formatted legacy output;
+- never infer missing facts as zero, healthy, available, valid, or safe;
+- run live connector probes or syncs only after an explicit request;
+- keep staffing writes within propose, preview, explicit confirmation, persist.
 
-```bash
-pm tool list
-pm tool describe team-workload-overview
-pm tool query team-workload-overview [--team "Exact Team Name"]
-```
+For repository changes:
 
-For a natural-language availability or workload question, first identify whether
-`team-workload-overview` applies, then run its structured query. Explain only
-the returned data and evidence. State uncertainty whenever the result status is
-`unavailable`, `partial`, or `invalid`; do not invent people, capacity, or
-assignments. This command is read-only and must not be used to make writes.
+- follow the root `AGENTS.md` and read `PROGRESS.md` first;
+- treat `README.md`, `PROGRESS.md`, `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, and
+  `docs/RELEASE_ENGINEERING.md` as current operational context;
+- treat implementation packs and reports as historical unless `PROGRESS.md`
+  explicitly identifies one as the active pack;
+- preserve the company/personal information boundary and use synthetic data
+  only;
+- validate portable candidate changes with `make validate` and
+  `make rehearse-release`.

@@ -1,145 +1,63 @@
-# Source Portability Review
+# Source Portability Decision
 
-Status: `QUARANTINED`
-Applies to: the current untracked `src/` checkout
-Last reviewed: 2026-07-19
+Status: `PORTABLE CANDIDATE — AUTOMATED GATES REQUIRED FOR EVERY CHANGE`
+Last updated: 2026-07-26
 
-## Decision
+## Current decision
 
-The local runtime may be developed and tested in this workspace, but the current
-`src/` tree must not be staged, committed, or pushed to the public repository.
-The repository-boundary preflight enforces this temporary transfer quarantine.
+The tracked runtime, tests, generic configuration examples, synthetic sample
+data, repository tools, architecture, and operating documentation comprise the
+portable release candidate on `codex/ip-000-baseline-safety`.
 
-Synthetic assets under `src/sample-data/` are an approved transfer exception.
-Additional units are approved only when separately recorded below; the runtime
-tree remains quarantined until those approved paths are deliberately narrowed.
+This classification applies only to reviewed Git-tracked content. It does not
+approve any work-computer file, ignored file, company-derived value, operational
+record, local configuration, connector payload, or test evidence.
 
-## Why the quarantine exists
+## Portable candidate units
 
-Path-only inspection and prior code review found portability blockers without
-reading the live database or export contents:
-
-- a company-specific endpoint default in runtime configuration;
-- company/project-specific aliases in deterministic rules;
-- real-looking people, project, or source identifiers in tests or documentation;
-- company configuration profiles whose external distribution is not approved;
-- private runtime database and export locations, which are separately ignored.
-
-No blocker value is reproduced in this repository document.
-
-## Review units
-
-Each unit must be marked `APPROVED`, `SANITIZE`, `INTERNAL_ONLY`, or `UNKNOWN`.
-
-| Unit | Current status | Required evidence |
+| Unit | Decision | Required continuing evidence |
 | --- | --- | --- |
-| Runtime package | APPROVED | Portable-only audit, manual terminology review, and final G0 validation pass |
-| Tests and fixtures | APPROVED | Isolated test harness and synthetic fixtures pass final G0 validation |
-| Sample data | APPROVED | Owner-approved fictional organization; automated checks and demo characterization pass |
-| Generic configuration bootstrap | APPROVED | Generated artifacts use generic defaults, empty endpoints, and preserve an existing `.env` by default |
-| Company configuration | INTERNAL_ONLY | Retain company profiles internally |
-| Current documentation | INTERNAL_ONLY | Current-state documents remain local implementation references |
-| Historical documentation | INTERNAL_ONLY | Exclude unless individually reviewed and still needed |
-| Connector implementation | APPROVED | Uses local configuration and local private token state; final G0 validation passes |
-| Dashboard assets | APPROVED | Manual terminology scan, text audit, and loopback-only default test pass |
+| Runtime package and CLI | `PORTABLE` | Isolated tests, Ruff, compilation, manual terminology review |
+| Database bootstrap and migrations | `PORTABLE` | Synthetic legacy migration, integrity, view, aggregate, and rollback rehearsal |
+| Dashboard | `PORTABLE` | Packaged-asset check, loopback default, write-boundary tests |
+| Generic connectors and contracts | `PORTABLE` | Empty local defaults, safe errors, offline contract tests |
+| Tests and fixtures | `PORTABLE` | Temporary database, denied network, synthetic-only values |
+| Sample data | `PORTABLE` | Synthetic-data checker and fictional reserved identifiers |
+| Agent and operator documentation | `PORTABLE` | No company context; commands must match the current runtime |
+| Generic configuration examples | `PORTABLE` | Empty endpoints and credentials; example-only identifiers |
 
-## Approval procedure
+## Permanently local or excluded
 
-1. Review one unit at a time; do not approve the whole tree by assumption.
-2. Replace company defaults with explicit local configuration or generic
-   placeholders.
-3. Replace real-looking fixtures with a documented synthetic organization.
-4. Separate generic configuration examples from company-only profiles.
-5. Run secret, endpoint, identifier, and repository-boundary checks.
-6. Run the isolated test suite and demo workflow.
-7. Record reviewer, date, scope, and evidence below.
-8. Narrow or remove the transfer quarantine only for approved paths.
+- company source code and company-specific connector adaptations;
+- operational databases and every database copy;
+- raw exports, imports, downloaded documents, logs, and screenshots;
+- credentials, tokens, cookies, authentication caches, endpoints, and cloud IDs;
+- employee, project, customer, vendor, issue, or contract records;
+- company configuration and internal mappings;
+- internal test evidence containing real names, identifiers, paths, or values.
 
-## Approval log
+These units must remain ignored or outside the repository. Repository privacy
+does not change this rule.
 
-No broad runtime package approval has been granted. Only the scoped units in
-this log are approved for possible transfer.
+## Required gate
 
-### 2026-07-19 — Synthetic sample approved
+Before staging, committing, transferring, tagging, or publishing a changed
+candidate, run from the repository root:
 
-- Scope: `src/sample-data/`
-- Construction: rebuilt from scratch using the fictional organization in
-  `standards/SYNTHETIC_DATA_STANDARD.md`
-- Automated sample check: passed
-- Clean demo rebuild: passed
-- Semantic characterization: passed
-- Workbook render and formula-error review: passed
-- Owner decision: approved as the future public repository standard sample data
-- Transfer decision: `APPROVED`; quarantine narrowed only for `src/sample-data/`
+```bash
+make validate
+make rehearse-release
+```
 
-### 2026-07-19 — Portable text gate passed, approval pending
+The automated gate is necessary but not sufficient. Review changed text and
+paths manually, stage exact intended files, and stop when classification is
+uncertain. Use `UNKNOWN` rather than assuming a company-derived artifact is
+portable.
 
-- Removed instance-level ServiceNow and JIRA endpoint defaults from portable
-  runtime paths.
-- Made the Confluence action-tracker page and project alias groups explicit
-  local configuration.
-- Replaced embedded project aliases in the HIREF report path with the shared,
-  configurable deterministic alignment rule.
-- Rebuilt the lightweight seed and touched tests using the approved synthetic
-  organization and reserved identifiers.
-- Added a portable `.env.example` with empty connector endpoints, credentials,
-  report IDs, and optional local alias configuration.
-- Classified company configuration, historical documentation, and internal UAT
-  as permanently non-portable units.
-- Automated evidence: 37 runtime tests, 18 tool tests, repository boundary,
-  synthetic checker, portable-only audit, demo build, seed build, and static
-  compilation pass.
-- Transfer decision: `NOT YET APPROVED`; manual unit review and quarantine
-  narrowing remain.
+## Work-computer rule
 
-### 2026-07-19 — Generic configuration bootstrap approved
-
-- Scope: `src/pm_agent/repo_tools/bootstrap.py`, `src/.env.example`, and the
-  temporary-directory bootstrap contract test.
-- Manual review: generated baseline, team, and project values use the approved
-  fictional organization; connector endpoints remain empty.
-- Contract evidence: first-run scaffolding generates only generic defaults and
-  ordinary initialization preserves an existing `.env` without reading or
-  rewriting it.
-- Automated evidence: focused bootstrap test passes; full isolated runtime
-  suite passes with 39 tests; portable-only audit, repository-boundary check,
-  synthetic-data check, static compilation, and diff check pass.
-- Transfer decision: `APPROVED` for this unit only. The runtime-source
-  quarantine remains in force until its approved paths are narrowed deliberately.
-
-### 2026-07-19 — Dashboard surface approved; connector scope requires sanitization
-
-- Dashboard scope: `src/pm_agent/dashboard/` and the dashboard CLI entrypoint.
-- Manual review: no embedded concrete endpoints, email domains, or source
-  identifiers were found in the dashboard surface; the dashboard text audit
-  passes.
-- Safety correction: the dashboard service and CLI now bind to `127.0.0.1` by
-  default rather than all network interfaces; an explicit host option remains
-  available for an intentional local deployment choice.
-- Automated evidence: the loopback-default test passes; full isolated runtime
-  suite passes with 40 tests; portable-only audit, repository-boundary check,
-  synthetic-data check, static compilation, and diff check pass.
-- Connector review: a source-specific Confluence synchronization branch remains
-  in the connector implementation. It is classified `SANITIZE`; no connector
-  source path is approved by this entry.
-- Transfer decision: `APPROVED` for the dashboard scope only. The runtime-source
-  quarantine remains in force until its approved paths are narrowed deliberately.
-
-### 2026-07-19 — Connector sanitization completed
-
-- Removed the dedicated source-specific Confluence discovery branch; status-page
-  work now comes only from locally configured registry rows.
-- Restricted token discovery to the runtime's local private state.
-- Replaced the opaque action-tracker identifier with a generic name and added a
-  local database migration that preserves existing rows.
-- Replaced touched CLI examples and tests with the approved fictional language.
-- Automated evidence: 42 isolated runtime tests, 18 tool tests, portable-only
-  audit, repository-boundary check, synthetic-data check, and diff check pass.
-- Transfer decision: `REVIEW`; complete the remaining path-level classification
-  before narrowing the runtime-source quarantine.
-
-## Non-approval
-
-A successful test run, absence of credentials, or generic filename does not by
-itself make an artifact portable. When evidence is incomplete, use `UNKNOWN` and
-keep the artifact local.
+Real-environment validation stays on the work computer. Only sanitized
+pass/fail/blocked/partial outcomes, generic categories, non-sensitive counts or
+ranges, and the candidate commit/tag may leave that environment when policy
+permits. Never copy raw logs, records, screenshots, endpoints, identifiers, or
+configuration back into this repository.
