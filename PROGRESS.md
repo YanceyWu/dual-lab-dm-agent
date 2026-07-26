@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-021 — Read-Only Connector Contract Repair`
-Gate status: `OWNER APPROVED — COMMITTED LOCALLY`
-Git state: IP-020 and IP-021 are committed locally on `codex/ip-000-baseline-safety` and remain unpushed; do not merge into `main`
+Current implementation pack: `DM Agent operating customization (post-IP-021)`
+Gate status: `OWNER APPROVED — COMMITTED AND PUSHED`
+Git state: IP-020, IP-021, and the DM Agent customization are committed and pushed on `codex/ip-000-baseline-safety`; do not merge into `main`
 
 ## Read this first
 
@@ -97,9 +97,9 @@ private state, company configuration, and internal documentation remain ignored.
 Execute in this order:
 
 1. Assess IP-022 Dashboard Write Boundary.
-2. Push the current branch only when explicitly authorized; do not merge into
-   `main`.
-3. Preserve IP-020 and IP-021 for real-environment UAT.
+2. Preserve IP-020, IP-021, and the DM Agent customization for
+   real-environment UAT.
+3. Do not merge this branch into `main`.
 
 ## Decisions in force
 
@@ -527,4 +527,27 @@ Execute in this order:
   diff check.
 - Owner approved IP-021 for commit on 2026-07-26. The implementation is
   committed locally and remains unpushed; do not merge it into `main`.
+- Exact next action: assess IP-022 Dashboard Write Boundary.
+
+### 2026-07-26 — workspace Delivery Manager custom agent
+
+- Added a VS Code workspace custom agent that maps common Delivery Manager
+  intents directly to the approved structured read-only commands, avoiding
+  repeated catalogue/schema calls when the route is already known.
+- Limited the agent to terminal execution and disabled subagent invocation; it
+  has no source-editing or web tool.
+- Defined the staffing assess/propose/preview/confirm boundary, non-fresh and
+  HIREF decision ownership, explicit-only connector probing, structured-result
+  handling, and a handoff to the standard coding agent for platform changes.
+- Updated repository-wide Copilot guidance and the real-environment UAT setup
+  to select and verify the workspace agent while keeping terminal approvals.
+- Added contract tests requiring every registered structured use case to remain
+  represented in the Agent and preserving its terminal-only, no-subagent tool
+  boundary.
+- Validation passed: DM Agent structure/route inventory, 100 runtime tests,
+  18 repository tool tests, portable-only audit, repository-boundary check,
+  synthetic-sample check, and diff check.
+- Owner approved the customization for commit and push on 2026-07-26.
+- The customization is committed and pushed with IP-020 and IP-021 on the
+  current branch. It remains separate from `main`.
 - Exact next action: assess IP-022 Dashboard Write Boundary.

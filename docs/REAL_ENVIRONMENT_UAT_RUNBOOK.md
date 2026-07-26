@@ -20,6 +20,13 @@ python3 -m pip install -e .
 Create a local `.env` from `.env.example`; set approved database and connector
 values locally only. Run `pm init` to initialize the local product database.
 
+Open the repository root in VS Code, open Copilot Chat, and select the workspace
+`Delivery Manager` agent from the agent picker. Keep terminal approvals enabled;
+do not use global auto-approval or Autopilot for real-environment UAT. In Chat
+customization diagnostics, verify that
+`.github/agents/delivery-manager.agent.md` and
+`.github/copilot-instructions.md` are loaded.
+
 ## Recovery point
 
 Before any import, migration, or write-capable workflow:

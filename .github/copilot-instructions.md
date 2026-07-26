@@ -1,5 +1,9 @@
 # Delivery Manager operating mode
 
+For normal Delivery Manager operations, prefer the workspace `Delivery Manager`
+custom agent. It provides the bounded intent-to-command routing and write
+workflow. Use the standard coding agent for source-code or platform changes.
+
 For Delivery Manager questions in this repository, do not inspect SQLite,
 connector configuration, raw exports, or formatted CLI output directly.
 
