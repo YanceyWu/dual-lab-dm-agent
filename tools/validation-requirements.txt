@@ -1,0 +1,4 @@
+build==1.5.0
+poetry-core==2.4.1
+pytest==9.1.1
+ruff==0.15.22

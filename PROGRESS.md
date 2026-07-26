@@ -3,8 +3,8 @@
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
 Current implementation pack: `IP-026 — Release Engineering`
-Gate status: `IP-026 COMMITTED LOCALLY — PUSH BLOCKED BY GITHUB WORKFLOW SCOPE`
-Git state: the IP-024 migration-view repair and IP-026 release candidate are committed locally on `codex/ip-000-baseline-safety`; remote push was rejected because the active HTTPS OAuth credential lacks workflow scope; do not merge into `main`
+Gate status: `IP-026 CI FIX VALIDATED LOCALLY — COMMIT, PUSH, AND CI RECHECK PENDING`
+Git state: candidate commit `9123288` is pushed on `codex/ip-000-baseline-safety`; the validation-toolchain pin and CI diagnosis updates are local and uncommitted; do not merge into `main`
 
 ## Read this first
 
@@ -96,9 +96,8 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Re-authenticate GitHub HTTPS access with repository and workflow scope, then
-   push the independent candidate branch.
-2. Require green GitHub Actions for the exact pushed candidate commit.
+1. Commit and push the validated toolchain pin and explicit Ruff rule contract.
+2. Require green GitHub Actions for that corrected candidate commit.
 3. With explicit owner authorization, create and push annotated candidate tag
    `v0.2.0-rc.1`; do not move the tag later.
 4. On the work computer, create a local backup and repeat IP-024 migration
@@ -678,10 +677,22 @@ Execute in this order:
   diff, wheel/sdist build, package metadata, and Dashboard asset checks.
 - Synthetic wheel-install, isolated database-upgrade, and rollback rehearsal
   passed for `ai-pm-agent 0.2.0rc1`.
-- The owner authorized commit and push. The locally validated source content
-  was committed, but GitHub rejected the HTTPS push because the OAuth
-  credential lacks permission to update `.github/workflows/validate.yml`.
-  Exact next action is GitHub re-authentication with workflow scope, then push
-  and CI inspection.
+- Candidate commit `9123288` was pushed after GitHub workflow authorization was
+  corrected. GitHub Actions run `30186840298` then failed in both Python jobs:
+  runtime and repository-tool tests passed, but CI installed Ruff `0.16.0`
+  while the locally validated environment used Ruff `0.15.22`; the newer
+  default rule set produced 179 findings. No candidate tag was created.
+- Exact next action is owner approval to pin the validation toolchain and make
+  the lint rule contract explicit, followed by local revalidation and push.
+- Owner approved the focused CI repair. Added exact validation requirements for
+  build `1.5.0`, poetry-core `2.4.1`, pytest `9.1.1`, and Ruff `0.15.22`;
+  GitHub Actions installs that file, the validator rejects version mismatch,
+  and Ruff rule families are explicit rather than tool-default-dependent.
+- CI-fix validation passed locally: 115 runtime tests, 21 repository-tool tests
+  (19 subtests), pinned-tool verification, Ruff, compilation, boundary,
+  synthetic-data, diff, package build, wheel install, isolated database
+  upgrade, and rollback.
+- Exact next action is commit/push of this bounded CI fix and inspection of the
+  new GitHub Actions run.
 - No tag, publication, deployment, connector call, active-database migration,
   real record access, or merge into `main` was performed.

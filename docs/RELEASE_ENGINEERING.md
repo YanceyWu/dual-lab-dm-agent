@@ -34,6 +34,10 @@ make -f ../Makefile rehearse-release
 of the tested source. It performs repository-boundary and synthetic-data checks,
 runtime and tool tests, full portable Ruff, compilation, diff hygiene, and a
 temporary wheel/sdist build with package metadata and Dashboard asset checks.
+It also fails immediately if the installed build, pytest, or Ruff versions do
+not match `tools/validation-requirements.txt`. Ruff's required rule families
+are explicitly selected in `src/pyproject.toml`, so a tool upgrade cannot
+silently broaden or weaken the release gate.
 
 `make rehearse-release` builds and installs the wheel into a temporary isolated
 target, upgrades a temporary copy of the synthetic legacy database, checks
@@ -43,7 +47,8 @@ the rollback copy matches the original hash. It never uses an active database.
 ## Candidate workflow
 
 1. Confirm only intended portable files are changed.
-2. Run `make validate` and `make rehearse-release`.
+2. Install `tools/validation-requirements.txt`, then run `make validate` and
+   `make rehearse-release`.
 3. Commit the complete candidate scope and push the independent branch.
 4. Wait for GitHub Actions to pass for the exact pushed commit.
 5. Confirm `git status --short` is empty and record:

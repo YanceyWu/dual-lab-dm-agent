@@ -48,3 +48,23 @@ def test_unified_validation_and_ci_contract_are_present() -> None:
     assert "make validate PYTHON=python" in workflow
     assert "make rehearse-release PYTHON=python" in workflow
     assert "contents: read" in workflow
+
+
+def test_validation_dependencies_and_lint_rules_are_pinned() -> None:
+    requirements = (
+        ROOT / "tools/validation-requirements.txt"
+    ).read_text(encoding="utf-8").splitlines()
+    pyproject = (ROOT / "src/pyproject.toml").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/validate.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert requirements == [
+        "build==1.5.0",
+        "poetry-core==2.4.1",
+        "pytest==9.1.1",
+        "ruff==0.15.22",
+    ]
+    assert 'requires = ["poetry-core==2.4.1"]' in pyproject
+    assert 'select = ["E4", "E7", "E9", "F"]' in pyproject
+    assert "pip install -r tools/validation-requirements.txt" in workflow

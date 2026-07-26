@@ -37,7 +37,8 @@ jobs:
       - name: Install product and validation dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e src pytest ruff build poetry-core
+          python -m pip install -r tools/validation-requirements.txt
+          python -m pip install -e src
 
       - name: Run unified validation
         run: make validate PYTHON=python

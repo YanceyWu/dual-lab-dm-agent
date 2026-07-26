@@ -9,12 +9,19 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src"
 PYPROJECT = PACKAGE_ROOT / "pyproject.toml"
 PROJECT_NAME = "ai-pm-agent"
+EXPECTED_TOOL_VERSIONS = {
+    "build": "1.5.0",
+    "poetry-core": "2.4.1",
+    "pytest": "9.1.1",
+    "ruff": "0.15.22",
+}
 
 VALIDATION_STEPS = (
     "repository-boundary",
@@ -54,6 +61,29 @@ def source_identity() -> tuple[str, bool]:
         text=True,
     ).stdout
     return commit, bool(status.strip())
+
+
+def validate_tool_versions() -> None:
+    mismatches = []
+    for package, expected in EXPECTED_TOOL_VERSIONS.items():
+        try:
+            actual = version(package)
+        except PackageNotFoundError:
+            actual = "missing"
+        if actual != expected:
+            mismatches.append(f"{package}: expected {expected}, found {actual}")
+    if mismatches:
+        raise RuntimeError(
+            "VALIDATION_TOOL_VERSION_MISMATCH: " + "; ".join(mismatches)
+        )
+    print(
+        "Validation tools: "
+        + ", ".join(
+            f"{package}={expected}"
+            for package, expected in EXPECTED_TOOL_VERSIONS.items()
+        ),
+        flush=True,
+    )
 
 
 def run_step(
@@ -106,6 +136,7 @@ def validate() -> None:
     commit, dirty = source_identity()
     source_state = "HEAD plus working-tree changes" if dirty else "clean commit"
     print(f"Source identity: {commit} ({source_state})", flush=True)
+    validate_tool_versions()
     runtime_env = os.environ.copy()
     runtime_env["PYTHONPATH"] = str(PACKAGE_ROOT)
 

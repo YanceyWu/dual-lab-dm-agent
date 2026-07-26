@@ -1,6 +1,6 @@
 # IP-026 Implementation Report
 
-Status: `COMMITTED LOCALLY — PUSH BLOCKED BY GITHUB WORKFLOW SCOPE`
+Status: `CI FIX VALIDATED LOCALLY — COMMIT, PUSH, AND CI RECHECK PENDING`
 Date: 2026-07-26
 Candidate package version: `0.2.0rc1`
 Candidate tag: `v0.2.0-rc.1` (`NOT CREATED`)
@@ -35,15 +35,23 @@ Candidate tag: `v0.2.0-rc.1` (`NOT CREATED`)
   checks, dependent views, aggregate-count preservation, and rollback hash:
   passed.
 
-The locally validated source content is committed on the independent candidate
-branch. GitHub rejected the HTTPS push because the active OAuth credential does
-not have permission to create or update workflow files. Re-authentication with
-workflow scope is required before GitHub Actions can validate the commit.
+Candidate commit `9123288` is pushed on the independent branch. GitHub Actions
+run `30186840298` passed both test suites, then failed lint in both Python jobs:
+CI resolved Ruff `0.16.0`, while local validation used Ruff `0.15.22`. The
+unversioned CI dependency therefore applied a different default lint contract
+and produced 179 findings.
+
+The approved repair pins build `1.5.0`, poetry-core `2.4.1`, pytest `9.1.1`,
+and Ruff `0.15.22` in one validation requirements file. CI installs that
+contract, the validator fails on a version mismatch, and Ruff rule families are
+explicit in `pyproject.toml`. Local revalidation passed with 115 runtime tests,
+21 repository-tool tests (19 subtests), package build/install, isolated
+database upgrade, and rollback.
 
 ## Remaining gates
 
-1. Re-authenticate GitHub access with repository and workflow scope, then push.
-2. Green GitHub Actions for the exact pushed commit.
+1. Commit and push the validated toolchain repair.
+2. Obtain green GitHub Actions for the corrected candidate commit.
 3. Explicit owner authorization to create/push `v0.2.0-rc.1`.
 4. Work-computer backup, isolated operational-database rehearsal, and
    IP-022-to-IP-026 real-environment UAT.

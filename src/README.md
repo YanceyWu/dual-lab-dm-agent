@@ -189,7 +189,8 @@ the unified release checks from the repository root:
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e . pytest ruff build poetry-core
+.venv/bin/python -m pip install -r ../tools/validation-requirements.txt
+.venv/bin/python -m pip install -e .
 cd ..
 make validate
 make rehearse-release
