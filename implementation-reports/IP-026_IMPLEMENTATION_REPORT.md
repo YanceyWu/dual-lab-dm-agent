@@ -1,6 +1,6 @@
 # IP-026 Implementation Report
 
-Status: `CI FIX VALIDATED LOCALLY — COMMIT, PUSH, AND CI RECHECK PENDING`
+Status: `VALIDATION GREEN — TAG AND REAL UAT PENDING`
 Date: 2026-07-26
 Candidate package version: `0.2.0rc1`
 Candidate tag: `v0.2.0-rc.1` (`NOT CREATED`)
@@ -48,12 +48,14 @@ explicit in `pyproject.toml`. Local revalidation passed with 115 runtime tests,
 21 repository-tool tests (19 subtests), package build/install, isolated
 database upgrade, and rollback.
 
+The repair was committed and pushed as `982d027`. GitHub Actions run
+`30186978361` passed the complete validation and release rehearsal on Python
+3.10 and 3.12.
+
 ## Remaining gates
 
-1. Commit and push the validated toolchain repair.
-2. Obtain green GitHub Actions for the corrected candidate commit.
-3. Explicit owner authorization to create/push `v0.2.0-rc.1`.
-4. Work-computer backup, isolated operational-database rehearsal, and
+1. Explicit owner authorization to create/push `v0.2.0-rc.1`.
+2. Work-computer backup, isolated operational-database rehearsal, and
    IP-022-to-IP-026 real-environment UAT.
 
 No tag, package publication, deployment, connector call, active-database

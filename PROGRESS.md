@@ -3,8 +3,8 @@
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
 Current implementation pack: `IP-026 — Release Engineering`
-Gate status: `IP-026 CI FIX VALIDATED LOCALLY — COMMIT, PUSH, AND CI RECHECK PENDING`
-Git state: candidate commit `9123288` is pushed on `codex/ip-000-baseline-safety`; the validation-toolchain pin and CI diagnosis updates are local and uncommitted; do not merge into `main`
+Gate status: `IP-026 VALIDATION GREEN — TAG AND REAL UAT PENDING`
+Git state: the IP-026 candidate and validation-toolchain repair are committed and pushed on `codex/ip-000-baseline-safety`; GitHub Actions passes on Python 3.10 and 3.12; do not merge into `main`
 
 ## Read this first
 
@@ -96,15 +96,13 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Commit and push the validated toolchain pin and explicit Ruff rule contract.
-2. Require green GitHub Actions for that corrected candidate commit.
-3. With explicit owner authorization, create and push annotated candidate tag
+1. With explicit owner authorization, create and push annotated candidate tag
    `v0.2.0-rc.1`; do not move the tag later.
-4. On the work computer, create a local backup and repeat IP-024 migration
+2. On the work computer, create a local backup and repeat IP-024 migration
    rehearsal against an isolated operational-database copy.
-5. After rehearsal passes, run IP-022 through IP-026 real-environment UAT and
+3. After rehearsal passes, run IP-022 through IP-026 real-environment UAT and
    record only sanitized outcomes.
-6. Preserve the independent branch; do not merge into `main`.
+4. Preserve the independent branch; do not merge into `main`.
 
 ## Decisions in force
 
@@ -694,5 +692,11 @@ Execute in this order:
   upgrade, and rollback.
 - Exact next action is commit/push of this bounded CI fix and inspection of the
   new GitHub Actions run.
+- Committed and pushed the toolchain repair as `982d027`. GitHub Actions run
+  `30186978361` passed the unified validation and release rehearsal on both
+  Python 3.10 and 3.12.
+- IP-026 is technically green. The remaining release gates are explicit owner
+  authorization for the immutable candidate tag and work-computer
+  real-environment UAT; no tag was created automatically.
 - No tag, publication, deployment, connector call, active-database migration,
   real record access, or merge into `main` was performed.
