@@ -1,8 +1,9 @@
 
-import argparse, json, sqlite3, sys
+import argparse
+import json
+import sqlite3
+import traceback
 from datetime import datetime, timedelta
-from pathlib import Path
-import requests
 
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.config import get_database_path, settings
@@ -59,8 +60,10 @@ def score_sprint(sp_done, sp_committed):
         return 50.0, {"reason": "no_committed_sp"}
     pct = sp_done / sp_committed
     score = min(100.0, pct * 100)
-    if pct >= 0.9: score = min(100, score + 5)
-    elif pct < 0.6: score = max(0, score - 10)
+    if pct >= 0.9:
+        score = min(100, score + 5)
+    elif pct < 0.6:
+        score = max(0, score - 10)
     return round(score, 1), {"committed_sp": sp_committed, "done_sp": sp_done, "completion_pct": round(pct*100,1)}
 
 def score_defects(p1p2, p3p4, done_stories):
@@ -247,8 +250,10 @@ def sync_board(conn, session, base_url, board, snapshot_date, dry_run=False):
             "ORDER BY snapshot_date DESC LIMIT 1", (board_id, ver_id)).fetchone()
         if last and last[0]:
             delta = (total_sp or 0) - last[0]
-            if delta > 0: scope_added = delta
-            elif delta < 0: scope_removed = abs(delta)
+            if delta > 0:
+                scope_added = delta
+            elif delta < 0:
+                scope_removed = abs(delta)
 
         v_score, v_det = score_burndown(done_sp or 0, total_sp or 0, release_date, snapshot_date)
         s_score, s_det = score_sprint(sp_done_sprint, sp_committed)
@@ -354,7 +359,7 @@ def run_sync(board: str | None = None, dry_run: bool = False) -> None:
                        snapshot_date, dry_run)
         except Exception as e:
             print(f"  ERROR on {b[0]}: {e}")
-            import traceback; traceback.print_exc()
+            traceback.print_exc()
     conn.close()
     print("\nHealth sync complete")
 

@@ -1,0 +1,46 @@
+name: Validate release candidate
+
+on:
+  push:
+    branches:
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.12"
+
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install product and validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e src pytest ruff build poetry-core
+
+      - name: Run unified validation
+        run: make validate PYTHON=python
+
+      - name: Rehearse install, upgrade, and rollback
+        run: make rehearse-release PYTHON=python

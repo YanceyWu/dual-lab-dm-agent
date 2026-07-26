@@ -3,6 +3,7 @@ from __future__ import annotations
 from typer.testing import CliRunner
 from typer.main import get_command
 
+from pm_agent import __version__
 from pm_agent.cli import app as app_module
 from pm_agent.cli.commands import governance, integrations, operations
 from pm_agent.database.bootstrap import main as init_db
@@ -10,6 +11,13 @@ from pm_agent.database.bootstrap import main as init_db
 
 def test_root_cli_builds() -> None:
     get_command(app_module.app)
+
+
+def test_version_command_reports_candidate_version() -> None:
+    result = CliRunner().invoke(app_module.app, ["version"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == f"ai-pm-agent {__version__}"
 
 
 def test_usecase_group_builds() -> None:

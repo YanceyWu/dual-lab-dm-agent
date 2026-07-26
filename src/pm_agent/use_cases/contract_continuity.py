@@ -26,5 +26,7 @@ def execute_contract_continuity_review(request: UseCaseRequest) -> UseCaseResult
 
 
 def _bounded_days(value: object) -> int:
-    try: return max(1, min(int(value or 180), 365))
-    except (TypeError, ValueError): return 180
+    try:
+        return max(1, min(int(value or 180), 365))
+    except (TypeError, ValueError):
+        return 180

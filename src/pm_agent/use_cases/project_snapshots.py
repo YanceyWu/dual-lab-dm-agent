@@ -24,5 +24,7 @@ def _text(value: object) -> str | None:
 
 
 def _limit(value: object) -> int:
-    try: return max(1, min(int(value or 20), MAX_LIMIT))
-    except (TypeError, ValueError): return 20
+    try:
+        return max(1, min(int(value or 20), MAX_LIMIT))
+    except (TypeError, ValueError):
+        return 20

@@ -12,9 +12,12 @@ def execute_action_followup(request: UseCaseRequest) -> UseCaseResult:
     follow_up = []
     for item in items:
         reasons = []
-        if item["id"] in overdue_ids: reasons.append("overdue")
-        if not item.get("owner_id"): reasons.append("missing_owner")
-        if not item.get("due_date"): reasons.append("missing_due_date")
+        if item["id"] in overdue_ids:
+            reasons.append("overdue")
+        if not item.get("owner_id"):
+            reasons.append("missing_owner")
+        if not item.get("due_date"):
+            reasons.append("missing_due_date")
         if reasons:
             follow_up.append({**item, "follow_up_reasons": reasons, "severity": "high" if "overdue" in reasons and item.get("priority") == "high" else "medium"})
     follow_up.sort(key=lambda item: (0 if item["severity"] == "high" else 1, item["id"]))

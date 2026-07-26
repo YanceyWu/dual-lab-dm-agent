@@ -39,6 +39,7 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-023 | Executor Contract Enforcement | IP-003 | Contract hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
 | IP-024 | Data Integrity and Concurrency | IP-020, IP-023 | Persistence hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
 | IP-025 | Interface Completion | IP-019, IP-023 | Interface hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
+| IP-026 | Release Engineering | IP-022, IP-023, IP-024, IP-025 | Release candidate | TECHNICALLY VALIDATED — COMMIT/CI/TAG PENDING |
 
 ## Pack sizing rule
 

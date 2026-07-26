@@ -57,11 +57,15 @@ def execute_management_attention(request: UseCaseRequest) -> UseCaseResult:
 
 def _project_state(boards: list[dict]) -> str:
     grades = {str(item.get("overall_grade") or "").upper() for item in boards}
-    if "RED" in grades: return "red"
-    if "YELLOW" in grades or "AMBER" in grades: return "amber"
+    if "RED" in grades:
+        return "red"
+    if "YELLOW" in grades or "AMBER" in grades:
+        return "amber"
     rags = {str(item.get("rag_status") or "").upper() for item in boards}
-    if "RED" in rags: return "red"
-    if "AMBER" in rags or "YELLOW" in rags: return "amber"
+    if "RED" in rags:
+        return "red"
+    if "AMBER" in rags or "YELLOW" in rags:
+        return "amber"
     return "unknown"
 
 
@@ -90,5 +94,7 @@ def _severity_rank(severity: str) -> int:
 
 
 def _bounded_int(value: object, default: int, maximum: int) -> int:
-    try: return max(1, min(int(value or default), maximum))
-    except (TypeError, ValueError): return default
+    try:
+        return max(1, min(int(value or default), maximum))
+    except (TypeError, ValueError):
+        return default

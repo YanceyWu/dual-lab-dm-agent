@@ -1371,35 +1371,61 @@ def _migrate_allocation_integrity_v24(conn: sqlite3.Connection) -> None:
         if "check(allocation >= 0.0 and allocation <= 1.0)" not in _table_sql(
             conn, "assignments"
         ).lower():
-            conn.execute(
-                """
-                CREATE TABLE assignments_v24 (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    employee_id TEXT NOT NULL REFERENCES employees(id),
-                    project_id TEXT NOT NULL REFERENCES projects(id),
-                    role TEXT,
-                    allocation REAL NOT NULL DEFAULT 0.5
-                        CHECK(allocation >= 0.0 AND allocation <= 1.0),
-                    start_date TEXT,
-                    end_date TEXT,
-                    status TEXT DEFAULT 'active',
-                    created_at TEXT DEFAULT (datetime('now')),
-                    UNIQUE(employee_id, project_id, status)
+            dependent_views = [
+                (row[0], row[1])
+                for row in conn.execute(
+                    """
+                    SELECT name, sql
+                    FROM sqlite_master
+                    WHERE type = 'view'
+                      AND LOWER(sql) LIKE '%assignments%'
+                    ORDER BY name
+                    """
+                ).fetchall()
+            ]
+            conn.execute("SAVEPOINT assignments_integrity_v24")
+            try:
+                for view_name, _view_sql in dependent_views:
+                    quoted_name = view_name.replace('"', '""')
+                    conn.execute(f'DROP VIEW "{quoted_name}"')
+                conn.execute(
+                    """
+                    CREATE TABLE assignments_v24 (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        employee_id TEXT NOT NULL REFERENCES employees(id),
+                        project_id TEXT NOT NULL REFERENCES projects(id),
+                        role TEXT,
+                        allocation REAL NOT NULL DEFAULT 0.5
+                            CHECK(allocation >= 0.0 AND allocation <= 1.0),
+                        start_date TEXT,
+                        end_date TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT DEFAULT (datetime('now')),
+                        UNIQUE(employee_id, project_id, status)
+                    )
+                    """
                 )
-                """
-            )
-            conn.execute(
-                """
-                INSERT INTO assignments_v24
-                    (id, employee_id, project_id, role, allocation, start_date,
-                     end_date, status, created_at)
-                SELECT id, employee_id, project_id, role, allocation, start_date,
-                       end_date, status, created_at
-                FROM assignments
-                """
-            )
-            conn.execute("DROP TABLE assignments")
-            conn.execute("ALTER TABLE assignments_v24 RENAME TO assignments")
+                conn.execute(
+                    """
+                    INSERT INTO assignments_v24
+                        (id, employee_id, project_id, role, allocation,
+                         start_date, end_date, status, created_at)
+                    SELECT id, employee_id, project_id, role, allocation,
+                           start_date, end_date, status, created_at
+                    FROM assignments
+                    """
+                )
+                conn.execute("DROP TABLE assignments")
+                conn.execute(
+                    "ALTER TABLE assignments_v24 RENAME TO assignments"
+                )
+                for _view_name, view_sql in dependent_views:
+                    conn.execute(view_sql)
+                conn.execute("RELEASE SAVEPOINT assignments_integrity_v24")
+            except Exception:
+                conn.execute("ROLLBACK TO SAVEPOINT assignments_integrity_v24")
+                conn.execute("RELEASE SAVEPOINT assignments_integrity_v24")
+                raise
 
     table_definitions = {
         "monthly_allocations": """
@@ -2214,16 +2240,21 @@ def main(quiet: bool = False) -> None:
         )
 
     conn.commit()
-    _migrate_employee_identity_v16(conn)
-    _ensure_default_plan_version(conn)
-    _migrate_allocation_integrity_v24(conn)
-    _migrate_staffing_token_hash_v24(conn)
-    _backfill_employee_external_ids(conn)
-    _migrate_project_snapshots_v18(conn)
-    _migrate_action_tracker_v20(conn)
-    _seed_use_cases(conn)
-    _seed_data_sources(conn)
-    legacy_cleanup_warnings = _drop_legacy_tables_v19(conn)
+    try:
+        _migrate_employee_identity_v16(conn)
+        _ensure_default_plan_version(conn)
+        _migrate_allocation_integrity_v24(conn)
+        _migrate_staffing_token_hash_v24(conn)
+        _backfill_employee_external_ids(conn)
+        _migrate_project_snapshots_v18(conn)
+        _migrate_action_tracker_v20(conn)
+        _seed_use_cases(conn)
+        _seed_data_sources(conn)
+        legacy_cleanup_warnings = _drop_legacy_tables_v19(conn)
+    except Exception:
+        conn.rollback()
+        conn.close()
+        raise
 
     conn.execute(
         """
@@ -2234,6 +2265,18 @@ def main(quiet: bool = False) -> None:
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_employees_current_hiref ON employees(current_hiref)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_employees_next_hiref ON employees(next_hiref)")
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_assignments_employee
+        ON assignments(employee_id, status)
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_assignments_project
+        ON assignments(project_id, status)
+        """
+    )
     if _column_exists(conn, "monthly_allocations", "plan_version_id"):
         conn.execute(
             """

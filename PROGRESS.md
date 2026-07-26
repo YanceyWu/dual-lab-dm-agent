@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-025 — Interface Completion`
-Gate status: `IP-022 TO IP-025 COMMITTED AND PUSHED — UAT PENDING`
-Git state: IP-022 through IP-025 are committed and pushed on `codex/ip-000-baseline-safety`; do not merge into `main`
+Current implementation pack: `IP-026 — Release Engineering`
+Gate status: `IP-026 COMMITTED LOCALLY — PUSH BLOCKED BY GITHUB WORKFLOW SCOPE`
+Git state: the IP-024 migration-view repair and IP-026 release candidate are committed locally on `codex/ip-000-baseline-safety`; remote push was rejected because the active HTTPS OAuth credential lacks workflow scope; do not merge into `main`
 
 ## Read this first
 
@@ -96,14 +96,16 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Before real-environment use, create a backup and rehearse IP-024 migration on
-   an isolated database copy; stop if invalid or duplicate legacy rows are
-   reported.
-2. Run IP-022 through IP-025 real-environment UAT and record only sanitized
-   outcomes.
-3. After UAT, assess IP-026 Release Engineering.
-3. Preserve all changes for isolated real-environment UAT; do not merge into
-   `main`.
+1. Re-authenticate GitHub HTTPS access with repository and workflow scope, then
+   push the independent candidate branch.
+2. Require green GitHub Actions for the exact pushed candidate commit.
+3. With explicit owner authorization, create and push annotated candidate tag
+   `v0.2.0-rc.1`; do not move the tag later.
+4. On the work computer, create a local backup and repeat IP-024 migration
+   rehearsal against an isolated operational-database copy.
+5. After rehearsal passes, run IP-022 through IP-026 real-environment UAT and
+   record only sanitized outcomes.
+6. Preserve the independent branch; do not merge into `main`.
 
 ## Decisions in force
 
@@ -622,3 +624,64 @@ Execute in this order:
   remain separate from `main`.
 - Exact next action: isolated-copy migration and real-environment UAT before
   assessing IP-026 Release Engineering.
+
+### 2026-07-26 — IP-024 isolated migration and offline UAT rehearsal
+
+- Created an isolated copy of the synthetic pre-IP-024 demo database; the
+  repository demo database and recovery copy retained the same hash.
+- The first upgrade attempt stopped before UAT because replacing the legacy
+  assignments table invalidated dependent SQLite views.
+- Repaired the migration to save, remove, and restore dependent views inside a
+  savepoint; migration failures now roll back and close the bootstrap
+  connection. Recreated assignment indexes after a successful table rebuild.
+- Added a regression test for dependent-view preservation. Focused staffing and
+  integrity validation passed with 40 tests.
+- Repeated the upgrade from the untouched recovery copy. Employee, project,
+  monthly-allocation, and decision aggregate counts remained unchanged;
+  SQLite integrity passed, foreign-key inspection returned no violations, both
+  dependent views remained queryable, new operation tables existed, allocation
+  constraints were present, and only the confirmation-token hash column
+  remained.
+- Ran all nine registered structured read-only use cases against the upgraded
+  synthetic copy; all succeeded with bounded evidence/freshness output. A
+  deliberately out-of-range parameter was rejected with the stable
+  `PARAMETER_OUT_OF_RANGE` code and exit status 2.
+- Expanded the real-environment UAT runbook with isolated-copy migration,
+  integrity/view/token checks, executor rejection criteria, and Dashboard
+  preview/confirm/replay checks.
+- Final local validation passed: 114 runtime tests, 18 repository tool tests
+  (19 subtests), touched-file Ruff, static compilation, portability audit,
+  repository-boundary check, synthetic-sample check, and diff check.
+- No network, connector, active database, configuration, or real record was
+  accessed. Real-environment rehearsal and UAT remain pending.
+
+### 2026-07-26 — IP-026 release engineering
+
+- Registered IP-026 with explicit release-candidate scope, acceptance
+  scenarios, safety constraints, and rollback.
+- Bumped package/runtime identity from `0.1.0` to `0.2.0rc1`; added
+  `pm version`. Reserved annotated tag `v0.2.0-rc.1`, but did not create it
+  because the candidate is not yet committed or CI-validated.
+- Added root-aware `make validate`, covering repository boundary, synthetic
+  data, runtime tests, repository-tool tests, full portable Ruff, static
+  compilation, diff hygiene, and temporary wheel/sdist inspection.
+- Added `make rehearse-release`, which builds and installs the wheel in a
+  temporary target, migrates a synthetic legacy-database copy, verifies
+  integrity, foreign keys, dependent views, token schema, and aggregate
+  counts, then proves rollback by hash.
+- Added read-only GitHub Actions validation on Python 3.10 and 3.12. It performs
+  no publish, tag, deploy, connector, or operational-data action.
+- Cleared all 25 full-scope Ruff findings with behavior-preserving import and
+  statement-layout changes.
+- Unified local validation passed: 115 runtime tests, 20 repository-tool tests
+  (19 subtests), zero Ruff findings, compilation, boundary, synthetic-data,
+  diff, wheel/sdist build, package metadata, and Dashboard asset checks.
+- Synthetic wheel-install, isolated database-upgrade, and rollback rehearsal
+  passed for `ai-pm-agent 0.2.0rc1`.
+- The owner authorized commit and push. The locally validated source content
+  was committed, but GitHub rejected the HTTPS push because the OAuth
+  credential lacks permission to update `.github/workflows/validate.yml`.
+  Exact next action is GitHub re-authentication with workflow scope, then push
+  and CI inspection.
+- No tag, publication, deployment, connector call, active-database migration,
+  real record access, or merge into `main` was performed.

@@ -10,7 +10,6 @@ Usage:
   python3 scripts/sync_jira_releases.py --dry-run            # preview, no DB write
 """
 
-import os
 import sys
 import json
 import sqlite3

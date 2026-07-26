@@ -10,7 +10,6 @@ Design rules:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
 from pm_agent.config import HardRules, ScoringWeights

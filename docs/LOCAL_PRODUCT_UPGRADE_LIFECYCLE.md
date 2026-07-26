@@ -59,3 +59,8 @@ an explicit local operator action and must be verified before resuming writes.
 A release must pass portable source/boundary/sample checks and the regression
 suite. Any schema migration must be additive, tested against the prior supported
 database shape, and backed by this recovery path.
+
+For release candidates, use `make validate` and `make rehearse-release`, then
+follow `RELEASE_ENGINEERING.md`. A candidate tag must identify a clean, pushed,
+CI-passing commit; never move an existing candidate tag after real-environment
+testing begins.

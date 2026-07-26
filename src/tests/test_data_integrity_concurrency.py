@@ -233,6 +233,61 @@ def test_integrity_migration_rejects_dirty_legacy_rows_without_rewriting(
     assert replacement_exists is None
 
 
+def test_assignment_migration_preserves_dependent_views(isolated_db) -> None:
+    _seed_integrity_entities(isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("DROP VIEW v_member_load")
+        connection.execute("DROP VIEW v_project_team")
+        connection.execute("DROP TABLE assignments")
+        connection.execute(
+            """
+            CREATE TABLE assignments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL REFERENCES employees(id),
+                project_id TEXT NOT NULL REFERENCES projects(id),
+                role TEXT,
+                allocation REAL NOT NULL DEFAULT 0.5,
+                start_date TEXT,
+                end_date TEXT,
+                status TEXT DEFAULT 'active',
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(employee_id, project_id, status)
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO assignments
+                (employee_id, project_id, role, allocation, status)
+            VALUES ('990101', 'project-atlas-990001', 'developer', 0.5,
+                    'active')
+            """
+        )
+        connection.execute(
+            """
+            CREATE VIEW v_assignment_migration_test AS
+            SELECT employee_id, project_id, allocation
+            FROM assignments
+            WHERE status = 'active'
+            """
+        )
+
+        _migrate_allocation_integrity_v24(connection)
+
+        assignment_sql = connection.execute(
+            """
+            SELECT sql FROM sqlite_master
+            WHERE type = 'table' AND name = 'assignments'
+            """
+        ).fetchone()[0]
+        view_row = connection.execute(
+            "SELECT * FROM v_assignment_migration_test"
+        ).fetchone()
+
+    assert "CHECK(allocation >= 0.0 AND allocation <= 1.0)" in assignment_sql
+    assert view_row == ("990101", "project-atlas-990001", 0.5)
+
+
 def _proposal(
     proposal_id: str,
     token: str,

@@ -7,7 +7,6 @@ import argparse
 import json
 import re
 import sqlite3
-import sys
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path

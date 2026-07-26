@@ -17,6 +17,17 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
+For the `0.2.0rc1` candidate, first verify that the checked-out commit matches
+the approved `v0.2.0-rc.1` tag and record only the commit hash plus version:
+
+```bash
+git rev-parse HEAD
+pm version
+```
+
+Do not begin real-environment UAT from an uncommitted working tree or a commit
+whose GitHub Actions validation has not passed.
+
 Create a local `.env` from `.env.example`; set approved database and connector
 values locally only. Run `pm init` to initialize the local product database.
 
@@ -37,6 +48,46 @@ pm backup create --label before-real-uat
 
 Keep the tag and manifest in approved local records. If validation fails, stop
 writes and follow `LOCAL_PRODUCT_UPGRADE_LIFECYCLE.md`.
+
+## IP-024 isolated migration rehearsal
+
+Do not first run the new bootstrap against the active operational database.
+Use the database snapshot path printed by `pm backup create`, copy that snapshot
+to an approved temporary location outside the repository, and point only the
+rehearsal process at the copy:
+
+```bash
+cp /approved/path/from-backup-manifest.db /approved/temp/dm-uat-upgrade.db
+DM_UAT_DATABASE_PATH=/approved/temp/dm-uat-upgrade.db
+DATABASE_PATH="$DM_UAT_DATABASE_PATH" pm init
+```
+
+Before and after `pm init`, record only aggregate counts for the required core
+tables. Do not export rows, names, identifiers, or database files. After the
+upgrade, verify the copied database:
+
+```bash
+sqlite3 "$DM_UAT_DATABASE_PATH" "PRAGMA integrity_check;"
+sqlite3 "$DM_UAT_DATABASE_PATH" "PRAGMA foreign_key_check;"
+sqlite3 "$DM_UAT_DATABASE_PATH" \
+  "SELECT name, type FROM sqlite_master WHERE name IN ('v_member_load','v_project_team','staffing_proposals','dashboard_operations') ORDER BY name;"
+sqlite3 "$DM_UAT_DATABASE_PATH" "SELECT COUNT(*) FROM v_member_load;"
+sqlite3 "$DM_UAT_DATABASE_PATH" "SELECT COUNT(*) FROM v_project_team;"
+sqlite3 "$DM_UAT_DATABASE_PATH" \
+  "SELECT name FROM pragma_table_info('staffing_proposals') WHERE name LIKE 'confirmation_token%';"
+```
+
+Expected results are `integrity_check=ok`, no rows from `foreign_key_check`,
+both views and both new operation tables present, both views queryable, and
+only `confirmation_token_hash` returned for the token-column check. Confirm
+that employee, project, assignment, monthly-allocation, and decision aggregate
+counts match their pre-upgrade values.
+
+Stop if bootstrap reports invalid months, invalid allocation values, duplicate
+employee/project/month/plan-version rows, a failed view query, an integrity or
+foreign-key error, or a changed aggregate count. Keep the active database
+untouched until this rehearsal passes and the operator explicitly approves the
+live `pm init`.
 
 ## Validate before connector access
 
@@ -68,6 +119,14 @@ pm tool query project-snapshot-list --param health=amber --param artifact_kind=p
 
 For every response, verify evidence/freshness are present, non-fresh states are
 visible, and no credential, endpoint, raw error, or source payload appears.
+Also verify executor enforcement with a deliberately invalid read-only request:
+
+```bash
+pm tool query contract-continuity-review --days 9999
+```
+
+It must exit non-zero with `PARAMETER_OUT_OF_RANGE`, without invoking a
+connector or returning a raw exception.
 
 ## Controlled connector UAT
 
@@ -101,8 +160,18 @@ assignment or allocation write.
 
 ## Dashboard UAT
 
-Run locally with `pm dashboard serve`. Confirm project-snapshot filtering works
-and the Dashboard stays inside the approved network boundary.
+Run locally with `pm dashboard serve`. Confirm project-snapshot filtering works,
+generic `/api/tool/query/<use-case-id>` responses retain the full structured
+contract, and legacy endpoints carry their interface-classification headers.
+
+For project-health sync, verify preview performs no connector call and displays
+the exact board scope. Confirm only that preview, then verify a replay of its
+one-time token is rejected and browser output contains no raw connector error.
+Do not use a real sync target merely to test error handling.
+
+The Dashboard must bind to loopback by default. Non-loopback binding is allowed
+only for an approved network scope and requires the explicit `--allow-remote`
+operator option.
 
 ## Stop conditions
 

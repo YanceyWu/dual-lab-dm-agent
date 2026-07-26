@@ -183,18 +183,21 @@ The core PM workflows remain local-first and SQLite-backed.
 
 ## Contributor validation
 
-If you are modifying the starter repo itself, install a repo-local venv and run the regression checks:
+If you are modifying the starter repo itself, install a repo-local venv and run
+the unified release checks from the repository root:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e . pytest ruff
-.venv/bin/python -m pytest -q
-python3 -m py_compile $(find pm_agent scripts tests -name '*.py')
-
-# Optional incremental lint for the files you touched
-.venv/bin/python -m ruff check <files-you-touched>
+.venv/bin/python -m pip install -e . pytest ruff build poetry-core
+cd ..
+make validate
+make rehearse-release
 ```
+
+Use `pm version` to identify the installed candidate. See
+`docs/RELEASE_ENGINEERING.md` and `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` before
+tagging or testing against an operational database.
 
 ## Documentation map
 

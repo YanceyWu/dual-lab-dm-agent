@@ -73,6 +73,14 @@ python3 tools/check_synthetic_samples.py
 PYTHONPATH=src src/.venv/bin/python -m pytest -q src/tests
 ```
 
+For the complete release-candidate contract, including Ruff, compilation,
+repository-tool tests, and package build inspection, run:
+
+```bash
+make validate
+make rehearse-release
+```
+
 The current `src/` tree is intentionally transfer-quarantined. Do not narrow its
 ignore rule until the relevant unit has an approval entry in
 `docs/SOURCE_PORTABILITY_REVIEW.md`. The synthetic-data contract is defined in

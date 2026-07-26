@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ai-pm-agent"
-version = "0.1.0"
+version = "0.2.0rc1"
 description = "Local-first Delivery Manager toolkit for portable delivery workflows"
 authors = ["PM Example <pm@example.invalid>"]
 readme = "README.md"
@@ -32,6 +32,7 @@ playwright = "^1.46"
 pytest = "^8.2"
 pytest-asyncio = "^0.23"
 ruff = "^0.4"
+build = "^1.2"
 
 [tool.poetry.scripts]
 pm = "pm_agent.cli.app:app"
