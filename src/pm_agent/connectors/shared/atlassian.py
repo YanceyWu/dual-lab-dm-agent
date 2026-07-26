@@ -5,6 +5,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 from urllib.parse import urlparse
 
 import requests
@@ -33,6 +34,7 @@ class AtlassianAuthSession:
     auth_type: str
     cloud_id: str | None = None
     token_source: str | None = None
+    token_refreshed: bool = False
 
 
 def _read_env_file(path: Path) -> dict[str, str]:
@@ -156,9 +158,11 @@ def _build_oauth_session(
     refresh_token_hint: str,
     tokens: dict,
     token_source: Path | None,
+    refresh_observer: Callable[[], None] | None = None,
 ) -> AtlassianAuthSession:
     access_token = tokens.get("access_token", "")
     refresh_token = tokens.get("refresh_token") or refresh_token_hint
+    token_refreshed = False
 
     if not access_token and refresh_token and client_id and client_secret:
         refreshed = _refresh_access_token(client_id, client_secret, refresh_token, verify_ssl)
@@ -170,6 +174,9 @@ def _build_oauth_session(
         tokens.update(refreshed)
         token_source = _save_tokens(tokens)
         access_token = tokens["access_token"]
+        token_refreshed = True
+        if refresh_observer:
+            refresh_observer()
 
     if not access_token:
         raise AtlassianAuthError(
@@ -187,6 +194,9 @@ def _build_oauth_session(
         tokens.update(refreshed)
         token_source = _save_tokens(tokens)
         access_token = tokens["access_token"]
+        token_refreshed = True
+        if refresh_observer:
+            refresh_observer()
 
     resources = tokens.get("accessible_resources") or _fetch_accessible_resources(access_token, verify_ssl)
     tokens["accessible_resources"] = resources
@@ -218,6 +228,9 @@ def _build_oauth_session(
         token_source = _save_tokens(tokens)
         session.headers["Authorization"] = f"Bearer {tokens['access_token']}"
         probe = session.get(f"{oauth_base_url}{_probe_path(product)}", timeout=20)
+        token_refreshed = True
+        if refresh_observer:
+            refresh_observer()
 
     probe.raise_for_status()
     resolved_token_source = token_source
@@ -229,6 +242,7 @@ def _build_oauth_session(
         auth_type="oauth",
         cloud_id=cloud_id,
         token_source=str(resolved_token_source.resolve()) if resolved_token_source else None,
+        token_refreshed=token_refreshed,
     )
 
 
@@ -240,6 +254,7 @@ def get_auth_session(
     api_token: str = "",
     verify_ssl: bool = True,
     cloud_id_hint: str = "",
+    refresh_observer: Callable[[], None] | None = None,
 ) -> AtlassianAuthSession:
     base_url = base_url_hint.rstrip("/")
     if not base_url:
@@ -272,6 +287,7 @@ def get_auth_session(
             refresh_token,
             tokens,
             token_source,
+            refresh_observer,
         )
 
     if email and api_token:
@@ -287,6 +303,7 @@ def get_auth_session(
             auth_type="basic",
             cloud_id=None,
             token_source=None,
+            token_refreshed=False,
         )
 
     raise AtlassianAuthError(

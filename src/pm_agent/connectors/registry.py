@@ -3,7 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 
 from pm_agent.connectors import confluence, jira, servicenow
-from pm_agent.connectors.base import ConnectorStatusRow, ConnectorValidationResult
+from pm_agent.connectors.base import (
+    ConnectorProbeResult,
+    ConnectorStatusRow,
+    ConnectorValidationResult,
+)
 from pm_agent.database import repository
 
 CONNECTOR_MODULES = {
@@ -90,12 +94,14 @@ def _freshness_summary(rows: list[dict]) -> str:
 
 
 def get_connector_status_rows(name: str | None = None) -> list[ConnectorStatusRow]:
-    validations = validate_connectors(name=name)
+    names = [name.strip().lower()] if name else connector_names()
+    for connector_name in names:
+        get_connector_module(connector_name)
     freshness_rows = repository.get_data_source_freshness(active_only=False)
     status_rows: list[ConnectorStatusRow] = []
 
-    for validation in validations:
-        module = get_connector_module(validation.name)
+    for connector_name in names:
+        module = get_connector_module(connector_name)
         relevant = [
             row
             for row in freshness_rows
@@ -109,11 +115,11 @@ def get_connector_status_rows(name: str | None = None) -> list[ConnectorStatusRo
         )
         status_rows.append(
             ConnectorStatusRow(
-                name=validation.name,
-                display_name=validation.display_name,
-                enabled=validation.enabled,
-                ready=validation.ready,
-                auth_mode=validation.auth_mode,
+                name=connector_name,
+                display_name=str(getattr(module, "DISPLAY_NAME", connector_name)),
+                enabled=active_sources > 0,
+                ready=None,
+                auth_mode="not_inspected",
                 active_sources=active_sources,
                 stale_sources=stale_sources,
                 latest_run_at=_latest_timestamp(relevant) or "-",
@@ -121,3 +127,37 @@ def get_connector_status_rows(name: str | None = None) -> list[ConnectorStatusRo
             )
         )
     return status_rows
+
+
+def probe_connectors(name: str | None = None) -> list[ConnectorProbeResult]:
+    """Run an explicit runtime probe and return only safe, bounded outcomes."""
+    results = validate_connectors(name=name)
+    return [_safe_probe_result(result) for result in results]
+
+
+def _safe_probe_result(
+    validation: ConnectorValidationResult,
+) -> ConnectorProbeResult:
+    warning_codes = []
+    error_codes = []
+    if not validation.enabled:
+        warning_codes.append("CONNECTOR_DISABLED")
+    if validation.warnings:
+        warning_codes.append("LOCAL_SETUP_WARNING")
+    if validation.errors:
+        error_codes.append("RUNTIME_PROBE_FAILED")
+    token_refreshed = (
+        str(validation.details.get("token_refreshed") or "").lower() == "yes"
+    )
+    if token_refreshed:
+        warning_codes.append("OAUTH_TOKEN_AUTO_REFRESHED")
+    return ConnectorProbeResult(
+        name=validation.name,
+        display_name=validation.display_name,
+        enabled=validation.enabled,
+        ready=validation.ready,
+        auth_mode=validation.auth_mode,
+        token_refreshed=token_refreshed,
+        warning_codes=warning_codes,
+        error_codes=error_codes,
+    )

@@ -161,8 +161,8 @@ def connector_list():
     rows = connector_registry.get_connector_status_rows()
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     table.add_column("Name", width=14)
-    table.add_column("Enabled", width=8)
-    table.add_column("Ready", width=8)
+    table.add_column("Sources", width=8)
+    table.add_column("Ready", width=12)
     table.add_column("Auth", width=20)
     table.add_column("Freshness", width=16)
     table.add_column("Active sources", justify="right", width=14)
@@ -170,7 +170,7 @@ def connector_list():
         table.add_row(
             row.display_name,
             "yes" if row.enabled else "no",
-            "yes" if row.ready else "no",
+            "not probed" if row.ready is None else ("yes" if row.ready else "no"),
             row.auth_mode,
             row.freshness_summary,
             str(row.active_sources),
@@ -208,12 +208,12 @@ def connector_validate(
 
 @connector_app.command("status")
 def connector_status():
-    """查看 connector readiness + sync freshness 概况。"""
+    """离线查看本地 connector source 和 sync freshness 概况。"""
     rows = connector_registry.get_connector_status_rows()
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     table.add_column("Connector", width=14)
-    table.add_column("Enabled", width=8)
-    table.add_column("Ready", width=8)
+    table.add_column("Sources", width=8)
+    table.add_column("Ready", width=12)
     table.add_column("Auth", width=18)
     table.add_column("Freshness", width=16)
     table.add_column("Stale", justify="right", width=7)
@@ -222,10 +222,54 @@ def connector_status():
         table.add_row(
             row.display_name,
             "yes" if row.enabled else "no",
-            "yes" if row.ready else "no",
+            "not probed" if row.ready is None else ("yes" if row.ready else "no"),
             row.auth_mode,
             row.freshness_summary,
             str(row.stale_sources),
             row.latest_run_at,
         )
     console.print(table)
+
+
+@connector_app.command("probe")
+def connector_probe(
+    name: str = typer.Argument(
+        ...,
+        help="connector name: jira|confluence|servicenow",
+    ),
+):
+    """显式执行运行时连接检查；OAuth token 可自动刷新但不会被显示。"""
+    try:
+        results = connector_registry.probe_connectors(name=name)
+    except ValueError as exc:
+        console.print(
+            json.dumps(
+                {"status": "invalid", "error_code": "UNKNOWN_CONNECTOR"},
+                sort_keys=True,
+            )
+        )
+        raise typer.Exit(1) from exc
+    payload = {
+        "status": (
+            "success"
+            if all(result.ready for result in results)
+            else "unavailable"
+        ),
+        "probes": [
+            {
+                "connector": result.name,
+                "display_name": result.display_name,
+                "enabled": result.enabled,
+                "ready": result.ready,
+                "auth_mode": result.auth_mode,
+                "runtime_probe_requested": True,
+                "token_refreshed": result.token_refreshed,
+                "warning_codes": result.warning_codes,
+                "error_codes": result.error_codes,
+            }
+            for result in results
+        ],
+    }
+    console.print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    if payload["status"] != "success":
+        raise typer.Exit(1)

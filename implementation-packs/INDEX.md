@@ -34,6 +34,7 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-016 | Connector Sync Result Contract | IP-014 | Connector hardening | TECHNICALLY VALIDATED — OWNER REVIEW PENDING |
 | IP-019 | Interface-to-Executor Migration | G4 | Interface hardening | REFERENCE SLICE VALIDATED — OWNER REVIEW PENDING |
 | IP-020 | Staffing Fail-Closed Safety | IP-005, IP-006, IP-007, IP-008 | Staffing hardening | OWNER APPROVED — COMMITTED |
+| IP-021 | Read-Only Connector Contract Repair | IP-014, IP-016 | Connector hardening | OWNER APPROVED — COMMITTED |
 
 ## Pack sizing rule
 

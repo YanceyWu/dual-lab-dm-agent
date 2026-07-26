@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -26,7 +25,7 @@ def _effective_config() -> dict:
         return {}
 
 
-def _build_auth() -> AtlassianAuthSession:
+def _build_auth(refresh_observer=None) -> AtlassianAuthSession:
     config = _effective_config()
     base_url = (
         str(config.get("base_url") or settings.confluence_base_url or settings.jira_base_url).strip()
@@ -42,6 +41,7 @@ def _build_auth() -> AtlassianAuthSession:
             or settings.confluence_cloud_id
             or settings.atlassian_cloud_id
         ),
+        refresh_observer=refresh_observer,
     )
 
 
@@ -411,18 +411,27 @@ def validate_connector() -> ConnectorValidationResult:
         errors.append("Confluence connector is enabled but no base URL is configured.")
 
     if enabled and base_url:
+        token_refreshed = False
+
+        def mark_token_refreshed() -> None:
+            nonlocal token_refreshed
+            token_refreshed = True
+
         try:
-            auth = _build_auth()
+            auth = _build_auth(refresh_observer=mark_token_refreshed)
             details["resolved_auth_type"] = auth.auth_type
             details["resolved_base_url"] = auth.base_url
             if auth.cloud_id:
                 details["cloud_id"] = auth.cloud_id
             if auth.token_source:
                 details["token_source"] = auth.token_source
+            token_refreshed = token_refreshed or auth.token_refreshed
         except AtlassianAuthError as exc:
             errors.append(str(exc))
         except Exception as exc:
             errors.append(f"Confluence auth probe failed: {exc}")
+        finally:
+            details["token_refreshed"] = "yes" if token_refreshed else "no"
 
     if enabled and configured_pages == 0:
         warnings.append(

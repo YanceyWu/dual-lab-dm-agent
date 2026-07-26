@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `IP-020 — Staffing Fail-Closed Safety`
+Current implementation pack: `IP-021 — Read-Only Connector Contract Repair`
 Gate status: `OWNER APPROVED — COMMITTED LOCALLY`
-Git state: IP-020 is committed locally on `codex/ip-000-baseline-safety` and remains unpushed; do not merge into `main`
+Git state: IP-020 and IP-021 are committed locally on `codex/ip-000-baseline-safety` and remain unpushed; do not merge into `main`
 
 ## Read this first
 
@@ -96,12 +96,10 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Assess IP-021 to separate offline connector status from explicit network and
-   credential probing.
+1. Assess IP-022 Dashboard Write Boundary.
 2. Push the current branch only when explicitly authorized; do not merge into
    `main`.
-3. Run real-environment staffing assessment/proposal UAT before authorizing any
-   confirmation.
+3. Preserve IP-020 and IP-021 for real-environment UAT.
 
 ## Decisions in force
 
@@ -506,3 +504,27 @@ Execute in this order:
   committed locally and remains unpushed; do not merge it into `main`.
 - Exact next action: assess IP-021 read-only connector contract repair, while
   preserving IP-020 for real-environment staffing UAT.
+
+### 2026-07-26 — IP-021 read-only connector contract repair
+
+- Removed runtime connector validation from `connector-status-review`,
+  `pm connector status`, and `pm connector list`. These paths now use only
+  portable module metadata and local source/sync records, and explicitly report
+  that runtime readiness was not probed.
+- Added an explicit, single-connector `pm connector probe` command with bounded
+  JSON output. It does not expose endpoints, credentials, cloud IDs, token
+  paths, or raw validation errors.
+- Owner specified that OAuth refresh should be automatic and low-friction. JIRA
+  and Confluence probes now report `token_refreshed=true` and
+  `OAUTH_TOKEN_AUTO_REFRESHED` when refresh occurs, including when a later probe
+  step fails.
+- Preserved detailed `pm connector validate` as a local-only diagnostic
+  compatibility command and documented that its output must not be exported
+  without sanitization.
+- Validation passed: 5 focused connector boundary tests, 98 runtime tests,
+  18 repository tool tests (19 subtests), touched-file Ruff, static compilation,
+  portable-only audit, repository-boundary check, synthetic-sample check, and
+  diff check.
+- Owner approved IP-021 for commit on 2026-07-26. The implementation is
+  committed locally and remains unpushed; do not merge it into `main`.
+- Exact next action: assess IP-022 Dashboard Write Boundary.

@@ -59,6 +59,12 @@ def validate_connector() -> ConnectorValidationResult:
         errors.append("JIRA connector is enabled but no base URL is configured.")
 
     if enabled and base_url:
+        token_refreshed = False
+
+        def mark_token_refreshed() -> None:
+            nonlocal token_refreshed
+            token_refreshed = True
+
         try:
             auth = get_auth_session(
                 "jira",
@@ -67,6 +73,7 @@ def validate_connector() -> ConnectorValidationResult:
                 api_token=settings.jira_api_token,
                 verify_ssl=True,
                 cloud_id_hint=str(config.get("cloud_id") or settings.atlassian_cloud_id),
+                refresh_observer=mark_token_refreshed,
             )
             details["resolved_auth_type"] = auth.auth_type
             details["resolved_base_url"] = auth.base_url
@@ -74,10 +81,13 @@ def validate_connector() -> ConnectorValidationResult:
                 details["cloud_id"] = auth.cloud_id
             if auth.token_source:
                 details["token_source"] = auth.token_source
+            token_refreshed = token_refreshed or auth.token_refreshed
         except AtlassianAuthError as exc:
             errors.append(str(exc))
         except Exception as exc:
             errors.append(f"JIRA auth probe failed: {exc}")
+        finally:
+            details["token_refreshed"] = "yes" if token_refreshed else "no"
 
     if enabled and board_count == 0:
         warnings.append("No active JIRA boards configured. Run `pm release add-board` before syncing.")

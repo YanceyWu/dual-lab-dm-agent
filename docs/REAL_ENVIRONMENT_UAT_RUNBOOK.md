@@ -40,8 +40,11 @@ pm tool list
 pm sync status
 ```
 
-Run runtime connector validation only for locally approved connectors. Do not
-export its detailed output without manual sanitization.
+Use `pm connector probe <connector-name>` for an explicit safe runtime check of
+an approved connector. Atlassian OAuth token refresh is automatic; the result
+reports whether it occurred without exposing token or endpoint details. The
+legacy `pm connector validate` command is local diagnostic output and must not
+be exported without manual sanitization.
 
 ## Read-only UAT
 
@@ -64,6 +67,7 @@ Sync one approved connector and narrow scope at a time. Afterwards inspect only
 locally:
 
 ```bash
+pm connector probe <connector-name>
 pm sync status
 pm tool query connector-status-review --connector <connector-name>
 pm tool query connector-sync-results --connector <connector-name>
