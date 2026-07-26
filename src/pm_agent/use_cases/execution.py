@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -24,6 +26,7 @@ class UseCaseDescriptor:
     use_case_id: str
     purpose: str
     parameter_schema: dict[str, object]
+    contract_version: str = "1.0"
     supported_operations: tuple[str, ...] = ("query",)
     read_only: bool = True
     known_statuses: tuple[str, ...] = ("success", "unavailable", "invalid", "failed")
@@ -60,28 +63,148 @@ class UseCaseExecutor:
         if handler is None:
             return self._finalize(UseCaseResult(
                 status="unavailable",
-                warnings=[f"Unknown use case: {request.use_case_id}"],
+                warnings=[{"code": "USE_CASE_NOT_FOUND", "field": "use_case_id"}],
                 execution_metadata=new_execution_metadata(request),
-            ), request, started_at, started_clock)
+            ), request, started_at, started_clock, read_only=True)
         descriptor = self._descriptors[request.use_case_id]
+        validation_warnings = self._validate_request(request, descriptor)
+        if validation_warnings:
+            return self._finalize(
+                UseCaseResult(
+                    status="invalid",
+                    warnings=validation_warnings,
+                    execution_metadata=new_execution_metadata(request),
+                ),
+                request,
+                started_at,
+                started_clock,
+                read_only=descriptor.read_only,
+            )
         if request.operation not in descriptor.supported_operations:
             return self._finalize(UseCaseResult(
                 status="invalid",
-                warnings=[
-                    f"Operation '{request.operation}' is not supported for "
-                    f"use case: {request.use_case_id}"
-                ],
+                warnings=[{"code": "OPERATION_NOT_SUPPORTED", "field": "operation"}],
                 execution_metadata=new_execution_metadata(request),
-            ), request, started_at, started_clock)
+            ), request, started_at, started_clock, read_only=descriptor.read_only)
         try:
             result = handler(request)
-        except Exception:
+        except Exception as exc:
             result = UseCaseResult(
                 status="failed",
-                warnings=["The local use case could not complete."],
+                warnings=[{"code": self._safe_exception_code(exc)}],
                 execution_metadata=new_execution_metadata(request),
             )
-        return self._finalize(result, request, started_at, started_clock)
+        return self._finalize(
+            result,
+            request,
+            started_at,
+            started_clock,
+            read_only=descriptor.read_only,
+        )
+
+    @staticmethod
+    def _validate_request(
+        request: UseCaseRequest,
+        descriptor: UseCaseDescriptor,
+    ) -> list[dict[str, object]]:
+        warnings: list[dict[str, object]] = []
+        if request.contract_version != descriptor.contract_version:
+            warnings.append(
+                {
+                    "code": "CONTRACT_VERSION_UNSUPPORTED",
+                    "field": "contract_version",
+                    "supported": [descriptor.contract_version],
+                }
+            )
+        if request.correlation_id is not None and (
+            len(request.correlation_id) > 128
+            or re.fullmatch(r"[A-Za-z0-9._:-]+", request.correlation_id) is None
+        ):
+            warnings.append({"code": "CORRELATION_ID_INVALID", "field": "correlation_id"})
+
+        schema = descriptor.parameter_schema
+        unknown = sorted(set(request.parameters) - set(schema))
+        warnings.extend(
+            {"code": "UNKNOWN_PARAMETER", "field": field} for field in unknown
+        )
+        for field, raw_rules in schema.items():
+            rules = raw_rules if isinstance(raw_rules, dict) else {}
+            present = field in request.parameters
+            if rules.get("required") and not present:
+                warnings.append({"code": "REQUIRED_PARAMETER_MISSING", "field": field})
+                continue
+            if not present:
+                continue
+            value = request.parameters[field]
+            expected = rules.get("type")
+            valid_type = {
+                "string": isinstance(value, str),
+                "integer": isinstance(value, int) and not isinstance(value, bool),
+                "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+                "boolean": isinstance(value, bool),
+                "array": isinstance(value, list),
+                "object": isinstance(value, dict),
+            }.get(str(expected), True)
+            if not valid_type:
+                warnings.append(
+                    {
+                        "code": "PARAMETER_TYPE_INVALID",
+                        "field": field,
+                        "expected": expected,
+                    }
+                )
+                continue
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                minimum = rules.get("minimum")
+                maximum = rules.get("maximum")
+                if minimum is not None and value < minimum:
+                    warnings.append(
+                        {
+                            "code": "PARAMETER_OUT_OF_RANGE",
+                            "field": field,
+                            "minimum": minimum,
+                            "maximum": maximum,
+                        }
+                    )
+                elif maximum is not None and value > maximum:
+                    warnings.append(
+                        {
+                            "code": "PARAMETER_OUT_OF_RANGE",
+                            "field": field,
+                            "minimum": minimum,
+                            "maximum": maximum,
+                        }
+                    )
+            if isinstance(value, str):
+                if not value.strip() and rules.get("allow_empty") is not True:
+                    warnings.append({"code": "PARAMETER_EMPTY", "field": field})
+                maximum_length = rules.get("maximum_length")
+                if maximum_length is not None and len(value) > maximum_length:
+                    warnings.append(
+                        {
+                            "code": "PARAMETER_TOO_LONG",
+                            "field": field,
+                            "maximum_length": maximum_length,
+                        }
+                    )
+            allowed = rules.get("enum")
+            if allowed is not None and value not in allowed:
+                warnings.append(
+                    {
+                        "code": "PARAMETER_NOT_ALLOWED",
+                        "field": field,
+                        "allowed": allowed,
+                    }
+                )
+        return warnings
+
+    @staticmethod
+    def _safe_exception_code(exc: Exception) -> str:
+        if isinstance(exc, sqlite3.Error):
+            return "DATA_ACCESS_FAILED"
+        if isinstance(exc, (TypeError, ValueError)):
+            return "DOMAIN_VALIDATION_FAILED"
+        return "USE_CASE_EXECUTION_FAILED"
 
     def get_result(self, execution_id: str) -> UseCaseResult | None:
         trace = repository.get_execution_trace(execution_id)
@@ -113,6 +236,8 @@ class UseCaseExecutor:
         request: UseCaseRequest,
         started_at: datetime,
         started_clock: float,
+        *,
+        read_only: bool,
     ) -> UseCaseResult:
         finished_at = datetime.now(timezone.utc)
         metadata = dict(result.execution_metadata) or new_execution_metadata(request)
@@ -122,6 +247,7 @@ class UseCaseExecutor:
                 "finished_at": finished_at.isoformat(),
                 "duration_ms": round((perf_counter() - started_clock) * 1000),
                 "outcome": result.status,
+                "read_only": read_only,
             }
         )
         result.execution_metadata = metadata
@@ -141,7 +267,10 @@ class UseCaseExecutor:
                     for item in result.evidence
                 ],
                 "freshness_summary": result.freshness,
-                "warning_codes": result.warnings,
+                "warning_codes": [
+                    item.get("code", "WARNING") if isinstance(item, dict) else item
+                    for item in result.warnings
+                ],
                 "proposed_write_count": len(result.proposed_writes),
             }
         )

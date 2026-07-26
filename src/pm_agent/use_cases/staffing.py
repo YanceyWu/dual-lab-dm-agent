@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from calendar import monthrange
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 from typing import Any, Literal
 from uuid import uuid4
+import secrets
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +21,15 @@ STAFFING_SOURCE_IDS = (
     "import-skills-matrix",
     "import-hiref-report",
 )
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _parse_utc(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 class StaffingDemand(BaseModel):
@@ -473,7 +483,7 @@ class StaffingProposalService:
                 "authorized": True,
                 "reason": override_reason,
                 "source_states": feasibility["source_states"],
-                "acknowledged_at": datetime.now().isoformat(),
+                "acknowledged_at": _utc_now().isoformat(),
             }
             feasibility["freshness_override"] = freshness_override
         hiref_conditions = _hiref_conditions(feasibility)
@@ -497,12 +507,14 @@ class StaffingProposalService:
                 "acknowledged": True,
                 "note": action_note,
                 "conditions": hiref_conditions,
-                "acknowledged_at": datetime.now().isoformat(),
+                "acknowledged_at": _utc_now().isoformat(),
             }
             feasibility["hiref_action_acknowledgement"] = hiref_acknowledgement
         proposal_id = f"proposal-{uuid4().hex}"
-        token = uuid4().hex
-        expires_at = (datetime.now() + timedelta(minutes=expires_in_minutes)).isoformat()
+        token = secrets.token_urlsafe(32)
+        expires_at = (
+            _utc_now() + timedelta(minutes=expires_in_minutes)
+        ).isoformat(timespec="seconds")
         repository.create_staffing_proposal({
             "proposal_id": proposal_id, "expires_at": expires_at, "confirmation_token": token,
             "request": demand.model_dump(),
@@ -534,7 +546,7 @@ class StaffingProposalService:
                 return repository.confirm_staffing_proposal(proposal_id, confirmation_token, stored["proposal"])
             except ValueError as exc:
                 return {"status": "invalid", "warning": str(exc)}
-        if datetime.fromisoformat(stored["expires_at"]) <= datetime.now():
+        if _parse_utc(stored["expires_at"]) <= _utc_now():
             try:
                 expired = repository.confirm_staffing_proposal(proposal_id, confirmation_token, stored["proposal"])
                 if expired["status"] == "expired":

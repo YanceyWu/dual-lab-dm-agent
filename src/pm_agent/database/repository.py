@@ -10,10 +10,12 @@ Rules:
 from __future__ import annotations
 
 import json
+import hashlib
+import secrets
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator
 
@@ -1490,11 +1492,16 @@ def create_staffing_proposal(record: dict[str, Any]) -> None:
         con.execute(
             """
             INSERT INTO staffing_proposals
-                (proposal_id, expires_at, confirmation_token, request_json, evidence_json, proposal_json)
+                (proposal_id, expires_at, confirmation_token_hash, request_json,
+                 evidence_json, proposal_json)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             [
-                record["proposal_id"], record["expires_at"], record["confirmation_token"],
+                record["proposal_id"],
+                record["expires_at"],
+                hashlib.sha256(
+                    record["confirmation_token"].encode("utf-8")
+                ).hexdigest(),
                 json.dumps(record["request"], ensure_ascii=False),
                 json.dumps(record["evidence"], ensure_ascii=False),
                 json.dumps(record["proposal"], ensure_ascii=False),
@@ -1522,19 +1529,39 @@ def confirm_staffing_proposal(
 ) -> dict:
     """Atomically persist planned assignments, monthly allocations, and a decision record."""
     with _conn() as con:
+        con.execute("BEGIN IMMEDIATE")
         row = con.execute("SELECT * FROM staffing_proposals WHERE proposal_id = ?", [proposal_id]).fetchone()
         if not row:
             raise ValueError("Unknown staffing proposal")
         stored = dict(row)
-        if stored["confirmation_token"] != confirmation_token:
+        supplied_token_hash = hashlib.sha256(
+            confirmation_token.encode("utf-8")
+        ).hexdigest()
+        if not secrets.compare_digest(
+            stored["confirmation_token_hash"],
+            supplied_token_hash,
+        ):
             raise ValueError("Invalid confirmation token")
         if stored["status"] == "confirmed":
             return {"status": "confirmed", "decision_id": stored["decision_id"], "idempotent": True}
         if stored["status"] != "proposed":
             raise ValueError(f"Proposal is not confirmable: {stored['status']}")
-        if datetime.fromisoformat(stored["expires_at"]) <= datetime.now():
+        expires_at = datetime.fromisoformat(stored["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= datetime.now(timezone.utc):
             con.execute("UPDATE staffing_proposals SET status='expired' WHERE proposal_id=?", [proposal_id])
             return {"status": "expired", "decision_id": None, "idempotent": False}
+        claimed = con.execute(
+            """
+            UPDATE staffing_proposals
+            SET status='confirming'
+            WHERE proposal_id=? AND status='proposed'
+            """,
+            [proposal_id],
+        )
+        if claimed.rowcount != 1:
+            raise ValueError("Proposal was already claimed for confirmation")
 
         request = _json_loads_or(stored["request_json"], {})
         project = con.execute("SELECT name FROM projects WHERE id = ?", [request["project_id"]]).fetchone()
@@ -1542,6 +1569,27 @@ def confirm_staffing_proposal(
             raise ValueError("Target project no longer exists")
         selections = revalidated_proposal["selections"]
         for selection in selections:
+            for period in revalidated_proposal["periods"]:
+                existing_load = con.execute(
+                    """
+                    SELECT COALESCE(SUM(allocation), 0.0)
+                    FROM monthly_allocations
+                    WHERE employee_id = ?
+                      AND year = ?
+                      AND month = ?
+                      AND plan_version_id = ?
+                    """,
+                    [
+                        selection["member_id"],
+                        period["year"],
+                        period["month"],
+                        revalidated_proposal.get("plan_version_id") or "",
+                    ],
+                ).fetchone()[0]
+                if float(existing_load or 0.0) + float(selection["allocation"]) > 1.0 + 1e-9:
+                    raise ValueError(
+                        "Confirmed allocation would exceed 1.0 for a member period"
+                    )
             con.execute(
                 """
                 INSERT INTO assignments (employee_id, project_id, role, allocation, start_date, status)
@@ -1553,11 +1601,16 @@ def confirm_staffing_proposal(
                  selection["allocation"], request["start_period"] + "-01"],
             )
             for period in revalidated_proposal["periods"]:
-                con.execute(
-                    """
-                    INSERT INTO monthly_allocations (employee_id, project_id, year, month, allocation, plan_version_id)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
+                    con.execute(
+                        """
+                        INSERT INTO monthly_allocations (employee_id, project_id, year, month, allocation, plan_version_id)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(
+                            employee_id, project_id, year, month, plan_version_id
+                        ) DO UPDATE SET
+                            allocation = monthly_allocations.allocation
+                                       + excluded.allocation
+                        """,
                     [selection["member_id"], request["project_id"], period["year"], period["month"],
                      selection["allocation"], revalidated_proposal.get("plan_version_id") or ""],
                 )
@@ -1601,9 +1654,9 @@ def confirm_staffing_proposal(
         )
         decision_id = decision.lastrowid
         con.execute(
-            """UPDATE staffing_proposals SET status='confirmed', confirmed_at=datetime('now'),
+            """UPDATE staffing_proposals SET status='confirmed', confirmed_at=?,
                decision_id=? WHERE proposal_id=?""",
-            [decision_id, proposal_id],
+            [datetime.now(timezone.utc).isoformat(timespec="seconds"), decision_id, proposal_id],
         )
     return {"status": "confirmed", "decision_id": decision_id, "idempotent": False}
 

@@ -147,8 +147,15 @@ def test_confirmation_rejects_changed_capacity_without_domain_write(isolated_db)
     con = sqlite3.connect(isolated_db)
     try:
         con.execute(
-            """INSERT INTO monthly_allocations (employee_id, project_id, year, month, allocation, plan_version_id)
-               VALUES ('990101', 'project-atlas-990001', 2026, 8, 0.4, 'plan-2026-08')"""
+            """
+            UPDATE monthly_allocations
+            SET allocation = allocation + 0.4
+            WHERE employee_id = '990101'
+              AND project_id = 'project-atlas-990001'
+              AND year = 2026
+              AND month = 8
+              AND plan_version_id = 'plan-2026-08'
+            """
         )
         con.commit()
     finally:

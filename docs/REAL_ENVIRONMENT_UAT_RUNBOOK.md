@@ -63,6 +63,7 @@ pm tool query contract-continuity-review --days 180
 pm tool query action-followup
 pm tool query connector-status-review
 pm tool query connector-sync-results
+pm tool query project-snapshot-list --param health=amber --param artifact_kind=plan
 ```
 
 For every response, verify evidence/freshness are present, non-fresh states are

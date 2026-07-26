@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sqlite3
 from contextlib import redirect_stdout
 from datetime import datetime, date
@@ -20,6 +21,11 @@ from flask import Flask, jsonify, request, send_from_directory
 from pm_agent.config import get_database_path
 from pm_agent.connectors import jira as jira_connector
 from pm_agent.database import repository
+from pm_agent.dashboard.write_operations import (
+    claim_sync_operation,
+    create_sync_preview,
+    finish_sync_operation,
+)
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
 
@@ -36,6 +42,29 @@ def _resolve_db_path() -> str:
 # runtime resolution happens at connection time.
 DB: str | None = None
 app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
+
+LEGACY_DIRECT_SQL_ROUTES = {
+    "/api/summary",
+    "/api/use-cases",
+    "/api/sync-runs",
+    "/api/freshness",
+    "/api/projects",
+    "/api/employees",
+    "/api/hiref",
+    "/api/allocations",
+    "/api/project-plans",
+    "/api/project-health",
+}
+
+
+@app.after_request
+def _mark_legacy_interface(response):
+    if request.path in LEGACY_DIRECT_SQL_ROUTES:
+        response.headers["X-DM-Interface-Contract"] = "legacy-direct-read"
+    elif request.path == "/api/project-snapshots":
+        response.headers["X-DM-Interface-Contract"] = "legacy-result-projection"
+    return response
+
 
 def db():
     conn = sqlite3.connect(DB or _resolve_db_path())
@@ -195,6 +224,23 @@ def _run_jira_sync(board_id):
         jira_connector.sync_releases(board=board_id, dry_run=False)
         jira_connector.sync_health(board=board_id, dry_run=False)
     return buffer.getvalue()
+
+
+def _dashboard_actor() -> str:
+    actor = os.getenv("PM_DASHBOARD_ACTOR", "dashboard-local-user").strip()
+    return actor[:100] or "dashboard-local-user"
+
+
+def _safe_sync_error_code(exc: Exception) -> str:
+    name = type(exc).__name__.lower()
+    text = str(exc).lower()
+    if "auth" in name or "auth" in text or "401" in text or "403" in text:
+        return "JIRA_AUTH_FAILED"
+    if "timeout" in name or "timeout" in text:
+        return "JIRA_TIMEOUT"
+    if "connection" in name or "network" in text:
+        return "JIRA_NETWORK_FAILED"
+    return "JIRA_SYNC_FAILED"
 
 def int_arg(name, default=20, minimum=1, maximum=200):
     raw = request.args.get(name, str(default))
@@ -473,6 +519,73 @@ def team_workload_overview():
     )
     return jsonify(result.model_dump())
 
+
+@app.route("/api/tool/query/<use_case_id>", methods=["POST"])
+def structured_use_case_query(use_case_id: str):
+    """Full read-only executor contract for Dashboard and local clients."""
+    descriptor = use_case_executor.describe(use_case_id)
+    if descriptor is None:
+        result = use_case_executor.execute(
+            UseCaseRequest(
+                use_case_id=use_case_id,
+                actor="dashboard",
+                requested_output="json",
+            )
+        )
+        return jsonify(result.model_dump()), 404
+    if not descriptor.read_only:
+        return jsonify(
+            {
+                "contract_version": descriptor.contract_version,
+                "status": "invalid",
+                "warnings": [{"code": "DASHBOARD_WRITE_ROUTE_NOT_ALLOWED"}],
+            }
+        ), 405
+    payload = request.get_json(silent=True) or {}
+    parameters = payload.get("parameters", {})
+    if not isinstance(parameters, dict):
+        return jsonify(
+            {
+                "contract_version": descriptor.contract_version,
+                "status": "invalid",
+                "warnings": [
+                    {"code": "PARAMETER_OBJECT_REQUIRED", "field": "parameters"}
+                ],
+            }
+        ), 400
+    correlation_id = payload.get("correlation_id")
+    if correlation_id is not None and not isinstance(correlation_id, str):
+        return jsonify(
+            {
+                "contract_version": descriptor.contract_version,
+                "status": "invalid",
+                "warnings": [
+                    {"code": "CORRELATION_ID_INVALID", "field": "correlation_id"}
+                ],
+            }
+        ), 400
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            contract_version=str(
+                payload.get("contract_version") or descriptor.contract_version
+            ),
+            use_case_id=use_case_id,
+            operation="query",
+            actor="dashboard",
+            parameters=parameters,
+            requested_output="json",
+            correlation_id=correlation_id,
+        )
+    )
+    status_code = {
+        "invalid": 400,
+        "unavailable": 404,
+        "failed": 503,
+    }.get(result.status, 200)
+    response = jsonify(result.model_dump())
+    response.headers["X-DM-Interface-Contract"] = "use-case-result-v1"
+    return response, status_code
+
 @app.route("/api/hiref")
 def hiref():
     hiref_list = repository.get_hiref_contracts()
@@ -663,8 +776,96 @@ def project_health():
 @app.route("/api/project-health/sync", methods=["POST"])
 def project_health_sync():
     payload = request.get_json(silent=True) or {}
+    operation = str(payload.get("operation") or "").strip().lower()
     board_id = str(payload.get("board_id") or "").strip()
     stale_only = bool(payload.get("stale_only"))
+
+    if operation == "confirm":
+        operation_id = str(payload.get("operation_id") or "").strip()
+        confirmation_token = str(payload.get("confirmation_token") or "").strip()
+        if not operation_id or not confirmation_token:
+            return jsonify(
+                {
+                    "success": False,
+                    "code": "SYNC_CONFIRMATION_REQUIRED",
+                    "message": "A preview operation and confirmation token are required.",
+                }
+            ), 400
+        c = db()
+        try:
+            claimed, error_code = claim_sync_operation(
+                c,
+                operation_id=operation_id,
+                confirmation_token=confirmation_token,
+            )
+        finally:
+            c.close()
+        if error_code:
+            status = 404 if error_code == "SYNC_OPERATION_NOT_FOUND" else 409
+            return jsonify(
+                {
+                    "success": False,
+                    "code": error_code,
+                    "message": "The sync confirmation is invalid, expired, or already used.",
+                    "execution_id": operation_id,
+                }
+            ), status
+
+        results = []
+        failures = []
+        for target_id in claimed["scope"]["board_ids"]:
+            try:
+                _run_jira_sync(target_id)
+                results.append({"board_id": target_id, "success": True})
+            except Exception as exc:
+                error_code = _safe_sync_error_code(exc)
+                failures.append(error_code)
+                results.append(
+                    {
+                        "board_id": target_id,
+                        "success": False,
+                        "code": error_code,
+                    }
+                )
+        safe_result = {
+            "target_count": len(results),
+            "succeeded_count": sum(1 for item in results if item["success"]),
+            "failed_count": len(failures),
+            "results": results,
+        }
+        c = db()
+        try:
+            finish_sync_operation(
+                c,
+                operation_id=operation_id,
+                success=not failures,
+                result=safe_result,
+                failure_code="JIRA_SYNC_PARTIAL_FAILURE" if failures else "",
+            )
+        finally:
+            c.close()
+        response = {
+            "success": not failures,
+            "code": "JIRA_SYNC_PARTIAL_FAILURE" if failures else "JIRA_SYNC_COMPLETED",
+            "message": (
+                "Some JIRA sync actions failed."
+                if failures
+                else "JIRA release and health sync completed."
+            ),
+            "execution_id": operation_id,
+            "actor": claimed["actor"],
+            **safe_result,
+        }
+        return jsonify(response), 502 if failures else 200
+
+    if operation != "preview":
+        return jsonify(
+            {
+                "success": False,
+                "code": "SYNC_PREVIEW_REQUIRED",
+                "message": "Request a sync preview before confirmation.",
+            }
+        ), 400
 
     c = db()
     try:
@@ -673,7 +874,13 @@ def project_health_sync():
         if board_id:
             board = board_map.get(board_id)
             if not board:
-                return jsonify({"message": f"Unknown or inactive board: {board_id}"}), 404
+                return jsonify(
+                    {
+                        "success": False,
+                        "code": "SYNC_TARGET_NOT_FOUND",
+                        "message": "The requested board is unknown or inactive.",
+                    }
+                ), 404
             targets = [board]
         elif stale_only:
             stale_ids = _stale_jira_board_ids(c)
@@ -682,61 +889,54 @@ def project_health_sync():
                 return jsonify(
                     {
                         "success": True,
+                        "code": "SYNC_NOT_REQUIRED",
                         "message": "No stale JIRA boards need syncing.",
-                        "results": [],
+                        "requires_confirmation": False,
+                        "targets": [],
                     }
                 )
         else:
-            return jsonify({"message": "Provide board_id or stale_only=true."}), 400
+            return jsonify(
+                {
+                    "success": False,
+                    "code": "SYNC_SCOPE_REQUIRED",
+                    "message": "Provide one board or request stale-board scope.",
+                }
+            ), 400
+
+        preview = create_sync_preview(c, targets=targets, actor=_dashboard_actor())
     finally:
         c.close()
 
-    results = []
-    failures = []
-    for target in targets:
-        try:
-            output = _run_jira_sync(target["id"])
-            results.append(
-                {
-                    "board_id": target["id"],
-                    "board_name": target["name"],
-                    "success": True,
-                    "log_tail": "\n".join(output.splitlines()[-20:]),
-                }
-            )
-        except Exception as exc:
-            failures.append(target["id"])
-            results.append(
-                {
-                    "board_id": target["id"],
-                    "board_name": target["name"],
-                    "success": False,
-                    "error": str(exc),
-                }
-            )
-
-    if failures:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": "Some JIRA sync actions failed.",
-                    "results": results,
-                }
-            ),
-            500,
-        )
-
-    board_names = ", ".join(target["name"] for target in targets)
     return jsonify(
         {
             "success": True,
-            "message": f"JIRA release + health sync completed for: {board_names}",
-            "results": results,
+            "code": "SYNC_PREVIEW_READY",
+            "message": "Review the target scope before starting the JIRA sync.",
+            "requires_confirmation": True,
+            "execution_id": preview["operation_id"],
+            "confirmation_token": preview["confirmation_token"],
+            "expires_at": preview["expires_at"],
+            "actor": preview["actor"],
+            "scope": preview["scope"],
+            "targets": [
+                {"board_id": target["id"], "board_name": target["name"]}
+                for target in targets
+            ],
         }
     )
 
-def serve(host: str = "127.0.0.1", port: int = 5001, debug: bool = False) -> None:
+
+def serve(
+    host: str = "127.0.0.1",
+    port: int = 5001,
+    debug: bool = False,
+    allow_remote: bool = False,
+) -> None:
+    if host not in {"127.0.0.1", "localhost", "::1"} and not allow_remote:
+        raise ValueError(
+            "Non-loopback Dashboard binding requires explicit allow_remote=True."
+        )
     print("\n  PM Dashboard starting...")
     print(f"  Open:  http://{host}:{port}\n")
     app.run(host=host, port=port, debug=debug)

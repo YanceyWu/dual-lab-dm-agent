@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS assignments (
     employee_id     TEXT NOT NULL REFERENCES employees(id),
     project_id      TEXT NOT NULL REFERENCES projects(id),
     role            TEXT,                    -- 'developer'|'tech_lead'|'reviewer'
-    allocation      REAL DEFAULT 0.5,        -- 0.0~1.0
+    allocation      REAL NOT NULL DEFAULT 0.5
+                    CHECK(allocation >= 0.0 AND allocation <= 1.0),
     start_date      TEXT,
     end_date        TEXT,                    -- NULL = ongoing
     status          TEXT DEFAULT 'active',   -- 'active'|'ended'|'planned'
@@ -310,13 +311,31 @@ CREATE TABLE IF NOT EXISTS execution_traces (
 CREATE INDEX IF NOT EXISTS idx_execution_traces_use_case_finished
     ON execution_traces(use_case_id, finished_at);
 
+CREATE TABLE IF NOT EXISTS dashboard_operations (
+    operation_id        TEXT PRIMARY KEY,
+    action              TEXT NOT NULL,
+    actor               TEXT NOT NULL,
+    status              TEXT NOT NULL,
+    scope_json          TEXT NOT NULL,
+    token_hash          TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    expires_at          TEXT NOT NULL,
+    confirmed_at        TEXT DEFAULT '',
+    finished_at         TEXT DEFAULT '',
+    result_json         TEXT NOT NULL DEFAULT '{}',
+    failure_code        TEXT DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_dashboard_operations_status_expiry
+    ON dashboard_operations(status, expires_at);
+
 CREATE TABLE IF NOT EXISTS staffing_proposals (
     proposal_id          TEXT PRIMARY KEY,
     status               TEXT NOT NULL DEFAULT 'proposed',
     created_at           TEXT NOT NULL DEFAULT (datetime('now')),
     expires_at           TEXT NOT NULL,
     confirmed_at         TEXT DEFAULT '',
-    confirmation_token   TEXT NOT NULL UNIQUE,
+    confirmation_token_hash TEXT NOT NULL UNIQUE,
     request_json         TEXT NOT NULL,
     evidence_json        TEXT NOT NULL DEFAULT '{}',
     proposal_json        TEXT NOT NULL,
@@ -389,9 +408,12 @@ CREATE TABLE IF NOT EXISTS monthly_allocations (
     employee_id     TEXT NOT NULL REFERENCES employees(id),
     project_id      TEXT NOT NULL REFERENCES projects(id),
     year            INTEGER NOT NULL,
-    month           INTEGER NOT NULL,
-    allocation      REAL DEFAULT 0.0,
-    plan_version_id TEXT DEFAULT '' REFERENCES plan_versions(plan_version_id)
+    month           INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
+    allocation      REAL NOT NULL DEFAULT 0.0
+                    CHECK(allocation >= 0.0 AND allocation <= 1.0),
+    plan_version_id TEXT NOT NULL DEFAULT ''
+                    REFERENCES plan_versions(plan_version_id),
+    UNIQUE(employee_id, project_id, year, month, plan_version_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_monthly_allocations_employee_month
@@ -405,9 +427,11 @@ CREATE TABLE IF NOT EXISTS placeholder_monthly_allocations (
     placeholder_id  TEXT NOT NULL REFERENCES staffing_placeholders(placeholder_id),
     project_id      TEXT NOT NULL REFERENCES projects(id),
     year            INTEGER NOT NULL,
-    month           INTEGER NOT NULL,
-    allocation      REAL DEFAULT 0.0,
-    plan_version_id TEXT DEFAULT '' REFERENCES plan_versions(plan_version_id),
+    month           INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
+    allocation      REAL NOT NULL DEFAULT 0.0
+                    CHECK(allocation >= 0.0 AND allocation <= 1.0),
+    plan_version_id TEXT NOT NULL DEFAULT ''
+                    REFERENCES plan_versions(plan_version_id),
     UNIQUE(placeholder_id, project_id, year, month, plan_version_id)
 );
 
@@ -1298,6 +1322,226 @@ def _ensure_default_plan_version(conn: sqlite3.Connection) -> str | None:
     return default_id
 
 
+def _table_sql(conn: sqlite3.Connection, table_name: str) -> str:
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+        [table_name],
+    ).fetchone()
+    return str(row[0] or "") if row else ""
+
+
+def _assert_v24_allocation_rows_are_valid(
+    conn: sqlite3.Connection,
+    table_name: str,
+) -> None:
+    invalid = conn.execute(
+        f"""
+        SELECT COUNT(*)
+        FROM {table_name}
+        WHERE month IS NULL
+           OR month NOT BETWEEN 1 AND 12
+           OR allocation IS NULL
+           OR allocation < 0.0
+           OR allocation > 1.0
+           OR plan_version_id IS NULL
+        """
+    ).fetchone()[0]
+    if invalid:
+        raise ValueError(
+            f"{table_name} contains invalid month/allocation rows; "
+            "repair them before applying v24 integrity constraints."
+        )
+
+
+def _migrate_allocation_integrity_v24(conn: sqlite3.Connection) -> None:
+    if _table_exists(conn, "assignments"):
+        invalid_assignments = conn.execute(
+            """
+            SELECT COUNT(*) FROM assignments
+            WHERE allocation IS NULL
+               OR allocation < 0.0
+               OR allocation > 1.0
+            """
+        ).fetchone()[0]
+        if invalid_assignments:
+            raise ValueError(
+                "assignments contains invalid allocation rows; repair them "
+                "before applying v24 integrity constraints."
+            )
+        if "check(allocation >= 0.0 and allocation <= 1.0)" not in _table_sql(
+            conn, "assignments"
+        ).lower():
+            conn.execute(
+                """
+                CREATE TABLE assignments_v24 (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    employee_id TEXT NOT NULL REFERENCES employees(id),
+                    project_id TEXT NOT NULL REFERENCES projects(id),
+                    role TEXT,
+                    allocation REAL NOT NULL DEFAULT 0.5
+                        CHECK(allocation >= 0.0 AND allocation <= 1.0),
+                    start_date TEXT,
+                    end_date TEXT,
+                    status TEXT DEFAULT 'active',
+                    created_at TEXT DEFAULT (datetime('now')),
+                    UNIQUE(employee_id, project_id, status)
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO assignments_v24
+                    (id, employee_id, project_id, role, allocation, start_date,
+                     end_date, status, created_at)
+                SELECT id, employee_id, project_id, role, allocation, start_date,
+                       end_date, status, created_at
+                FROM assignments
+                """
+            )
+            conn.execute("DROP TABLE assignments")
+            conn.execute("ALTER TABLE assignments_v24 RENAME TO assignments")
+
+    table_definitions = {
+        "monthly_allocations": """
+            CREATE TABLE monthly_allocations_v24 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL REFERENCES employees(id),
+                project_id TEXT NOT NULL REFERENCES projects(id),
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
+                allocation REAL NOT NULL DEFAULT 0.0
+                    CHECK(allocation >= 0.0 AND allocation <= 1.0),
+                plan_version_id TEXT NOT NULL DEFAULT ''
+                    REFERENCES plan_versions(plan_version_id),
+                UNIQUE(employee_id, project_id, year, month, plan_version_id)
+            )
+        """,
+        "placeholder_monthly_allocations": """
+            CREATE TABLE placeholder_monthly_allocations_v24 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                placeholder_id TEXT NOT NULL
+                    REFERENCES staffing_placeholders(placeholder_id),
+                project_id TEXT NOT NULL REFERENCES projects(id),
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
+                allocation REAL NOT NULL DEFAULT 0.0
+                    CHECK(allocation >= 0.0 AND allocation <= 1.0),
+                plan_version_id TEXT NOT NULL DEFAULT ''
+                    REFERENCES plan_versions(plan_version_id),
+                UNIQUE(placeholder_id, project_id, year, month, plan_version_id)
+            )
+        """,
+    }
+    identity_columns = {
+        "monthly_allocations": "employee_id",
+        "placeholder_monthly_allocations": "placeholder_id",
+    }
+    for table_name, create_sql in table_definitions.items():
+        if not _table_exists(conn, table_name):
+            continue
+        _assert_v24_allocation_rows_are_valid(conn, table_name)
+        identity = identity_columns[table_name]
+        duplicate = conn.execute(
+            f"""
+            SELECT 1
+            FROM {table_name}
+            GROUP BY {identity}, project_id, year, month, plan_version_id
+            HAVING COUNT(*) > 1
+            LIMIT 1
+            """
+        ).fetchone()
+        if duplicate:
+            raise ValueError(
+                f"{table_name} contains duplicate period allocations; "
+                "resolve them before applying v24 integrity constraints."
+            )
+        sql = _table_sql(conn, table_name).lower()
+        if (
+            "check(month between 1 and 12)" in sql
+            and "check(allocation >= 0.0 and allocation <= 1.0)" in sql
+            and f"unique({identity}, project_id, year, month, plan_version_id)" in sql
+        ):
+            continue
+        replacement = f"{table_name}_v24"
+        conn.execute(create_sql)
+        conn.execute(
+            f"""
+            INSERT INTO {replacement}
+                (id, {identity}, project_id, year, month, allocation,
+                 plan_version_id)
+            SELECT id, {identity}, project_id, year, month, allocation,
+                   plan_version_id
+            FROM {table_name}
+            """
+        )
+        conn.execute(f"DROP TABLE {table_name}")
+        conn.execute(f"ALTER TABLE {replacement} RENAME TO {table_name}")
+
+
+def _migrate_staffing_token_hash_v24(conn: sqlite3.Connection) -> None:
+    if not _table_exists(conn, "staffing_proposals"):
+        return
+    columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(staffing_proposals)")
+    }
+    if "confirmation_token_hash" in columns and "confirmation_token" not in columns:
+        return
+    if "confirmation_token" not in columns:
+        raise ValueError("staffing_proposals has no supported confirmation token column")
+
+    import hashlib
+
+    rows = conn.execute("SELECT * FROM staffing_proposals").fetchall()
+    conn.execute(
+        """
+        CREATE TABLE staffing_proposals_v24 (
+            proposal_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL DEFAULT 'proposed',
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            confirmed_at TEXT DEFAULT '',
+            confirmation_token_hash TEXT NOT NULL UNIQUE,
+            request_json TEXT NOT NULL,
+            evidence_json TEXT NOT NULL DEFAULT '{}',
+            proposal_json TEXT NOT NULL,
+            decision_id INTEGER REFERENCES decision_log(id),
+            failure_reason TEXT DEFAULT ''
+        )
+        """
+    )
+    for row in rows:
+        item = dict(row)
+        token_hash = hashlib.sha256(
+            str(item["confirmation_token"]).encode("utf-8")
+        ).hexdigest()
+        conn.execute(
+            """
+            INSERT INTO staffing_proposals_v24
+                (proposal_id, status, created_at, expires_at, confirmed_at,
+                 confirmation_token_hash, request_json, evidence_json,
+                 proposal_json, decision_id, failure_reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                item["proposal_id"],
+                item["status"],
+                item["created_at"],
+                item["expires_at"],
+                item["confirmed_at"],
+                token_hash,
+                item["request_json"],
+                item["evidence_json"],
+                item["proposal_json"],
+                item["decision_id"],
+                item["failure_reason"],
+            ],
+        )
+    conn.execute("DROP TABLE staffing_proposals")
+    conn.execute(
+        "ALTER TABLE staffing_proposals_v24 RENAME TO staffing_proposals"
+    )
+
+
 def _backfill_employee_external_ids(conn: sqlite3.Connection) -> None:
     if not _table_exists(conn, "employees") or not _table_exists(conn, "employee_external_ids"):
         return
@@ -1972,6 +2216,8 @@ def main(quiet: bool = False) -> None:
     conn.commit()
     _migrate_employee_identity_v16(conn)
     _ensure_default_plan_version(conn)
+    _migrate_allocation_integrity_v24(conn)
+    _migrate_staffing_token_hash_v24(conn)
     _backfill_employee_external_ids(conn)
     _migrate_project_snapshots_v18(conn)
     _migrate_action_tracker_v20(conn)
@@ -1991,8 +2237,50 @@ def main(quiet: bool = False) -> None:
     if _column_exists(conn, "monthly_allocations", "plan_version_id"):
         conn.execute(
             """
+            CREATE INDEX IF NOT EXISTS idx_monthly_allocations_employee_month
+            ON monthly_allocations(employee_id, year, month)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_monthly_allocations_project_month
+            ON monthly_allocations(project_id, year, month)
+            """
+        )
+        conn.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_monthly_allocations_version_month
             ON monthly_allocations(plan_version_id, year, month)
+            """
+        )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_monthly_allocations_unique_period
+            ON monthly_allocations(
+                employee_id, project_id, year, month, plan_version_id
+            )
+            """
+        )
+    if _table_exists(conn, "placeholder_monthly_allocations"):
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_placeholder_allocations_placeholder_month
+            ON placeholder_monthly_allocations(placeholder_id, year, month)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_placeholder_allocations_project_month
+            ON placeholder_monthly_allocations(project_id, year, month)
+            """
+        )
+    if _table_exists(conn, "staffing_proposals"):
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_staffing_proposals_status_expiry
+            ON staffing_proposals(status, expires_at)
             """
         )
     conn.commit()

@@ -2,9 +2,9 @@
 
 Last updated: 2026-07-26
 Current branch: `codex/ip-000-baseline-safety`
-Current implementation pack: `DM Agent operating customization (post-IP-021)`
-Gate status: `OWNER APPROVED — COMMITTED AND PUSHED`
-Git state: IP-020, IP-021, and the DM Agent customization are committed and pushed on `codex/ip-000-baseline-safety`; do not merge into `main`
+Current implementation pack: `IP-025 — Interface Completion`
+Gate status: `IP-022 TO IP-025 COMMITTED AND PUSHED — UAT PENDING`
+Git state: IP-022 through IP-025 are committed and pushed on `codex/ip-000-baseline-safety`; do not merge into `main`
 
 ## Read this first
 
@@ -96,10 +96,14 @@ private state, company configuration, and internal documentation remain ignored.
 
 Execute in this order:
 
-1. Assess IP-022 Dashboard Write Boundary.
-2. Preserve IP-020, IP-021, and the DM Agent customization for
-   real-environment UAT.
-3. Do not merge this branch into `main`.
+1. Before real-environment use, create a backup and rehearse IP-024 migration on
+   an isolated database copy; stop if invalid or duplicate legacy rows are
+   reported.
+2. Run IP-022 through IP-025 real-environment UAT and record only sanitized
+   outcomes.
+3. After UAT, assess IP-026 Release Engineering.
+3. Preserve all changes for isolated real-environment UAT; do not merge into
+   `main`.
 
 ## Decisions in force
 
@@ -551,3 +555,70 @@ Execute in this order:
 - The customization is committed and pushed with IP-020 and IP-021 on the
   current branch. It remains separate from `main`.
 - Exact next action: assess IP-022 Dashboard Write Boundary.
+
+### 2026-07-26 — IP-022 Dashboard write boundary
+
+- Replaced the direct project-health sync POST with a two-stage preview and
+  confirmation workflow. Preview selects exact active/stale board targets
+  without invoking a connector.
+- Added short-lived one-time confirmation tokens stored only as hashes, atomic
+  claim/replay protection, actor and immutable scope recording, safe result
+  codes, and durable Dashboard operation audit state.
+- Removed raw sync output and exception strings from browser responses.
+- Non-loopback Dashboard binding now requires explicit operator opt-in.
+- Validation passed: 5 focused Dashboard tests, touched-file Ruff, and diff
+  check. No network or real operational data was used.
+- Changes are local, uncommitted, and unpushed. Exact next action: implement
+  IP-023 executor contract enforcement.
+
+### 2026-07-26 — IP-023 executor contract enforcement
+
+- Added executor-level enforcement for parameter types, required fields,
+  unknown fields, numeric ranges, enums, lengths, contract version, and safe
+  correlation IDs. Invalid input does not invoke the handler.
+- Read-only classification now comes from the registered use-case descriptor
+  rather than confirmation-token presence.
+- Added stable structured error codes and safe exception categories without raw
+  error text.
+- Validation passed: 25 focused contract/connector tests, touched-file Ruff,
+  and diff check.
+- Changes are local, uncommitted, and unpushed. Exact next action: implement
+  IP-024 data-integrity and concurrency protections.
+
+### 2026-07-26 — IP-024 data integrity and concurrency
+
+- Added database checks for valid months and allocation bounds plus uniqueness
+  for employee/project/month/plan-version rows. Placeholder allocations and
+  assignment allocation use the same hard limits.
+- Staffing confirmation tokens are now stored only as hashes, with a tested
+  legacy-token migration. Critical proposal timestamps are timezone-aware UTC.
+- Confirmation uses an immediate transaction, conditional state claim, and
+  aggregate member-period capacity guard. A concurrent race test proves only
+  one conflicting proposal can commit and no partial decision is retained.
+- Legacy migration validates dirty values and duplicates before rebuilding; a
+  test proves invalid legacy rows stop without modifying the source table.
+- Validation passed: 41 focused staffing/integrity/migration tests,
+  touched-file Ruff, and diff check.
+- Changes are local, uncommitted, and unpushed. Exact next action: implement
+  IP-025 interface completion.
+
+### 2026-07-26 — IP-025 interface completion
+
+- Added repeatable generic CLI `--param key=value` input with JSON value
+  decoding and duplicate/collision rejection.
+- Added a generic read-only Dashboard executor endpoint returning the complete
+  result contract. Write-capable descriptors are not allowed through it.
+- Preserved legacy Dashboard payloads while marking direct-SQL routes and
+  envelope projections in response headers for incremental migration.
+- Added CLI/Dashboard/direct-executor equivalence tests and updated the DM Agent,
+  README, and UAT commands for generic snapshot filters.
+- Combined validation for IP-022 through IP-025 passed: 113 runtime tests,
+  18 repository tool tests, touched-file Ruff, static compilation,
+  portable-only audit, repository-boundary check, synthetic-sample check, and
+  diff check.
+- No live network, connector, database, configuration, or real record was used.
+  The owner authorized commit and push on 2026-07-26.
+- IP-022 through IP-025 are committed and pushed on the current branch and
+  remain separate from `main`.
+- Exact next action: isolated-copy migration and real-environment UAT before
+  assessing IP-026 Release Engineering.

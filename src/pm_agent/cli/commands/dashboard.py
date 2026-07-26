@@ -15,7 +15,12 @@ def dashboard_serve(
     host: str = typer.Option("127.0.0.1", "--host", help="监听地址"),
     port: int = typer.Option(5001, "--port", help="监听端口"),
     debug: bool = typer.Option(False, "--debug", help="是否开启 Flask debug"),
+    allow_remote: bool = typer.Option(
+        False,
+        "--allow-remote",
+        help="明确允许 Dashboard 监听非本机地址",
+    ),
 ):
     """启动本地 PM dashboard。"""
     console.print(f"[cyan]Starting dashboard on http://{host}:{port}[/cyan]")
-    serve(host=host, port=port, debug=debug)
+    serve(host=host, port=port, debug=debug, allow_remote=allow_remote)

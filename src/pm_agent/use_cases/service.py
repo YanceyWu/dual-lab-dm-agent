@@ -65,7 +65,7 @@ class UseCaseResult(BaseModel):
     evidence: list[dict[str, Any]] = Field(default_factory=list)
     freshness: list[dict[str, Any]] = Field(default_factory=list)
     assumptions: list[dict[str, Any]] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    warnings: list[str | dict[str, Any]] = Field(default_factory=list)
     alternatives: list[dict[str, Any]] = Field(default_factory=list)
     context: dict[str, Any] = Field(default_factory=dict)
     proposed_writes: list[dict[str, Any]] = Field(default_factory=list)
@@ -83,7 +83,7 @@ def new_execution_metadata(request: UseCaseRequest) -> dict[str, Any]:
         "actor": request.actor,
         "requested_output": request.requested_output,
         "correlation_id": request.correlation_id,
-        "read_only": request.confirmation_token is None,
+        "read_only": True,
     }
 
 

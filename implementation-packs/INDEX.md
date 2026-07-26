@@ -35,6 +35,10 @@ pushed in `3873edb`; the human owner approved operational G3 promotion on
 | IP-019 | Interface-to-Executor Migration | G4 | Interface hardening | REFERENCE SLICE VALIDATED — OWNER REVIEW PENDING |
 | IP-020 | Staffing Fail-Closed Safety | IP-005, IP-006, IP-007, IP-008 | Staffing hardening | OWNER APPROVED — COMMITTED |
 | IP-021 | Read-Only Connector Contract Repair | IP-014, IP-016 | Connector hardening | OWNER APPROVED — COMMITTED |
+| IP-022 | Dashboard Write Boundary | IP-021 | Interface hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
+| IP-023 | Executor Contract Enforcement | IP-003 | Contract hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
+| IP-024 | Data Integrity and Concurrency | IP-020, IP-023 | Persistence hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
+| IP-025 | Interface Completion | IP-019, IP-023 | Interface hardening | COMMIT/PUSH AUTHORIZED — UAT PENDING |
 
 ## Pack sizing rule
 

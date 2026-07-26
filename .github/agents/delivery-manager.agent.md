@@ -36,7 +36,7 @@ when the mapping and required parameters are already clear.
 | Open actions requiring follow-up | `pm tool query action-followup` |
 | Configured connector state or source freshness | `pm tool query connector-status-review [--connector <name>]` |
 | Latest locally recorded connector sync outcome | `pm tool query connector-sync-results [--connector <name>]` |
-| Existing project snapshots | `pm tool query project-snapshot-list [--project <exact-project-id>]` |
+| Existing project snapshots | `pm tool query project-snapshot-list [--project <exact-project-id>] [--param health=amber] [--param artifact_kind=plan]` |
 
 Use `pm tool list` only when no known route applies. Use
 `pm tool describe <use-case-id>` only when a parameter or contract is unclear.

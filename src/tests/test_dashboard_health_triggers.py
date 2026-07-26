@@ -44,6 +44,17 @@ def test_dashboard_defaults_to_loopback_only(monkeypatch: pytest.MonkeyPatch) ->
     assert inspect.signature(dashboard_serve).parameters["host"].default.default == "127.0.0.1"
 
 
+def test_dashboard_rejects_non_loopback_without_explicit_opt_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dashboard_server.app, "run", lambda **kwargs: None)
+
+    with pytest.raises(ValueError, match="explicit allow_remote"):
+        dashboard_server.serve(host="0.0.0.0")
+
+    dashboard_server.serve(host="0.0.0.0", allow_remote=True)
+
+
 def test_project_health_sync_endpoint_triggers_release_and_health_for_one_board(
     isolated_db: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -70,16 +81,46 @@ def test_project_health_sync_endpoint_triggers_release_and_health_for_one_board(
     )
 
     client = dashboard_server.app.test_client()
-    response = client.post("/api/project-health/sync", json={"board_id": "atlas-board"})
+    preview_response = client.post(
+        "/api/project-health/sync",
+        json={"operation": "preview", "board_id": "atlas-board"},
+    )
 
-    assert response.status_code == 200
+    assert preview_response.status_code == 200
+    preview = preview_response.get_json()
+    assert preview["requires_confirmation"] is True
+    assert preview["scope"]["board_ids"] == ["atlas-board"]
+    assert preview["scope"]["remote_writes"] is False
+    assert calls == []
+
+    response = client.post(
+        "/api/project-health/sync",
+        json={
+            "operation": "confirm",
+            "operation_id": preview["execution_id"],
+            "confirmation_token": preview["confirmation_token"],
+        },
+    )
     payload = response.get_json()
+    assert response.status_code == 200
     assert payload["success"] is True
-    assert "Atlas Board" in payload["message"]
+    assert payload["execution_id"] == preview["execution_id"]
     assert calls == [
         ("release", "atlas-board", False),
         ("health", "atlas-board", False),
     ]
+
+    replay = client.post(
+        "/api/project-health/sync",
+        json={
+            "operation": "confirm",
+            "operation_id": preview["execution_id"],
+            "confirmation_token": preview["confirmation_token"],
+        },
+    )
+    assert replay.status_code == 409
+    assert replay.get_json()["code"] == "SYNC_OPERATION_ALREADY_USED"
+    assert len(calls) == 2
 
 
 def test_project_health_sync_endpoint_targets_only_stale_boards(
@@ -136,12 +177,78 @@ def test_project_health_sync_endpoint_targets_only_stale_boards(
     )
 
     client = dashboard_server.app.test_client()
-    response = client.post("/api/project-health/sync", json={"stale_only": True})
+    preview_response = client.post(
+        "/api/project-health/sync",
+        json={"operation": "preview", "stale_only": True},
+    )
 
-    assert response.status_code == 200
+    assert preview_response.status_code == 200
+    preview = preview_response.get_json()
+    assert [item["board_id"] for item in preview["targets"]] == ["stale-board"]
+    assert calls == []
+
+    response = client.post(
+        "/api/project-health/sync",
+        json={
+            "operation": "confirm",
+            "operation_id": preview["execution_id"],
+            "confirmation_token": preview["confirmation_token"],
+        },
+    )
     payload = response.get_json()
+    assert response.status_code == 200
     assert payload["success"] is True
     assert calls == [
         ("release", "stale-board", False),
         ("health", "stale-board", False),
     ]
+
+
+def test_project_health_sync_requires_preview_and_redacts_connector_errors(
+    isolated_db: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    init_db(quiet=True)
+    con = sqlite3.connect(isolated_db)
+    try:
+        _insert_board(con, "atlas-board", "Atlas Board")
+        con.commit()
+    finally:
+        con.close()
+
+    monkeypatch.setattr(dashboard_server, "DB", str(isolated_db))
+    direct = dashboard_server.app.test_client().post(
+        "/api/project-health/sync",
+        json={"board_id": "atlas-board"},
+    )
+    assert direct.status_code == 400
+    assert direct.get_json()["code"] == "SYNC_PREVIEW_REQUIRED"
+
+    monkeypatch.setattr(
+        dashboard_server,
+        "_run_jira_sync",
+        lambda board_id: (_ for _ in ()).throw(
+            RuntimeError("401 token secret at https://jira.example.invalid")
+        ),
+    )
+    client = dashboard_server.app.test_client()
+    preview = client.post(
+        "/api/project-health/sync",
+        json={"operation": "preview", "board_id": "atlas-board"},
+    ).get_json()
+    response = client.post(
+        "/api/project-health/sync",
+        json={
+            "operation": "confirm",
+            "operation_id": preview["execution_id"],
+            "confirmation_token": preview["confirmation_token"],
+        },
+    )
+    payload = response.get_json()
+
+    assert response.status_code == 502
+    assert payload["results"] == [
+        {"board_id": "atlas-board", "success": False, "code": "JIRA_AUTH_FAILED"}
+    ]
+    assert "secret" not in response.get_data(as_text=True)
+    assert "example.invalid" not in response.get_data(as_text=True)

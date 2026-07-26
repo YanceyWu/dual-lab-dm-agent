@@ -10,7 +10,12 @@ from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases import use_case_executor
-from pm_agent.use_cases.service import UseCaseRequest
+from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
+from pm_agent.use_cases.service import (
+    UseCaseRequest,
+    UseCaseResult,
+    new_execution_metadata,
+)
 from pm_agent.use_cases.team_capacity_context import build_team_capacity_context
 from pm_agent.use_cases.tool_transport import ToolTransport
 from scripts import seed
@@ -157,7 +162,7 @@ def test_unknown_use_case_is_returned_as_a_result() -> None:
     result = use_case_executor.execute(UseCaseRequest(use_case_id="unknown"))
 
     assert result.status == "unavailable"
-    assert result.warnings == ["Unknown use case: unknown"]
+    assert result.warnings == [{"code": "USE_CASE_NOT_FOUND", "field": "use_case_id"}]
     assert result.execution_metadata["use_case_id"] == "unknown"
 
 
@@ -211,6 +216,116 @@ def test_tool_transport_returns_structured_invalid_and_unavailable_results() -> 
 
     assert invalid.status == "invalid"
     assert unavailable.status == "unavailable"
+
+
+def test_executor_rejects_invalid_parameters_before_invoking_handler() -> None:
+    calls: list[UseCaseRequest] = []
+    executor = UseCaseExecutor()
+    executor.register(
+        UseCaseDescriptor(
+            use_case_id="bounded-query",
+            purpose="Synthetic bounded query.",
+            parameter_schema={
+                "days": {
+                    "type": "integer",
+                    "required": True,
+                    "minimum": 1,
+                    "maximum": 365,
+                }
+            },
+        ),
+        lambda request: (
+            calls.append(request)
+            or UseCaseResult(
+                status="success",
+                execution_metadata=new_execution_metadata(request),
+            )
+        ),
+    )
+
+    wrong_type = executor.execute(
+        UseCaseRequest(use_case_id="bounded-query", parameters={"days": "abc"})
+    )
+    out_of_range = executor.execute(
+        UseCaseRequest(use_case_id="bounded-query", parameters={"days": 9999})
+    )
+    unknown = executor.execute(
+        UseCaseRequest(
+            use_case_id="bounded-query",
+            parameters={"days": 30, "unexpected": True},
+        )
+    )
+
+    assert wrong_type.status == out_of_range.status == unknown.status == "invalid"
+    assert wrong_type.warnings[0]["code"] == "PARAMETER_TYPE_INVALID"
+    assert out_of_range.warnings[0] == {
+        "code": "PARAMETER_OUT_OF_RANGE",
+        "field": "days",
+        "minimum": 1,
+        "maximum": 365,
+    }
+    assert unknown.warnings[0] == {
+        "code": "UNKNOWN_PARAMETER",
+        "field": "unexpected",
+    }
+    assert calls == []
+
+
+def test_executor_enforces_contract_version_and_descriptor_read_only_mode() -> None:
+    executor = UseCaseExecutor()
+    executor.register(
+        UseCaseDescriptor(
+            use_case_id="read-query",
+            purpose="Synthetic read query.",
+            parameter_schema={},
+            read_only=True,
+        ),
+        lambda request: UseCaseResult(
+            status="success",
+            execution_metadata=new_execution_metadata(request),
+        ),
+    )
+    unsupported = executor.execute(
+        UseCaseRequest(use_case_id="read-query", contract_version="9.9")
+    )
+    with_token = executor.execute(
+        UseCaseRequest(
+            use_case_id="read-query",
+            confirmation_token="irrelevant-token",
+        )
+    )
+
+    assert unsupported.status == "invalid"
+    assert unsupported.warnings == [
+        {
+            "code": "CONTRACT_VERSION_UNSUPPORTED",
+            "field": "contract_version",
+            "supported": ["1.0"],
+        }
+    ]
+    assert with_token.status == "success"
+    assert with_token.execution_metadata["read_only"] is True
+
+
+def test_executor_classifies_internal_failure_without_exposing_exception() -> None:
+    executor = UseCaseExecutor()
+    executor.register(
+        UseCaseDescriptor(
+            use_case_id="failing-query",
+            purpose="Synthetic failing query.",
+            parameter_schema={},
+        ),
+        lambda request: (_ for _ in ()).throw(
+            RuntimeError("secret at https://internal.example.invalid")
+        ),
+    )
+
+    result = executor.execute(UseCaseRequest(use_case_id="failing-query"))
+
+    assert result.status == "failed"
+    assert result.warnings == [{"code": "USE_CASE_EXECUTION_FAILED"}]
+    assert "secret" not in str(result.model_dump())
+    assert "example.invalid" not in str(result.model_dump())
 
 
 def test_tool_cli_query_is_json_and_matches_direct_executor(isolated_db) -> None:
@@ -346,6 +461,108 @@ def test_dashboard_project_snapshots_uses_shared_executor(isolated_db) -> None:
     response = client.get("/api/project-snapshots?project_id=project-atlas-990001&health=amber")
 
     assert response.status_code == 200
+    assert response.headers["X-DM-Interface-Contract"] == "legacy-result-projection"
     payload = response.get_json()
     assert payload[0]["id"] == "snapshot-1"
-    assert payload[0]["project_name"] == "Project Atlas"
+
+
+def test_generic_cli_and_dashboard_return_equivalent_full_contract(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT INTO projects (id, name, status, priority)
+            VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO project_snapshots
+                (id, project_id, snapshot_date, artifact_kind,
+                 artifact_state, health, title, summary)
+            VALUES ('snapshot-1', 'project-atlas-990001', '2026-07-22',
+                    'plan', 'draft', 'amber', 'Synthetic',
+                    'Synthetic summary')
+            """
+        )
+
+    cli = CliRunner().invoke(
+        app_module.app,
+        [
+            "tool",
+            "query",
+            "project-snapshot-list",
+            "--param",
+            "health=amber",
+            "--param",
+            "artifact_kind=plan",
+        ],
+    )
+    dashboard = dashboard_server.app.test_client().post(
+        "/api/tool/query/project-snapshot-list",
+        json={"parameters": {"health": "amber", "artifact_kind": "plan"}},
+    )
+    direct = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id="project-snapshot-list",
+            parameters={"health": "amber", "artifact_kind": "plan"},
+        )
+    )
+
+    assert cli.exit_code == 0, cli.output
+    assert dashboard.status_code == 200
+    assert (
+        dashboard.headers["X-DM-Interface-Contract"]
+        == "use-case-result-v1"
+    )
+    cli_payload = json.loads(cli.output)
+    dashboard_payload = dashboard.get_json()
+    for payload in (cli_payload, dashboard_payload):
+        assert payload["status"] == direct.status
+        assert payload["data"] == direct.data
+        assert payload["evidence"] == direct.evidence
+        assert payload["freshness"] == direct.freshness
+        assert payload["warnings"] == direct.warnings
+        assert payload["contract_version"] == direct.contract_version
+
+
+def test_generic_interfaces_preserve_executor_validation_errors() -> None:
+    cli = CliRunner().invoke(
+        app_module.app,
+        [
+            "tool",
+            "query",
+            "contract-continuity-review",
+            "--param",
+            "days=9999",
+        ],
+    )
+    dashboard = dashboard_server.app.test_client().post(
+        "/api/tool/query/contract-continuity-review",
+        json={"parameters": {"days": 9999}},
+    )
+
+    assert cli.exit_code == 2
+    assert dashboard.status_code == 400
+    assert json.loads(cli.output)["warnings"] == dashboard.get_json()["warnings"]
+    assert dashboard.get_json()["warnings"] == [
+        {
+            "code": "PARAMETER_OUT_OF_RANGE",
+            "field": "days",
+            "minimum": 1,
+            "maximum": 365,
+        }
+    ]
+
+
+def test_legacy_dashboard_direct_sql_route_is_explicitly_marked(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+
+    response = dashboard_server.app.test_client().get("/api/summary")
+
+    assert response.status_code == 200
+    assert response.headers["X-DM-Interface-Contract"] == "legacy-direct-read"

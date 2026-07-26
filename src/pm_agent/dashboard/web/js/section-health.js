@@ -404,7 +404,19 @@ var SectionHealth = {
       tone: "blue",
     };
     SectionHealth._render();
-    DataService.syncProjectHealth(boardId)
+    DataService.previewProjectHealthSync(boardId)
+      .then(function (preview) {
+        var names = (preview.targets || []).map(function (item) {
+          return item.board_name;
+        });
+        var confirmed = window.confirm(
+          "Sync " + names.length + " JIRA board(s): " + names.join(", ") +
+          "\\n\\nThis accesses the external network and updates local snapshots. " +
+          "It does not modify remote JIRA data."
+        );
+        if (!confirmed) throw new Error("Sync cancelled before confirmation.");
+        return DataService.confirmProjectHealthSync(preview);
+      })
       .then(function (result) {
         SectionHealth._syncState = {
           busy: false,
@@ -431,7 +443,20 @@ var SectionHealth = {
       tone: "blue",
     };
     SectionHealth._render();
-    DataService.syncStaleProjectHealth()
+    DataService.previewStaleProjectHealthSync()
+      .then(function (preview) {
+        if (!preview.requires_confirmation) return preview;
+        var names = (preview.targets || []).map(function (item) {
+          return item.board_name;
+        });
+        var confirmed = window.confirm(
+          "Sync " + names.length + " stale JIRA board(s): " + names.join(", ") +
+          "\\n\\nThis accesses the external network and updates local snapshots. " +
+          "It does not modify remote JIRA data."
+        );
+        if (!confirmed) throw new Error("Sync cancelled before confirmation.");
+        return DataService.confirmProjectHealthSync(preview);
+      })
       .then(function (result) {
         SectionHealth._syncState = {
           busy: false,

@@ -40,7 +40,7 @@ class ToolTransport:
     def _descriptor_data(descriptor: Any) -> dict[str, object]:
         return {
             "use_case_id": descriptor.use_case_id,
-            "contract_version": "1.0",
+            "contract_version": descriptor.contract_version,
             "purpose": descriptor.purpose,
             "parameter_schema": descriptor.parameter_schema,
             "supported_operations": list(descriptor.supported_operations),
@@ -52,7 +52,7 @@ class ToolTransport:
     def _invalid(request: UseCaseRequest, warning: str) -> UseCaseResult:
         return UseCaseResult(
             status="invalid",
-            warnings=[warning],
+            warnings=[{"code": "TOOL_REQUEST_INVALID", "message": warning}],
             execution_metadata=new_execution_metadata(request),
         )
 
@@ -60,6 +60,6 @@ class ToolTransport:
     def _unavailable(request: UseCaseRequest) -> UseCaseResult:
         return UseCaseResult(
             status="unavailable",
-            warnings=[f"Unknown use case: {request.use_case_id}"],
+            warnings=[{"code": "USE_CASE_NOT_FOUND", "field": "use_case_id"}],
             execution_metadata=new_execution_metadata(request),
         )

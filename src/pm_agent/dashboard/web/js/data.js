@@ -43,10 +43,30 @@ var DataService = {
   projectHealth: function () {
     return DataService._get("/api/project-health");
   },
-  syncProjectHealth: function (boardId) {
-    return DataService._post("/api/project-health/sync", { board_id: boardId });
+  queryUseCase: function (useCaseId, parameters, correlationId) {
+    return DataService._post("/api/tool/query/" + encodeURIComponent(useCaseId), {
+      contract_version: "1.0",
+      parameters: parameters || {},
+      correlation_id: correlationId || null,
+    });
   },
-  syncStaleProjectHealth: function () {
-    return DataService._post("/api/project-health/sync", { stale_only: true });
+  previewProjectHealthSync: function (boardId) {
+    return DataService._post("/api/project-health/sync", {
+      operation: "preview",
+      board_id: boardId,
+    });
+  },
+  previewStaleProjectHealthSync: function () {
+    return DataService._post("/api/project-health/sync", {
+      operation: "preview",
+      stale_only: true,
+    });
+  },
+  confirmProjectHealthSync: function (preview) {
+    return DataService._post("/api/project-health/sync", {
+      operation: "confirm",
+      operation_id: preview.execution_id,
+      confirmation_token: preview.confirmation_token,
+    });
   },
 };
