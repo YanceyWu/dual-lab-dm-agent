@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `NO ACTIVE PACK — PHASE 1 DESIGN APPROVAL PENDING`
+Status: `PHASE 1 DESIGN APPROVED — IMPLEMENTATION PACK REGISTRATION NEXT`
 Last updated: 2026-07-27
 
 This checkout intentionally contains only implementation material that remains
@@ -18,12 +18,14 @@ recoverable from Git history.
 
 ## Current execution order
 
-1. Review
-   `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`.
-2. Approve it or record bounded revisions.
-3. Register a new Phase 1 implementation pack only after that approval.
-4. Implement and validate one reversible vertical slice at a time.
-5. Return tagging, isolated operational-copy rehearsal, and refreshed
+1. Start a new Codex task and read `AGENTS.md`, `PROGRESS.md`, and the approved
+   Phase 1 design.
+2. Create a dedicated Phase 1 implementation branch from the approved planning
+   branch.
+3. Register the Phase 1 implementation pack.
+4. Implement Batch B1 only and stop after focused tests plus `make validate`.
+5. Begin Batch B2 only after Batch B1 review.
+6. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary

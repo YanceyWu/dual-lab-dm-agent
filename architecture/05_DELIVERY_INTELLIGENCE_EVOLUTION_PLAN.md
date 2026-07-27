@@ -31,7 +31,8 @@ implementation pack, a release tag, a merge into `main`, connector access,
 active-database migration, or real-data operations. The owner separately
 accepted the validated `a272890` commit as the development baseline on
 2026-07-27 and deferred the current tag and UAT gates. Bounded Phase 1 design
-approval remains required before implementation.
+approval was recorded on 2026-07-27; implementation remains limited to the
+approved sequential batches.
 
 ## Delivery loop
 
@@ -443,7 +444,8 @@ Non-goals:
 
 ## Immediate next action
 
-Review
-`architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` and either
-approve the bounded additive contract or record revisions. Do not register an
-implementation pack or modify runtime/schema before that approval.
+Start a new Codex task for Phase 1 implementation. Read the approved
+`architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`, create a
+dedicated `codex/` implementation branch from the approved planning branch,
+register the Phase 1 implementation pack, and implement Batch B1 only. Validate
+Batch B1 and stop for review before beginning B2.

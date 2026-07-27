@@ -1,6 +1,6 @@
 # Phase 1 — Intelligence Output Contract Design
 
-Status: `DRAFT — OWNER APPROVAL REQUIRED`
+Status: `APPROVED — IMPLEMENTATION NOT STARTED`
 Last updated: 2026-07-27
 Baseline: `a272890a7b51856c033df69b5148bc8c2fa928da`
 Branch: `codex/delivery-intelligence-evolution-plan`
@@ -16,8 +16,9 @@ current Pydantic request/result models, executor, structured CLI, generic
 Dashboard endpoint, Copilot operating agent, evidence and freshness records,
 and bounded execution traces.
 
-No runtime or schema implementation is authorized until the owner approves this
-design.
+The owner approved this design on 2026-07-27. Implementation is authorized only
+through the bounded batches defined here, starting with Batch B1 on a dedicated
+independent branch.
 
 ## Decision supported
 
@@ -480,7 +481,10 @@ migration and preserve the existing trace-retention behavior.
 
 ## Approval gate
 
-Owner approval of this document authorizes preparation of a Phase 1
-implementation pack for the bounded batches above. It does not authorize
-Phase 2 work, release tagging, merging into `main`, connector access, active
-database migration, or real-data operations.
+Owner approval was recorded on 2026-07-27. It authorizes preparation of a
+Phase 1 implementation pack and sequential execution of the bounded batches
+above. Batch B1 must be implemented and validated before B2 begins.
+
+This approval does not authorize Phase 2 work, release tagging, merging or
+pushing into `main`, connector access, active database migration, or real-data
+operations.

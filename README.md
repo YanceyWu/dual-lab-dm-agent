@@ -127,7 +127,7 @@ Read:
 - `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` for the approved
   phase sequence, gates, and cross-session continuation model;
 - `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` for the
-  current Phase 1 design approval candidate.
+  approved Phase 1 implementation boundary and batch sequence.
 
 ## Safety boundary
 

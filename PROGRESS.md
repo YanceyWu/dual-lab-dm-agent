@@ -4,11 +4,12 @@ Last updated: 2026-07-27
 Current branch: `codex/delivery-intelligence-evolution-plan`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 1 DESIGN APPROVAL PENDING`
-Gate status: `PHASE 1 INTELLIGENCE OUTPUT CONTRACT DRAFTED`
+Current implementation pack: `NONE — PHASE 1 PACK REGISTRATION NEXT`
+Gate status: `PHASE 1 DESIGN APPROVED — BATCH B1 READY`
 Git state: independent branch is based on exact validated commit `a272890`;
-planning decision commit `f40f940` and the Phase 1 design batch are committed
-locally and remain unpushed; do not merge or push to `main`
+planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
+record are committed locally and remain unpushed; do not merge or push to
+`main`
 
 ## Read this first
 
@@ -47,6 +48,9 @@ belong in Git history and must not be interpreted as current instructions.
   baseline and deferred the `0.2.0rc1` tag, isolated operational-copy rehearsal,
   and real-environment UAT until the integrated candidate is ready. This is not
   operational or production approval.
+- The owner approved the bounded Phase 1 intelligence output contract on
+  2026-07-27. This authorizes sequential Phase 1 implementation beginning with
+  Batch B1, not Phase 2 or any release/environment action.
 - Each phase requires current-state inspection, bounded design approval, small
   implementation batches, focused tests, full regression, and explicit
   promotion before the next phase begins.
@@ -87,6 +91,9 @@ The Phase 1 Batch A design working tree based on `f40f940` passed the same
 with 19 subtests, and package/release validation. No runtime or schema file
 changed in this batch.
 
+The owner-approval record based on `fdb50a3` also passed `make validate` with
+the same test counts and eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -108,17 +115,19 @@ changed in this batch.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. Phase 1 implementation is not authorized and no new implementation pack is
-   registered. The drafted bounded Phase 1 output contract remains the next
-   approval gate.
+5. No Phase 1 implementation pack is registered yet. Batch B1 is authorized,
+   but it must run on a dedicated implementation branch and stop for review
+   after focused tests plus `make validate`.
 
 ## Exact next actions
 
-1. Review
-   `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`.
-2. Approve it or record bounded revisions.
-3. Only after explicit approval, register a Phase 1 implementation pack and
-   begin Batch B1 contract implementation on a dedicated implementation branch.
+1. Start a new Codex task from the current approved planning branch.
+2. Create dedicated branch `codex/phase-1-intelligence-contract`.
+3. Register the Phase 1 implementation pack.
+4. Implement Batch B1 only: typed intelligence contract objects, additive empty
+   defaults, safe result-reference validation, and focused tests.
+5. Run focused tests and `make validate`, update `PROGRESS.md`, and stop for
+   review before Batch B2.
 
 ## Decisions in force
 
@@ -137,8 +146,8 @@ changed in this batch.
 - New Delivery Intelligence capabilities follow
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
-- Do not register or implement Phase 1 until its bounded design approval gate
-  passes.
+- Implement Phase 1 only through the approved bounded batches. Do not begin B2
+  until B1 validation is reviewed.
 
 ## Recent change log
 
@@ -186,10 +195,17 @@ changed in this batch.
   descriptor capability metadata; Management Attention as the only production
   reference mapping; no schema change and no new recommendation behavior.
 - No implementation pack was registered and no runtime or schema code was
-  changed. Explicit owner design approval remains required.
+  changed during Batch A. Owner design approval was recorded afterward.
 - `make validate` passed for the Phase 1 design batch: boundary and synthetic
   checks, 115 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
   compilation, diff check, package build, and eight release validation checks.
+- Owner completed review and approved the Phase 1 intelligence output contract.
+  Batch B1 is ready for a new Codex task on dedicated branch
+  `codex/phase-1-intelligence-contract`.
+- This approval record changed no runtime, schema, implementation pack, tag,
+  connector, real-data, remote branch, or `main` state.
+- `make validate` passed after the approval and new-session handoff state were
+  recorded.
 
 ### 2026-07-26 — IP-024 isolated migration rehearsal
 
