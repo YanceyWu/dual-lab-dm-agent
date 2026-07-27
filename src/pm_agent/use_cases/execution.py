@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import perf_counter
 
+from pydantic import ValidationError
+
 from pm_agent.database import repository
 from pm_agent.use_cases.service import (
     UseCaseRequest,
@@ -87,13 +89,35 @@ class UseCaseExecutor:
                 execution_metadata=new_execution_metadata(request),
             ), request, started_at, started_clock, read_only=descriptor.read_only)
         try:
-            result = handler(request)
+            handler_result = handler(request)
+        except ValidationError:
+            result = UseCaseResult(
+                status="failed",
+                warnings=[{"code": "RESULT_CONTRACT_INVALID"}],
+                execution_metadata=new_execution_metadata(request),
+            )
         except Exception as exc:
             result = UseCaseResult(
                 status="failed",
                 warnings=[{"code": self._safe_exception_code(exc)}],
                 execution_metadata=new_execution_metadata(request),
             )
+        else:
+            try:
+                raw_result = (
+                    handler_result.model_dump(warnings=False)
+                    if isinstance(handler_result, UseCaseResult)
+                    else handler_result
+                )
+                result = UseCaseResult.model_validate(raw_result)
+                if not self._intelligence_output_is_valid(result):
+                    raise ResultContractInvalidError
+            except Exception:
+                result = UseCaseResult(
+                    status="failed",
+                    warnings=[{"code": "RESULT_CONTRACT_INVALID"}],
+                    execution_metadata=new_execution_metadata(request),
+                )
         return self._finalize(
             result,
             request,
@@ -199,6 +223,95 @@ class UseCaseExecutor:
         return warnings
 
     @staticmethod
+    def _intelligence_output_is_valid(result: UseCaseResult) -> bool:
+        """Validate intelligence IDs, semantics, and result-local references."""
+
+        def valid_identifier(value: object) -> bool:
+            return (
+                isinstance(value, str)
+                and bool(value.strip())
+                and len(value) <= 128
+            )
+
+        def valid_unique_ids(values: list[object]) -> bool:
+            return (
+                all(valid_identifier(value) for value in values)
+                and len(values) == len(set(values))
+            )
+
+        fact_ids = [fact.fact_id for fact in result.facts]
+        signal_ids = [signal.signal_id for signal in result.signals]
+        recommendation_ids = [
+            recommendation.recommendation_id
+            for recommendation in result.recommendations
+        ]
+        if not all(
+            (
+                valid_unique_ids(fact_ids),
+                valid_unique_ids(signal_ids),
+                valid_unique_ids(recommendation_ids),
+            )
+        ):
+            return False
+
+        subjects = [
+            item.subject
+            for collection in (
+                result.facts,
+                result.signals,
+                result.recommendations,
+            )
+            for item in collection
+        ]
+        if any(
+            not valid_identifier(subject.kind) or not valid_identifier(subject.id)
+            for subject in subjects
+        ):
+            return False
+
+        evidence_ids = {
+            item.get("evidence_id")
+            for item in result.evidence
+            if valid_identifier(item.get("evidence_id"))
+        }
+        freshness_ids = {
+            item.get("source_id")
+            for item in result.freshness
+            if valid_identifier(item.get("source_id"))
+        }
+        fact_id_set = set(fact_ids)
+        signal_id_set = set(signal_ids)
+
+        for fact in result.facts:
+            if fact.fact_kind == "derived" and fact.rule_version is None:
+                return False
+            if fact.value_state != "known" and fact.value is not None:
+                return False
+            if not set(fact.evidence_refs).issubset(evidence_ids):
+                return False
+            if not set(fact.freshness_refs).issubset(freshness_ids):
+                return False
+
+        for signal in result.signals:
+            if not set(signal.fact_refs).issubset(fact_id_set):
+                return False
+            if not set(signal.evidence_refs).issubset(evidence_ids):
+                return False
+
+        for recommendation in result.recommendations:
+            if not set(recommendation.signal_refs).issubset(signal_id_set):
+                return False
+            if not set(recommendation.evidence_refs).issubset(evidence_ids):
+                return False
+            if (
+                recommendation.write_mode == "proposal_required"
+                and not recommendation.confirmation_required
+            ):
+                return False
+
+        return True
+
+    @staticmethod
     def _safe_exception_code(exc: Exception) -> str:
         if isinstance(exc, sqlite3.Error):
             return "DATA_ACCESS_FAILED"
@@ -275,3 +388,7 @@ class UseCaseExecutor:
             }
         )
         return result
+
+
+class ResultContractInvalidError(Exception):
+    """Internal sentinel for a handler result that must fail closed."""

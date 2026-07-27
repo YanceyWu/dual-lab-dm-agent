@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 1 DESIGN APPROVED — IMPLEMENTATION PACK REGISTRATION NEXT`
+Status: `PHASE 1 BATCH B1 VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-27
 
 This checkout intentionally contains only implementation material that remains
@@ -16,15 +16,21 @@ recoverable from Git history.
 | IP-024 | Database integrity, concurrency, token migration, and isolated operational-copy rehearsal | Synthetic rehearsal passed; real-environment rehearsal deferred to the integrated candidate | `implementation-reports/IP-024_IMPLEMENTATION_REPORT.md` |
 | IP-026 | Package identity, validation toolchain, CI, candidate tagging, release rehearsal, and rollback | Portable and remote CI validation green; tag and real UAT deferred to the integrated candidate | `implementation-reports/IP-026_IMPLEMENTATION_REPORT.md` |
 
+## Active implementation
+
+| Pack | Purpose | Current state |
+| --- | --- | --- |
+| IP-027 | Phase 1 typed intelligence result contract and integrity validation | Batch B1 validated locally; review required before Batch B2 | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` |
+
 ## Current execution order
 
 1. Start a new Codex task and read `AGENTS.md`, `PROGRESS.md`, and the approved
    Phase 1 design.
 2. Create a dedicated Phase 1 implementation branch from the approved planning
    branch.
-3. Register the Phase 1 implementation pack.
-4. Implement Batch B1 only and stop after focused tests plus `make validate`.
-5. Begin Batch B2 only after Batch B1 review.
+3. Implement and validate IP-027 Batch B1 only.
+4. Stop for Batch B1 review after focused tests plus `make validate`.
+5. Begin Batch B2 only after explicit Batch B1 review approval.
 6. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

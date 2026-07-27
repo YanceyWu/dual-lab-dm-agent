@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from datetime import datetime
+from typing import Annotated, Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, JsonValue, StringConstraints
 
 
 # ──────────────────────────────────────────────
@@ -56,6 +57,62 @@ class UseCaseRequest(BaseModel):
     correlation_id: str | None = None
 
 
+IntelligenceIdentifier = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=128),
+]
+
+
+class IntelligenceSubject(BaseModel):
+    """Canonical local subject referenced by intelligence output."""
+
+    kind: IntelligenceIdentifier
+    id: IntelligenceIdentifier
+
+
+class IntelligenceFact(BaseModel):
+    """Observed or deterministically derived value."""
+
+    fact_id: IntelligenceIdentifier
+    fact_type: IntelligenceIdentifier
+    fact_kind: Literal["observed", "derived"]
+    subject: IntelligenceSubject
+    value: JsonValue = None
+    value_state: Literal["known", "unknown", "unavailable", "conflicting"]
+    observed_at: datetime | None = None
+    freshness_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    evidence_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    rule_version: IntelligenceIdentifier | None = None
+
+
+class IntelligenceSignal(BaseModel):
+    """Deterministic rule outcome supported by facts and evidence."""
+
+    signal_id: IntelligenceIdentifier
+    signal_type: IntelligenceIdentifier
+    subject: IntelligenceSubject
+    state: Literal["active", "clear", "unknown", "unavailable"]
+    severity: Literal["critical", "high", "medium", "low", "info", "unknown"]
+    reason_codes: list[IntelligenceIdentifier] = Field(default_factory=list)
+    fact_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    evidence_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    rule_version: IntelligenceIdentifier
+
+
+class IntelligenceRecommendation(BaseModel):
+    """Deterministic supported action without write authorization."""
+
+    recommendation_id: IntelligenceIdentifier
+    recommendation_type: IntelligenceIdentifier
+    subject: IntelligenceSubject
+    state: Literal["available", "blocked", "not_applicable"]
+    rationale_codes: list[IntelligenceIdentifier] = Field(default_factory=list)
+    signal_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    evidence_refs: list[IntelligenceIdentifier] = Field(default_factory=list)
+    write_mode: Literal["advisory", "proposal_required"]
+    confirmation_required: bool
+
+
 class UseCaseResult(BaseModel):
     """Stable, renderer-neutral result returned by the use-case executor."""
 
@@ -64,6 +121,9 @@ class UseCaseResult(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
     evidence: list[dict[str, Any]] = Field(default_factory=list)
     freshness: list[dict[str, Any]] = Field(default_factory=list)
+    facts: list[IntelligenceFact] = Field(default_factory=list)
+    signals: list[IntelligenceSignal] = Field(default_factory=list)
+    recommendations: list[IntelligenceRecommendation] = Field(default_factory=list)
     assumptions: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str | dict[str, Any]] = Field(default_factory=list)
     alternatives: list[dict[str, Any]] = Field(default_factory=list)

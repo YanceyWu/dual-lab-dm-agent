@@ -1,15 +1,18 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-07-27
-Current branch: `codex/delivery-intelligence-evolution-plan`
+Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 1 PACK REGISTRATION NEXT`
-Gate status: `PHASE 1 DESIGN APPROVED — BATCH B1 READY`
+Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
+Gate status: `PHASE 1 BATCH B1 VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
-record are committed locally and remain unpushed; do not merge or push to
-`main`
+record commit `3d40633` are committed locally and remain unpushed; Batch B1 and
+this final progress record are committed locally on a branch created directly
+from `3d40633` and remain unpushed; the exact HEAD is reported in the task
+handoff because a commit cannot embed its own final hash; do not merge or push
+to `main`
 
 ## Read this first
 
@@ -94,6 +97,12 @@ changed in this batch.
 The owner-approval record based on `fdb50a3` also passed `make validate` with
 the same test counts and eight release validation checks.
 
+Phase 1 Batch B1 passed its focused contract suite with 20 tests. The final
+`make validate` run passed repository-boundary and synthetic-sample checks,
+135 runtime tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+diff hygiene, package build/inspection, and all eight release validation
+checks. No database or schema path changed from `3d40633`.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -115,19 +124,17 @@ the same test counts and eight release validation checks.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. No Phase 1 implementation pack is registered yet. Batch B1 is authorized,
-   but it must run on a dedicated implementation branch and stop for review
-   after focused tests plus `make validate`.
+5. IP-027 Batch B1 is validated on its dedicated implementation branch. The
+   additive fields change the exact serialized key set, so strict external
+   consumers remain a compatibility risk to verify during later interface
+   coverage. Descriptor discovery remains intentionally absent until B2.
 
 ## Exact next actions
 
-1. Start a new Codex task from the current approved planning branch.
-2. Create dedicated branch `codex/phase-1-intelligence-contract`.
-3. Register the Phase 1 implementation pack.
-4. Implement Batch B1 only: typed intelligence contract objects, additive empty
-   defaults, safe result-reference validation, and focused tests.
-5. Run focused tests and `make validate`, update `PROGRESS.md`, and stop for
-   review before Batch B2.
+1. Review Phase 1 Batch B1 code, contract behavior, validation evidence, and
+   local commit.
+2. Approve, revise, or reject Batch B1.
+3. Begin Batch B2 only after explicit owner approval.
 
 ## Decisions in force
 
@@ -150,6 +157,33 @@ the same test counts and eight release validation checks.
   until B1 validation is reviewed.
 
 ## Recent change log
+
+### 2026-07-27 — Phase 1 Batch B1 validated
+
+- Confirmed a clean planning worktree at exact approved commit `3d40633` and
+  verified the Phase 1 design status is approved.
+- Created independent branch `codex/phase-1-intelligence-contract` directly
+  from that commit.
+- Confirmed the historical pack sequence extends through IP-026 and registered
+  IP-027 for the bounded Phase 1 intelligence contract implementation.
+- Added typed subject, fact, signal, and recommendation models to the existing
+  `UseCaseResult`; the three additive arrays default empty and contract version
+  remains `1.0`.
+- Added executor-level result revalidation, same-type ID uniqueness, bounded ID,
+  reference-integrity, derived-fact, non-known-value, and proposal-confirmation
+  checks. Invalid output is replaced with a clean failed result containing only
+  safe warning code `RESULT_CONTRACT_INVALID`.
+- Added 20 focused synthetic tests covering valid and empty output,
+  unknown/unavailable/conflicting values, duplicate and bounded IDs, all
+  reference levels, invalid semantics, and mutated handler output.
+- Focused tests passed 20/20. Final `make validate` passed 135 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, repository
+  boundary, synthetic samples, diff hygiene, package build, and eight release
+  checks.
+- Git diff review found no database/schema path changes, confidential values,
+  credentials, configuration, real data, or unrelated behavior changes.
+- Batch B1 is ready only for review. No B2, schema, connector, real-data,
+  remote push, tag, PR, release, deployment, or `main` action was performed.
 
 ### 2026-07-27 — Delivery Intelligence phase planning
 
