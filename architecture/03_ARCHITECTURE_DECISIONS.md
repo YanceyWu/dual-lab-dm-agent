@@ -59,3 +59,20 @@ Versioned runtime, migrations, instructions, sanitized samples, and tests form
 the distributable product core. DM-specific configuration is separately managed.
 Credentials, token caches, operational databases, source exports, backups, and
 real-data outputs remain local private state and are never distributed.
+
+## ADR-011 — Delivery Intelligence evolution is phase gated
+
+Evolve the product through one independently reviewable and reversible vertical
+slice at a time. Every phase requires current-state inspection, a bounded gap
+analysis, design approval, small implementation batches, focused tests, full
+regression, and an explicit promotion decision before the next phase begins.
+Future-phase work must not be pulled into an active phase merely because
+adjacent code is being changed.
+
+## ADR-012 — Current UAT is deferred to the integrated candidate
+
+Accept exact commit `a272890` as the validated development evolution baseline,
+not as an operationally approved release. Defer the `0.2.0rc1` tag, isolated
+operational-copy rehearsal, and real-environment UAT until the approved
+Delivery Intelligence capability phases have been integrated. Before that UAT,
+revise and approve the runbook against the final promoted capability set.

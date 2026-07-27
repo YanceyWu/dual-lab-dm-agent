@@ -1,10 +1,16 @@
 # Delivery Manager Roadmap
 
-Status: `0.2.0rc1 PORTABLE CANDIDATE — REAL-ENVIRONMENT UAT PENDING`
-Last updated: 2026-07-26
+Status: `DELIVERY INTELLIGENCE EVOLUTION — PHASE 1 DESIGN GATE OPEN`
+Last updated: 2026-07-27
 
 This roadmap begins from the current release candidate. Earlier IP migration
 sequences are historical evidence, not work still waiting to start.
+
+Owner decision on 2026-07-27: exact commit `a272890` is accepted as the
+development evolution baseline after successful local and remote validation.
+The `0.2.0rc1` tag, work-computer migration rehearsal, and real-environment UAT
+are deferred until the integrated Delivery Intelligence candidate is assembled.
+This exception is not production or operational approval.
 
 ## Stage 1 — Candidate context cleanup
 
@@ -21,6 +27,8 @@ Exit criteria:
 
 ## Stage 2 — Immutable candidate
 
+Status: deferred to the integrated release-candidate stage.
+
 Goal: make the exact validated source reproducible.
 
 Exit criteria:
@@ -34,6 +42,8 @@ The tag is a test candidate, not production approval and not authorization to
 merge into `main`.
 
 ## Stage 3 — Work-computer migration rehearsal
+
+Status: deferred to the integrated release-candidate stage.
 
 Goal: prove that the candidate can upgrade the real schema safely without first
 touching the active database.
@@ -51,6 +61,9 @@ Exit criteria:
 - no raw data or evidence leaves the approved environment.
 
 ## Stage 4 — Controlled real-environment UAT
+
+Status: deferred to the integrated release-candidate stage. The runbook must be
+updated and approved after the promoted capability iterations are complete.
 
 Goal: validate the actual operating workflow using approved local data and
 configuration.
@@ -71,6 +84,9 @@ condition.
 
 ## Stage 5 — Candidate decision
 
+Status: replaced for now by the explicit development-baseline decision. Final
+operational candidate approval remains pending.
+
 After sanitized UAT evidence:
 
 - promote the candidate for local operational use when all gates pass; or
@@ -81,16 +97,25 @@ Do not move an existing tag, publish automatically, or merge into `main`.
 
 ## Post-0.2 iteration themes
 
-Do not register new implementation packs until real UAT and user feedback show
-which problem is material. Candidate themes are:
+The Delivery Intelligence sequence is defined in
+`architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`:
 
-- data-quality diagnostics that identify missing/stale inputs without exposing
-  records;
-- connector reliability, retry visibility, and operator recovery;
-- shorter natural-language paths for recurring DM decisions;
-- clearer comparison of staffing alternatives and HIREF actions;
-- operational observability using safe aggregate metadata;
-- reducing remaining legacy CLI/Dashboard compatibility paths.
+1. Intelligence output contract;
+2. Delivery Attention Center foundation;
+3. delivery-execution signal enrichment;
+4. seven-dimension Project Health;
+5. Resource Intelligence;
+6. Weekly Brief v2;
+7. Forecast v1;
+8. What-if Simulation v1;
+9. integrated release-candidate validation.
 
-Prioritize by decision value, user friction, failure risk, and evidence from
-real use—not by architectural novelty.
+Each phase follows architecture review, phase-specific gap analysis, design
+approval, small implementation batches, focused tests, full regression, and an
+explicit promotion decision.
+
+Phase 1 architecture review and bounded design may now proceed on an independent
+`codex/` branch. Do not register a Phase 1 implementation pack or change runtime
+or schema until the Phase 1 design is explicitly approved. Deferred migration
+rehearsal and real-environment UAT return as Phase 9 gates under a refreshed,
+approved runbook.

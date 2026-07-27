@@ -1,5 +1,16 @@
 # Real-Environment UAT Runbook
 
+Status: `DEFERRED — REVISE BEFORE INTEGRATED RELEASE UAT`
+
+This runbook describes the deferred `0.2.0rc1` candidate flow. It is retained as
+safety reference but is not a current gate for Delivery Intelligence feature
+iteration. Do not execute it as the final integrated UAT procedure.
+
+After the approved capability phases are complete, revise its installation,
+schema, use-case, connector, write-safety, Dashboard, rollback, and sanitized
+feedback coverage against the integrated candidate. Obtain explicit owner
+approval before real-environment use.
+
 ## Boundary
 
 Use `codex/ip-000-baseline-safety` only. Do not merge or rebase it into `main`.

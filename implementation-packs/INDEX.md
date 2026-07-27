@@ -1,32 +1,31 @@
 # Current Implementation Pack Index
 
-Status: `0.2.0rc1 CANDIDATE — REAL-ENVIRONMENT UAT PENDING`
-Last updated: 2026-07-26
+Status: `NO ACTIVE PACK — PHASE 1 DESIGN GATE OPEN`
+Last updated: 2026-07-27
 
 This checkout intentionally contains only implementation material that remains
-useful for the current release gate. Completed IP-000 through IP-023 and IP-025
-specifications and reports were removed from the candidate checkout to prevent
-coding agents from treating historical intermediate states as current work.
-They remain recoverable from Git history.
+useful as validated-baseline reference. Completed IP-000 through IP-023 and
+IP-025 specifications and reports were removed to prevent coding agents from
+treating historical intermediate states as current work. They remain
+recoverable from Git history.
 
-## Active material
+## Retained baseline material
 
 | Pack | Purpose | Current state | Report |
 | --- | --- | --- | --- |
-| IP-024 | Database integrity, concurrency, token migration, and isolated operational-copy rehearsal | Synthetic rehearsal passed; real-environment rehearsal pending | `implementation-reports/IP-024_IMPLEMENTATION_REPORT.md` |
-| IP-026 | Package identity, validation toolchain, CI, candidate tagging, release rehearsal, and rollback | Portable validation green; immutable tag and real UAT pending | `implementation-reports/IP-026_IMPLEMENTATION_REPORT.md` |
+| IP-024 | Database integrity, concurrency, token migration, and isolated operational-copy rehearsal | Synthetic rehearsal passed; real-environment rehearsal deferred to the integrated candidate | `implementation-reports/IP-024_IMPLEMENTATION_REPORT.md` |
+| IP-026 | Package identity, validation toolchain, CI, candidate tagging, release rehearsal, and rollback | Portable and remote CI validation green; tag and real UAT deferred to the integrated candidate | `implementation-reports/IP-026_IMPLEMENTATION_REPORT.md` |
 
 ## Current execution order
 
-1. Validate the exact candidate checkout with `make validate` and
-   `make rehearse-release`.
-2. Commit and push only after reviewing the portable change scope.
-3. Create annotated tag `v0.2.0-rc.1` only with explicit owner authorization.
-4. On the work computer, follow `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` and
-   rehearse IP-024 against an isolated operational-database copy.
-5. Run controlled read-only, connector, staffing, and Dashboard UAT.
-6. Promote locally or create a new release candidate from sanitized failure
-   evidence. Do not move an existing tag.
+1. Inspect the Phase 1 request/result contract, executor, projections, schema,
+   and tests.
+2. Prepare and obtain approval for the bounded intelligence-output contract
+   design.
+3. Register a new Phase 1 implementation pack only after that approval.
+4. Implement and validate one reversible vertical slice at a time.
+5. Return tagging, isolated operational-copy rehearsal, and refreshed
+   real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary
 

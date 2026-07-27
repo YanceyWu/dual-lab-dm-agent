@@ -123,7 +123,9 @@ Read:
 - `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` before real-data validation;
 - `docs/RELEASE_ENGINEERING.md` before tagging or promotion;
 - `docs/DUAL_LAB_OPERATING_MODEL.md` for the information boundary;
-- `architecture/04_COPILOT_LOCAL_AGENT_ARCHITECTURE.md` for the product design.
+- `architecture/04_COPILOT_LOCAL_AGENT_ARCHITECTURE.md` for the product design;
+- `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` for the approved
+  phase sequence, gates, and cross-session continuation model.
 
 ## Safety boundary
 
