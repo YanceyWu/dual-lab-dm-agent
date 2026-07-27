@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime, timezone
 from time import perf_counter
 
@@ -22,6 +22,15 @@ UseCaseHandler = Callable[[UseCaseRequest], UseCaseResult]
 
 
 @dataclass(frozen=True)
+class IntelligenceCapabilities:
+    """Implemented intelligence output advertised by one use case."""
+
+    facts: bool = False
+    signals: bool = False
+    recommendations: bool = False
+
+
+@dataclass(frozen=True)
 class UseCaseDescriptor:
     """Public metadata needed for safe tool discovery and description."""
 
@@ -32,6 +41,9 @@ class UseCaseDescriptor:
     supported_operations: tuple[str, ...] = ("query",)
     read_only: bool = True
     known_statuses: tuple[str, ...] = ("success", "unavailable", "invalid", "failed")
+    intelligence_capabilities: IntelligenceCapabilities = dataclass_field(
+        default_factory=IntelligenceCapabilities
+    )
 
 
 class UseCaseExecutor:

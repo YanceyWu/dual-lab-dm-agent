@@ -21,11 +21,23 @@ observations, rule outcomes, and supported actions remain distinguishable.
 - Add focused synthetic unit tests for valid and empty outputs, missing-data
   states, duplicate IDs, missing references, and invalid recommendations.
 
-## Explicit non-goals
+## Batch B2 scope
 
-- No descriptor intelligence capability metadata or list/describe changes.
+- Add typed descriptor capability metadata for facts, signals, and
+  recommendations, defaulting each capability to false.
+- Include the capability object in list and describe transport projections.
+- Keep all nine production descriptors at false until a later batch implements
+  real intelligence output.
+- Verify direct transport, structured CLI, generic Dashboard query, and bounded
+  trace-summary behavior.
+- Preserve descriptor and result contract version `1.0`, existing interface
+  headers, status mapping, payload fields, and empty intelligence arrays.
+
+## Explicit non-goals through Batch B2
+
 - No Management Attention mapping or production recommendation behavior.
-- No CLI, Dashboard, Copilot, connector, or real-data behavior changes.
+- No CLI or Dashboard business calculation, Copilot instruction, connector, or
+  real-data behavior changes.
 - No database schema, migration, or intelligence-payload persistence.
 - No Phase 2 work.
 
@@ -42,9 +54,15 @@ observations, rule outcomes, and supported actions remain distinguishable.
 5. Derived facts without rule versions and proposal-mode recommendations
    without confirmation fail closed.
 6. Focused tests and `make validate` pass with no database schema change.
+7. List and describe expose accurate all-false capabilities for every current
+   production use case.
+8. Structured CLI and generic Dashboard query results expose the same empty
+   intelligence arrays as direct execution.
+9. Trace retrieval remains a bounded summary with empty intelligence arrays and
+   `trace_summary = true`.
 
 ## Rollback
 
-Revert the bounded IP-027 Batch B1 commit through a reviewed inverse commit.
-Because the change is additive and introduces no persistence or schema change,
+Revert the bounded IP-027 Batch commits through reviewed inverse commits.
+Because the changes are additive and introduce no persistence or schema change,
 rollback requires no data migration.

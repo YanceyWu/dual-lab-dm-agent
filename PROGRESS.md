@@ -5,14 +5,14 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH B1 REVIEW CORRECTIONS VALIDATED`
+Gate status: `PHASE 1 BATCH B2 VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
 record commit `3d40633` are committed locally and remain unpushed; Batch B1,
-its review corrections, and this final progress record are committed locally
-on a branch created directly from `3d40633` and remain unpushed; the exact HEAD
-is reported in the task handoff because a commit cannot embed its own final
-hash; do not merge or push to `main`
+its review corrections, Batch B2, and this final progress record are committed
+locally on a branch created directly from `3d40633` and remain unpushed; the
+exact HEAD is reported in the task handoff because a commit cannot embed its
+own final hash; do not merge or push to `main`
 
 ## Read this first
 
@@ -109,6 +109,12 @@ synthetic-sample checks, 138 runtime tests, 21 repository-tool tests with
 19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
 eight release validation checks. No database or schema path changed.
 
+Phase 1 Batch B2 passed 27 focused contract/discovery/transport tests. The
+final `make validate` run passed repository-boundary and synthetic-sample
+checks, 142 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks. No database or schema path changed.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -130,16 +136,17 @@ eight release validation checks. No database or schema path changed.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch B1 review corrections are validated on its dedicated branch.
-   The additive fields change the exact serialized key set, so strict external
-   consumers remain a compatibility risk to verify during later interface
-   coverage. Descriptor discovery remains intentionally absent until B2.
+5. IP-027 Batch B2 is validated on its dedicated branch. Structured CLI and
+   generic Dashboard parity are covered, but consumers that assume an exact
+   legacy JSON key set remain a compatibility risk outside the repository.
+   Production intelligence mapping remains deferred to Batch C.
 
 ## Exact next actions
 
-1. Review the Phase 1 Batch B1 corrections and updated validation evidence.
-2. Approve, revise, or reject Batch B1 after correction.
-3. Begin Batch B2 only after explicit owner approval.
+1. Review IP-027 Batch B2 descriptor and transport behavior, validation
+   evidence, and local commit.
+2. Approve, revise, or reject Batch B2.
+3. Begin Batch C only after explicit owner approval.
 
 ## Decisions in force
 
@@ -162,6 +169,31 @@ eight release validation checks. No database or schema path changed.
   until B1 validation is reviewed.
 
 ## Recent change log
+
+### 2026-07-27 — Phase 1 Batch B2 validated
+
+- Owner approved the corrected Batch B1 and explicitly authorized entry into
+  Batch B2.
+- Confirmed a clean worktree at exact corrected B1 commit `8041e82`.
+- Extended IP-027 with bounded discovery and transport scope. All nine current
+  production use cases must advertise facts, signals, and recommendations as
+  false until Batch C implements a production mapping.
+- Added typed descriptor capability metadata with all-false defaults and
+  included it additively in list/describe transport projections.
+- Added four focused tests proving explicit capability round-trip, accurate
+  all-false production discovery, structured CLI and generic Dashboard parity,
+  and bounded trace-summary behavior without intelligence persistence.
+- Focused B1 plus B2 tests passed 27/27. The first full validation run passed
+  142 runtime tests but exposed a Ruff import-name collision; the dataclass
+  helper was aliased without behavior change. The final `make validate` passed
+  142 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, repository boundary, synthetic samples, diff hygiene, package
+  build, and eight release checks.
+- Git diff review found no database/schema, production mapping, Copilot,
+  connector, real-data, configuration, credential, or unrelated behavior
+  change.
+- Batch B2 is ready only for review. No Batch C, remote push, tag, PR, release,
+  deployment, or `main` action was performed.
 
 ### 2026-07-27 — Phase 1 Batch B1 review corrections
 

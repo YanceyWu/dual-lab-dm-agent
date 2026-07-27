@@ -46,6 +46,13 @@ class ToolTransport:
             "supported_operations": list(descriptor.supported_operations),
             "read_only": descriptor.read_only,
             "known_statuses": list(descriptor.known_statuses),
+            "intelligence_capabilities": {
+                "facts": descriptor.intelligence_capabilities.facts,
+                "signals": descriptor.intelligence_capabilities.signals,
+                "recommendations": (
+                    descriptor.intelligence_capabilities.recommendations
+                ),
+            },
         }
 
     @staticmethod
