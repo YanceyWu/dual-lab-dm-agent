@@ -4,12 +4,11 @@ Last updated: 2026-07-27
 Current branch: `codex/delivery-intelligence-evolution-plan`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 1 DESIGN NOT YET APPROVED`
-Gate status: `PHASE 0 DEVELOPMENT BASELINE ACCEPTED — PHASE 1 DESIGN OPEN`
-Git state: independent planning branch created from exact validated commit
-`a272890`; planning, roadmap, ADR, deferred-UAT, index, and progress changes are
-committed locally on this branch and remain unpushed; do not merge or push to
-`main`
+Current implementation pack: `NONE — PHASE 1 DESIGN APPROVAL PENDING`
+Gate status: `PHASE 1 INTELLIGENCE OUTPUT CONTRACT DRAFTED`
+Git state: independent branch is based on exact validated commit `a272890`;
+planning decision commit `f40f940` and the Phase 1 design batch are committed
+locally and remain unpushed; do not merge or push to `main`
 
 ## Read this first
 
@@ -83,6 +82,11 @@ synthetic samples, 115 runtime tests, 21 repository-tool tests with 19 subtests,
 Ruff, compilation, diff check, package build/inspection, and eight release
 validation checks.
 
+The Phase 1 Batch A design working tree based on `f40f940` passed the same
+`make validate` suite, including 115 runtime tests, 21 repository-tool tests
+with 19 subtests, and package/release validation. No runtime or schema file
+changed in this batch.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -105,17 +109,16 @@ validation checks.
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
 5. Phase 1 implementation is not authorized and no new implementation pack is
-   registered. The bounded Phase 1 output-contract design remains the next
+   registered. The drafted bounded Phase 1 output contract remains the next
    approval gate.
 
 ## Exact next actions
 
-1. Complete Phase 1 Batch A architecture review of the existing request/result
-   contract, executor, projections, schema, and tests.
-2. Prepare the bounded Phase 1 intelligence-output contract design, scenarios,
-   migration/compatibility position, acceptance criteria, and non-goals.
-3. Obtain explicit Phase 1 design approval before registering an implementation
-   pack or changing runtime/schema.
+1. Review
+   `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`.
+2. Approve it or record bounded revisions.
+3. Only after explicit approval, register a Phase 1 implementation pack and
+   begin Batch B1 contract implementation on a dedicated implementation branch.
 
 ## Decisions in force
 
@@ -174,6 +177,19 @@ validation checks.
   runtime tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
   boundary and synthetic checks, diff check, package build, and eight release
   validation checks.
+- Completed the Phase 1 Batch A inspection of the shared request/result model,
+  executor, use-case registry, nine registered read-only use cases, structured
+  CLI, generic Dashboard projection, Copilot operating instructions,
+  execution-trace storage, database bootstrap, and contract tests.
+- Drafted the bounded Phase 1 intelligence output contract: additive typed
+  `facts`, `signals`, and `recommendations`; executor reference validation;
+  descriptor capability metadata; Management Attention as the only production
+  reference mapping; no schema change and no new recommendation behavior.
+- No implementation pack was registered and no runtime or schema code was
+  changed. Explicit owner design approval remains required.
+- `make validate` passed for the Phase 1 design batch: boundary and synthetic
+  checks, 115 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff check, package build, and eight release validation checks.
 
 ### 2026-07-26 — IP-024 isolated migration rehearsal
 

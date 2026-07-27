@@ -443,7 +443,7 @@ Non-goals:
 
 ## Immediate next action
 
-Begin Phase 1 Batch A only: inspect the current `UseCaseRequest`,
-`UseCaseResult`, executor, projections, schema, and contract tests; then prepare
-the bounded intelligence-output contract design for owner approval. Do not
-register an implementation pack or modify runtime/schema before that approval.
+Review
+`architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` and either
+approve the bounded additive contract or record revisions. Do not register an
+implementation pack or modify runtime/schema before that approval.

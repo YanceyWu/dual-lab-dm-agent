@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `NO ACTIVE PACK — PHASE 1 DESIGN GATE OPEN`
+Status: `NO ACTIVE PACK — PHASE 1 DESIGN APPROVAL PENDING`
 Last updated: 2026-07-27
 
 This checkout intentionally contains only implementation material that remains
@@ -18,10 +18,9 @@ recoverable from Git history.
 
 ## Current execution order
 
-1. Inspect the Phase 1 request/result contract, executor, projections, schema,
-   and tests.
-2. Prepare and obtain approval for the bounded intelligence-output contract
-   design.
+1. Review
+   `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`.
+2. Approve it or record bounded revisions.
 3. Register a new Phase 1 implementation pack only after that approval.
 4. Implement and validate one reversible vertical slice at a time.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed

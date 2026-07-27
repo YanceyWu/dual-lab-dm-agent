@@ -49,10 +49,10 @@ pm connector validate --portable
 database paths, endpoints, and credentials only to local ignored files. Never
 commit or copy those values back to this repository.
 
-Before pointing the candidate at an existing operational database, follow
-`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`: create a backup, rehearse migration on an
-isolated copy, verify integrity and aggregate counts, and obtain operator
-approval before touching the active database.
+Real-environment UAT is deferred during Delivery Intelligence capability
+iteration. Do not point an iteration branch at an operational database. The
+retained `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is safety reference and must be
+revised and explicitly approved against the integrated candidate before use.
 
 ### 3. Use natural language in VS Code Copilot
 
@@ -125,7 +125,9 @@ Read:
 - `docs/DUAL_LAB_OPERATING_MODEL.md` for the information boundary;
 - `architecture/04_COPILOT_LOCAL_AGENT_ARCHITECTURE.md` for the product design;
 - `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` for the approved
-  phase sequence, gates, and cross-session continuation model.
+  phase sequence, gates, and cross-session continuation model;
+- `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` for the
+  current Phase 1 design approval candidate.
 
 ## Safety boundary
 
