@@ -5,14 +5,14 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH B1 VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 1 BATCH B1 REVIEW CORRECTIONS VALIDATED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
-record commit `3d40633` are committed locally and remain unpushed; Batch B1 and
-this final progress record are committed locally on a branch created directly
-from `3d40633` and remain unpushed; the exact HEAD is reported in the task
-handoff because a commit cannot embed its own final hash; do not merge or push
-to `main`
+record commit `3d40633` are committed locally and remain unpushed; Batch B1,
+its review corrections, and this final progress record are committed locally
+on a branch created directly from `3d40633` and remain unpushed; the exact HEAD
+is reported in the task handoff because a commit cannot embed its own final
+hash; do not merge or push to `main`
 
 ## Read this first
 
@@ -103,6 +103,12 @@ Phase 1 Batch B1 passed its focused contract suite with 20 tests. The final
 diff hygiene, package build/inspection, and all eight release validation
 checks. No database or schema path changed from `3d40633`.
 
+The Batch B1 review corrections passed 23 focused contract tests. The final
+post-correction `make validate` run passed repository-boundary and
+synthetic-sample checks, 138 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
+eight release validation checks. No database or schema path changed.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -124,16 +130,15 @@ checks. No database or schema path changed from `3d40633`.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch B1 is validated on its dedicated implementation branch. The
-   additive fields change the exact serialized key set, so strict external
+5. IP-027 Batch B1 review corrections are validated on its dedicated branch.
+   The additive fields change the exact serialized key set, so strict external
    consumers remain a compatibility risk to verify during later interface
    coverage. Descriptor discovery remains intentionally absent until B2.
 
 ## Exact next actions
 
-1. Review Phase 1 Batch B1 code, contract behavior, validation evidence, and
-   local commit.
-2. Approve, revise, or reject Batch B1.
+1. Review the Phase 1 Batch B1 corrections and updated validation evidence.
+2. Approve, revise, or reject Batch B1 after correction.
 3. Begin Batch B2 only after explicit owner approval.
 
 ## Decisions in force
@@ -157,6 +162,27 @@ checks. No database or schema path changed from `3d40633`.
   until B1 validation is reviewed.
 
 ## Recent change log
+
+### 2026-07-27 — Phase 1 Batch B1 review corrections
+
+- Configured all four new intelligence models to reject unknown fields instead
+  of silently dropping misspelled optional references or other malformed
+  output.
+- Restricted `RESULT_CONTRACT_INVALID` classification to validation errors
+  raised by `UseCaseResult` and the new intelligence contract models.
+  Unrelated handler domain-model validation retains the existing
+  `DOMAIN_VALIDATION_FAILED` classification.
+- Added three focused regression tests: executor fail-closed behavior for an
+  unknown intelligence field, unknown-field rejection by every intelligence
+  model, and preservation of unrelated domain-validation classification.
+- Focused tests passed 23/23. Final `make validate` passed 138 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, repository
+  boundary, synthetic samples, diff hygiene, package build, and eight release
+  checks.
+- Git diff review found no database/schema, connector, real-data, configuration,
+  credential, interface, descriptor, or unrelated behavior change.
+- Batch B1 remains stopped for corrected review. No B2, remote push, tag, PR,
+  release, deployment, or `main` action was performed.
 
 ### 2026-07-27 — Phase 1 Batch B1 validated
 

@@ -90,10 +90,18 @@ class UseCaseExecutor:
             ), request, started_at, started_clock, read_only=descriptor.read_only)
         try:
             handler_result = handler(request)
-        except ValidationError:
+        except ValidationError as exc:
             result = UseCaseResult(
                 status="failed",
-                warnings=[{"code": "RESULT_CONTRACT_INVALID"}],
+                warnings=[
+                    {
+                        "code": (
+                            "RESULT_CONTRACT_INVALID"
+                            if self._is_result_contract_validation_error(exc)
+                            else self._safe_exception_code(exc)
+                        )
+                    }
+                ],
                 execution_metadata=new_execution_metadata(request),
             )
         except Exception as exc:
@@ -221,6 +229,16 @@ class UseCaseExecutor:
                     }
                 )
         return warnings
+
+    @staticmethod
+    def _is_result_contract_validation_error(exc: ValidationError) -> bool:
+        return exc.title in {
+            "UseCaseResult",
+            "IntelligenceSubject",
+            "IntelligenceFact",
+            "IntelligenceSignal",
+            "IntelligenceRecommendation",
+        }
 
     @staticmethod
     def _intelligence_output_is_valid(result: UseCaseResult) -> bool:

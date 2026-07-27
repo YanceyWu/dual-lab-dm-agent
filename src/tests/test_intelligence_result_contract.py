@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
 from pm_agent.use_cases.service import (
@@ -323,3 +324,57 @@ def test_executor_revalidates_mutated_handler_result_without_exposing_payload(
     serialized = str(result.model_dump())
     assert "fact-secret" not in serialized
     assert "private-config-value" not in serialized
+
+
+def test_executor_rejects_unknown_intelligence_field_instead_of_dropping_it(
+    isolated_db,
+) -> None:
+    result = _execute(
+        isolated_db,
+        lambda request: UseCaseResult(
+            status="success",
+            facts=[
+                {
+                    "fact_id": "fact-001",
+                    "fact_type": "project_health_state",
+                    "fact_kind": "observed",
+                    "subject": {"kind": "project", "id": "project-001"},
+                    "value": "amber",
+                    "value_state": "known",
+                    "evidence_ref": ["silently-lost-without-forbid"],
+                }
+            ],
+        ),
+    )
+
+    _assert_contract_invalid(result)
+    assert "silently-lost-without-forbid" not in str(result.model_dump())
+
+
+def test_every_intelligence_model_forbids_unknown_fields() -> None:
+    instances = [_subject(), _fact(), _signal(), _recommendation()]
+
+    for instance in instances:
+        payload = instance.model_dump()
+        payload["unexpected_field"] = "must-not-be-ignored"
+        with pytest.raises(ValidationError):
+            type(instance).model_validate(payload)
+
+
+def test_executor_preserves_unrelated_domain_validation_failure_classification(
+    isolated_db,
+) -> None:
+    class SyntheticDomainInput(BaseModel):
+        count: int
+
+    result = _execute(
+        isolated_db,
+        lambda request: (
+            SyntheticDomainInput(count="not-an-integer")
+            and UseCaseResult(status="success")
+        ),
+    )
+
+    assert result.status == "failed"
+    assert result.warnings == [{"code": "DOMAIN_VALIDATION_FAILED"}]
+    assert "not-an-integer" not in str(result.model_dump())

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, JsonValue, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints
 
 
 # ──────────────────────────────────────────────
@@ -66,12 +66,16 @@ IntelligenceIdentifier = Annotated[
 class IntelligenceSubject(BaseModel):
     """Canonical local subject referenced by intelligence output."""
 
+    model_config = ConfigDict(extra="forbid")
+
     kind: IntelligenceIdentifier
     id: IntelligenceIdentifier
 
 
 class IntelligenceFact(BaseModel):
     """Observed or deterministically derived value."""
+
+    model_config = ConfigDict(extra="forbid")
 
     fact_id: IntelligenceIdentifier
     fact_type: IntelligenceIdentifier
@@ -88,6 +92,8 @@ class IntelligenceFact(BaseModel):
 class IntelligenceSignal(BaseModel):
     """Deterministic rule outcome supported by facts and evidence."""
 
+    model_config = ConfigDict(extra="forbid")
+
     signal_id: IntelligenceIdentifier
     signal_type: IntelligenceIdentifier
     subject: IntelligenceSubject
@@ -101,6 +107,8 @@ class IntelligenceSignal(BaseModel):
 
 class IntelligenceRecommendation(BaseModel):
     """Deterministic supported action without write authorization."""
+
+    model_config = ConfigDict(extra="forbid")
 
     recommendation_id: IntelligenceIdentifier
     recommendation_type: IntelligenceIdentifier
