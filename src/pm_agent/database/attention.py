@@ -382,8 +382,9 @@ def insert_signal(
             (attention_id, rule_key, rule_version, subject_kind, subject_id,
              rule_state, attention_state, evaluation_status, severity,
              first_seen_at, last_seen_at, last_reconciliation_id,
-             observation_hash, observation_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             observation_hash, last_evaluation_hash, observation_json,
+             created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             record["attention_id"],
@@ -399,6 +400,7 @@ def insert_signal(
             record["last_seen_at"],
             record["last_reconciliation_id"],
             record["observation_hash"],
+            record["last_evaluation_hash"],
             _json(record["observation"]),
             record["created_at"],
             record["updated_at"],
@@ -427,6 +429,7 @@ def update_signal(
         "resolved_by",
         "resolution_reason",
         "observation_hash",
+        "last_evaluation_hash",
         "observation",
         "observation_json",
         "updated_at",

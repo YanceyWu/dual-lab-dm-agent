@@ -9,7 +9,10 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from pm_agent.attention import AttentionService
-from pm_agent.database.bootstrap import main as init_db
+from pm_agent.database.bootstrap import (
+    _migrate_attention_signal_evaluation_hash,
+    main as init_db,
+)
 
 
 def _now_text() -> str:
@@ -269,6 +272,43 @@ def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
         "attention_history": 0,
     }
     assert violations == []
+
+
+def test_evaluation_hash_migration_backfills_retained_snapshot_hash() -> None:
+    with sqlite3.connect(":memory:") as connection:
+        connection.row_factory = sqlite3.Row
+        connection.execute(
+            """
+            CREATE TABLE attention_signals (
+                attention_id TEXT PRIMARY KEY,
+                observation_hash TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO attention_signals
+                (attention_id, observation_hash)
+            VALUES ('attn-990001', 'hash-990001')
+            """
+        )
+        _migrate_attention_signal_evaluation_hash(connection)
+        columns = {
+            row["name"]
+            for row in connection.execute(
+                "PRAGMA table_info(attention_signals)"
+            )
+        }
+        migrated = connection.execute(
+            """
+            SELECT observation_hash, last_evaluation_hash
+            FROM attention_signals
+            WHERE attention_id = 'attn-990001'
+            """
+        ).fetchone()
+
+    assert "last_evaluation_hash" in columns
+    assert tuple(migrated) == ("hash-990001", "hash-990001")
 
 
 def test_bootstrap_migrates_fixed_project_health_v1_to_configurable_v2(
@@ -731,6 +771,21 @@ def test_invalid_required_inputs_never_clear_active_attention(
         confirmation_token=preview["confirmation_token"],
     )
     assert confirmed["reconciliation_status"] == "partial"
+    repeated_preview = service.preview_reconciliation(
+        actor="manager-990001",
+        rule_keys=[
+            "project_health_attention",
+            "overdue_action_attention",
+        ],
+    )
+    assert repeated_preview["proposed"]["updated_count"] == 0
+    assert repeated_preview["proposed"]["limited_count"] == 0
+    repeated = service.confirm(
+        operation_id=repeated_preview["operation_id"],
+        confirmation_token=repeated_preview["confirmation_token"],
+    )
+    assert repeated["transitions"]["updated_count"] == 0
+    assert repeated["transitions"]["limited_count"] == 0
 
     with sqlite3.connect(isolated_db) as connection:
         states = connection.execute(
@@ -760,6 +815,17 @@ def test_invalid_required_inputs_never_clear_active_attention(
             ORDER BY attention_id
             """
         ).fetchall()
+        hashes = connection.execute(
+            """
+            SELECT observation_hash, last_evaluation_hash
+            FROM attention_signals
+            WHERE rule_key IN (
+                'project_health_attention',
+                'overdue_action_attention'
+            )
+            ORDER BY rule_key
+            """
+        ).fetchall()
     assert states == [
         ("overdue_action_attention", "active", "open", "partial"),
         ("project_health_attention", "active", "open", "partial"),
@@ -768,6 +834,10 @@ def test_invalid_required_inputs_never_clear_active_attention(
     assert all(
         severity == json.loads(observation_json)["signal"]["severity"]
         for severity, observation_json in limited_events
+    )
+    assert all(
+        observation_hash != last_evaluation_hash
+        for observation_hash, last_evaluation_hash in hashes
     )
 
 

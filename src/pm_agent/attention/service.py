@@ -430,7 +430,7 @@ def _transition_plan(
         elif observation["active"]:
             updated = (
                 _observation_hash(observation["observation"])
-                != existing["observation_hash"]
+                != _last_evaluation_hash(existing)
             )
             target_status = (
                 "complete" if observation["complete"] else "partial"
@@ -456,7 +456,7 @@ def _transition_plan(
             and (
                 existing["evaluation_status"] != "partial"
                 or _observation_hash(observation["observation"])
-                != existing["observation_hash"]
+                != _last_evaluation_hash(existing)
             )
         ):
             counts["updated_count"] += 1
@@ -521,6 +521,9 @@ def _apply_reconciliation(
                 "last_seen_at": now_text,
                 "last_reconciliation_id": reconciliation_id,
                 "observation_hash": _observation_hash(observation["observation"]),
+                "last_evaluation_hash": _observation_hash(
+                    observation["observation"]
+                ),
                 "observation": observation["observation"],
                 "created_at": now_text,
                 "updated_at": now_text,
@@ -648,6 +651,7 @@ def _apply_observation(
         "last_seen_at": now_text,
         "last_reconciliation_id": reconciliation_id,
         "observation_hash": new_hash,
+        "last_evaluation_hash": new_hash,
         "observation": observation["observation"],
         "updated_at": now_text,
     }
@@ -776,6 +780,7 @@ def _clear_signal(
             "resolved_by": "system",
             "resolution_reason": "rule_clear",
             "observation_hash": _observation_hash(normalized),
+            "last_evaluation_hash": _observation_hash(normalized),
             "observation": normalized,
             "updated_at": now_text,
         },
@@ -815,16 +820,21 @@ def _limit_signal(
     observation_changed = bool(
         observation
         and _observation_hash(observation["observation"])
-        != existing["observation_hash"]
+        != _last_evaluation_hash(existing)
     )
+    values = {
+        "evaluation_status": status,
+        "last_reconciliation_id": reconciliation_id,
+        "updated_at": _iso(now),
+    }
+    if observation:
+        values["last_evaluation_hash"] = _observation_hash(
+            observation["observation"]
+        )
     attention_repository.update_signal(
         connection,
         existing["attention_id"],
-        {
-            "evaluation_status": status,
-            "last_reconciliation_id": reconciliation_id,
-            "updated_at": _iso(now),
-        },
+        values,
     )
     if status_changed or observation_changed:
         _history(
@@ -1004,6 +1014,10 @@ def _observation_hash(observation: dict[str, Any]) -> str:
         separators=(",", ":"),
     )
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _last_evaluation_hash(signal: dict[str, Any]) -> str:
+    return signal.get("last_evaluation_hash") or signal["observation_hash"]
 
 
 def _bounded_id(value: str | None, field: str) -> str:

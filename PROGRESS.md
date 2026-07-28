@@ -166,6 +166,13 @@ repository-boundary and synthetic-sample checks, 166 runtime tests,
 21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
 package build/inspection, and all eight release validation checks.
 
+The partial-evaluation deduplication correction passed 14 focused Attention
+foundation tests and 52 combined Attention/database/bootstrap/Management
+Attention/unified-contract regression tests. The final `make validate` run
+passed repository-boundary and synthetic-sample checks, 167 runtime tests,
+21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -231,6 +238,30 @@ package build/inspection, and all eight release validation checks.
   reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Repeated partial Attention history deduplicated
+
+- Corrected the final Batch B review blocker in which repeated identical
+  partial evaluations compared against the retained active snapshot and
+  appended duplicate `evaluation_limited` events indefinitely.
+- Added `last_evaluation_hash` as an additive current-signal field, distinct
+  from the retained `observation_hash`. Preview and confirmation now compare
+  the same latest semantic evaluation while the last known active snapshot
+  remains intact.
+- Added an idempotent migration that adds the field to an existing Batch B
+  database and backfills it from the retained snapshot hash. Synthetic coverage
+  proves the backfill, changed partial audit, and unchanged partial
+  deduplication behavior.
+- Focused Attention tests passed 14/14. Combined Attention/database/bootstrap/
+  Management Attention/unified-contract regression passed 52/52.
+  `make validate` passed repository-boundary and synthetic-sample checks,
+  167 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and eight release
+  validation checks.
+- No Batch C interface, connector, real-data, pending-decision activation,
+  business-object write, promotion, tag, merge, push, deployment, or `main`
+  change was introduced. The result remains stopped for corrected Batch B
+  review.
 
 ### 2026-07-28 — Phase 2 Batch B follow-up review findings corrected
 

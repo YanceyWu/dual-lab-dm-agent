@@ -788,6 +788,7 @@ CREATE TABLE IF NOT EXISTS attention_signals (
     resolved_by            TEXT NOT NULL DEFAULT '',
     resolution_reason      TEXT NOT NULL DEFAULT '',
     observation_hash       TEXT NOT NULL,
+    last_evaluation_hash   TEXT NOT NULL DEFAULT '',
     observation_json       TEXT NOT NULL CHECK(json_valid(observation_json)),
     created_at             TEXT NOT NULL,
     updated_at             TEXT NOT NULL,
@@ -2379,6 +2380,30 @@ PROJECT_HEALTH_PARAMETERS_V2 = {
 }
 
 
+def _migrate_attention_signal_evaluation_hash(
+    conn: sqlite3.Connection,
+) -> None:
+    """Separate the retained signal snapshot from latest evaluation dedup."""
+    if not _column_exists(
+        conn,
+        "attention_signals",
+        "last_evaluation_hash",
+    ):
+        conn.execute(
+            """
+            ALTER TABLE attention_signals
+            ADD COLUMN last_evaluation_hash TEXT NOT NULL DEFAULT ''
+            """
+        )
+    conn.execute(
+        """
+        UPDATE attention_signals
+        SET last_evaluation_hash = observation_hash
+        WHERE last_evaluation_hash = ''
+        """
+    )
+
+
 def _migrate_attention_history_rule_changed(conn: sqlite3.Connection) -> None:
     """Add the rule_changed audit type while preserving existing history."""
     row = conn.execute(
@@ -2599,6 +2624,7 @@ def main(quiet: bool = False) -> None:
 
     conn.commit()
     try:
+        _migrate_attention_signal_evaluation_hash(conn)
         _migrate_attention_history_rule_changed(conn)
         _migrate_employee_identity_v16(conn)
         _ensure_default_plan_version(conn)

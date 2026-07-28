@@ -157,6 +157,13 @@ evidence/freshness states. It excludes execution IDs, display names, query
 timestamps, and source observation timestamps, so an unchanged successful
 refresh does not create a meaningless history event.
 
+Current storage separates the retained Attention snapshot hash from the latest
+evaluation hash. A partial or failed evaluation can therefore preserve the
+last known active snapshot while still deduplicating repeated identical
+limitations. Preview planning and confirmed persistence compare the same latest
+evaluation hash; a changed partial observation is auditable once, while an
+unchanged repeat creates no duplicate transition or history event.
+
 The new Center response remains a `UseCaseResult` 1.0. Its facts, signals, and
 recommendations use the Phase 1 reference rules. Every persistent item exposes
 its `attention_id`, lifecycle fields, first/last detection timestamps,
@@ -274,7 +281,7 @@ This Batch A does not create it.
 | `attention_rules` | Approved local rule catalog and parameters | `rule_key`, `rule_version`, `enabled`, `parameters_json`, timestamps; one active version per key |
 | `attention_operations` | Attention-specific one-time preview/confirm boundary | operation ID, action, actor, bounded scope JSON, token hash, proposed/claimed/success/failed/expired status, expiry and safe failure/result summaries |
 | `attention_reconciliations` | Safe audit of a confirmed evaluation | `reconciliation_id`, status, actor, started/finished timestamps, rule-set version, safe warning codes, candidate and transition counts |
-| `attention_signals` | One current row per canonical identity | `attention_id`, rule key/version, subject kind/id, rule/attention state, severity, first/last seen, last reconciliation, snooze/acknowledgement/resolution fields, normalized snapshot hashes/JSON; unique `(rule_key, subject_kind, subject_id)` |
+| `attention_signals` | One current row per canonical identity | `attention_id`, rule key/version, subject kind/id, rule/attention state, severity, first/last seen, last reconciliation, snooze/acknowledgement/resolution fields, retained snapshot hash, latest evaluation hash, normalized snapshot JSON; unique `(rule_key, subject_kind, subject_id)` |
 | `attention_history` | Append-only detection and lifecycle history | event ID, attention ID, reconciliation ID, event type, prior/new state, severity, rule version, actor, safe normalized observation snapshot, event timestamp |
 
 Foreign keys link current signals and history to their rule and reconciliation
