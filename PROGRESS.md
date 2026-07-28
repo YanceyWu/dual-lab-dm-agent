@@ -5,15 +5,15 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH C VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 1 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
 record commit `3d40633` are committed locally and remain unpushed; Batch B1,
-its review corrections, Batch B2, B2 correction commit `ea5eb7a`, Batch C, and
-this final progress record are committed locally on a branch created directly
-from `3d40633` and remain unpushed; the exact HEAD is reported in the task
-handoff because a commit cannot embed its own final hash; do not merge or push
-to `main`
+its review corrections, Batch B2, B2 correction commit `ea5eb7a`, Batch C,
+Batch D reporting, and this final progress record are committed locally on a
+branch created directly from `3d40633` and remain unpushed; the exact HEAD is
+reported in the task handoff because a commit cannot embed its own final hash;
+do not merge or push to `main`
 
 ## Read this first
 
@@ -129,6 +129,15 @@ repository-boundary and synthetic-sample checks, 153 runtime tests,
 package build/inspection, and all eight release validation checks. No database
 or schema path changed.
 
+Phase 1 Batch D passed 63 combined focused contract, discovery, transport,
+Management Attention, Copilot, unified-use-case, and legacy-compatibility
+tests. `make validate` passed repository-boundary and synthetic-sample checks,
+153 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks. `make rehearse-release` passed temporary wheel installation,
+isolated synthetic database upgrade, integrity checks, and rollback. No
+database or schema path changed.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -150,19 +159,22 @@ or schema path changed.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch C is validated on its dedicated branch. Management Attention
+5. IP-027 Batch D is locally green on its dedicated branch. Management Attention
    now intentionally duplicates existing returned-item meaning into the new
    typed intelligence projection while preserving legacy `data`; later
    maintenance must keep the single deterministic mapper and legacy projection
    aligned. Consumers that assume an exact legacy JSON key set remain a
    compatibility risk outside the repository.
+6. Phase 1 commits remain unpushed, so remote CI status for this implementation
+   is unknown. Local validation and synthetic release rehearsal are green.
 
 ## Exact next actions
 
-1. Review the Batch C Management Attention mapping, Copilot instructions,
-   validation evidence, and local commit.
-2. Approve, revise, or reject Batch C.
-3. Begin Batch D only after explicit owner approval.
+1. Review `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md`, Batch D
+   evidence, remaining risks, and the final local commit.
+2. Explicitly promote, revise, or stop Phase 1.
+3. If promoted, start a new Phase 2 design task. Do not implement Phase 2 from
+   this task or without its separately approved design.
 
 ## Decisions in force
 
@@ -181,10 +193,37 @@ or schema path changed.
 - New Delivery Intelligence capabilities follow
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
-- Implement Phase 1 only through the approved bounded batches. Do not begin B2
-  until B1 validation is reviewed.
+- Do not begin Phase 2 implementation until Phase 1 is explicitly promoted and
+  a separate Phase 2 design is reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 1 Batch D validated
+
+- Owner explicitly authorized Batch D after the validated Batch C handoff.
+- Confirmed a clean worktree at exact Batch C commit `61b3d8c`.
+- Batch D is limited to combined regression, synthetic installed-package and
+  rollback rehearsal, portable/schema review, implementation reporting, and a
+  Phase 1 promotion recommendation.
+- Combined focused regression passed 63/63 across contract, discovery,
+  transport, Management Attention, Copilot, unified-use-case, and legacy
+  interface coverage.
+- `make validate` passed 153 runtime tests, 21 repository-tool tests with
+  19 subtests, Ruff, compilation, repository boundary, synthetic samples, diff
+  hygiene, package build, and eight release checks.
+- `make rehearse-release` passed temporary wheel installation, isolated
+  synthetic database upgrade, integrity checks, installed behavior, and
+  rollback for `ai-pm-agent 0.2.0rc1`.
+- Complete diff review from exact approved planning commit `3d40633` found no
+  database/schema, migration, full-intelligence persistence, connector,
+  operational configuration, credential, real-data, or unrelated business
+  behavior change.
+- Added `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` with
+  implementation, evidence, compatibility, risk, rollback, and promotion
+  position.
+- Phase 1 promotion is recommended but remains an explicit owner decision.
+  No Phase 2, connector, real-data, remote push, tag, PR, release, deployment,
+  or `main` action was performed.
 
 ### 2026-07-28 — Phase 1 Batch C validated
 

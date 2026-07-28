@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 1 BATCH C VALIDATED — REVIEW REQUIRED`
+Status: `PHASE 1 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -18,9 +18,9 @@ recoverable from Git history.
 
 ## Active implementation
 
-| Pack | Purpose | Current state |
-| --- | --- | --- |
-| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Batch C validated locally; review required before Batch D | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` |
+| Pack | Purpose | Current state | Specification | Report |
+| --- | --- | --- | --- | --- |
+| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Batch D locally green; explicit Phase 1 promotion decision required | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
 
 ## Current execution order
 
@@ -28,10 +28,14 @@ recoverable from Git history.
    Phase 1 design.
 2. Create a dedicated Phase 1 implementation branch from the approved planning
    branch.
-3. Implement and validate IP-027 Batch B1 only.
-4. Stop for Batch B1 review after focused tests plus `make validate`.
-5. Begin Batch B2 only after explicit Batch B1 review approval.
-6. Return tagging, isolated operational-copy rehearsal, and refreshed
+3. Preserve the validated Batch B1 and B2 contract/discovery foundation.
+4. Preserve the validated Batch C Management Attention reference mapping.
+5. Review the completed Batch D regression, rehearsal, portable review, and
+   IP-027 implementation report.
+6. Record an explicit promote, revise, or stop decision for Phase 1.
+7. Start Phase 2 design only after explicit promotion; do not begin Phase 2
+   implementation from this task.
+8. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary

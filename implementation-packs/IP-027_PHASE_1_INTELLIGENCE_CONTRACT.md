@@ -47,7 +47,18 @@ observations, rule outcomes, and supported actions remain distinguishable.
 - Update Copilot result handling so facts, signals, recommendations, evidence,
   freshness, assumptions, and warnings retain their deterministic priority.
 
-## Explicit non-goals through Batch C
+## Batch D scope
+
+- Run combined contract, discovery, transport, Management Attention, Copilot,
+  and legacy-compatibility focused regression.
+- Run `make validate` and the synthetic installed-package,
+  migration, integrity, and rollback rehearsal.
+- Review the complete Phase 1 portable diff and prove no database/schema or
+  full-intelligence persistence change.
+- Publish the IP-027 implementation report and promotion evidence.
+- Stop for an explicit Phase 1 promotion decision before Phase 2.
+
+## Explicit non-goals through Batch D
 
 - No production recommendation behavior.
 - No CLI or Dashboard business calculation, Copilot instruction, connector, or
@@ -68,8 +79,9 @@ observations, rule outcomes, and supported actions remain distinguishable.
 5. Derived facts without rule versions and proposal-mode recommendations
    without confirmation fail closed.
 6. Focused tests and `make validate` pass with no database schema change.
-7. List and describe expose accurate all-false capabilities for every current
-   production use case.
+7. Before the reference mapping, every production use case advertises
+   all-false capabilities; after Batch C, only Management Attention advertises
+   facts and signals as true.
 8. Capability values accept only strict booleans, and focused tests lock the
    exact set of nine production use-case descriptors.
 9. Structured CLI and generic Dashboard query results expose the same empty
