@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
+Status: `BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-28
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -204,7 +204,6 @@ Attention CLI/Dashboard write boundary exposes only these actions:
 | `reconcile` | bounded rule keys and optional subject filters | Re-evaluate local facts and atomically materialize transitions |
 | `acknowledge` | one current `attention_id` | Change only lifecycle state to `acknowledged` |
 | `snooze` | one current `attention_id` plus bounded future expiry | Change only lifecycle state to `snoozed` |
-| `resolve` | one current `attention_id` | Allowed only after a complete clear evaluation; records no rule override |
 
 Every preview returns an opaque `operation_id`, one-time confirmation token,
 expiry, actor, bounded scope, and proposed transitions. Confirmation returns
@@ -283,7 +282,6 @@ Batch C1 exposes these exact JSON-only CLI commands:
 pm attention reconcile-preview [--rule <rule-key>] [--subject-kind <kind>] [--subject-id <id>]
 pm attention acknowledge-preview <attention-id>
 pm attention snooze-preview <attention-id> --until <timestamp>
-pm attention resolve-preview <attention-id>
 pm attention confirm <operation-id> --token <confirmation-token>
 ```
 
@@ -303,11 +301,15 @@ data-access failure to 503. CLI failure returns JSON and a non-zero exit code.
 Only a successful preview returns a confirmation token.
 
 Copilot may query the persisted Center without reconciliation. It may create a
-reconciliation or lifecycle preview only after the user explicitly asks for
-that action. It must present the exact bounded preview and ask for confirmation,
-and may confirm only that preview with the runtime-issued token after explicit
-approval. It never enables rules, edits RAG configuration, calls a connector,
-or converts an advisory recommendation into a business write.
+reconciliation, acknowledgement, or snooze preview only after the user
+explicitly asks for that action. It must present the exact bounded preview and
+ask for confirmation, and may confirm only that preview with the runtime-issued
+token after explicit approval. Complete clear reconciliation resolves the item
+automatically with machine reason `rule_clear`; no manager closure step is
+exposed. The internal resolve validator remains defensive compatibility logic,
+not a CLI, Dashboard, or Copilot operation. Copilot never enables rules, edits
+RAG configuration, calls a connector, or converts an advisory recommendation
+into a business write.
 
 Batch C1 adds no visual Dashboard Center page. A browser UI is a separately
 reviewed scope rather than an implication of the API projection.
@@ -446,10 +448,9 @@ Local SQLite facts and freshness
    volume.
 4. A successful, complete evaluation that no longer qualifies changes
    `rule_state` to `clear`, records `cleared`, and resolves the current item
-   with machine reason `rule_clear`. A manual resolve is allowed only after the
-   latest complete evaluation is clear and the lifecycle state is not already
-   resolved; otherwise it fails safely with `ATTENTION_STILL_ACTIVE` or
-   `ATTENTION_ALREADY_RESOLVED`.
+   with machine reason `rule_clear`. This automatic close is deliberate:
+   Attention is decision support rather than a manager-supervision workflow,
+   so no separate manager resolve action is required or exposed.
 5. Acknowledgement and snooze are manager workflow writes, never rule outcomes.
    They require preview and confirmation, actor recording, validation of a
    future bounded snooze expiry, and append-only history. Snoozed items remain
@@ -468,9 +469,9 @@ Local SQLite facts and freshness
    and are surfaced with evaluation status `disabled`; they are never silently
    cleared. A later enable/semantic change requires its own approved rule
    version and reconciliation preview.
-8. Every write uses propose, preview, explicit confirmation, and persist.
-   Read-only query routes and ToolTransport never materialize, acknowledge,
-   snooze, resolve, or otherwise mutate Attention state.
+8. Every exposed write uses propose, preview, explicit confirmation, and
+   persist. Read-only query routes and ToolTransport never materialize,
+   acknowledge, snooze, or otherwise mutate Attention state.
 
 ### Failure behavior
 
@@ -533,9 +534,9 @@ The eventual implementation must cover at least these synthetic scenarios:
 5. Pending-decision rule is registered disabled, emits no active item, and
    cannot be enabled without a separately approved governance definition; no
    text inference occurs.
-6. Reconciliation, acknowledge, snooze, expiry, and resolve all require a
-   valid Attention-specific one-time preview/confirmation transaction and
-   leave an auditable history.
+6. Reconciliation, acknowledgement, and snooze require a valid
+   Attention-specific one-time preview/confirmation transaction and leave an
+   auditable history; complete clear reconciliation resolves automatically.
 7. Concurrent confirmations cannot apply the same lifecycle operation twice.
 8. Read-only Center, existing Management Attention, structured CLI, and
    generic Dashboard preserve their defined contracts; legacy Management
@@ -547,8 +548,9 @@ The eventual implementation must cover at least these synthetic scenarios:
 11. An empty or narrowly filtered Center result exposes whether a confirmed
     reconciliation covers that scope and never implies health without
     coverage.
-12. Duplicate acknowledgement, unchanged snooze, and repeated resolve fail
-    before an operation or history event is created.
+12. Duplicate acknowledgement and unchanged snooze fail before an operation
+    or history event is created; public resolve preview is rejected because
+    complete clear reconciliation closes automatically.
 13. CLI, Dashboard API, and direct service preview/confirm projections preserve
     the same safe result and failure codes; ToolTransport remains query-only.
 

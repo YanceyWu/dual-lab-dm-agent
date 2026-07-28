@@ -231,6 +231,11 @@ def test_center_projects_references_recommendations_summary_and_history(
     assert recommendation_by_subject["member-880101"].state == "available"
     assert recommendation_by_subject["1"].state == "available"
     assert result.proposed_writes == []
+    project_fact = next(
+        fact for fact in result.facts if fact.subject.id == "project-880001"
+    )
+    assert project_fact.observed_at is not None
+    assert project_fact.observed_at.isoformat() == "2026-07-28T00:00:00+00:00"
 
     limited = use_case_executor.execute(
         UseCaseRequest(
@@ -256,6 +261,15 @@ def test_center_scope_validation_and_coverage_are_explicit(isolated_db) -> None:
             parameters={"attention_states": ["open", "open"]},
         )
     )
+    invalid_member_results = [
+        use_case_executor.execute(
+            UseCaseRequest(
+                use_case_id="delivery-attention-center",
+                parameters={"attention_states": value},
+            )
+        )
+        for value in ([{}], [[]], ["open", {}])
+    ]
     invalid_scope = use_case_executor.execute(
         UseCaseRequest(
             use_case_id="delivery-attention-center",
@@ -280,6 +294,11 @@ def test_center_scope_validation_and_coverage_are_explicit(isolated_db) -> None:
 
     assert invalid_states.status == invalid_scope.status == "invalid"
     assert invalid_states.warnings == [{"code": "ATTENTION_STATES_INVALID"}]
+    assert all(result.status == "invalid" for result in invalid_member_results)
+    assert all(
+        result.warnings == [{"code": "ATTENTION_STATES_INVALID"}]
+        for result in invalid_member_results
+    )
     assert invalid_scope.warnings == [
         {"code": "ATTENTION_SUBJECT_SCOPE_INVALID"}
     ]
@@ -290,6 +309,78 @@ def test_center_scope_validation_and_coverage_are_explicit(isolated_db) -> None:
     assert covered_by_canonical_kind.data["reconciliation_coverage"]["status"] == (
         "complete"
     )
+    before_invalid_scope = _counts(isolated_db)
+    assert AttentionService().preview_reconciliation(
+        actor="manager-880001",
+        subject_kind="unsupported",
+    ) == {
+        "status": "failed",
+        "failure_code": "ATTENTION_PREVIEW_INVALID",
+    }
+    assert _counts(isolated_db) == before_invalid_scope
+
+
+def test_latest_reconciliation_uses_insertion_order_for_same_second(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        for operation_id, token_hash in (
+            ("attop-old", "hash-old"),
+            ("attop-new", "hash-new"),
+        ):
+            connection.execute(
+                """
+                INSERT INTO attention_operations
+                    (operation_id, action, actor, status, scope_json,
+                     token_hash, created_at, expires_at, finished_at)
+                VALUES (
+                    ?, 'reconcile', 'manager-880001', 'success',
+                    '{"rule_keys":null,"subject_kind":null,"subject_id":null}',
+                    ?, '2026-07-28T00:00:00+00:00',
+                    '2026-07-28T00:05:00+00:00',
+                    '2026-07-28T00:00:01+00:00'
+                )
+                """,
+                [operation_id, token_hash],
+            )
+        connection.execute(
+            """
+            INSERT INTO attention_reconciliations
+                (reconciliation_id, operation_id, status, actor, started_at,
+                 finished_at, rule_set_version, warning_codes_json)
+            VALUES (
+                'rec-zzzz-old', 'attop-old', 'partial', 'manager-880001',
+                '2026-07-28T00:00:00+00:00',
+                '2026-07-28T00:00:01+00:00', 'rules-v1',
+                '["ATTENTION_SOURCE_NOT_FRESH"]'
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO attention_reconciliations
+                (reconciliation_id, operation_id, status, actor, started_at,
+                 finished_at, rule_set_version, warning_codes_json)
+            VALUES (
+                'rec-aaaa-new', 'attop-new', 'success', 'manager-880001',
+                '2026-07-28T00:00:00+00:00',
+                '2026-07-28T00:00:01+00:00', 'rules-v1', '[]'
+            )
+            """
+        )
+
+    result = use_case_executor.execute(
+        UseCaseRequest(use_case_id="delivery-attention-center")
+    )
+
+    assert result.data["reconciliation_coverage"] == {
+        "status": "complete",
+        "reconciliation_id": "rec-aaaa-new",
+        "finished_at": "2026-07-28T00:00:01+00:00",
+        "rule_set_version": "rules-v1",
+        "warning_codes": [],
+    }
 
 
 def test_center_direct_cli_and_dashboard_query_share_projection(isolated_db) -> None:
@@ -379,6 +470,41 @@ def test_lifecycle_no_ops_create_no_operation_or_history(isolated_db) -> None:
     assert _counts(isolated_db) == before_snooze_noop
 
     with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE attention_history
+            SET event_id = 'attevt-zzzz-old',
+                created_at = '2099-01-01T00:00:00+00:00'
+            WHERE attention_id = ? AND event_type = 'acknowledged'
+            """,
+            [attention_id],
+        )
+        connection.execute(
+            """
+            UPDATE attention_history
+            SET event_id = 'attevt-aaaa-new',
+                created_at = '2099-01-01T00:00:00+00:00'
+            WHERE attention_id = ? AND event_type = 'snoozed'
+            """,
+            [attention_id],
+        )
+    history = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id="delivery-attention-center",
+            parameters={
+                "subject_kind": "action",
+                "subject_id": "1",
+                "include_history": True,
+                "history_limit": 2,
+            },
+        )
+    )
+    assert [
+        event["event_type"]
+        for event in history.data["items"][0]["recent_events"]
+    ] == ["snoozed", "acknowledged"]
+
+    with sqlite3.connect(isolated_db) as connection:
         connection.execute("UPDATE action_items SET status = 'done'")
     _confirm_reconciliation(service, rule_keys=["overdue_action_attention"])
     before_resolve_noop = _counts(isolated_db)
@@ -390,6 +516,36 @@ def test_lifecycle_no_ops_create_no_operation_or_history(isolated_db) -> None:
         "failure_code": "ATTENTION_ALREADY_RESOLVED",
     }
     assert _counts(isolated_db) == before_resolve_noop
+
+
+def test_latest_partial_evaluation_replaces_retained_freshness_projection(
+    isolated_db,
+) -> None:
+    _seed_center_scenario(isolated_db)
+    service = AttentionService()
+    _confirm_reconciliation(service, rule_keys=["overdue_action_attention"])
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("UPDATE action_items SET due_date = NULL")
+    limited = _confirm_reconciliation(
+        service,
+        rule_keys=["overdue_action_attention"],
+    )
+    assert limited["reconciliation_status"] == "partial"
+
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id="delivery-attention-center",
+            parameters={
+                "rule_key": "overdue_action_attention",
+                "subject_kind": "action",
+            },
+        )
+    )
+
+    assert result.data["items"][0]["evaluation_status"] == "partial"
+    assert result.facts[0].value == "overdue"
+    assert result.freshness[0]["state"] == "partial"
+    assert result.recommendations[0].state == "blocked"
 
 
 def test_attention_cli_and_dashboard_api_preserve_service_contract(
@@ -419,6 +575,18 @@ def test_attention_cli_and_dashboard_api_preserve_service_contract(
         "status": "failed",
         "failure_code": "ATTENTION_NOT_FOUND",
     }
+    for args in (
+        ["attention", "snooze-preview", "attn-example"],
+        ["attention", "confirm", "attop-example"],
+        ["attention", "unknown"],
+        ["attention", "resolve-preview", "attn-example"],
+    ):
+        parse_failure = runner.invoke(app_module.app, args)
+        assert parse_failure.exit_code == 2
+        assert json.loads(parse_failure.output) == {
+            "status": "failed",
+            "failure_code": "ATTENTION_CLI_INVALID",
+        }
 
     client = dashboard_server.app.test_client()
     rejected_actor = client.post(
@@ -431,6 +599,16 @@ def test_attention_cli_and_dashboard_api_preserve_service_contract(
     )
     assert rejected_actor.status_code == 400
     assert rejected_actor.get_json()["failure_code"] == "ATTENTION_PREVIEW_INVALID"
+    rejected_resolve = client.post(
+        "/api/attention/operations",
+        json={
+            "operation": "preview",
+            "action": "resolve",
+            "attention_id": "attn-example",
+        },
+    )
+    assert rejected_resolve.status_code == 400
+    assert rejected_resolve.get_json()["failure_code"] == "ATTENTION_PREVIEW_INVALID"
 
     preview = client.post(
         "/api/attention/operations",

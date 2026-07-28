@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
+Status: `IP-028 BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -21,13 +21,13 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and controlled Center integration | Batch C1 implemented and locally validated; explicit C1 review required | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and controlled Center integration | Batch C1 review corrections implemented and locally validated; explicit C1 review required | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
 1. Preserve the promoted IP-027 contract and Management Attention compatibility
    baseline.
-2. Review the local IP-028 Batch C1 implementation on
+2. Review the corrected local IP-028 Batch C1 implementation on
    `codex/phase-2-attention-center` against the approved Center, interface,
    lifecycle no-op, and compatibility contracts.
 3. Accept Batch C1 or request bounded corrections. Do not begin Batch C2 DM-operable RAG

@@ -89,14 +89,15 @@ implicitly. Treat an empty result as healthy or clear only when its returned
 surface `ATTENTION_NOT_RECONCILED`, `ATTENTION_SCOPE_NOT_RECONCILED`, or the
 returned partial warnings.
 
-Run `pm attention reconcile-preview`, `acknowledge-preview`,
-`snooze-preview`, or `resolve-preview` only after the user explicitly requests
-that exact action and scope. Present the complete JSON preview and ask for
-confirmation. Run `pm attention confirm <operation-id> --token <token>` only
-after explicit approval of that exact preview. Never invent or reuse a token,
-enable a rule, edit project-health RAG configuration, call a connector, or turn
-an advisory Attention recommendation into an action, project, staffing, or
-decision write.
+Run `pm attention reconcile-preview`, `acknowledge-preview`, or
+`snooze-preview` only after the user explicitly requests that exact action and
+scope. Present the complete JSON preview and ask for confirmation. Run
+`pm attention confirm <operation-id> --token <token>` only after explicit
+approval of that exact preview. Complete clear reconciliation resolves the
+item automatically with `rule_clear`; never ask the manager for a separate
+closure step. Never invent or reuse a token, enable a rule, edit project-health
+RAG configuration, call a connector, or turn an advisory Attention
+recommendation into an action, project, staffing, or decision write.
 
 ## Result handling
 

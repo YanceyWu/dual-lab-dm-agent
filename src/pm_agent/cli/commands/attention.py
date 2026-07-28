@@ -5,13 +5,35 @@ from __future__ import annotations
 import json
 from typing import Optional
 
+import click
 import typer
+from typer.core import TyperGroup
 
 from pm_agent.attention import AttentionService
+
+class JsonAttentionGroup(TyperGroup):
+    """Keep Attention command parsing failures inside the JSON contract."""
+
+    def invoke(self, ctx: click.Context):
+        try:
+            return super().invoke(ctx)
+        except click.UsageError:
+            click.echo(
+                json.dumps(
+                    {
+                        "status": "failed",
+                        "failure_code": "ATTENTION_CLI_INVALID",
+                    },
+                    sort_keys=True,
+                )
+            )
+            raise click.exceptions.Exit(2) from None
+
 
 attention_app = typer.Typer(
     help="Delivery Attention preview and confirmation",
     no_args_is_help=True,
+    cls=JsonAttentionGroup,
 )
 service = AttentionService()
 CLI_ACTOR = "copilot"
@@ -64,19 +86,6 @@ def snooze_preview(
             attention_id=attention_id,
             actor=CLI_ACTOR,
             snoozed_until=until,
-        )
-    )
-
-
-@attention_app.command("resolve-preview")
-def resolve_preview(
-    attention_id: str = typer.Argument(...),
-) -> None:
-    """Preview resolution of one clear Attention item."""
-    _emit(
-        service.preview_resolution(
-            attention_id=attention_id,
-            actor=CLI_ACTOR,
         )
     )
 

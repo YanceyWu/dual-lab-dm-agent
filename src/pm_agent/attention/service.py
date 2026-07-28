@@ -988,16 +988,31 @@ def _reconciliation_scope(
     subject_kind: str | None,
     subject_id: str | None,
 ) -> dict[str, Any]:
-    normalized_keys = list(rule_keys) if rule_keys else None
+    normalized_keys = (
+        [_bounded_id(rule_key, "rule_key") for rule_key in rule_keys]
+        if rule_keys
+        else None
+    )
+    normalized_kind = (
+        _bounded_id(subject_kind, "subject_kind")
+        if subject_kind is not None
+        else None
+    )
+    if (
+        normalized_kind is not None
+        and normalized_kind not in set(_SUBJECT_KIND_BY_RULE.values())
+    ):
+        raise ValueError("Unsupported subject kind")
     if normalized_keys:
-        for rule_key in normalized_keys:
-            _bounded_id(rule_key, "rule_key")
-        if subject_kind:
+        if normalized_kind:
             expected_kinds = {_SUBJECT_KIND_BY_RULE.get(key) for key in normalized_keys}
-            if expected_kinds != {subject_kind}:
+            if expected_kinds != {normalized_kind}:
                 raise ValueError("Subject kind does not match rule scope")
-    normalized_kind = _bounded_id(subject_kind, "subject_kind") if subject_kind else None
-    normalized_subject = _bounded_id(subject_id, "subject_id") if subject_id else None
+    normalized_subject = (
+        _bounded_id(subject_id, "subject_id")
+        if subject_id is not None
+        else None
+    )
     if normalized_subject and not normalized_kind:
         raise ValueError("Subject ID requires subject kind")
     return {
@@ -1044,7 +1059,9 @@ def _last_evaluation_hash(signal: dict[str, Any]) -> str:
 
 
 def _bounded_id(value: str | None, field: str) -> str:
-    candidate = str(value or "").strip()
+    if not isinstance(value, str):
+        raise ValueError(f"Invalid {field}")
+    candidate = value.strip()
     if not _STABLE_ID.fullmatch(candidate):
         raise ValueError(f"Invalid {field}")
     return candidate

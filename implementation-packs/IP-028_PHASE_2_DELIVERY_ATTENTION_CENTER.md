@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
+Status: `BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -86,8 +86,10 @@ now stopped at its validated local result for review.
   the approved design.
 - Add Copilot routing that never reconciles implicitly and requires explicit
   user authorization for preview and separate explicit confirmation.
-- Reject duplicate acknowledgement, unchanged snooze, repeated resolve, and
-  other lifecycle no-ops before creating an operation or history event.
+- Reject duplicate acknowledgement, unchanged snooze, and other lifecycle
+  no-ops before creating an operation or history event. Complete clear
+  reconciliation resolves automatically; no manager resolve operation is
+  exposed.
 - Preserve `management-attention` business projections and prove that its
   query creates no Attention current/history/operation/reconciliation write.
 - Use only synthetic records and stable anonymous IDs.
@@ -118,9 +120,10 @@ now stopped at its validated local result for review.
    clear/resolved recommendations are not applicable.
 4. ToolTransport remains query-only. Direct executor, structured CLI, and
    generic Dashboard query serialize the same Center result.
-5. Reconcile, acknowledge, snooze, and resolve are exposed only through the
-   Attention-specific preview/confirm service. Tokens remain hashed at rest,
-   one-time, expiring, and returned only by preview.
+5. Reconcile, acknowledge, and snooze are exposed only through the
+   Attention-specific preview/confirm service. Complete clear reconciliation
+   resolves automatically. Tokens remain hashed at rest, one-time, expiring,
+   and returned only by preview.
 6. CLI and Dashboard API preserve stable service failures and reject
    caller-supplied Dashboard actor, unsupported fields/actions, lifecycle
    no-ops, and invalid confirmation without domain mutation.
@@ -140,8 +143,9 @@ may claim DM-operable RAG configuration or enter promotion review.
 
 ## Batch C1 result
 
-Batch C1 is implemented and locally validated. Focused combined coverage
-passed 69 tests, and `make validate` passed 174 runtime tests, 21
+Batch C1 and its bounded review corrections are implemented and locally
+validated. Focused combined coverage passed 71 tests, and `make validate`
+passed 176 runtime tests, 21
 repository-tool tests with 19 subtests, Ruff, compilation, boundary/synthetic
 checks, package build/inspection, and eight release validation checks.
 `pending_decision_attention` remains disabled. The result is stopped for

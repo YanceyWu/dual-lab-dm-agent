@@ -408,7 +408,7 @@ def list_recent_history(
             rule_version, actor, reconciliation_id, created_at
         FROM attention_history
         WHERE attention_id = ?
-        ORDER BY created_at DESC, event_id DESC
+        ORDER BY created_at DESC, rowid DESC
         LIMIT ?
         """,
         [attention_id, limit],
@@ -421,6 +421,24 @@ def list_recent_history(
     return result
 
 
+def get_latest_limited_observation(
+    connection: sqlite3.Connection,
+    *,
+    attention_id: str,
+) -> dict[str, Any] | None:
+    row = connection.execute(
+        """
+        SELECT observation_json
+        FROM attention_history
+        WHERE attention_id = ? AND event_type = 'evaluation_limited'
+        ORDER BY created_at DESC, rowid DESC
+        LIMIT 1
+        """,
+        [attention_id],
+    ).fetchone()
+    return json.loads(row["observation_json"]) if row else None
+
+
 def list_reconciliations(
     connection: sqlite3.Connection,
 ) -> list[dict[str, Any]]:
@@ -431,7 +449,7 @@ def list_reconciliations(
             r.rule_set_version, r.warning_codes_json, o.scope_json
         FROM attention_reconciliations r
         JOIN attention_operations o ON o.operation_id = r.operation_id
-        ORDER BY r.finished_at DESC, r.reconciliation_id DESC
+        ORDER BY r.finished_at DESC, r.rowid DESC
         """
     ).fetchall()
     result = []

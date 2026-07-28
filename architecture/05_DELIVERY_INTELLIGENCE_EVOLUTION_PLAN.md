@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C1 REVIEW REQUIRED`
+Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C1 CORRECTED REVIEW REQUIRED`
 Last updated: 2026-07-28
 
 ## Purpose
@@ -265,10 +265,11 @@ rule version, state change, and bounded recommendation.
 
 Batch A and the implementation-level Batch C design review are approved in
 `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. IP-028 Batch B
-is implemented, validated, and accepted locally. Batch C1 is implemented and
-locally validated on `codex/phase-2-attention-center` and awaits review. Batch
-C2 DM-operable RAG configuration, connector work, real data, and promotion
-remain separately gated.
+is implemented, validated, and accepted locally. Batch C1 and its bounded
+review corrections are implemented and locally validated on
+`codex/phase-2-attention-center` and await review. Batch C2 DM-operable RAG
+configuration, connector work, real data, and promotion remain separately
+gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 
@@ -468,7 +469,7 @@ Non-goals:
 
 ## Immediate next action
 
-Review the local IP-028 Batch C1 implementation on
+Review the corrected local IP-028 Batch C1 implementation on
 `codex/phase-2-attention-center` against the approved read-only Center,
 reconciliation coverage, lifecycle no-op, exact interface, recommendation,
 and compatibility contracts. Accept it or request bounded corrections. Do not

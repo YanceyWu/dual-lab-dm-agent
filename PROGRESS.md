@@ -5,18 +5,18 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 2 BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
 The approved Phase 2 implementation branch, including the accepted Batch B
-result, review corrections, Batch C design handoff, and validated Batch C1
-implementation, is local-only and has no remote tracking branch. The exact
-current commit is reported in the task handoff because a commit cannot embed
-its own final hash. Do not push it without a separate authorization. Do not
-merge or push to `main`.
+result, review corrections, Batch C design handoff, validated Batch C1
+implementation, and C1 review corrections, is local-only and has no remote
+tracking branch. The exact current commit is reported in the task handoff
+because a commit cannot embed its own final hash. Do not push it without a
+separate authorization. Do not merge or push to `main`.
 
 ## Read this first
 
@@ -74,6 +74,10 @@ belong in Git history and must not be interpreted as current instructions.
   the exact Attention CLI, Dashboard API, and Copilot projections. It is
   locally validated and awaits explicit review; this is not Batch C2 or Phase
   2 promotion approval.
+- The owner selected automatic system resolution for complete clear
+  reconciliation: Attention is decision support, not manager supervision.
+  No manager resolve command is exposed; acknowledgement and snooze remain
+  optional assistance rather than mandatory closure work.
 
 ## Current validation evidence
 
@@ -197,6 +201,12 @@ synthetic-sample checks, 174 runtime tests, 21 repository-tool tests with
 all eight release validation checks. No schema or migration changed in C1, and
 `make rehearse-release` remains deliberately deferred to Batch D.
 
+The Batch C1 review corrections passed 71 combined focused tests. The final
+`make validate` run passed repository-boundary and synthetic-sample checks,
+176 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -227,10 +237,11 @@ all eight release validation checks. No schema or migration changed in C1, and
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
 7. IP-028 Batch B and its review corrections are implemented, validated, and
-   accepted locally. Batch C1 is implemented and locally validated with
-   reconciliation coverage, lifecycle no-op protection, exact interface
-   projections, bounded history, and advisory recommendations. It awaits
-   explicit owner review and is not promoted.
+   accepted locally. Batch C1 and its bounded review corrections are
+   implemented and locally validated with reconciliation coverage, lifecycle
+   no-op protection, exact interface projections, bounded history, and
+   advisory recommendations. The corrected result awaits explicit owner review
+   and is not promoted.
 8. The persisted project-health RAG model is data-configurable, but no
    DM-operable configuration interface exists. Batch C2 must add a separately
    approved Attention-specific configuration preview/confirm boundary before
@@ -240,7 +251,7 @@ all eight release validation checks. No schema or migration changed in C1, and
 
 ## Exact next actions
 
-1. Review the local IP-028 Batch C1 commit against the approved Center,
+1. Review the corrected local IP-028 Batch C1 commit against the approved Center,
    reconciliation-coverage, lifecycle no-op, interface, recommendation, and
    compatibility contracts.
 2. Decide whether to accept Batch C1 or request bounded corrections.
@@ -267,10 +278,44 @@ all eight release validation checks. No schema or migration changed in C1, and
   bounded outcome are active at a time.
 - IP-028 Batch C1 is implemented and validated under the exact approved design
   and pack contract. Stop at its local commit for owner review.
+- Complete clear reconciliation automatically resolves the Attention item with
+  system reason `rule_clear`. Do not require or expose a separate manager
+  resolve step; Attention assists management rather than supervising it.
 - Do not begin Batch C2 DM-operable RAG configuration until Batch C1 is
   reviewed and the separate configuration write contract is authorized.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch C1 review corrections validated
+
+- Applied the owner decision that Attention is decision support rather than a
+  manager-supervision workflow. Complete clear reconciliation continues to
+  resolve automatically with `rule_clear`; public CLI, Dashboard, and Copilot
+  resolve-preview routing was removed. Internal defensive resolution
+  validation remains unexposed for compatibility.
+- Corrected Center array-member validation so unhashable or unsupported
+  `attention_states` return the stable invalid result instead of a domain
+  execution failure.
+- Made same-second reconciliation coverage and per-item history ordering use
+  SQLite insertion order rather than random UUID lexical order.
+- Projected the latest limited evaluation freshness while retaining the last
+  known active fact, so complete-to-partial transitions visibly block advice
+  without falsely presenting the retained freshness as current.
+- Preserved normalized source observation time for project-health facts and
+  exposed reconciliation time separately as `evaluated_at`.
+- Hardened reconciliation scope validation to reject non-string identifiers
+  and non-canonical subject kinds before creating an operation.
+- Added a JSON Attention CLI parsing boundary so missing options, unknown
+  commands, and the intentionally unavailable public resolve command return a
+  stable JSON failure with a non-zero exit code.
+- Focused combined tests passed 71/71. `make validate` passed
+  repository-boundary and synthetic-sample checks, 176 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build/inspection, and all eight release validation checks.
+- No schema, migration, RAG configuration write, visual Dashboard Center,
+  connector, real-data, business-object write, pending-decision activation,
+  push, or Phase 2 promotion was introduced. The corrected local result is
+  stopped for Batch C1 review.
 
 ### 2026-07-28 — Phase 2 Batch C1 Attention Center validated
 

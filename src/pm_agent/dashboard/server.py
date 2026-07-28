@@ -647,7 +647,7 @@ def attention_operations():
                 subject_kind=payload.get("subject_kind"),
                 subject_id=payload.get("subject_id"),
             )
-    elif action in {"acknowledge", "resolve"}:
+    elif action == "acknowledge":
         allowed = {"operation", "action", "attention_id"}
         if (
             set(payload) - allowed
@@ -657,13 +657,8 @@ def attention_operations():
                 "status": "failed",
                 "failure_code": "ATTENTION_PREVIEW_INVALID",
             }
-        elif action == "acknowledge":
-            result = service.preview_acknowledgement(
-                attention_id=payload["attention_id"],
-                actor=_dashboard_actor(),
-            )
         else:
-            result = service.preview_resolution(
+            result = service.preview_acknowledgement(
                 attention_id=payload["attention_id"],
                 actor=_dashboard_actor(),
             )

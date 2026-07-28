@@ -6,6 +6,7 @@ import copy
 import json
 import re
 import sqlite3
+from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any
 
@@ -88,11 +89,11 @@ def _validated_filters(parameters: dict[str, Any]) -> dict[str, Any]:
     if (
         not isinstance(states, list)
         or not states
-        or len(states) != len(set(states))
         or any(
             not isinstance(state, str) or state not in ATTENTION_STATES
             for state in states
         )
+        or len(states) != len(set(states))
     ):
         raise ValueError("ATTENTION_STATES_INVALID")
 
@@ -146,7 +147,18 @@ def _build_result(
     items: list[dict[str, Any]] = []
 
     for signal in selected:
-        projection = _project_signal(signal)
+        latest_limited_observation = None
+        if signal["evaluation_status"] in {"partial", "failed"}:
+            latest_limited_observation = (
+                attention_repository.get_latest_limited_observation(
+                    connection,
+                    attention_id=signal["attention_id"],
+                )
+            )
+        projection = _project_signal(
+            signal,
+            latest_limited_observation=latest_limited_observation,
+        )
         facts.append(projection["fact"])
         signals.append(projection["signal"])
         recommendations.append(projection["recommendation"])
@@ -189,9 +201,14 @@ def _build_result(
     )
 
 
-def _project_signal(signal: dict[str, Any]) -> dict[str, Any]:
+def _project_signal(
+    signal: dict[str, Any],
+    *,
+    latest_limited_observation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     attention_id = signal["attention_id"]
     observation = signal["observation"]
+    evaluation_observation = latest_limited_observation or observation
     subject = IntelligenceSubject(
         kind=signal["subject_kind"],
         id=signal["subject_id"],
@@ -203,7 +220,11 @@ def _project_signal(signal: dict[str, Any]) -> dict[str, Any]:
     freshness_id = _local_id("freshness", attention_id)
     fact_payload = observation["fact"]
     signal_payload = observation["signal"]
-    freshness_state = _freshness_state(observation.get("freshness", {}))
+    freshness_payload = evaluation_observation.get("freshness", {})
+    freshness_state = _freshness_state(
+        freshness_payload,
+        evaluation_status=signal["evaluation_status"],
+    )
 
     fact = IntelligenceFact(
         fact_id=fact_id,
@@ -265,8 +286,13 @@ def _project_signal(signal: dict[str, Any]) -> dict[str, Any]:
     freshness = {
         "source_id": freshness_id,
         "state": freshness_state,
-        "observed_at": _observed_at(observation, signal),
-        "source_ids": _source_ids(observation.get("freshness", {})),
+        "observed_at": _observed_at(
+            evaluation_observation,
+            signal,
+            fallback_field="updated_at",
+        ),
+        "evaluated_at": signal["updated_at"],
+        "source_ids": _source_ids(freshness_payload),
     }
     item = {
         "attention_id": attention_id,
@@ -411,16 +437,30 @@ def _summary(matched: list[dict[str, Any]], returned_count: int) -> dict[str, An
     }
 
 
-def _freshness_state(payload: dict[str, Any]) -> str:
+def _freshness_state(
+    payload: dict[str, Any],
+    *,
+    evaluation_status: str,
+) -> str:
+    if evaluation_status == "failed":
+        return "unavailable"
     if payload.get("basis") == "local_record":
-        return "fresh"
-    states = list(payload.get("states", {}).values())
-    if not states and payload.get("state"):
-        states = [payload["state"]]
-    for candidate in ("unavailable", "unknown", "partial", "stale"):
-        if candidate in states:
-            return candidate
-    return "fresh" if states and all(state == "fresh" for state in states) else "unknown"
+        state = "fresh"
+    else:
+        states = list(payload.get("states", {}).values())
+        if not states and payload.get("state"):
+            states = [payload["state"]]
+        state = "unknown"
+        for candidate in ("unavailable", "unknown", "partial", "stale"):
+            if candidate in states:
+                state = candidate
+                break
+        else:
+            if states and all(item == "fresh" for item in states):
+                state = "fresh"
+    if evaluation_status == "partial" and state == "fresh":
+        return "partial"
+    return state
 
 
 def _source_ids(payload: dict[str, Any]) -> list[str]:
@@ -431,8 +471,30 @@ def _source_ids(payload: dict[str, Any]) -> list[str]:
     return [str(value)] if value else []
 
 
-def _observed_at(observation: dict[str, Any], signal: dict[str, Any]) -> str:
-    return str(observation.get("freshness", {}).get("observed_at") or signal["last_seen_at"])
+def _observed_at(
+    observation: dict[str, Any],
+    signal: dict[str, Any],
+    *,
+    fallback_field: str = "last_seen_at",
+) -> str:
+    direct = observation.get("freshness", {}).get("observed_at")
+    if direct:
+        return _normalized_timestamp(direct)
+    snapshot_times = observation.get("evidence", {}).get(
+        "snapshot_observed_at",
+        [],
+    )
+    if isinstance(snapshot_times, list) and snapshot_times:
+        normalized = [_normalized_timestamp(value) for value in snapshot_times]
+        return max(normalized)
+    return signal[fallback_field]
+
+
+def _normalized_timestamp(value: Any) -> str:
+    parsed = datetime.fromisoformat(str(value))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds")
 
 
 def _record_count(payload: dict[str, Any]) -> int:
