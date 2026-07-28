@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 DESIGN GATE NEXT`
+Status: `PHASE 1 PROMOTED — PHASE 2 BATCH A DESIGN PENDING REVIEW`
 Last updated: 2026-07-28
 
 ## Purpose
@@ -256,6 +256,11 @@ Non-goals:
 Promotion gate: every attention item exposes its facts, evidence, freshness,
 rule version, state change, and bounded recommendation.
 
+Batch A design is drafted in
+`architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` and is pending
+owner review. It does not register an implementation pack or authorize Phase 2
+runtime, schema, connector, or real-data work.
+
 ### Phase 3 — Delivery execution signal enrichment
 
 Goal: provide the source facts required for aging blockers, scope growth,
@@ -454,9 +459,7 @@ Non-goals:
 
 ## Immediate next action
 
-Start a new Codex task for Phase 2 Batch A design. Read `AGENTS.md`,
-`PROGRESS.md`, this plan, the promoted Phase 1 design/report, and current Git
-state. Inspect the existing Management Attention implementation and database
-schema before drafting the bounded Delivery Attention Center design. Do not
-register a Phase 2 implementation pack or change runtime/schema until that
-design is explicitly approved.
+Review and approve or revise
+`architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. Do not register
+a Phase 2 implementation pack or change runtime/schema until that design is
+explicitly approved.

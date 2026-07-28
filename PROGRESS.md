@@ -5,7 +5,7 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 PROMOTED — PHASE 2 DESIGN TASK NEXT`
+Gate status: `PHASE 2 BATCH A DESIGN READY FOR REVIEW — IMPLEMENTATION BLOCKED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
 record commit `3d40633` are committed locally and remain unpushed; all Phase 1
@@ -172,18 +172,19 @@ database or schema path changed.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
-7. No Phase 2 design exists yet. Promotion authorizes a new Batch A design task,
-   not Phase 2 implementation or an implementation pack.
+7. Phase 2 Batch A design is drafted locally and awaits explicit owner review.
+   It does not authorize a Phase 2 implementation pack, runtime/schema change,
+   connector access, or real-data action.
 
 ## Exact next actions
 
-1. Start a new Codex task for Phase 2 Batch A design.
-2. Read `AGENTS.md`, this file, the evolution plan, promoted Phase 1
-   design/report, and current Git state.
-3. Inspect the existing Management Attention implementation and database schema
-   before drafting the Delivery Attention Center design.
-4. Do not register a Phase 2 implementation pack or change runtime/schema until
-   that design is explicitly approved.
+1. Review `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` and
+   explicitly approve it, request revisions, or reject it.
+2. If approved, start a new Phase 2 implementation task on an appropriate
+   independent `codex/` branch and then register the bounded implementation
+   pack before Batch B work.
+3. Until approval, do not register a Phase 2 implementation pack or change
+   runtime/schema; do not access connectors or real data.
 
 ## Decisions in force
 
@@ -206,6 +207,41 @@ database or schema path changed.
   a separate Phase 2 design is reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch A Delivery Attention Center design
+
+- Confirmed a clean worktree on `codex/phase-1-intelligence-contract` at the
+  exact Phase 1 promotion commit
+  `289837855a230a14256a5ed00f5c8e353b1c3d36` before this documentation-only
+  task.
+- Inspected the real Management Attention handler, shared executor/result
+  contract, descriptor registration, SQLite bootstrap/schema, repositories,
+  confirmation pattern, and focused synthetic tests. Current Management
+  Attention is a request-time read-only ranking of local project health,
+  overdue actions, and source freshness; it has no durable Attention identity,
+  history, lifecycle, or persistence.
+- Added `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` as the
+  reviewable Batch A design. It defines verified state, separate Center
+  compatibility boundary, canonical identity/deduplication, proposed additive
+  storage, lifecycle, confirmed reconciliation, failure handling, synthetic
+  validation, and Batch B through D plan.
+- The design uses only anonymous stable identifiers and synthetic scenarios.
+  It explicitly preserves the existing `management-attention` response and
+  forbids connector access, real data, schema/runtime change, automatic action
+  creation, project-status mutation, and Phase 2 implementation before
+  approval.
+- No implementation pack was registered. No runtime, test, database, schema,
+  migration, connector, configuration, credential, real-data, push, merge,
+  tag, PR, release, deployment, or `main` action was performed.
+- Documentation consistency checks (`git diff --check` and stale-status scan)
+  passed. `make validate` also passed: repository boundary, synthetic samples,
+ 153 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and eight release
+  validation checks.
+- This documentation-only design record is committed locally; the exact final
+  HEAD is reported in the task handoff because a commit cannot contain its own
+  hash. No push occurred. The exact next action is owner review and
+  approval/revision of the Phase 2 design.
 
 ### 2026-07-28 — Phase 1 promoted
 
