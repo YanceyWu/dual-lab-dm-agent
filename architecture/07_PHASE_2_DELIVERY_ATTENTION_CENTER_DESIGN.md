@@ -215,7 +215,7 @@ per-project overrides keyed only by stable anonymous project ID. The validated
 parameters define:
 
 - source precedence across normalized Jira grade and Confluence RAG inputs;
-- precedence across normalized `red`, `amber`, and `clear` states; and
+- precedence across normalized active `red` and `amber` states; and
 - source-specific mappings from bounded external labels to those normalized
   states.
 
@@ -224,10 +224,12 @@ bounded fields. Seed values preserve the existing Management Attention
 precedence, but are initial configuration rather than hard-coded behavior.
 Changing any mapping or precedence requires a new project-health rule version
 and takes effect only through Attention reconciliation preview/confirm. An
-unknown label is an incomplete observation and never clears an active item.
-Malformed configuration fails before a reconciliation write. Batch B does not
-add a configuration UI or API; that remains outside this storage and
-reconciliation core.
+unknown label or a missing value for any configured source is an incomplete
+observation and never clears an active item. A source can be omitted only by
+removing it from that default or project override's `source_precedence` in a
+new rule version. Malformed configuration fails before a reconciliation write.
+Batch B does not add a configuration UI or API; that remains outside this
+storage and reconciliation core.
 
 | Rule key / signal type | Subject and source | Deterministic initial criterion | Advisory recommendation |
 | --- | --- | --- | --- |
@@ -284,6 +286,11 @@ support active/open severity ranking, subject lookup, recent history,
 operation expiry/claim, and idempotent reconciliation lookup. JSON is limited
 to normalized, schema-validated local snapshots; filtering and state
 transitions do not depend on JSON text.
+
+The history event catalog includes `rule_changed` separately from
+`observed_again`. Existing Batch B history rows are preserved by an additive,
+idempotent schema migration that expands the event-type constraint without
+rewriting event meaning.
 
 Migration requirements for a later Batch B:
 

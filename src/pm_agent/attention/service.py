@@ -653,8 +653,13 @@ def _apply_observation(
     }
     event_types: list[str] = []
     new_attention_state = existing["attention_state"]
+    rule_version_changed = (
+        observation["rule_version"] != existing["rule_version"]
+    )
     if existing["rule_state"] != "active":
         event_types.append("reopened")
+        if rule_version_changed:
+            event_types.append("rule_changed")
         new_attention_state = "open"
         values.update(
             {
@@ -669,7 +674,9 @@ def _apply_observation(
             }
         )
     else:
-        if new_hash != existing["observation_hash"]:
+        if rule_version_changed:
+            event_types.append("rule_changed")
+        elif new_hash != existing["observation_hash"]:
             event_types.append("observed_again")
         if (
             not observation["complete"]
@@ -730,6 +737,24 @@ def _clear_signal(
             },
         }
     )
+    if (
+        observation
+        and observation["rule_version"] != existing["rule_version"]
+    ):
+        _history(
+            connection,
+            signal=existing,
+            operation_id=operation_id,
+            reconciliation_id=reconciliation_id,
+            event_type="rule_changed",
+            actor=actor,
+            now=now,
+            new_rule_state="clear",
+            new_attention_state="resolved",
+            observation=normalized,
+            severity=observation["severity"],
+            rule_version=observation["rule_version"],
+        )
     attention_repository.update_signal(
         connection,
         existing["attention_id"],

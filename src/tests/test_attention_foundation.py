@@ -151,6 +151,66 @@ def _confirm_reconciliation(
     return result
 
 
+def _restore_history_schema_without_rule_changed(
+    connection: sqlite3.Connection,
+) -> None:
+    """Simulate the original Batch B history schema for migration coverage."""
+    connection.execute(
+        "ALTER TABLE attention_history RENAME TO attention_history_v2"
+    )
+    connection.execute(
+        """
+        CREATE TABLE attention_history (
+            event_id              TEXT PRIMARY KEY,
+            attention_id          TEXT NOT NULL
+                                  REFERENCES attention_signals(attention_id),
+            operation_id          TEXT NOT NULL
+                                  REFERENCES attention_operations(operation_id),
+            reconciliation_id     TEXT
+                                  REFERENCES attention_reconciliations(
+                                      reconciliation_id
+                                  ),
+            event_type            TEXT NOT NULL CHECK(
+                event_type IN (
+                    'detected', 'observed_again', 'cleared', 'reopened',
+                    'acknowledged', 'snoozed', 'snooze_expired', 'resolved',
+                    'evaluation_limited', 'rule_disabled'
+                )
+            ),
+            prior_rule_state      TEXT NOT NULL DEFAULT '',
+            new_rule_state        TEXT NOT NULL DEFAULT '',
+            prior_attention_state TEXT NOT NULL DEFAULT '',
+            new_attention_state   TEXT NOT NULL DEFAULT '',
+            severity              TEXT NOT NULL,
+            rule_version          TEXT NOT NULL,
+            actor                 TEXT NOT NULL,
+            observation_json      TEXT NOT NULL DEFAULT '{}'
+                                  CHECK(json_valid(observation_json)),
+            created_at            TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute(
+        """
+        INSERT INTO attention_history
+        SELECT * FROM attention_history_v2
+        """
+    )
+    connection.execute("DROP TABLE attention_history_v2")
+    connection.execute(
+        """
+        CREATE INDEX idx_attention_history_attention_recent
+        ON attention_history(attention_id, created_at DESC)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX idx_attention_history_reconciliation
+        ON attention_history(reconciliation_id, created_at)
+        """
+    )
+
+
 def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
     isolated_db,
 ) -> None:
@@ -254,6 +314,45 @@ def test_bootstrap_migrates_fixed_project_health_v1_to_configurable_v2(
     parameters = json.loads(rows[1][2])
     assert parameters["config_version"] == "1.0"
     assert parameters["project_overrides"] == {}
+
+
+def test_bootstrap_adds_rule_changed_event_without_losing_history(
+    isolated_db,
+) -> None:
+    _seed_attention_scenario(isolated_db)
+    _confirm_reconciliation(AttentionService())
+    with sqlite3.connect(isolated_db) as connection:
+        history_before = connection.execute(
+            "SELECT event_id, event_type FROM attention_history ORDER BY event_id"
+        ).fetchall()
+        _restore_history_schema_without_rule_changed(connection)
+
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        history_after = connection.execute(
+            "SELECT event_id, event_type FROM attention_history ORDER BY event_id"
+        ).fetchall()
+        schema_sql = connection.execute(
+            """
+            SELECT sql FROM sqlite_master
+            WHERE type = 'table' AND name = 'attention_history'
+            """
+        ).fetchone()[0]
+        indexes = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA index_list(attention_history)"
+            )
+        }
+        violations = connection.execute("PRAGMA foreign_key_check").fetchall()
+
+    assert history_after == history_before
+    assert "'rule_changed'" in schema_sql
+    assert {
+        "idx_attention_history_attention_recent",
+        "idx_attention_history_reconciliation",
+    } <= indexes
+    assert violations == []
 
 
 def test_four_active_rules_deduplicate_and_pending_decision_remains_disabled(
@@ -529,7 +628,7 @@ def test_resource_threshold_is_strict_and_semantic_change_keeps_identity(
     assert changed_events == 1
 
 
-def test_partial_health_evaluation_never_clears_until_sources_are_fresh(
+def test_partial_health_never_clears_until_sources_and_inputs_are_complete(
     isolated_db,
 ) -> None:
     _seed_attention_scenario(isolated_db)
@@ -559,6 +658,25 @@ def test_partial_health_evaluation_never_clears_until_sources_are_fresh(
             WHERE id = 'sync-jira-stale-990001'
             """,
             [_now_text(), _now_text()],
+        )
+    _confirm_reconciliation(service)
+    with sqlite3.connect(isolated_db) as connection:
+        missing_input = connection.execute(
+            """
+            SELECT rule_state, attention_state, evaluation_status
+            FROM attention_signals
+            WHERE rule_key = 'project_health_attention'
+            """
+        ).fetchone()
+    assert missing_input == ("active", "open", "partial")
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            INSERT INTO confluence_status_snapshots
+                (board_id, snapshot_date, rag_status)
+            VALUES ('board-990001', '2026-07-28', 'GREEN')
+            """
         )
     _confirm_reconciliation(service)
     with sqlite3.connect(isolated_db) as connection:
@@ -653,6 +771,53 @@ def test_invalid_required_inputs_never_clear_active_attention(
     )
 
 
+def test_malformed_nested_rag_config_fails_preview_safely(isolated_db) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        valid_parameters = json.loads(
+            connection.execute(
+                """
+                SELECT parameters_json
+                FROM attention_rules
+                WHERE rule_key = 'project_health_attention'
+                  AND is_current = 1
+                """
+            ).fetchone()[0]
+        )
+    malformed_parameters = []
+    for field, value in (
+        ("source_precedence", [["jira_grade"]]),
+        ("state_precedence", ["red", ["amber"]]),
+    ):
+        parameters = json.loads(json.dumps(valid_parameters))
+        parameters["default"][field] = value
+        malformed_parameters.append(parameters)
+    parameters = json.loads(json.dumps(valid_parameters))
+    parameters["default"]["jira_grade_mapping"]["GREEN"] = []
+    malformed_parameters.append(parameters)
+
+    service = AttentionService()
+    for parameters in malformed_parameters:
+        with sqlite3.connect(isolated_db) as connection:
+            connection.execute(
+                """
+                UPDATE attention_rules
+                SET parameters_json = ?
+                WHERE rule_key = 'project_health_attention'
+                  AND is_current = 1
+                """,
+                [json.dumps(parameters, sort_keys=True)],
+            )
+        preview = service.preview_reconciliation(
+            actor="manager-990001",
+            rule_keys=["project_health_attention"],
+        )
+        assert preview == {
+            "status": "failed",
+            "failure_code": "ATTENTION_PREVIEW_INVALID",
+        }
+
+
 def test_configurable_rag_preserves_default_precedence_and_project_override(
     isolated_db,
 ) -> None:
@@ -741,10 +906,18 @@ def test_configurable_rag_preserves_default_precedence_and_project_override(
             """
             SELECT severity, rule_version, observation_json
             FROM attention_history
-            WHERE attention_id = ? AND event_type = 'observed_again'
+            WHERE attention_id = ? AND event_type = 'rule_changed'
             """,
             [first[0]],
         ).fetchone()
+        observed_again = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM attention_history
+            WHERE attention_id = ? AND event_type = 'observed_again'
+            """,
+            [first[0]],
+        ).fetchone()[0]
 
     assert current_signal == (
         first[0],
@@ -753,6 +926,7 @@ def test_configurable_rag_preserves_default_precedence_and_project_override(
     )
     assert history[:2] == ("critical", "project-health-attention-v3")
     assert json.loads(history[2])["signal"]["severity"] == "critical"
+    assert observed_again == 0
 
 
 def test_lifecycle_preview_confirm_snooze_expiry_and_resolve_validation(

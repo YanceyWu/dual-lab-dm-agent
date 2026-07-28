@@ -159,6 +159,13 @@ repository-boundary and synthetic-sample checks, 164 runtime tests,
 21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
 package build/inspection, and all eight release validation checks.
 
+The follow-up Batch B review corrections passed 13 focused Attention foundation
+tests and 51 combined Attention/database/bootstrap/Management Attention/
+unified-contract regression tests. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 166 runtime tests,
+21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -224,6 +231,32 @@ package build/inspection, and all eight release validation checks.
   reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch B follow-up review findings corrected
+
+- Corrected project-health completeness so every source selected by the
+  versioned default or project override must provide a recognized value for
+  every evaluated board before an inactive observation can clear an active
+  Attention item. Missing or unmapped configured inputs remain partial; a
+  source is optional only when the versioned configuration omits it.
+- Hardened nested RAG configuration validation so non-string precedence items
+  and mapping states return the safe Attention preview failure instead of
+  leaking a `TypeError`. Synthetic tests cover arrays in source precedence,
+  state precedence, and mapping values.
+- Added the distinct `rule_changed` history event required by the approved
+  audit contract. A migration expands the existing history event constraint
+  while preserving all prior rows, foreign-key integrity, and history indexes;
+  ordinary semantic changes remain `observed_again`.
+- Focused Attention tests passed 13/13. Combined Attention/database/bootstrap/
+  Management Attention/unified-contract regression passed 51/51.
+  `make validate` passed repository-boundary and synthetic-sample checks,
+  166 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and eight release
+  validation checks.
+- No Batch C interface, connector, real-data, pending-decision activation,
+  business-object write, promotion, tag, merge, push, deployment, or `main`
+  change was introduced. The result remains stopped for corrected Batch B
+  review.
 
 ### 2026-07-28 — Phase 2 Batch B review corrections validated
 

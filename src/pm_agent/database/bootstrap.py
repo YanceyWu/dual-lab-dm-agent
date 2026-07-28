@@ -811,7 +811,7 @@ CREATE TABLE IF NOT EXISTS attention_history (
         event_type IN (
             'detected', 'observed_again', 'cleared', 'reopened',
             'acknowledged', 'snoozed', 'snooze_expired', 'resolved',
-            'evaluation_limited', 'rule_disabled'
+            'evaluation_limited', 'rule_disabled', 'rule_changed'
         )
     ),
     prior_rule_state      TEXT NOT NULL DEFAULT '',
@@ -2379,6 +2379,84 @@ PROJECT_HEALTH_PARAMETERS_V2 = {
 }
 
 
+def _migrate_attention_history_rule_changed(conn: sqlite3.Connection) -> None:
+    """Add the rule_changed audit type while preserving existing history."""
+    row = conn.execute(
+        """
+        SELECT sql
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'attention_history'
+        """
+    ).fetchone()
+    if not row or "'rule_changed'" in str(row["sql"] or ""):
+        return
+
+    conn.execute(
+        "ALTER TABLE attention_history RENAME TO attention_history_v1"
+    )
+    conn.execute(
+        """
+        CREATE TABLE attention_history (
+            event_id              TEXT PRIMARY KEY,
+            attention_id          TEXT NOT NULL
+                                  REFERENCES attention_signals(attention_id),
+            operation_id          TEXT NOT NULL
+                                  REFERENCES attention_operations(operation_id),
+            reconciliation_id     TEXT
+                                  REFERENCES attention_reconciliations(
+                                      reconciliation_id
+                                  ),
+            event_type            TEXT NOT NULL CHECK(
+                event_type IN (
+                    'detected', 'observed_again', 'cleared', 'reopened',
+                    'acknowledged', 'snoozed', 'snooze_expired', 'resolved',
+                    'evaluation_limited', 'rule_disabled', 'rule_changed'
+                )
+            ),
+            prior_rule_state      TEXT NOT NULL DEFAULT '',
+            new_rule_state        TEXT NOT NULL DEFAULT '',
+            prior_attention_state TEXT NOT NULL DEFAULT '',
+            new_attention_state   TEXT NOT NULL DEFAULT '',
+            severity              TEXT NOT NULL,
+            rule_version          TEXT NOT NULL,
+            actor                 TEXT NOT NULL,
+            observation_json      TEXT NOT NULL DEFAULT '{}'
+                                  CHECK(json_valid(observation_json)),
+            created_at            TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO attention_history (
+            event_id, attention_id, operation_id, reconciliation_id,
+            event_type, prior_rule_state, new_rule_state,
+            prior_attention_state, new_attention_state, severity,
+            rule_version, actor, observation_json, created_at
+        )
+        SELECT
+            event_id, attention_id, operation_id, reconciliation_id,
+            event_type, prior_rule_state, new_rule_state,
+            prior_attention_state, new_attention_state, severity,
+            rule_version, actor, observation_json, created_at
+        FROM attention_history_v1
+        """
+    )
+    conn.execute("DROP TABLE attention_history_v1")
+    conn.execute(
+        """
+        CREATE INDEX idx_attention_history_attention_recent
+        ON attention_history(attention_id, created_at DESC)
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX idx_attention_history_reconciliation
+        ON attention_history(reconciliation_id, created_at)
+        """
+    )
+
+
 def _migrate_project_health_rule_v2(conn: sqlite3.Connection) -> None:
     """Preserve v1 references while moving its fixed labels into v2 config."""
     row = conn.execute(
@@ -2521,6 +2599,7 @@ def main(quiet: bool = False) -> None:
 
     conn.commit()
     try:
+        _migrate_attention_history_rule_changed(conn)
         _migrate_employee_identity_v16(conn)
         _ensure_default_plan_version(conn)
         _migrate_allocation_integrity_v24(conn)

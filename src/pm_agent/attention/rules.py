@@ -215,6 +215,7 @@ def _validate_rag_definition(
         if (
             not isinstance(source_precedence, list)
             or not source_precedence
+            or not all(isinstance(item, str) for item in source_precedence)
             or len(source_precedence) != len(set(source_precedence))
             or set(source_precedence) - set(RAG_SOURCE_KEYS)
         ):
@@ -223,6 +224,7 @@ def _validate_rag_definition(
         state_precedence = definition["state_precedence"]
         if (
             not isinstance(state_precedence, list)
+            or not all(isinstance(item, str) for item in state_precedence)
             or set(state_precedence) != {"red", "amber"}
             or len(state_precedence) != 2
         ):
@@ -243,6 +245,7 @@ def _validate_rag_definition(
                 or not label
                 or len(label) > 64
                 or label != label.strip().upper()
+                or not isinstance(state, str)
                 or state not in RAG_STATES
             ):
                 raise InvalidAttentionCatalog("ATTENTION_RAG_CONFIG_INVALID")
@@ -286,8 +289,7 @@ def _configured_project_state(
     }
     all_boards_complete = True
     for board in boards:
-        board_has_recognized_state = False
-        board_has_invalid_state = False
+        board_sources_complete = True
         source_values = {
             "jira_grade": board.get("overall_grade"),
             "confluence_rag": board.get("rag_status"),
@@ -295,18 +297,17 @@ def _configured_project_state(
         for source_key in definition["source_precedence"]:
             raw_value = source_values[source_key]
             if raw_value in (None, ""):
+                board_sources_complete = False
                 continue
             label = str(raw_value).strip().upper()
             state = definition[RAG_MAPPING_KEYS[source_key]].get(label)
             if state is None:
-                board_has_invalid_state = True
+                board_sources_complete = False
                 continue
-            board_has_recognized_state = True
             mapped_by_source[source_key].append(state)
         all_boards_complete = (
             all_boards_complete
-            and board_has_recognized_state
-            and not board_has_invalid_state
+            and board_sources_complete
         )
 
     for source_key in definition["source_precedence"]:
