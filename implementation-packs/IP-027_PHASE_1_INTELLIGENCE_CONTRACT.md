@@ -25,6 +25,8 @@ observations, rule outcomes, and supported actions remain distinguishable.
 
 - Add typed descriptor capability metadata for facts, signals, and
   recommendations, defaulting each capability to false.
+- Reject non-boolean capability values and invalid descriptor capability
+  objects before registration or serialization.
 - Include the capability object in list and describe transport projections.
 - Keep all nine production descriptors at false until a later batch implements
   real intelligence output.
@@ -56,9 +58,11 @@ observations, rule outcomes, and supported actions remain distinguishable.
 6. Focused tests and `make validate` pass with no database schema change.
 7. List and describe expose accurate all-false capabilities for every current
    production use case.
-8. Structured CLI and generic Dashboard query results expose the same empty
+8. Capability values accept only strict booleans, and focused tests lock the
+   exact set of nine production use-case descriptors.
+9. Structured CLI and generic Dashboard query results expose the same empty
    intelligence arrays as direct execution.
-9. Trace retrieval remains a bounded summary with empty intelligence arrays and
+10. Trace retrieval remains a bounded summary with empty intelligence arrays and
    `trace_summary = true`.
 
 ## Rollback

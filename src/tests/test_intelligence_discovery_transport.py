@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
+import pytest
 from typer.testing import CliRunner
 
 from pm_agent.cli import app as app_module
@@ -22,6 +23,18 @@ EMPTY_CAPABILITIES = {
     "facts": False,
     "signals": False,
     "recommendations": False,
+}
+
+PRODUCTION_USE_CASE_IDS = {
+    "action-followup",
+    "connector-status-review",
+    "connector-sync-results",
+    "contract-continuity-review",
+    "management-attention",
+    "project-health-review",
+    "project-snapshot-list",
+    "team-workload-overview",
+    "weekly-dm-brief",
 }
 
 
@@ -70,6 +83,32 @@ def test_descriptor_capabilities_default_false_and_explicit_values_round_trip() 
     assert described.facts == described.signals == described.recommendations == []
 
 
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"facts": "yes"},
+        {"signals": 1},
+        {"recommendations": None},
+    ],
+)
+def test_descriptor_capabilities_require_strict_booleans(
+    values: dict[str, object],
+) -> None:
+    with pytest.raises(TypeError, match="must be a boolean"):
+        IntelligenceCapabilities(**values)
+
+    with pytest.raises(
+        TypeError,
+        match="must be IntelligenceCapabilities",
+    ):
+        UseCaseDescriptor(
+            use_case_id="invalid-capabilities",
+            purpose="Synthetic invalid descriptor.",
+            parameter_schema={},
+            intelligence_capabilities=values,
+        )
+
+
 def test_production_list_and_describe_advertise_only_implemented_capabilities() -> None:
     transport = ToolTransport(use_case_executor)
     direct_list = transport.handle(UseCaseRequest(operation="list"))
@@ -86,6 +125,12 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
     assert cli_list.exit_code == cli_describe.exit_code == 0
     listed_payload = json.loads(cli_list.output)
     described_payload = json.loads(cli_describe.output)
+    assert {
+        item["use_case_id"] for item in direct_list.data["use_cases"]
+    } == PRODUCTION_USE_CASE_IDS
+    assert {
+        item["use_case_id"] for item in listed_payload["data"]["use_cases"]
+    } == PRODUCTION_USE_CASE_IDS
     for item in direct_list.data["use_cases"]:
         assert item["intelligence_capabilities"] == EMPTY_CAPABILITIES
     assert (

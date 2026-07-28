@@ -1,11 +1,11 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH B2 VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 1 BATCH B2 REVIEW CORRECTIONS VALIDATED — BATCH C AUTHORIZED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
 record commit `3d40633` are committed locally and remain unpushed; Batch B1,
@@ -115,6 +115,12 @@ checks, 142 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
 compilation, diff hygiene, package build/inspection, and all eight release
 validation checks. No database or schema path changed.
 
+The Batch B2 review corrections passed 30 focused contract/discovery/transport
+tests. The final `make validate` run passed repository-boundary and
+synthetic-sample checks, 145 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
+eight release validation checks. No database or schema path changed.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -136,17 +142,18 @@ validation checks. No database or schema path changed.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch B2 is validated on its dedicated branch. Structured CLI and
-   generic Dashboard parity are covered, but consumers that assume an exact
-   legacy JSON key set remain a compatibility risk outside the repository.
-   Production intelligence mapping remains deferred to Batch C.
+5. IP-027 Batch B2 review corrections are validated on its dedicated branch.
+   Structured CLI and generic Dashboard parity are covered, strict capability
+   booleans are enforced, and the exact nine production descriptors are tested.
+   Consumers that assume an exact legacy JSON key set remain a compatibility
+   risk outside the repository.
 
 ## Exact next actions
 
-1. Review IP-027 Batch B2 descriptor and transport behavior, validation
-   evidence, and local commit.
-2. Approve, revise, or reject Batch B2.
-3. Begin Batch C only after explicit owner approval.
+1. Commit the validated Batch B2 review corrections locally without pushing.
+2. Enter explicitly authorized Batch C and implement only the Management
+   Attention reference mapping plus Copilot result-handling instructions.
+3. Validate and stop for Batch C review before Batch D.
 
 ## Decisions in force
 
@@ -169,6 +176,20 @@ validation checks. No database or schema path changed.
   until B1 validation is reviewed.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 1 Batch B2 review corrections
+
+- Added runtime enforcement requiring exact boolean capability values and an
+  `IntelligenceCapabilities` object on every descriptor.
+- Strengthened discovery coverage to assert the exact nine production
+  use-case IDs before checking their all-false capabilities.
+- Focused B1/B2 tests passed 30/30. Final `make validate` passed 145 runtime
+  tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  repository boundary, synthetic samples, diff hygiene, package build, and
+  eight release checks.
+- Owner authorized Batch C after these corrections. No Batch C code, remote
+  push, tag, PR, release, deployment, or `main` action was performed in this
+  correction.
 
 ### 2026-07-27 — Phase 1 Batch B2 validated
 

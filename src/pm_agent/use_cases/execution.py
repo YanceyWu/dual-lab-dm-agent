@@ -29,6 +29,11 @@ class IntelligenceCapabilities:
     signals: bool = False
     recommendations: bool = False
 
+    def __post_init__(self) -> None:
+        for field_name in ("facts", "signals", "recommendations"):
+            if type(getattr(self, field_name)) is not bool:
+                raise TypeError(f"{field_name} must be a boolean")
+
 
 @dataclass(frozen=True)
 class UseCaseDescriptor:
@@ -44,6 +49,12 @@ class UseCaseDescriptor:
     intelligence_capabilities: IntelligenceCapabilities = dataclass_field(
         default_factory=IntelligenceCapabilities
     )
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.intelligence_capabilities, IntelligenceCapabilities):
+            raise TypeError(
+                "intelligence_capabilities must be IntelligenceCapabilities"
+            )
 
 
 class UseCaseExecutor:
