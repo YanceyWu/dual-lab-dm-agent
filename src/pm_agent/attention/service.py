@@ -27,7 +27,7 @@ _SUBJECT_KIND_BY_RULE = {
 
 
 class AttentionService:
-    """Internal Batch B service; no CLI, Dashboard, or ToolTransport exposure."""
+    """Attention-specific preview/confirm service outside ToolTransport."""
 
     def preview_reconciliation(
         self,
@@ -156,7 +156,11 @@ class AttentionService:
                     connection,
                     normalized_attention_id,
                 )
-                failure_code = _validate_lifecycle(action, signal)
+                failure_code = _validate_lifecycle(
+                    action,
+                    signal,
+                    snoozed_until=snoozed_until,
+                )
                 if failure_code:
                     return _failure(failure_code)
                 scope = {"attention_id": normalized_attention_id}
@@ -293,7 +297,11 @@ class AttentionService:
             connection,
             operation["scope"]["attention_id"],
         )
-        failure_code = _validate_lifecycle(operation["action"], signal)
+        failure_code = _validate_lifecycle(
+            operation["action"],
+            signal,
+            snoozed_until=operation["scope"].get("snoozed_until", ""),
+        )
         if failure_code:
             return _failure(failure_code)
         prior_state = signal["attention_state"]
@@ -924,10 +932,14 @@ def _history(
 def _validate_lifecycle(
     action: str,
     signal: dict[str, Any] | None,
+    *,
+    snoozed_until: str = "",
 ) -> str:
     if signal is None:
         return "ATTENTION_NOT_FOUND"
     if action == "resolve":
+        if signal["attention_state"] == "resolved":
+            return "ATTENTION_ALREADY_RESOLVED"
         if signal["rule_state"] != "clear":
             return "ATTENTION_STILL_ACTIVE"
         return ""
@@ -937,6 +949,17 @@ def _validate_lifecycle(
         return "ATTENTION_ALREADY_RESOLVED"
     if signal["evaluation_status"] == "disabled":
         return "ATTENTION_RULE_DISABLED"
+    if (
+        action == "acknowledge"
+        and signal["attention_state"] == "acknowledged"
+    ):
+        return "ATTENTION_ALREADY_ACKNOWLEDGED"
+    if (
+        action == "snooze"
+        and signal["attention_state"] == "snoozed"
+        and signal["snoozed_until"] == snoozed_until
+    ):
+        return "ATTENTION_SNOOZE_UNCHANGED"
     return ""
 
 

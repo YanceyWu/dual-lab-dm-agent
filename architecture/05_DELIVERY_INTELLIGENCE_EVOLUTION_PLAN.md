@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C1 READY`
+Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C1 REVIEW REQUIRED`
 Last updated: 2026-07-28
 
 ## Purpose
@@ -42,9 +42,9 @@ deployment, real-data action, or Phase 2 implementation.
 
 The owner subsequently approved the Phase 2 Attention design, accepted the
 validated Batch B implementation and review corrections, and approved the
-implementation-level Batch C review on 2026-07-28. Only Batch C1 is authorized
-next; Batch C2, Phase 2 promotion, connector work, real data, and publication
-remain separately gated.
+implementation-level Batch C review on 2026-07-28. Batch C1 is now implemented
+and locally validated but requires explicit review; Batch C2, Phase 2
+promotion, connector work, real data, and publication remain separately gated.
 
 ## Delivery loop
 
@@ -265,10 +265,10 @@ rule version, state change, and bounded recommendation.
 
 Batch A and the implementation-level Batch C design review are approved in
 `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. IP-028 Batch B
-is implemented, validated, and accepted locally. Batch C1 is the only
-authorized next implementation on `codex/phase-2-attention-center`; Batch C2
-DM-operable RAG configuration, connector work, real data, and promotion remain
-separately gated.
+is implemented, validated, and accepted locally. Batch C1 is implemented and
+locally validated on `codex/phase-2-attention-center` and awaits review. Batch
+C2 DM-operable RAG configuration, connector work, real data, and promotion
+remain separately gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 
@@ -468,9 +468,9 @@ Non-goals:
 
 ## Immediate next action
 
-Execute only IP-028 Batch C1 on `codex/phase-2-attention-center`: the read-only
-Center with reconciliation coverage, lifecycle no-op corrections, exact
-Attention CLI/Dashboard API/Copilot preview-confirm projections, and focused
-synthetic compatibility tests. Run focused tests and `make validate`, update
-`PROGRESS.md`, create a local commit, and stop for Batch C1 review before
-Batch C2, connector, real-data, or promotion work.
+Review the local IP-028 Batch C1 implementation on
+`codex/phase-2-attention-center` against the approved read-only Center,
+reconciliation coverage, lifecycle no-op, exact interface, recommendation,
+and compatibility contracts. Accept it or request bounded corrections. Do not
+begin Batch C2, connector, real-data, publication, or promotion work without
+separate authorization.

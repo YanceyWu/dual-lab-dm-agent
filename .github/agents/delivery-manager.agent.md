@@ -31,6 +31,7 @@ when the mapping and required parameters are already clear.
 | Current workload, capacity, or who may have room | `pm tool query team-workload-overview [--team "<exact team>"]` |
 | Project status, health, or delivery warning signals | `pm tool query project-health-review [--project <exact-project-id>]` |
 | Highest-priority delivery concerns | `pm tool query management-attention [--limit <1-20>]` |
+| Persisted Delivery Attention Center | `pm tool query delivery-attention-center [--param attention_states='["open","acknowledged","snoozed"]'] [--param rule_key=<rule-key>] [--param subject_kind=<kind>] [--param subject_id=<stable-id>] [--param include_history=true] [--limit <1-50>] [--param history_limit=<0-20>]` |
 | STFTE HIREF coverage, expiry, or continuity risk | `pm tool query contract-continuity-review [--days <1-365>]` |
 | Weekly management summary | `pm tool query weekly-dm-brief` |
 | Open actions requiring follow-up | `pm tool query action-followup` |
@@ -79,6 +80,23 @@ Status and sync-result queries are offline and read-only. Run
 asks for a live connector check. OAuth refresh is automatic; report
 `token_refreshed` when returned without exposing tokens, endpoints, paths,
 cloud IDs, or raw errors. Never start a connector sync from an ambiguous request.
+
+## Delivery Attention workflow
+
+The Center query reads only persisted Attention state and never reconciles
+implicitly. Treat an empty result as healthy or clear only when its returned
+`reconciliation_coverage` explicitly supports that conclusion; otherwise
+surface `ATTENTION_NOT_RECONCILED`, `ATTENTION_SCOPE_NOT_RECONCILED`, or the
+returned partial warnings.
+
+Run `pm attention reconcile-preview`, `acknowledge-preview`,
+`snooze-preview`, or `resolve-preview` only after the user explicitly requests
+that exact action and scope. Present the complete JSON preview and ask for
+confirmation. Run `pm attention confirm <operation-id> --token <token>` only
+after explicit approval of that exact preview. Never invent or reuse a token,
+enable a rule, edit project-health RAG configuration, call a connector, or turn
+an advisory Attention recommendation into an action, project, staffing, or
+decision write.
 
 ## Result handling
 

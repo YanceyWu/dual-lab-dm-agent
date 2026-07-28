@@ -5,6 +5,9 @@ from pm_agent.use_cases.action_followup import execute_action_followup
 from pm_agent.use_cases.contract_continuity import execute_contract_continuity_review
 from pm_agent.use_cases.connector_status import execute_connector_status_review
 from pm_agent.use_cases.connector_sync_results import execute_connector_sync_results
+from pm_agent.use_cases.delivery_attention_center import (
+    execute_delivery_attention_center,
+)
 from pm_agent.use_cases.execution import (
     IntelligenceCapabilities,
     UseCaseDescriptor,
@@ -65,6 +68,65 @@ use_case_executor.register(
         ),
     ),
     execute_management_attention,
+)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="delivery-attention-center",
+        purpose=(
+            "Return persisted Delivery Attention items, reconciliation coverage, "
+            "and optional bounded history without reconciling or changing them."
+        ),
+        parameter_schema={
+            "attention_states": {
+                "type": "array",
+                "required": False,
+                "description": "Unique workflow states; defaults to unresolved states.",
+            },
+            "rule_key": {
+                "type": "string",
+                "required": False,
+                "maximum_length": 128,
+                "description": "Optional exact Attention rule key.",
+            },
+            "subject_kind": {
+                "type": "string",
+                "required": False,
+                "maximum_length": 128,
+                "description": "Optional canonical subject kind.",
+            },
+            "subject_id": {
+                "type": "string",
+                "required": False,
+                "maximum_length": 128,
+                "description": "Optional stable anonymous subject ID.",
+            },
+            "include_history": {
+                "type": "boolean",
+                "required": False,
+                "description": "Include bounded newest-first event metadata.",
+            },
+            "limit": {
+                "type": "integer",
+                "required": False,
+                "minimum": 1,
+                "maximum": 50,
+                "description": "Maximum current items, 1 to 50.",
+            },
+            "history_limit": {
+                "type": "integer",
+                "required": False,
+                "minimum": 0,
+                "maximum": 20,
+                "description": "Maximum events per returned item, 0 to 20.",
+            },
+        },
+        intelligence_capabilities=IntelligenceCapabilities(
+            facts=True,
+            signals=True,
+            recommendations=True,
+        ),
+    ),
+    execute_delivery_attention_center,
 )
 use_case_executor.register(
     UseCaseDescriptor(

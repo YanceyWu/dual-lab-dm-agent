@@ -5,6 +5,7 @@ from __future__ import annotations
 import typer
 
 from pm_agent import __version__
+from pm_agent.cli.commands import attention as attention_commands
 from pm_agent.cli.commands import dashboard as dashboard_commands
 from pm_agent.cli.commands import governance, integrations, operations, planning, setup, staffing, tool_transport
 
@@ -27,6 +28,7 @@ app.add_typer(integrations.health_app, name="health")
 app.add_typer(dashboard_commands.dashboard_app, name="dashboard")
 app.add_typer(tool_transport.tool_app, name="tool")
 app.add_typer(staffing.staffing_app, name="staffing")
+app.add_typer(attention_commands.attention_app, name="attention")
 
 
 @app.command("version")

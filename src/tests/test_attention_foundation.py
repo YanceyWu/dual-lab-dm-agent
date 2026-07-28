@@ -1095,12 +1095,10 @@ def test_lifecycle_preview_confirm_snooze_expiry_and_resolve_validation(
         attention_id=attention_id,
         actor="manager-990001",
     )
-    assert resolved_preview["status"] == "proposed"
-    resolved = service.confirm(
-        operation_id=resolved_preview["operation_id"],
-        confirmation_token=resolved_preview["confirmation_token"],
-    )
-    assert resolved["attention_state"] == "resolved"
+    assert resolved_preview == {
+        "status": "failed",
+        "failure_code": "ATTENTION_ALREADY_RESOLVED",
+    }
 
 
 def test_concurrent_confirmation_applies_lifecycle_once(

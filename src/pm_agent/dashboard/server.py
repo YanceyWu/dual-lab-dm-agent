@@ -18,6 +18,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
 
+from pm_agent.attention import AttentionService
 from pm_agent.config import get_database_path
 from pm_agent.connectors import jira as jira_connector
 from pm_agent.database import repository
@@ -582,9 +583,147 @@ def structured_use_case_query(use_case_id: str):
         "unavailable": 404,
         "failed": 503,
     }.get(result.status, 200)
-    response = jsonify(result.model_dump())
+    response = jsonify(result.model_dump(mode="json"))
     response.headers["X-DM-Interface-Contract"] = "use-case-result-v1"
     return response, status_code
+
+
+@app.route("/api/attention/operations", methods=["POST"])
+def attention_operations():
+    """Dedicated JSON projection of Attention preview/confirm operations."""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _attention_response(
+            {"status": "failed", "failure_code": "ATTENTION_PREVIEW_INVALID"}
+        )
+    operation = payload.get("operation")
+    if operation == "confirm":
+        allowed = {"operation", "operation_id", "confirmation_token"}
+        if (
+            set(payload) - allowed
+            or not isinstance(payload.get("operation_id"), str)
+            or not isinstance(payload.get("confirmation_token"), str)
+        ):
+            return _attention_response(
+                {
+                    "status": "failed",
+                    "failure_code": "ATTENTION_CONFIRMATION_INVALID",
+                }
+            )
+        result = AttentionService().confirm(
+            operation_id=payload["operation_id"],
+            confirmation_token=payload["confirmation_token"],
+        )
+        return _attention_response(result)
+
+    if operation != "preview" or not isinstance(payload.get("action"), str):
+        return _attention_response(
+            {"status": "failed", "failure_code": "ATTENTION_PREVIEW_INVALID"}
+        )
+
+    service = AttentionService()
+    action = payload["action"]
+    if action == "reconcile":
+        allowed = {
+            "operation",
+            "action",
+            "rule_keys",
+            "subject_kind",
+            "subject_id",
+        }
+        rule_keys = payload.get("rule_keys")
+        if (
+            set(payload) - allowed
+            or (rule_keys is not None and not isinstance(rule_keys, list))
+        ):
+            result = {
+                "status": "failed",
+                "failure_code": "ATTENTION_PREVIEW_INVALID",
+            }
+        else:
+            result = service.preview_reconciliation(
+                actor=_dashboard_actor(),
+                rule_keys=rule_keys,
+                subject_kind=payload.get("subject_kind"),
+                subject_id=payload.get("subject_id"),
+            )
+    elif action in {"acknowledge", "resolve"}:
+        allowed = {"operation", "action", "attention_id"}
+        if (
+            set(payload) - allowed
+            or not isinstance(payload.get("attention_id"), str)
+        ):
+            result = {
+                "status": "failed",
+                "failure_code": "ATTENTION_PREVIEW_INVALID",
+            }
+        elif action == "acknowledge":
+            result = service.preview_acknowledgement(
+                attention_id=payload["attention_id"],
+                actor=_dashboard_actor(),
+            )
+        else:
+            result = service.preview_resolution(
+                attention_id=payload["attention_id"],
+                actor=_dashboard_actor(),
+            )
+    elif action == "snooze":
+        allowed = {
+            "operation",
+            "action",
+            "attention_id",
+            "snoozed_until",
+        }
+        if (
+            set(payload) - allowed
+            or not isinstance(payload.get("attention_id"), str)
+            or not isinstance(payload.get("snoozed_until"), str)
+        ):
+            result = {
+                "status": "failed",
+                "failure_code": "ATTENTION_PREVIEW_INVALID",
+            }
+        else:
+            result = service.preview_snooze(
+                attention_id=payload["attention_id"],
+                actor=_dashboard_actor(),
+                snoozed_until=payload["snoozed_until"],
+            )
+    else:
+        result = {
+            "status": "failed",
+            "failure_code": "ATTENTION_PREVIEW_INVALID",
+        }
+    return _attention_response(result)
+
+
+def _attention_response(result):
+    code = result.get("failure_code", "")
+    status_code = 200
+    if result.get("status") not in {"proposed", "success"}:
+        if code in {"ATTENTION_NOT_FOUND", "ATTENTION_OPERATION_NOT_FOUND"}:
+            status_code = 404
+        elif code == "ATTENTION_CONFIRMATION_EXPIRED":
+            status_code = 410
+        elif code == "DATA_ACCESS_FAILED":
+            status_code = 503
+        elif code in {
+            "ATTENTION_OPERATION_ALREADY_USED",
+            "ATTENTION_ALREADY_ACKNOWLEDGED",
+            "ATTENTION_SNOOZE_UNCHANGED",
+            "ATTENTION_ALREADY_RESOLVED",
+            "ATTENTION_STILL_ACTIVE",
+            "ATTENTION_NOT_ACTIVE",
+            "ATTENTION_RULE_DISABLED",
+        }:
+            status_code = 409
+        else:
+            status_code = 400
+    response = jsonify(result)
+    if status_code == 200:
+        response.headers["X-DM-Interface-Contract"] = "attention-operation-v1"
+    return response, status_code
+
 
 @app.route("/api/hiref")
 def hiref():

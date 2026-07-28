@@ -342,6 +342,107 @@ def get_signal(
     return _signal_dict(row) if row else None
 
 
+def list_center_signals(
+    connection: sqlite3.Connection,
+    *,
+    attention_states: list[str],
+    rule_key: str | None = None,
+    subject_kind: str | None = None,
+    subject_id: str | None = None,
+) -> list[dict[str, Any]]:
+    clauses = [
+        f"attention_state IN ({','.join('?' for _ in attention_states)})"
+    ]
+    parameters: list[Any] = list(attention_states)
+    if rule_key:
+        clauses.append("rule_key = ?")
+        parameters.append(rule_key)
+    if subject_kind:
+        clauses.append("subject_kind = ?")
+        parameters.append(subject_kind)
+    if subject_id:
+        clauses.append("subject_id = ?")
+        parameters.append(subject_id)
+    rows = connection.execute(
+        f"""
+        SELECT *
+        FROM attention_signals
+        WHERE {' AND '.join(clauses)}
+        ORDER BY
+            CASE severity
+                WHEN 'critical' THEN 0
+                WHEN 'high' THEN 1
+                WHEN 'medium' THEN 2
+                WHEN 'low' THEN 3
+                WHEN 'none' THEN 4
+                ELSE 5
+            END,
+            CASE attention_state
+                WHEN 'open' THEN 0
+                WHEN 'acknowledged' THEN 1
+                WHEN 'snoozed' THEN 2
+                WHEN 'resolved' THEN 3
+                ELSE 4
+            END,
+            last_seen_at DESC,
+            attention_id
+        """,
+        parameters,
+    ).fetchall()
+    return [_signal_dict(row) for row in rows]
+
+
+def list_recent_history(
+    connection: sqlite3.Connection,
+    *,
+    attention_id: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+    rows = connection.execute(
+        """
+        SELECT
+            event_id, event_type, prior_rule_state, new_rule_state,
+            prior_attention_state, new_attention_state, severity,
+            rule_version, actor, reconciliation_id, created_at
+        FROM attention_history
+        WHERE attention_id = ?
+        ORDER BY created_at DESC, event_id DESC
+        LIMIT ?
+        """,
+        [attention_id, limit],
+    ).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["timestamp"] = item.pop("created_at")
+        result.append(item)
+    return result
+
+
+def list_reconciliations(
+    connection: sqlite3.Connection,
+) -> list[dict[str, Any]]:
+    rows = connection.execute(
+        """
+        SELECT
+            r.reconciliation_id, r.status, r.finished_at,
+            r.rule_set_version, r.warning_codes_json, o.scope_json
+        FROM attention_reconciliations r
+        JOIN attention_operations o ON o.operation_id = r.operation_id
+        ORDER BY r.finished_at DESC, r.reconciliation_id DESC
+        """
+    ).fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["warning_codes"] = json.loads(item.pop("warning_codes_json"))
+        item["scope"] = json.loads(item.pop("scope_json"))
+        result.append(item)
+    return result
+
+
 def insert_reconciliation(
     connection: sqlite3.Connection,
     record: dict[str, Any],

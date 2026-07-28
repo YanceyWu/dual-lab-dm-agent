@@ -41,7 +41,13 @@ def _generic_parameters(values: list[str]) -> dict[str, Any]:
 
 def _emit(request: UseCaseRequest | UseCaseResult) -> None:
     result = request if isinstance(request, UseCaseResult) else transport.handle(request)
-    typer.echo(json.dumps(result.model_dump(), ensure_ascii=False, sort_keys=True))
+    typer.echo(
+        json.dumps(
+            result.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
     if result.status not in {"success", "unavailable"}:
         raise typer.Exit(2)
 
