@@ -35,11 +35,23 @@ observations, rule outcomes, and supported actions remain distinguishable.
 - Preserve descriptor and result contract version `1.0`, existing interface
   headers, status mapping, payload fields, and empty intelligence arrays.
 
-## Explicit non-goals through Batch B2
+## Batch C scope
 
-- No Management Attention mapping or production recommendation behavior.
+- Map only returned Management Attention items into one typed fact and one
+  typed signal per item.
+- Reuse existing item order, limit, summary, context, warnings, severity,
+  reason codes, evidence, freshness, and rule version.
+- Add only bounded source-freshness evidence needed for reference integrity.
+- Advertise Management Attention facts and signals as true while keeping
+  recommendations false and empty.
+- Update Copilot result handling so facts, signals, recommendations, evidence,
+  freshness, assumptions, and warnings retain their deterministic priority.
+
+## Explicit non-goals through Batch C
+
+- No production recommendation behavior.
 - No CLI or Dashboard business calculation, Copilot instruction, connector, or
-  real-data behavior changes.
+  real-data behavior changes beyond the approved result-handling instructions.
 - No database schema, migration, or intelligence-payload persistence.
 - No Phase 2 work.
 
@@ -63,7 +75,14 @@ observations, rule outcomes, and supported actions remain distinguishable.
 9. Structured CLI and generic Dashboard query results expose the same empty
    intelligence arrays as direct execution.
 10. Trace retrieval remains a bounded summary with empty intelligence arrays and
-   `trace_summary = true`.
+    `trace_summary = true`.
+11. Management Attention emits exactly one referenced fact and signal for each
+    returned item while preserving existing `data`, order, summary, context,
+    warnings, and status behavior.
+12. Management Attention advertises facts and signals as true,
+    recommendations as false, and never creates a recommendation.
+13. Copilot instructions prohibit invented intelligence objects and preserve
+    empty recommendations.
 
 ## Rollback
 

@@ -5,7 +5,11 @@ from pm_agent.use_cases.action_followup import execute_action_followup
 from pm_agent.use_cases.contract_continuity import execute_contract_continuity_review
 from pm_agent.use_cases.connector_status import execute_connector_status_review
 from pm_agent.use_cases.connector_sync_results import execute_connector_sync_results
-from pm_agent.use_cases.execution import UseCaseDescriptor, UseCaseExecutor
+from pm_agent.use_cases.execution import (
+    IntelligenceCapabilities,
+    UseCaseDescriptor,
+    UseCaseExecutor,
+)
 from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.management_attention import execute_management_attention
 from pm_agent.use_cases.project_health import execute_project_health_review
@@ -55,6 +59,10 @@ use_case_executor.register(
         use_case_id="management-attention",
         purpose="Rank locally observed delivery issues that need Delivery Manager attention.",
         parameter_schema={"limit": {"type": "integer", "required": False, "minimum": 1, "maximum": 20, "description": "Maximum items, 1 to 20."}},
+        intelligence_capabilities=IntelligenceCapabilities(
+            facts=True,
+            signals=True,
+        ),
     ),
     execute_management_attention,
 )

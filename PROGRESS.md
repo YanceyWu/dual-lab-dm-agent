@@ -5,14 +5,15 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH B2 REVIEW CORRECTIONS VALIDATED — BATCH C AUTHORIZED`
+Gate status: `PHASE 1 BATCH C VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
 record commit `3d40633` are committed locally and remain unpushed; Batch B1,
-its review corrections, Batch B2, and this final progress record are committed
-locally on a branch created directly from `3d40633` and remain unpushed; the
-exact HEAD is reported in the task handoff because a commit cannot embed its
-own final hash; do not merge or push to `main`
+its review corrections, Batch B2, B2 correction commit `ea5eb7a`, Batch C, and
+this final progress record are committed locally on a branch created directly
+from `3d40633` and remain unpushed; the exact HEAD is reported in the task
+handoff because a commit cannot embed its own final hash; do not merge or push
+to `main`
 
 ## Read this first
 
@@ -121,6 +122,13 @@ synthetic-sample checks, 145 runtime tests, 21 repository-tool tests with
 19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
 eight release validation checks. No database or schema path changed.
 
+Phase 1 Batch C passed 40 focused contract/discovery/Management
+Attention/Copilot tests. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 153 runtime tests,
+21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks. No database
+or schema path changed.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -142,18 +150,19 @@ eight release validation checks. No database or schema path changed.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch B2 review corrections are validated on its dedicated branch.
-   Structured CLI and generic Dashboard parity are covered, strict capability
-   booleans are enforced, and the exact nine production descriptors are tested.
-   Consumers that assume an exact legacy JSON key set remain a compatibility
-   risk outside the repository.
+5. IP-027 Batch C is validated on its dedicated branch. Management Attention
+   now intentionally duplicates existing returned-item meaning into the new
+   typed intelligence projection while preserving legacy `data`; later
+   maintenance must keep the single deterministic mapper and legacy projection
+   aligned. Consumers that assume an exact legacy JSON key set remain a
+   compatibility risk outside the repository.
 
 ## Exact next actions
 
-1. Commit the validated Batch B2 review corrections locally without pushing.
-2. Enter explicitly authorized Batch C and implement only the Management
-   Attention reference mapping plus Copilot result-handling instructions.
-3. Validate and stop for Batch C review before Batch D.
+1. Review the Batch C Management Attention mapping, Copilot instructions,
+   validation evidence, and local commit.
+2. Approve, revise, or reject Batch C.
+3. Begin Batch D only after explicit owner approval.
 
 ## Decisions in force
 
@@ -176,6 +185,42 @@ eight release validation checks. No database or schema path changed.
   until B1 validation is reviewed.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 1 Batch C validated
+
+- Committed the validated Batch B2 review corrections locally as `ea5eb7a`
+  without pushing.
+- Entered owner-authorized Batch C on the existing independent implementation
+  branch.
+- Inspected the current Management Attention ranking, truncation, embedded item
+  evidence, top-level evidence/freshness, descriptor path, generic interfaces,
+  bounded trace storage, and Copilot operating instructions.
+- Added one derived fact and one active signal for each returned Management
+  Attention item, with deterministic bounded IDs, fact/evidence/freshness
+  references, existing severity and reason codes, and rule version
+  `management-attention-v1`.
+- Preserved existing item order, limit, summary, context, warnings, status, and
+  embedded legacy data. Added only selected source-freshness evidence needed
+  for reference integrity; recommendations remain empty.
+- Updated the Management Attention descriptor to facts/signals true and
+  recommendations false; every other production descriptor remains all false.
+- Updated Copilot result handling to prioritize facts, signals,
+  recommendations, and their qualifiers, and to prohibit invented objects,
+  severity changes, unsupported evidence/freshness, and invented actions from
+  an empty recommendation list.
+- The initial focused run exposed that bootstrap already registers the
+  Confluence source and that B2 expectations needed the approved Management
+  Attention capability transition. Tests were corrected to use the verified
+  bootstrap state without changing production behavior.
+- Focused tests passed 40/40. Final `make validate` passed 153 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, repository
+  boundary, synthetic samples, diff hygiene, package build, and eight release
+  checks.
+- Git diff review found no database/schema, production recommendation,
+  connector, real-data, configuration, credential, persistence, or unrelated
+  business behavior change.
+- Batch C is ready only for review. No Batch D, remote push, tag, PR, release,
+  deployment, or `main` action was performed.
 
 ### 2026-07-28 — Phase 1 Batch B2 review corrections
 

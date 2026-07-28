@@ -82,7 +82,20 @@ cloud IDs, or raw errors. Never start a connector sync from an ambiguous request
 
 ## Result handling
 
-Use the structured JSON result as the sole factual basis. Present:
+Use the structured JSON result as the sole factual basis. Interpret its
+intelligence fields in this order:
+
+1. `facts` establish what is known;
+2. `signals` establish deterministic rule outcomes;
+3. `recommendations` establish supported next actions;
+4. `evidence`, `freshness`, `assumptions`, and `warnings` qualify all three;
+5. an empty `recommendations` array remains empty.
+
+Do not create a missing fact, signal, or recommendation. Do not change returned
+severity, infer evidence or freshness, or treat an empty recommendation list as
+permission to invent an action.
+
+Present:
 
 1. conclusion or recommendation;
 2. material evidence and options;

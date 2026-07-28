@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 1 BATCH B2 REVIEW CORRECTIONS VALIDATED — BATCH C AUTHORIZED`
+Status: `PHASE 1 BATCH C VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -20,7 +20,7 @@ recoverable from Git history.
 
 | Pack | Purpose | Current state |
 | --- | --- | --- |
-| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, and transport | Batch B2 review corrections validated locally; Batch C explicitly authorized | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` |
+| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Batch C validated locally; review required before Batch D | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` |
 
 ## Current execution order
 

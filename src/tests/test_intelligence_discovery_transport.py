@@ -25,6 +25,12 @@ EMPTY_CAPABILITIES = {
     "recommendations": False,
 }
 
+MANAGEMENT_ATTENTION_CAPABILITIES = {
+    "facts": True,
+    "signals": True,
+    "recommendations": False,
+}
+
 PRODUCTION_USE_CASE_IDS = {
     "action-followup",
     "connector-status-review",
@@ -132,18 +138,26 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
         item["use_case_id"] for item in listed_payload["data"]["use_cases"]
     } == PRODUCTION_USE_CASE_IDS
     for item in direct_list.data["use_cases"]:
-        assert item["intelligence_capabilities"] == EMPTY_CAPABILITIES
+        expected = (
+            MANAGEMENT_ATTENTION_CAPABILITIES
+            if item["use_case_id"] == "management-attention"
+            else EMPTY_CAPABILITIES
+        )
+        assert item["intelligence_capabilities"] == expected
     assert (
         direct_describe.data["use_case"]["intelligence_capabilities"]
-        == EMPTY_CAPABILITIES
+        == MANAGEMENT_ATTENTION_CAPABILITIES
     )
-    assert all(
-        item["intelligence_capabilities"] == EMPTY_CAPABILITIES
-        for item in listed_payload["data"]["use_cases"]
-    )
+    for item in listed_payload["data"]["use_cases"]:
+        expected = (
+            MANAGEMENT_ATTENTION_CAPABILITIES
+            if item["use_case_id"] == "management-attention"
+            else EMPTY_CAPABILITIES
+        )
+        assert item["intelligence_capabilities"] == expected
     assert (
         described_payload["data"]["use_case"]["intelligence_capabilities"]
-        == EMPTY_CAPABILITIES
+        == MANAGEMENT_ATTENTION_CAPABILITIES
     )
     for payload in (listed_payload, described_payload):
         assert payload["contract_version"] == "1.0"

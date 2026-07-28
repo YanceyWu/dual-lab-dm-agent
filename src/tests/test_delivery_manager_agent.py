@@ -26,3 +26,27 @@ def test_delivery_manager_agent_keeps_a_bounded_tool_surface() -> None:
     assert "agents: []" in frontmatter
     assert "disable-model-invocation: true" in frontmatter
     assert "edit/" not in frontmatter
+
+
+def test_delivery_manager_agent_preserves_intelligence_result_priority() -> None:
+    content = AGENT_FILE.read_text(encoding="utf-8")
+
+    facts_position = content.index("`facts` establish what is known")
+    signals_position = content.index(
+        "`signals` establish deterministic rule outcomes"
+    )
+    recommendations_position = content.index(
+        "`recommendations` establish supported next actions"
+    )
+    qualification_position = content.index(
+        "`evidence`, `freshness`, `assumptions`, and `warnings` qualify"
+    )
+
+    assert (
+        facts_position
+        < signals_position
+        < recommendations_position
+        < qualification_position
+    )
+    assert "an empty `recommendations` array remains empty" in content
+    assert "Do not create a missing fact, signal, or recommendation." in content
