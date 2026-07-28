@@ -1,7 +1,7 @@
 # Delivery Manager Roadmap
 
-Status: `DELIVERY INTELLIGENCE EVOLUTION — PHASE 1 DESIGN GATE OPEN`
-Last updated: 2026-07-27
+Status: `DELIVERY INTELLIGENCE EVOLUTION — PHASE 1 PROMOTED`
+Last updated: 2026-07-28
 
 This roadmap begins from the current release candidate. Earlier IP migration
 sequences are historical evidence, not work still waiting to start.
@@ -114,8 +114,10 @@ Each phase follows architecture review, phase-specific gap analysis, design
 approval, small implementation batches, focused tests, full regression, and an
 explicit promotion decision.
 
-Phase 1 architecture review and bounded design may now proceed on an independent
-`codex/` branch. Do not register a Phase 1 implementation pack or change runtime
-or schema until the Phase 1 design is explicitly approved. Deferred migration
-rehearsal and real-environment UAT return as Phase 9 gates under a refreshed,
-approved runbook.
+Phase 1 was promoted on 2026-07-28 after its bounded contract, discovery,
+Management Attention reference mapping, regression, portable review, and
+synthetic release rehearsal passed. The next action is a new Phase 2 Batch A
+design task. Do not register a Phase 2 implementation pack or change runtime or
+schema until that design is explicitly approved. Deferred migration rehearsal
+and real-environment UAT return as Phase 9 gates under a refreshed, approved
+runbook.

@@ -1,7 +1,7 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 0 DEVELOPMENT BASELINE ACCEPTED — PHASE 1 DESIGN GATE OPEN`
-Last updated: 2026-07-27
+Status: `PHASE 1 PROMOTED — PHASE 2 DESIGN GATE NEXT`
+Last updated: 2026-07-28
 
 ## Purpose
 
@@ -33,6 +33,12 @@ accepted the validated `a272890` commit as the development baseline on
 2026-07-27 and deferred the current tag and UAT gates. Bounded Phase 1 design
 approval was recorded on 2026-07-27; implementation remains limited to the
 approved sequential batches.
+
+The owner promoted Phase 1 on 2026-07-28 after IP-027 Batch D passed focused
+regression, `make validate`, synthetic installed-package upgrade/rollback
+rehearsal, portable-scope review, and schema review. This establishes the local
+Phase 1 baseline but does not authorize a push, merge, tag, release,
+deployment, real-data action, or Phase 2 implementation.
 
 ## Delivery loop
 
@@ -217,6 +223,10 @@ Non-goals:
 Promotion gate: at least one existing read-only use case emits the new compatible
 shape while all existing consumers and registered-use-case regression tests
 continue to pass.
+
+Promotion decision: passed on 2026-07-28. Management Attention is the single
+production reference mapping, and all approved local validation and rehearsal
+checks passed. The next phase-boundary action is a new Phase 2 design task.
 
 ### Phase 2 — Delivery Attention Center foundation
 
@@ -444,8 +454,9 @@ Non-goals:
 
 ## Immediate next action
 
-Start a new Codex task for Phase 1 implementation. Read the approved
-`architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md`, create a
-dedicated `codex/` implementation branch from the approved planning branch,
-register the Phase 1 implementation pack, and implement Batch B1 only. Validate
-Batch B1 and stop for review before beginning B2.
+Start a new Codex task for Phase 2 Batch A design. Read `AGENTS.md`,
+`PROGRESS.md`, this plan, the promoted Phase 1 design/report, and current Git
+state. Inspect the existing Management Attention implementation and database
+schema before drafting the bounded Delivery Attention Center design. Do not
+register a Phase 2 implementation pack or change runtime/schema until that
+design is explicitly approved.

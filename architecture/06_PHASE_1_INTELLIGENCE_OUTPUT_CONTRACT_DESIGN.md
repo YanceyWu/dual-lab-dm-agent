@@ -1,9 +1,10 @@
 # Phase 1 — Intelligence Output Contract Design
 
-Status: `APPROVED — IMPLEMENTATION NOT STARTED`
-Last updated: 2026-07-27
+Status: `PROMOTED — IMPLEMENTATION COMPLETE`
+Last updated: 2026-07-28
 Baseline: `a272890a7b51856c033df69b5148bc8c2fa928da`
-Branch: `codex/delivery-intelligence-evolution-plan`
+Approved planning commit: `3d406334f714ccad40daa9e8441499e5b7ebdaab`
+Implementation branch: `codex/phase-1-intelligence-contract`
 
 ## Purpose
 
@@ -19,6 +20,10 @@ and bounded execution traces.
 The owner approved this design on 2026-07-27. Implementation is authorized only
 through the bounded batches defined here, starting with Batch B1 on a dedicated
 independent branch.
+
+The owner promoted the completed Phase 1 implementation on 2026-07-28 after
+Batch D validation and synthetic release rehearsal. See
+`implementation-reports/IP-027_IMPLEMENTATION_REPORT.md`.
 
 ## Decision supported
 
@@ -485,6 +490,9 @@ Owner approval was recorded on 2026-07-27. It authorizes preparation of a
 Phase 1 implementation pack and sequential execution of the bounded batches
 above. Batch B1 must be implemented and validated before B2 begins.
 
-This approval does not authorize Phase 2 work, release tagging, merging or
-pushing into `main`, connector access, active database migration, or real-data
-operations.
+Owner promotion was recorded on 2026-07-28 after all Phase 1 batches passed.
+Phase 1 is complete as a local development baseline.
+
+Promotion does not authorize Phase 2 implementation, release tagging, merging,
+pushing, connector access, active database migration, or real-data operations.
+The next action is a new Phase 2 design task.

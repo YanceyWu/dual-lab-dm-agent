@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 1 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 1 PROMOTED — PHASE 2 DESIGN NEXT`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -20,7 +20,7 @@ recoverable from Git history.
 
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
-| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Batch D locally green; explicit Phase 1 promotion decision required | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
+| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
 
 ## Current execution order
 
@@ -30,11 +30,11 @@ recoverable from Git history.
    branch.
 3. Preserve the validated Batch B1 and B2 contract/discovery foundation.
 4. Preserve the validated Batch C Management Attention reference mapping.
-5. Review the completed Batch D regression, rehearsal, portable review, and
-   IP-027 implementation report.
-6. Record an explicit promote, revise, or stop decision for Phase 1.
-7. Start Phase 2 design only after explicit promotion; do not begin Phase 2
-   implementation from this task.
+5. Preserve the promoted IP-027 report and exact local commit chain.
+6. Start a new Phase 2 Batch A design task from the promoted local Phase 1
+   baseline.
+7. Do not register a Phase 2 implementation pack or change runtime/schema until
+   the Phase 2 design is explicitly approved.
 8. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

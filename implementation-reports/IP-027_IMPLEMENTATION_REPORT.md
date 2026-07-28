@@ -1,6 +1,6 @@
 # IP-027 Implementation Report
 
-Status: `BATCH D VALIDATION GREEN — PHASE 1 PROMOTION DECISION PENDING`
+Status: `PHASE 1 PROMOTED`
 Date: 2026-07-28
 Branch: `codex/phase-1-intelligence-contract`
 Approved planning commit: `3d406334f714ccad40daa9e8441499e5b7ebdaab`
@@ -86,8 +86,8 @@ the task handoff. None of these commits is pushed.
 ## Promotion gate
 
 The local Phase 1 implementation satisfies its approved design and Batch D
-validation criteria. Promotion to the completed Phase 1 baseline is
-recommended, subject to explicit owner approval.
+validation criteria. The owner promoted it as the completed local Phase 1
+baseline on 2026-07-28.
 
 Promotion does not authorize a merge, push, tag, release, deployment,
 connector access, active-database migration, real-data UAT, or Phase 2

@@ -5,12 +5,12 @@ Current branch: `codex/phase-1-intelligence-contract`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 1 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
+Gate status: `PHASE 1 PROMOTED — PHASE 2 DESIGN TASK NEXT`
 Git state: independent branch is based on exact validated commit `a272890`;
 planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
-record commit `3d40633` are committed locally and remain unpushed; Batch B1,
-its review corrections, Batch B2, B2 correction commit `ea5eb7a`, Batch C,
-Batch D reporting, and this final progress record are committed locally on a
+record commit `3d40633` are committed locally and remain unpushed; all Phase 1
+batches, review corrections, Batch D report commit `c4e334d`, the owner
+promotion record, and this final progress record are committed locally on a
 branch created directly from `3d40633` and remain unpushed; the exact HEAD is
 reported in the task handoff because a commit cannot embed its own final hash;
 do not merge or push to `main`
@@ -55,6 +55,11 @@ belong in Git history and must not be interpreted as current instructions.
 - The owner approved the bounded Phase 1 intelligence output contract on
   2026-07-27. This authorizes sequential Phase 1 implementation beginning with
   Batch B1, not Phase 2 or any release/environment action.
+- The owner promoted Phase 1 on 2026-07-28 after Batch D validation, synthetic
+  installed-package upgrade/rollback rehearsal, portable review, schema review,
+  and the IP-027 implementation report passed. This is a local development
+  baseline, not release, remote, operational, or Phase 2 implementation
+  approval.
 - Each phase requires current-state inspection, bounded design approval, small
   implementation batches, focused tests, full regression, and explicit
   promotion before the next phase begins.
@@ -159,7 +164,7 @@ database or schema path changed.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Batch D is locally green on its dedicated branch. Management Attention
+5. IP-027 Phase 1 is promoted locally on its dedicated branch. Management Attention
    now intentionally duplicates existing returned-item meaning into the new
    typed intelligence projection while preserving legacy `data`; later
    maintenance must keep the single deterministic mapper and legacy projection
@@ -167,14 +172,18 @@ database or schema path changed.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
+7. No Phase 2 design exists yet. Promotion authorizes a new Batch A design task,
+   not Phase 2 implementation or an implementation pack.
 
 ## Exact next actions
 
-1. Review `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md`, Batch D
-   evidence, remaining risks, and the final local commit.
-2. Explicitly promote, revise, or stop Phase 1.
-3. If promoted, start a new Phase 2 design task. Do not implement Phase 2 from
-   this task or without its separately approved design.
+1. Start a new Codex task for Phase 2 Batch A design.
+2. Read `AGENTS.md`, this file, the evolution plan, promoted Phase 1
+   design/report, and current Git state.
+3. Inspect the existing Management Attention implementation and database schema
+   before drafting the Delivery Attention Center design.
+4. Do not register a Phase 2 implementation pack or change runtime/schema until
+   that design is explicitly approved.
 
 ## Decisions in force
 
@@ -197,6 +206,19 @@ database or schema path changed.
   a separate Phase 2 design is reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 1 promoted
+
+- Owner explicitly promoted the completed Phase 1 implementation after
+  reviewing the Batch D result.
+- Updated the evolution plan, roadmap, Phase 1 design, IP-027 report, pack
+  index, and continuity record to show the promoted local baseline.
+- Promotion preserves the exact validated behavior and introduces no runtime,
+  test, schema, migration, connector, real-data, or interface change.
+- The next action is a new Phase 2 Batch A design task. No Phase 2
+  implementation pack or runtime/schema change is authorized.
+- No remote push, merge, tag, PR, release, deployment, connector access,
+  active-database migration, or real-data action was performed.
 
 ### 2026-07-28 — Phase 1 Batch D validated
 
