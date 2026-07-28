@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 BATCH B REVIEW CORRECTIONS IMPLEMENTED — REVIEW REQUIRED`
+Status: `IP-028 BATCH C DESIGN REVIEW APPROVED — C1 READY`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -21,16 +21,19 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and later Center integration | Batch B review corrections implemented locally; review required before Batch C | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and controlled Center integration | Batch B accepted; Batch C design review approved; C1 is ready for local implementation | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
 1. Preserve the promoted IP-027 contract and Management Attention compatibility
    baseline.
-2. Review the corrected IP-028 Batch B commits on
-   `codex/phase-2-attention-center`.
-3. Do not begin Batch C interfaces,
-   connector work, real-data work, or Phase 2 promotion without authorization.
+2. Implement only IP-028 Batch C1 on
+   `codex/phase-2-attention-center`: read-only Center, exact Attention
+   preview/confirm interfaces, lifecycle no-op correction, and compatibility
+   tests.
+3. Stop for Batch C1 review. Do not begin Batch C2 DM-operable RAG
+   configuration, connector work, real-data work, or Phase 2 promotion without
+   separate authorization.
 4. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

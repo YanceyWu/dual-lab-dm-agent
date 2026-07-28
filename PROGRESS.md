@@ -5,17 +5,17 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH B REVIEW CORRECTIONS IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 2 BATCH C DESIGN REVIEW APPROVED — C1 READY`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
-The approved Phase 2 implementation branch, including the validated Batch B
-result and review corrections, is local-only and has no remote tracking
-branch. The exact correction commit is reported in the task handoff because a
-commit cannot embed its own final hash. Do not push it without a separate
-authorization. Do not merge or push to `main`.
+The approved Phase 2 implementation branch, including the accepted Batch B
+result, review corrections, and Batch C design handoff, is local-only and has
+no remote tracking branch. The exact current commit is reported in the task
+handoff because a commit cannot embed its own final hash. Do not push it
+without a separate authorization. Do not merge or push to `main`.
 
 ## Read this first
 
@@ -65,6 +65,10 @@ belong in Git history and must not be interpreted as current instructions.
 - Each phase requires current-state inspection, bounded design approval, small
   implementation batches, focused tests, full regression, and explicit
   promotion before the next phase begins.
+- The owner accepted the corrected IP-028 Batch B implementation and the
+  implementation-level Batch C design review on 2026-07-28. Only Batch C1 is
+  authorized next. Batch C2 DM-operable RAG configuration and Phase 2
+  promotion retain separate gates.
 
 ## Current validation evidence
 
@@ -173,6 +177,13 @@ passed repository-boundary and synthetic-sample checks, 167 runtime tests,
 21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
 package build/inspection, and all eight release validation checks.
 
+The Batch C design-review handoff passed `make validate` with
+repository-boundary and synthetic-sample checks, 167 runtime tests,
+21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks. The
+handoff changes only architecture, implementation-pack, index, and continuity
+documentation.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -202,20 +213,29 @@ package build/inspection, and all eight release validation checks.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
-7. IP-028 Batch B and its authorized review corrections are implemented and
-   validated locally but have not passed owner review. Batch C interfaces,
-   connectors, real data, and Phase 2 promotion remain blocked pending their
-   own gates.
+7. IP-028 Batch B and its review corrections are implemented, validated, and
+   accepted locally. The Batch C design review is approved with mandatory
+   reconciliation-coverage, lifecycle no-op, exact interface, bounded-history,
+   and recommendation contracts. Batch C1 implementation has not started.
+8. The persisted project-health RAG model is data-configurable, but no
+   DM-operable configuration interface exists. Batch C2 must add a separately
+   approved Attention-specific configuration preview/confirm boundary before
+   Phase 2 may claim DM-operable RAG configuration or enter promotion review.
+9. Connector work, real data, visual Dashboard Center UI, Batch C2, push, and
+   Phase 2 promotion remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Review only the validated IP-028 Batch B implementation and correction
-   commits on
-   `codex/phase-2-attention-center`.
-2. Explicitly accept or request further corrections; authorize Batch C only
-   after corrected Batch B review.
-3. Do not begin Batch C interfaces, connectors, real-data work, release, tag,
-   merge, or push without explicit authorization.
+1. In a new session, confirm branch `codex/phase-2-attention-center`, a clean
+   worktree, the Batch B implementation HEAD, and this Batch C design handoff.
+2. Implement only IP-028 Batch C1: read-only Center query with reconciliation
+   coverage, lifecycle no-op corrections, exact Attention CLI/Dashboard API/
+   Copilot preview-confirm projections, and compatibility tests.
+3. Run focused synthetic tests and `make validate`, update `PROGRESS.md`,
+   create a local commit, and stop for Batch C1 review.
+4. Do not begin Batch C2, visual Dashboard UI, connectors, real-data work,
+   Phase 2 promotion, release, tag, merge, or push without separate
+   authorization.
 
 ## Decisions in force
 
@@ -234,10 +254,40 @@ package build/inspection, and all eight release validation checks.
 - New Delivery Intelligence capabilities follow
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
-- Do not begin IP-028 Batch C until the validated Batch B result is explicitly
-  reviewed and approved.
+- IP-028 Batch C1 is authorized under the exact approved design and pack
+  contract. Stop after its local validated commit for owner review.
+- Do not begin Batch C2 DM-operable RAG configuration until Batch C1 is
+  reviewed and the separate configuration write contract is authorized.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch C design review approved
+
+- Owner accepted the corrected Batch B result and required an explicit Batch C
+  design review before implementation.
+- Closed the interface-design gaps by defining reconciliation coverage for
+  empty/scoped queries, deterministic ordering and pre-limit summaries,
+  bounded history metadata, stable result-local references, and exact advisory
+  recommendation state mapping.
+- Defined JSON-only Attention CLI commands and the dedicated Dashboard
+  `POST /api/attention/operations` contract, including server-derived actor,
+  token exposure, safe status mapping, and explicit Copilot preview/confirm
+  behavior. Batch C1 contains API projection only, not a visual Dashboard
+  Center page.
+- Required lifecycle no-op rejection for duplicate acknowledgement, unchanged
+  snooze, and repeated resolve before any operation/history write.
+- Split Batch C into C1 Center/interfaces and separately gated C2 DM-operable
+  RAG configuration. The existing persisted rule parameters remain
+  data-configurable; no configuration mutation interface is claimed yet.
+- Reverted the premature uncommitted Attention repository query helper so this
+  handoff contains documentation only. No runtime, schema, migration, test,
+  connector, real-data, pending-decision activation, push, or promotion change
+  was made.
+- `make validate` passed with 167 runtime tests, 21 repository-tool tests and
+  19 subtests, Ruff, compilation, boundary/synthetic checks, package
+  build/inspection, and all eight release validation checks.
+- Exact next action: implement only Batch C1 in a new session, validate, commit
+  locally, and stop for Batch C1 review.
 
 ### 2026-07-28 — Repeated partial Attention history deduplicated
 

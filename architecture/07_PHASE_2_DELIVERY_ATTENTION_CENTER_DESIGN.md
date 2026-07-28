@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `APPROVED — BATCH B REVIEW CORRECTIONS IMPLEMENTED, REVIEW REQUIRED`
+Status: `BATCH C DESIGN REVIEW APPROVED — C1 READY FOR IMPLEMENTATION`
 Last updated: 2026-07-28
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -19,10 +19,11 @@ The Center must deduplicate repeated detections, retain a bounded and
 sanitized history, and never turn missing, stale, partial, or failed source
 data into a clear or healthy condition.
 
-The owner approved this Batch A design on 2026-07-28. It authorizes only the
-bounded, sequential IP-028 implementation batches starting with Batch B on the
-dedicated implementation branch. It does not authorize connector calls, source
-sync, real-data access, push, merge, tag, release, or deployment.
+The owner approved this Batch A design on 2026-07-28 and accepted the
+implementation-level Batch C review decisions below on the same date. The next
+authorized implementation is Batch C1 on the dedicated branch. This does not
+authorize Batch C2, connector calls, source sync, real-data access, push,
+merge, tag, release, deployment, or Phase 2 promotion.
 
 ## Verified current state
 
@@ -209,6 +210,107 @@ expiry, actor, bounded scope, and proposed transitions. Confirmation returns
 the actual re-evaluated outcome. Tokens are never persisted in plaintext or
 returned after preview.
 
+#### Center query result contract
+
+The query reads only persisted Attention current/history rows. It never
+reconciles implicitly. An empty item list must not be interpreted as healthy,
+clear, or fully evaluated.
+
+`data` and `context` expose the same renderer-neutral projection:
+
+- `items`: current rows after filtering, deterministic ordering, and limiting;
+- `summary`: counts over every row matching the filters before `limit`, with
+  `matched_count`, `returned_count`, `truncated`, and zero-filled maps for
+  rule key, `rule_state`, and `attention_state`; and
+- `reconciliation_coverage`: the newest confirmed reconciliation whose scope
+  covers the complete query filter, or an explicit `absent`/`out_of_scope`
+  state.
+
+Coverage has `status = complete | partial | absent | out_of_scope` and, when
+available, reconciliation ID, finish time, rule-set version, and safe warning
+codes. `ATTENTION_NOT_RECONCILED` or
+`ATTENTION_SCOPE_NOT_RECONCILED` qualifies uncovered queries. A partial
+reconciliation retains its safe rule warning codes. Copilot and other clients
+must not convert an empty or uncovered result into a healthy conclusion.
+
+`attention_states` must be a non-empty list of unique supported states.
+`subject_id` requires `subject_kind`. A supplied `rule_key` and
+`subject_kind` must match the canonical rule subject kind; invalid combinations
+return `status = invalid` rather than a misleading empty result. The shared
+executor validates scalar types and bounds; the Center handler additionally
+validates array members and cross-field rules.
+
+Ordering is stable:
+
+1. severity `critical`, `high`, `medium`, `low`, `none`;
+2. lifecycle `open`, `acknowledged`, `snoozed`, `resolved`;
+3. `last_seen_at` descending; and
+4. `attention_id` ascending.
+
+Each current item carries stable references to its result-local fact, signal,
+recommendation, evidence, and freshness records rather than duplicating those
+payloads. Persisted `severity = none` remains `none` in `data.items`; its
+top-level clear `IntelligenceSignal` uses the existing compatible
+`severity = info` value. Stable result-local IDs derive from the persistent
+anonymous `attention_id`, not list position or execution ID.
+
+When `include_history = true`, `recent_events` contains only newest-first event
+ID, event type, prior/new rule and lifecycle state, severity, rule version,
+stable anonymous actor, reconciliation ID, and timestamp. It excludes
+operation IDs, tokens, token hashes, raw database rows, and full historical
+observation JSON. `history_limit` is applied independently to each returned
+item.
+
+Every returned item has one bounded advisory recommendation:
+
+- active project-health, overdue-action, or resource-overload items are
+  `available` only when the retained evaluation is complete and its required
+  evidence/freshness is usable; otherwise they are `blocked`;
+- an active source-freshness item remains `available` because its normalized
+  local source/sync metadata is the evidence for reviewing the limitation;
+- clear/resolved items are `not_applicable`; and
+- disabled active items are `blocked` with a stable `rule_disabled` rationale.
+
+All recommendations use `write_mode = advisory` and
+`confirmation_required = false`. They never populate `proposed_writes`.
+
+#### Attention write interface contract
+
+Batch C1 exposes these exact JSON-only CLI commands:
+
+```text
+pm attention reconcile-preview [--rule <rule-key>] [--subject-kind <kind>] [--subject-id <id>]
+pm attention acknowledge-preview <attention-id>
+pm attention snooze-preview <attention-id> --until <timestamp>
+pm attention resolve-preview <attention-id>
+pm attention confirm <operation-id> --token <confirmation-token>
+```
+
+The Dashboard projection is API-only in Batch C1 and uses
+`POST /api/attention/operations`. A preview request has
+`operation = preview`, one supported `action`, and only that action's bounded
+scope fields. A confirmation request has `operation = confirm`,
+`operation_id`, and `confirmation_token`. The server derives the actor from
+its bounded local Dashboard actor configuration; an actor field supplied in
+the payload is rejected.
+
+Successful responses preserve the Attention service result and carry
+`X-DM-Interface-Contract: attention-operation-v1`. Invalid input or
+confirmation maps to HTTP 400; missing Attention/operation to 404; used
+operations and lifecycle conflicts to 409; expired operations to 410; and safe
+data-access failure to 503. CLI failure returns JSON and a non-zero exit code.
+Only a successful preview returns a confirmation token.
+
+Copilot may query the persisted Center without reconciliation. It may create a
+reconciliation or lifecycle preview only after the user explicitly asks for
+that action. It must present the exact bounded preview and ask for confirmation,
+and may confirm only that preview with the runtime-issued token after explicit
+approval. It never enables rules, edits RAG configuration, calls a connector,
+or converts an advisory recommendation into a business write.
+
+Batch C1 adds no visual Dashboard Center page. A browser UI is a separately
+reviewed scope rather than an implication of the API projection.
+
 ### Initial rule catalog
 
 Rule logic is deterministic code. A persisted rule catalog stores only enabled
@@ -235,8 +337,11 @@ unknown label or a missing value for any configured source is an incomplete
 observation and never clears an active item. A source can be omitted only by
 removing it from that default or project override's `source_precedence` in a
 new rule version. Malformed configuration fails before a reconciliation write.
-Batch B does not add a configuration UI or API; that remains outside this
-storage and reconciliation core.
+Batch B and Batch C1 do not add a configuration write UI or API. The persisted
+model is data-configurable, but it is not yet DM-operable configuration.
+Batch C2, separately gated below, must add an Attention-specific
+preview/confirm boundary before the product may claim that a DM can change
+default or anonymous-project RAG semantics without code or direct SQL.
 
 | Rule key / signal type | Subject and source | Deterministic initial criterion | Advisory recommendation |
 | --- | --- | --- | --- |
@@ -341,12 +446,18 @@ Local SQLite facts and freshness
 4. A successful, complete evaluation that no longer qualifies changes
    `rule_state` to `clear`, records `cleared`, and resolves the current item
    with machine reason `rule_clear`. A manual resolve is allowed only after the
-   latest complete evaluation is clear; otherwise it fails safely with
-   `ATTENTION_STILL_ACTIVE`.
+   latest complete evaluation is clear and the lifecycle state is not already
+   resolved; otherwise it fails safely with `ATTENTION_STILL_ACTIVE` or
+   `ATTENTION_ALREADY_RESOLVED`.
 5. Acknowledgement and snooze are manager workflow writes, never rule outcomes.
    They require preview and confirmation, actor recording, validation of a
    future bounded snooze expiry, and append-only history. Snoozed items remain
    countable and retrievable; they are not silently erased from summaries.
+   Repeating acknowledgement in `acknowledged` fails with
+   `ATTENTION_ALREADY_ACKNOWLEDGED`. Snooze may replace an existing expiry, but
+   an unchanged normalized expiry fails with `ATTENTION_SNOOZE_UNCHANGED`.
+   Invalid or no-op lifecycle requests do not create an Attention operation or
+   history row.
 6. A missing, stale, partial, failed, or invalid required input never clears an
    existing active item. The reconciliation is `partial` or `failed`, creates a
    safe evaluation event/warning, and leaves prior active lifecycle state
@@ -432,6 +543,13 @@ The eventual implementation must cover at least these synthetic scenarios:
    safely without raw payload/error disclosure or partial state mutation.
 10. Synthetic migration, integrity, rollback, package installation, and
     portable-boundary validation prove only additive Attention storage exists.
+11. An empty or narrowly filtered Center result exposes whether a confirmed
+    reconciliation covers that scope and never implies health without
+    coverage.
+12. Duplicate acknowledgement, unchanged snooze, and repeated resolve fail
+    before an operation or history event is created.
+13. CLI, Dashboard API, and direct service preview/confirm projections preserve
+    the same safe result and failure codes; ToolTransport remains query-only.
 
 Acceptance for Phase 2 promotion requires every item to expose its current
 facts, evidence, freshness, rule version, state change, and bounded advisory
@@ -448,13 +566,31 @@ explicitly promote the phase.
 - Add synthetic migration, integrity, rollback, deduplication, and concurrency
   tests. No connector integration or interface-specific behavior.
 
-### Batch C — Center use-case and controlled interfaces
+### Batch C1 — Center use-case and controlled interfaces
 
 - Add separate read-only Center query and explicit preview/confirm operations.
 - Emit validated facts, signals, recommendations, evidence, freshness, and
-  bounded history through the shared executor.
-- Add thin CLI/Dashboard/Copilot projections and compatibility tests proving
-  existing Management Attention has no persistent side effect.
+  bounded history plus reconciliation coverage through the shared executor.
+- Add the exact CLI, Dashboard API, and Copilot projections defined above and
+  compatibility tests proving existing Management Attention has no persistent
+  side effect.
+- Correct lifecycle no-op handling before exposing the write service.
+- Stop after focused tests, `make validate`, documentation, and a local commit
+  for explicit Batch C1 review.
+
+### Batch C2 — DM-operable RAG configuration
+
+- Define an Attention-specific preview/confirm operation for validated
+  versioned project-health RAG defaults and stable-anonymous-project overrides.
+- Never accept executable expressions, prompts, display names, real project
+  identifiers, or direct SQL. A semantic configuration change creates a new
+  rule version and takes effect only through separately confirmed
+  reconciliation.
+- Add no connector or real-data behavior and keep
+  `pending_decision_attention` disabled.
+- Batch C2 requires separate owner authorization after C1 review and must
+  complete before Phase 2 may claim DM-operable RAG configuration or enter
+  promotion review.
 
 ### Batch D — Regression and promotion decision
 
@@ -473,7 +609,11 @@ is registered or any Phase 2 runtime or schema work starts.
 
 Owner approval was recorded on 2026-07-28 after the operation boundary,
 pending-decision disabled status, resource threshold, source-freshness advice,
-and Center contracts were reviewed. The owner then authorized the Batch B
-review corrections and configurable project-health RAG semantics described
-above. The corrected Batch B remains stopped for review. This is not Batch C,
-Phase 2 promotion, release, operational, connector, or real-data approval.
+and Center contracts were reviewed. After Batch B corrections, the owner
+accepted the Batch C review findings covering reconciliation coverage,
+lifecycle no-op behavior, exact interface contracts, bounded history,
+recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
+
+Batch C1 is the only authorized next implementation. Batch C2, Phase 2
+promotion, release, operational work, connector work, real-data access, push,
+merge, and tag remain separately gated.

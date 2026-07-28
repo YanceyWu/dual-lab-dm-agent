@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH B REVIEW CORRECTIONS IMPLEMENTED — REVIEW REQUIRED`
+Status: `BATCH C DESIGN REVIEW APPROVED — C1 READY FOR IMPLEMENTATION`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -69,3 +69,70 @@ operations, deduplicated history, and evidence-backed rule evaluation.
 After Batch B validation or review corrections, update `PROGRESS.md`, commit
 the bounded result, and stop for explicit review. Do not start Batch C
 interface integration until that review is approved.
+
+The owner accepted the Batch B result and Batch C design review findings on
+2026-07-28. Batch C1 below is the only authorized next implementation.
+
+## Batch C1 scope
+
+- Add the separate read-only `delivery-attention-center` query through the
+  shared executor and `UseCaseResult 1.0`.
+- Return current Attention items, pre-limit zero-filled summary counts,
+  explicit reconciliation coverage, validated facts/signals/advisory
+  recommendations, evidence/freshness, and optional bounded event metadata.
+- Add the exact JSON-only Attention CLI preview/confirm commands and the
+  dedicated `POST /api/attention/operations` Dashboard API contract defined by
+  the approved design.
+- Add Copilot routing that never reconciles implicitly and requires explicit
+  user authorization for preview and separate explicit confirmation.
+- Reject duplicate acknowledgement, unchanged snooze, repeated resolve, and
+  other lifecycle no-ops before creating an operation or history event.
+- Preserve `management-attention` business projections and prove that its
+  query creates no Attention current/history/operation/reconciliation write.
+- Use only synthetic records and stable anonymous IDs.
+
+## Batch C1 non-goals
+
+- No visual Dashboard Center page.
+- No RAG configuration mutation interface; Batch C1 may only read the
+  currently persisted versioned configuration through rule evaluation.
+- No activation of `pending_decision_attention`.
+- No connector call, source sync, real record, automatic action/project/
+  staffing/decision write, notification, push, or Phase 2 promotion.
+- No change to the shared `UseCaseResult 1.0` models or existing
+  `management-attention` contract.
+
+## Batch C1 acceptance criteria
+
+1. An empty or filtered Center result states whether a confirmed
+   reconciliation covers the complete query scope; uncovered empty results
+   never imply healthy or clear.
+2. Query parameter member and cross-field validation, deterministic ordering,
+   pre-limit summaries, resolved-only-on-request behavior, bounded newest-first
+   history metadata, and result-local reference integrity follow the approved
+   design exactly.
+3. Every returned item has a stable fact, signal, and advisory recommendation.
+   Health/action/resource recommendations block on unusable retained evidence;
+   source-freshness advice remains available for its normalized limitation;
+   clear/resolved recommendations are not applicable.
+4. ToolTransport remains query-only. Direct executor, structured CLI, and
+   generic Dashboard query serialize the same Center result.
+5. Reconcile, acknowledge, snooze, and resolve are exposed only through the
+   Attention-specific preview/confirm service. Tokens remain hashed at rest,
+   one-time, expiring, and returned only by preview.
+6. CLI and Dashboard API preserve stable service failures and reject
+   caller-supplied Dashboard actor, unsupported fields/actions, lifecycle
+   no-ops, and invalid confirmation without domain mutation.
+7. Existing Management Attention and unrelated query/write boundaries retain
+   their contracts and create no Attention side effect.
+8. Focused synthetic tests and `make validate` pass. Update `PROGRESS.md`,
+   create a local commit, and stop for Batch C1 review.
+
+## Batch C2 gate
+
+DM-operable project-health RAG configuration is a separately reviewed
+Attention write capability. Batch C2 must define validated versioned
+default/project-override configuration preview/confirm without executable
+expressions, direct SQL, display names, or real identifiers. It requires
+explicit authorization after Batch C1 review and must complete before Phase 2
+may claim DM-operable RAG configuration or enter promotion review.
