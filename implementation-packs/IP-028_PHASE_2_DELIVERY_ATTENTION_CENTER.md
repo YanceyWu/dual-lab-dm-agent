@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH B IMPLEMENTED — REVIEW REQUIRED`
+Status: `BATCH B REVIEW CORRECTIONS IMPLEMENTED — REVIEW REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -19,6 +19,10 @@ operations, deduplicated history, and evidence-backed rule evaluation.
 - Implement deterministic candidate evaluation for project health, overdue
   action, source freshness, and active-assignment resource overload strictly
   above 100% load.
+- Store project-health RAG label mappings, source precedence, and state
+  precedence as versioned rule parameters with a local DM default and optional
+  stable-anonymous-project overrides; do not hard-code project-specific RAG
+  semantics into evaluation.
 - Register `pending_decision_attention` as disabled; it must emit no active
   signal, recommendation, or lifecycle record.
 - Implement canonical identity, semantic observation hashing, deduplication,
@@ -45,6 +49,9 @@ operations, deduplicated history, and evidence-backed rule evaluation.
 2. The four active rules create stable canonical identities and valid normalized
    evidence/freshness references; repeated unchanged reconciliation creates no
    duplicate current row or history event.
+   Project-health RAG mappings and precedence are validated versioned
+   configuration, and missing, invalid, or unmapped inputs never clear an
+   active item.
 3. A disabled pending-decision rule creates no Attention item under any
    synthetic decision-log input.
 4. Preview tokens are hashed, expire, can be claimed once only, and stale or
@@ -59,6 +66,6 @@ operations, deduplicated history, and evidence-backed rule evaluation.
 
 ## Stop gate
 
-After Batch B validation, update `PROGRESS.md`, commit the bounded result, and
-stop for explicit review. Do not start Batch C interface integration until that
-review is approved.
+After Batch B validation or review corrections, update `PROGRESS.md`, commit
+the bounded result, and stop for explicit review. Do not start Batch C
+interface integration until that review is approved.

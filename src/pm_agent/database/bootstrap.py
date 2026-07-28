@@ -2354,15 +2354,89 @@ def _drop_legacy_tables_v19(conn: sqlite3.Connection) -> list[str]:
     return warnings
 
 
+PROJECT_HEALTH_PARAMETERS_V2 = {
+    "config_version": "1.0",
+    "default": {
+        "source_precedence": [
+            "jira_grade",
+            "confluence_rag",
+        ],
+        "state_precedence": ["red", "amber"],
+        "jira_grade_mapping": {
+            "RED": "red",
+            "YELLOW": "amber",
+            "AMBER": "amber",
+            "GREEN": "clear",
+        },
+        "confluence_rag_mapping": {
+            "RED": "red",
+            "AMBER": "amber",
+            "YELLOW": "amber",
+            "GREEN": "clear",
+        },
+    },
+    "project_overrides": {},
+}
+
+
+def _migrate_project_health_rule_v2(conn: sqlite3.Connection) -> None:
+    """Preserve v1 references while moving its fixed labels into v2 config."""
+    row = conn.execute(
+        """
+        SELECT parameters_json
+        FROM attention_rules
+        WHERE rule_key = 'project_health_attention'
+          AND rule_version = 'project-health-attention-v1'
+          AND is_current = 1
+        """
+    ).fetchone()
+    if not row:
+        return
+    parameters = json.loads(row["parameters_json"])
+    if parameters != {"health_states": ["red", "amber"]}:
+        return
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    conn.execute(
+        """
+        UPDATE attention_rules
+        SET is_current = 0, updated_at = ?
+        WHERE rule_key = 'project_health_attention'
+          AND rule_version = 'project-health-attention-v1'
+          AND is_current = 1
+        """,
+        [now],
+    )
+    conn.execute(
+        """
+        INSERT INTO attention_rules
+            (rule_key, rule_version, is_current, enabled, parameters_json,
+             created_at, updated_at)
+        VALUES (
+            'project_health_attention', 'project-health-attention-v2',
+            1, 1, ?, ?, ?
+        )
+        """,
+        [
+            json.dumps(
+                PROJECT_HEALTH_PARAMETERS_V2,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            now,
+            now,
+        ],
+    )
+
+
 def _seed_attention_rules(conn: sqlite3.Connection) -> None:
     """Register only the approved deterministic Phase 2 rule catalog."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     rules = [
         (
             "project_health_attention",
-            "project-health-attention-v1",
+            "project-health-attention-v2",
             1,
-            {"health_states": ["red", "amber"]},
+            PROJECT_HEALTH_PARAMETERS_V2,
         ),
         (
             "overdue_action_attention",
@@ -2456,6 +2530,7 @@ def main(quiet: bool = False) -> None:
         _migrate_action_tracker_v20(conn)
         _seed_use_cases(conn)
         _seed_data_sources(conn)
+        _migrate_project_health_rule_v2(conn)
         _seed_attention_rules(conn)
         legacy_cleanup_warnings = _drop_legacy_tables_v19(conn)
     except Exception:

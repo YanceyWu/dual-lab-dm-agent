@@ -5,17 +5,17 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH B IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 2 BATCH B REVIEW CORRECTIONS IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
 The approved Phase 2 implementation branch, including the validated Batch B
-result, is local-only and has no remote tracking branch. The exact Batch B
-commit is reported in the task handoff because a commit cannot embed its own
-final hash. Do not push it without a separate authorization. Do not merge or
-push to `main`.
+result and review corrections, is local-only and has no remote tracking
+branch. The exact correction commit is reported in the task handoff because a
+commit cannot embed its own final hash. Do not push it without a separate
+authorization. Do not merge or push to `main`.
 
 ## Read this first
 
@@ -152,6 +152,13 @@ Attention/database/bootstrap/Management Attention regression tests. The final
 compilation, diff hygiene, package build/inspection, and all eight release
 validation checks.
 
+The Phase 2 Batch B review corrections passed 11 focused Attention foundation
+tests and 49 combined Attention/database/bootstrap/Management Attention/
+unified-contract regression tests. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 164 runtime tests,
+21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -181,16 +188,18 @@ validation checks.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
-7. IP-028 Batch B is implemented and validated locally but has not passed owner
-   review. Batch C interfaces, connectors, real data, and Phase 2 promotion
-   remain blocked pending their own gates.
+7. IP-028 Batch B and its authorized review corrections are implemented and
+   validated locally but have not passed owner review. Batch C interfaces,
+   connectors, real data, and Phase 2 promotion remain blocked pending their
+   own gates.
 
 ## Exact next actions
 
-1. Review only the validated IP-028 Batch B local commit on
+1. Review only the validated IP-028 Batch B implementation and correction
+   commits on
    `codex/phase-2-attention-center`.
-2. Approve corrections or explicitly authorize Batch C only after Batch B
-   review.
+2. Explicitly accept or request further corrections; authorize Batch C only
+   after corrected Batch B review.
 3. Do not begin Batch C interfaces, connectors, real-data work, release, tag,
    merge, or push without explicit authorization.
 
@@ -215,6 +224,38 @@ validation checks.
   reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch B review corrections validated
+
+- The owner authorized correction of the Batch B review findings and required
+  project-health RAG definitions to be configurable for different local DMs
+  and projects rather than fixed in evaluation code.
+- Added versioned project-health rule parameters for source-specific label
+  mappings, source precedence, and normalized state precedence. Configuration
+  has a local DM default plus bounded overrides keyed only by stable anonymous
+  project ID. Bootstrap migrates the original fixed v1 seed to configurable v2
+  without deleting v1 history references; later parameter changes require a
+  new rule version and reconciliation preview/confirm.
+- Restored Management Attention-compatible default source precedence and
+  limited expected Jira sources to active boards attached to active projects.
+  Unknown, missing, invalid, or unmapped project-health/action inputs now
+  produce incomplete evaluation and cannot clear an active Attention item.
+- Made preview counts include snooze expiry, disabled-rule transitions, and
+  limited evaluations that confirmation can apply. Corrected history metadata
+  so severity/rule-version columns match the new normalized observation.
+- `pending_decision_attention` remains disabled and is not evaluated.
+  Configuration changes add no Batch C interface or direct business write;
+  every Attention effect still uses its dedicated preview/confirm boundary.
+- Focused Attention tests passed 11/11. Combined Attention/database/bootstrap/
+  Management Attention/unified-contract regression passed 49/49.
+  `make validate` passed repository-boundary and synthetic-sample checks,
+  164 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and eight release
+  validation checks.
+- Only synthetic records and stable anonymous identifiers were used. No
+  connector, real-data, action/project/staffing write, interface, release,
+  promotion, tag, merge, push, deployment, or `main` behavior was added. The
+  corrected result remains stopped for Batch B review.
 
 ### 2026-07-28 — Phase 2 Batch B Attention foundation validated
 

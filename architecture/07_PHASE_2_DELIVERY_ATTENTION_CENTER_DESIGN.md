@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `APPROVED — BATCH B IMPLEMENTED, REVIEW REQUIRED`
+Status: `APPROVED — BATCH B REVIEW CORRECTIONS IMPLEMENTED, REVIEW REQUIRED`
 Last updated: 2026-07-28
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -208,6 +208,26 @@ Rule logic is deterministic code. A persisted rule catalog stores only enabled
 status, approved parameter values, rule version, and timestamps; it never
 stores executable expressions or model prompts. A parameter change requires a
 new rule version and reconciliation preview.
+
+Project-health RAG semantics are configuration, not fixed runtime constants.
+The current project-health rule version stores a local DM default plus optional
+per-project overrides keyed only by stable anonymous project ID. The validated
+parameters define:
+
+- source precedence across normalized Jira grade and Confluence RAG inputs;
+- precedence across normalized `red`, `amber`, and `clear` states; and
+- source-specific mappings from bounded external labels to those normalized
+  states.
+
+Project overrides merge onto the local DM default and may replace only those
+bounded fields. Seed values preserve the existing Management Attention
+precedence, but are initial configuration rather than hard-coded behavior.
+Changing any mapping or precedence requires a new project-health rule version
+and takes effect only through Attention reconciliation preview/confirm. An
+unknown label is an incomplete observation and never clears an active item.
+Malformed configuration fails before a reconciliation write. Batch B does not
+add a configuration UI or API; that remains outside this storage and
+reconciliation core.
 
 | Rule key / signal type | Subject and source | Deterministic initial criterion | Advisory recommendation |
 | --- | --- | --- | --- |
@@ -439,5 +459,7 @@ is registered or any Phase 2 runtime or schema work starts.
 
 Owner approval was recorded on 2026-07-28 after the operation boundary,
 pending-decision disabled status, resource threshold, source-freshness advice,
-and Center contracts were reviewed. IP-028 Batch B is ready to begin. This is
-not Phase 2 promotion, release, operational, connector, or real-data approval.
+and Center contracts were reviewed. The owner then authorized the Batch B
+review corrections and configurable project-health RAG semantics described
+above. The corrected Batch B remains stopped for review. This is not Batch C,
+Phase 2 promotion, release, operational, connector, or real-data approval.

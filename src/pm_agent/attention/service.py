@@ -41,9 +41,10 @@ class AttentionService:
             normalized_actor = _bounded_id(actor, "actor")
             scope = _reconciliation_scope(rule_keys, subject_kind, subject_id)
             with attention_repository.attention_connection() as connection:
-                evaluation = rules.evaluate(connection, **scope)
+                now = _utc_now()
+                evaluation = rules.evaluate(connection, **scope, now=now)
                 current = attention_repository.list_signals(connection, **scope)
-                proposed = _transition_plan(evaluation, current)
+                proposed = _transition_plan(evaluation, current, now=now)
                 return _create_preview(
                     connection,
                     action="reconcile",
@@ -242,7 +243,7 @@ class AttentionService:
             connection,
             **operation["scope"],
         )
-        plan = _transition_plan(evaluation, current)
+        plan = _transition_plan(evaluation, current, now=now)
         reconciliation_id = f"rec-{uuid4().hex}"
         record = {
             "reconciliation_id": reconciliation_id,
@@ -397,6 +398,8 @@ def _create_preview(
 def _transition_plan(
     evaluation: dict[str, Any],
     current: list[dict[str, Any]],
+    *,
+    now: datetime,
 ) -> dict[str, int]:
     current_by_identity = {
         (item["rule_key"], item["subject_kind"], item["subject_id"]): item
@@ -412,6 +415,9 @@ def _transition_plan(
         "updated_count": 0,
         "cleared_count": 0,
         "reopened_count": 0,
+        "lifecycle_count": 0,
+        "disabled_count": 0,
+        "limited_count": 0,
     }
     for identity, observation in observations.items():
         existing = current_by_identity.get(identity)
@@ -421,24 +427,55 @@ def _transition_plan(
             continue
         if observation["active"] and existing["rule_state"] != "active":
             counts["reopened_count"] += 1
-        elif (
-            observation["active"]
-            and _observation_hash(observation["observation"])
-            != existing["observation_hash"]
-        ):
-            counts["updated_count"] += 1
+        elif observation["active"]:
+            updated = (
+                _observation_hash(observation["observation"])
+                != existing["observation_hash"]
+            )
+            target_status = (
+                "complete" if observation["complete"] else "partial"
+            )
+            if existing["evaluation_status"] != target_status:
+                updated = True
+                if target_status == "partial":
+                    counts["limited_count"] += 1
+            if _snooze_is_expired(existing, now=now):
+                updated = True
+                counts["lifecycle_count"] += 1
+            counts["updated_count"] += int(updated)
         elif (
             not observation["active"]
             and observation["complete"]
             and existing["rule_state"] == "active"
         ):
             counts["cleared_count"] += 1
+        elif (
+            not observation["active"]
+            and not observation["complete"]
+            and existing["rule_state"] == "active"
+            and (
+                existing["evaluation_status"] != "partial"
+                or _observation_hash(observation["observation"])
+                != existing["observation_hash"]
+            )
+        ):
+            counts["updated_count"] += 1
+            counts["limited_count"] += 1
     for identity, existing in current_by_identity.items():
         if identity in observations or existing["rule_state"] != "active":
             continue
         status = evaluation["rule_status"].get(existing["rule_key"])
         if status == "complete":
             counts["cleared_count"] += 1
+        elif status == "disabled" and existing["evaluation_status"] != "disabled":
+            counts["updated_count"] += 1
+            counts["disabled_count"] += 1
+        elif (
+            status in {"partial", "failed"}
+            and existing["evaluation_status"] != status
+        ):
+            counts["updated_count"] += 1
+            counts["limited_count"] += 1
     return counts
 
 
@@ -522,7 +559,11 @@ def _apply_reconciliation(
                 attention_repository.update_signal(
                     connection,
                     existing["attention_id"],
-                    {"evaluation_status": "disabled", "updated_at": now_text},
+                    {
+                        "evaluation_status": "disabled",
+                        "last_reconciliation_id": reconciliation_id,
+                        "updated_at": now_text,
+                    },
                 )
                 _history(
                     connection,
@@ -532,6 +573,15 @@ def _apply_reconciliation(
                     event_type="rule_disabled",
                     actor=actor,
                     now=now,
+                )
+            else:
+                attention_repository.update_signal(
+                    connection,
+                    existing["attention_id"],
+                    {
+                        "last_reconciliation_id": reconciliation_id,
+                        "updated_at": now_text,
+                    },
                 )
         elif status == "complete" and existing["rule_state"] == "active":
             _clear_signal(
@@ -584,6 +634,7 @@ def _apply_observation(
                 actor=actor,
                 now=now,
                 status="partial",
+                observation=observation,
             )
         return
 
@@ -625,12 +676,9 @@ def _apply_observation(
             and existing["evaluation_status"] != "partial"
         ):
             event_types.append("evaluation_limited")
-    if (
-        existing["rule_state"] == "active"
-        and
-        existing["attention_state"] == "snoozed"
-        and existing["snoozed_until"]
-        and _parse_timestamp(existing["snoozed_until"]) <= now
+    if existing["rule_state"] == "active" and _snooze_is_expired(
+        existing,
+        now=now,
     ):
         event_types.append("snooze_expired")
         new_attention_state = "open"
@@ -654,6 +702,8 @@ def _apply_observation(
             new_rule_state="active",
             new_attention_state=new_attention_state,
             observation=observation["observation"],
+            severity=observation["severity"],
+            rule_version=observation["rule_version"],
         )
 
 
@@ -716,6 +766,12 @@ def _clear_signal(
         new_rule_state="clear",
         new_attention_state="resolved",
         observation=normalized,
+        severity="none",
+        rule_version=(
+            observation["rule_version"]
+            if observation
+            else existing["rule_version"]
+        ),
     )
 
 
@@ -728,7 +784,14 @@ def _limit_signal(
     actor: str,
     now: datetime,
     status: str,
+    observation: dict[str, Any] | None = None,
 ) -> None:
+    status_changed = existing["evaluation_status"] != status
+    observation_changed = bool(
+        observation
+        and _observation_hash(observation["observation"])
+        != existing["observation_hash"]
+    )
     attention_repository.update_signal(
         connection,
         existing["attention_id"],
@@ -738,15 +801,31 @@ def _limit_signal(
             "updated_at": _iso(now),
         },
     )
-    _history(
-        connection,
-        signal=existing,
-        operation_id=operation_id,
-        reconciliation_id=reconciliation_id,
-        event_type="evaluation_limited",
-        actor=actor,
-        now=now,
-    )
+    if status_changed or observation_changed:
+        _history(
+            connection,
+            signal=existing,
+            operation_id=operation_id,
+            reconciliation_id=reconciliation_id,
+            event_type="evaluation_limited",
+            actor=actor,
+            now=now,
+            observation=(
+                observation["observation"]
+                if observation
+                else existing["observation"]
+            ),
+            rule_version=(
+                observation["rule_version"]
+                if observation
+                else existing["rule_version"]
+            ),
+            severity=(
+                observation["severity"]
+                if observation
+                else existing["severity"]
+            ),
+        )
 
 
 def _history(
@@ -763,6 +842,8 @@ def _history(
     prior_attention_state: str | None = None,
     new_attention_state: str | None = None,
     observation: dict[str, Any] | None = None,
+    severity: str | None = None,
+    rule_version: str | None = None,
 ) -> None:
     attention_repository.insert_history(
         connection,
@@ -792,8 +873,12 @@ def _history(
                 if new_attention_state is None
                 else new_attention_state
             ),
-            "severity": signal["severity"],
-            "rule_version": signal["rule_version"],
+            "severity": severity if severity is not None else signal["severity"],
+            "rule_version": (
+                rule_version
+                if rule_version is not None
+                else signal["rule_version"]
+            ),
             "actor": actor,
             "observation": observation or signal["observation"],
             "created_at": _iso(now),
@@ -826,6 +911,18 @@ def _target_state(action: str) -> str:
         "snooze": "snoozed",
         "resolve": "resolved",
     }[action]
+
+
+def _snooze_is_expired(
+    signal: dict[str, Any],
+    *,
+    now: datetime | None = None,
+) -> bool:
+    return bool(
+        signal["attention_state"] == "snoozed"
+        and signal["snoozed_until"]
+        and _parse_timestamp(signal["snoozed_until"]) <= (now or _utc_now())
+    )
 
 
 def _reconciliation_scope(

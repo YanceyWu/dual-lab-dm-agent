@@ -169,10 +169,11 @@ def load_member_inputs(connection: sqlite3.Connection) -> list[dict[str, Any]]:
 def load_expected_source_ids(connection: sqlite3.Connection) -> list[str]:
     rows = connection.execute(
         """
-        SELECT id
-        FROM jira_board_configs
-        WHERE active = 1
-        ORDER BY id
+        SELECT b.id
+        FROM jira_board_configs b
+        JOIN projects p ON p.id = b.pm_project_id
+        WHERE b.active = 1 AND p.status = 'active'
+        ORDER BY b.id
         """
     ).fetchall()
     return [

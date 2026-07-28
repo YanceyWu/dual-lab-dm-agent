@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -36,6 +37,14 @@ def _seed_attention_scenario(database_path) -> None:
         )
         connection.execute(
             """
+            INSERT INTO projects (id, name, status, priority)
+            VALUES (
+                'project-990003', 'Synthetic Inactive Project', 'done', 3
+            )
+            """
+        )
+        connection.execute(
+            """
             INSERT INTO jira_board_configs
                 (id, name, project_key, base_jql, pm_project_id, active)
             VALUES (
@@ -49,6 +58,16 @@ def _seed_attention_scenario(database_path) -> None:
             INSERT INTO jira_health_snapshots
                 (board_id, snapshot_date, overall_grade)
             VALUES ('board-990001', '2026-07-28', 'RED')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO jira_board_configs
+                (id, name, project_key, base_jql, pm_project_id, active)
+            VALUES (
+                'board-990003', 'Synthetic Inactive Board', 'OLD',
+                'project = OLD', 'project-990003', 1
+            )
             """
         )
         connection.execute(
@@ -192,6 +211,51 @@ def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
     assert violations == []
 
 
+def test_bootstrap_migrates_fixed_project_health_v1_to_configurable_v2(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            DELETE FROM attention_rules
+            WHERE rule_key = 'project_health_attention'
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO attention_rules
+                (rule_key, rule_version, is_current, enabled, parameters_json,
+                 created_at, updated_at)
+            VALUES (
+                'project_health_attention', 'project-health-attention-v1',
+                1, 1, '{"health_states":["red","amber"]}',
+                '2026-07-28T00:00:00+00:00',
+                '2026-07-28T00:00:00+00:00'
+            )
+            """
+        )
+
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        rows = connection.execute(
+            """
+            SELECT rule_version, is_current, parameters_json
+            FROM attention_rules
+            WHERE rule_key = 'project_health_attention'
+            ORDER BY rule_version
+            """
+        ).fetchall()
+
+    assert [(row[0], row[1]) for row in rows] == [
+        ("project-health-attention-v1", 0),
+        ("project-health-attention-v2", 1),
+    ]
+    parameters = json.loads(rows[1][2])
+    assert parameters["config_version"] == "1.0"
+    assert parameters["project_overrides"] == {}
+
+
 def test_four_active_rules_deduplicate_and_pending_decision_remains_disabled(
     isolated_db,
 ) -> None:
@@ -277,6 +341,8 @@ def test_four_active_rules_deduplicate_and_pending_decision_remains_disabled(
             """
         ).fetchone()[0]
     assert disabled["transitions"]["cleared_count"] == 0
+    assert disabled["transitions"]["updated_count"] == 1
+    assert disabled["transitions"]["disabled_count"] == 1
     assert disabled_signal == ("active", "open", "disabled")
     assert disabled_events == 1
 
@@ -519,6 +585,176 @@ def test_partial_health_evaluation_never_clears_until_sources_are_fresh(
     assert "cleared" in event_types
 
 
+def test_invalid_required_inputs_never_clear_active_attention(
+    isolated_db,
+) -> None:
+    _seed_attention_scenario(isolated_db)
+    service = AttentionService()
+    _confirm_reconciliation(service)
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            "UPDATE action_items SET due_date = 'invalid-date'"
+        )
+        connection.execute(
+            "UPDATE jira_health_snapshots SET overall_grade = 'UNMAPPED'"
+        )
+    preview = service.preview_reconciliation(
+        actor="manager-990001",
+        rule_keys=[
+            "project_health_attention",
+            "overdue_action_attention",
+        ],
+    )
+    assert preview["proposed"]["cleared_count"] == 0
+    assert preview["proposed"]["limited_count"] == 2
+    confirmed = service.confirm(
+        operation_id=preview["operation_id"],
+        confirmation_token=preview["confirmation_token"],
+    )
+    assert confirmed["reconciliation_status"] == "partial"
+
+    with sqlite3.connect(isolated_db) as connection:
+        states = connection.execute(
+            """
+            SELECT rule_key, rule_state, attention_state, evaluation_status
+            FROM attention_signals
+            WHERE rule_key IN (
+                'project_health_attention',
+                'overdue_action_attention'
+            )
+            ORDER BY rule_key
+            """
+        ).fetchall()
+        limited_events = connection.execute(
+            """
+            SELECT severity, observation_json
+            FROM attention_history
+            WHERE event_type = 'evaluation_limited'
+              AND attention_id IN (
+                  SELECT attention_id
+                  FROM attention_signals
+                  WHERE rule_key IN (
+                      'project_health_attention',
+                      'overdue_action_attention'
+                  )
+              )
+            ORDER BY attention_id
+            """
+        ).fetchall()
+    assert states == [
+        ("overdue_action_attention", "active", "open", "partial"),
+        ("project_health_attention", "active", "open", "partial"),
+    ]
+    assert len(limited_events) == 2
+    assert all(
+        severity == json.loads(observation_json)["signal"]["severity"]
+        for severity, observation_json in limited_events
+    )
+
+
+def test_configurable_rag_preserves_default_precedence_and_project_override(
+    isolated_db,
+) -> None:
+    _seed_attention_scenario(isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            INSERT INTO confluence_status_snapshots
+                (board_id, snapshot_date, rag_status)
+            VALUES ('board-990001', '2026-07-28', 'RED')
+            """
+        )
+        connection.execute(
+            "UPDATE jira_health_snapshots SET overall_grade = 'YELLOW'"
+        )
+        connection.execute(
+            """
+            UPDATE sync_runs
+            SET started_at = ?, finished_at = ?
+            WHERE id = 'sync-jira-stale-990001'
+            """,
+            [_now_text(), _now_text()],
+        )
+    service = AttentionService()
+    _confirm_reconciliation(
+        service,
+        rule_keys=["project_health_attention"],
+    )
+    with sqlite3.connect(isolated_db) as connection:
+        first = connection.execute(
+            """
+            SELECT attention_id, severity, rule_version
+            FROM attention_signals
+            WHERE rule_key = 'project_health_attention'
+            """
+        ).fetchone()
+        current = connection.execute(
+            """
+            SELECT rule_version, parameters_json
+            FROM attention_rules
+            WHERE rule_key = 'project_health_attention' AND is_current = 1
+            """
+        ).fetchone()
+        parameters = json.loads(current[1])
+        parameters["project_overrides"]["project-990001"] = {
+            "jira_grade_mapping": {"YELLOW": "red"}
+        }
+        connection.execute(
+            """
+            UPDATE attention_rules
+            SET is_current = 0
+            WHERE rule_key = 'project_health_attention' AND is_current = 1
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO attention_rules
+                (rule_key, rule_version, is_current, enabled, parameters_json,
+                 created_at, updated_at)
+            VALUES (
+                'project_health_attention', 'project-health-attention-v3',
+                1, 1, ?, ?, ?
+            )
+            """,
+            [
+                json.dumps(parameters, sort_keys=True),
+                _now_text(),
+                _now_text(),
+            ],
+        )
+
+    assert first[1:] == ("high", "project-health-attention-v2")
+    _confirm_reconciliation(
+        service,
+        rule_keys=["project_health_attention"],
+    )
+    with sqlite3.connect(isolated_db) as connection:
+        current_signal = connection.execute(
+            """
+            SELECT attention_id, severity, rule_version
+            FROM attention_signals
+            WHERE rule_key = 'project_health_attention'
+            """
+        ).fetchone()
+        history = connection.execute(
+            """
+            SELECT severity, rule_version, observation_json
+            FROM attention_history
+            WHERE attention_id = ? AND event_type = 'observed_again'
+            """,
+            [first[0]],
+        ).fetchone()
+
+    assert current_signal == (
+        first[0],
+        "critical",
+        "project-health-attention-v3",
+    )
+    assert history[:2] == ("critical", "project-health-attention-v3")
+    assert json.loads(history[2])["signal"]["severity"] == "critical"
+
+
 def test_lifecycle_preview_confirm_snooze_expiry_and_resolve_validation(
     isolated_db,
 ) -> None:
@@ -565,10 +801,17 @@ def test_lifecycle_preview_confirm_snooze_expiry_and_resolve_validation(
             """,
             [attention_id],
         )
-    _confirm_reconciliation(
-        service,
+    expiry_preview = service.preview_reconciliation(
+        actor="manager-990001",
         rule_keys=["overdue_action_attention"],
     )
+    assert expiry_preview["proposed"]["updated_count"] == 1
+    assert expiry_preview["proposed"]["lifecycle_count"] == 1
+    expiry_result = service.confirm(
+        operation_id=expiry_preview["operation_id"],
+        confirmation_token=expiry_preview["confirmation_token"],
+    )
+    assert expiry_result["transitions"]["lifecycle_count"] == 1
     with sqlite3.connect(isolated_db) as connection:
         state = connection.execute(
             """
