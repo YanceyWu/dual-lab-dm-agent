@@ -1,9 +1,10 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `DRAFT — PENDING OWNER REVIEW AND APPROVAL`
+Status: `APPROVED — BATCH B IMPLEMENTATION READY`
 Last updated: 2026-07-28
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
-Implementation pack: `NOT REGISTERED`
+Implementation branch: `codex/phase-2-attention-center`
+Implementation pack: `IP-028 — DELIVERY ATTENTION CENTER`
 
 ## Decision supported
 
@@ -18,9 +19,10 @@ The Center must deduplicate repeated detections, retain a bounded and
 sanitized history, and never turn missing, stale, partial, or failed source
 data into a clear or healthy condition.
 
-This is a Batch A design only. It does not authorize an implementation pack,
-runtime change, database migration, connector call, source sync, real-data
-access, push, merge, tag, release, or deployment.
+The owner approved this Batch A design on 2026-07-28. It authorizes only the
+bounded, sequential IP-028 implementation batches starting with Batch B on the
+dedicated implementation branch. It does not authorize connector calls, source
+sync, real-data access, push, merge, tag, release, or deployment.
 
 ## Verified current state
 
@@ -434,3 +436,8 @@ pending-decision disabled status, Center query/write contracts, lifecycle
 semantics, proposed schema, reconciliation write authority, recommendation
 set, migration/rollback approach, and batch scope before an implementation pack
 is registered or any Phase 2 runtime or schema work starts.
+
+Owner approval was recorded on 2026-07-28 after the operation boundary,
+pending-decision disabled status, resource threshold, source-freshness advice,
+and Center contracts were reviewed. IP-028 Batch B is ready to begin. This is
+not Phase 2 promotion, release, operational, connector, or real-data approval.

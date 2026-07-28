@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 1 PROMOTED — PHASE 2 DESIGN NEXT`
+Status: `PHASE 2 DESIGN APPROVED — IP-028 BATCH B READY`
 Last updated: 2026-07-28
 
 This checkout intentionally contains only implementation material that remains
@@ -21,21 +21,16 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and later Center integration | Approved; Batch B ready on `codex/phase-2-attention-center` | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
-1. Start a new Codex task and read `AGENTS.md`, `PROGRESS.md`, and the approved
-   Phase 1 design.
-2. Create a dedicated Phase 1 implementation branch from the approved planning
-   branch.
-3. Preserve the validated Batch B1 and B2 contract/discovery foundation.
-4. Preserve the validated Batch C Management Attention reference mapping.
-5. Preserve the promoted IP-027 report and exact local commit chain.
-6. Start a new Phase 2 Batch A design task from the promoted local Phase 1
+1. Preserve the promoted IP-027 contract and Management Attention compatibility
    baseline.
-7. Do not register a Phase 2 implementation pack or change runtime/schema until
-   the Phase 2 design is explicitly approved.
-8. Return tagging, isolated operational-copy rehearsal, and refreshed
+2. Execute only IP-028 Batch B on `codex/phase-2-attention-center`.
+3. Stop for review after Batch B validation; do not begin Batch C interfaces,
+   connector work, real-data work, or Phase 2 promotion without authorization.
+4. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary

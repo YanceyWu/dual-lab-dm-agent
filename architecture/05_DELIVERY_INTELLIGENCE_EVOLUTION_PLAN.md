@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 BATCH A DESIGN PENDING REVIEW`
+Status: `PHASE 1 PROMOTED — PHASE 2 DESIGN APPROVED, BATCH B READY`
 Last updated: 2026-07-28
 
 ## Purpose
@@ -257,10 +257,10 @@ Non-goals:
 Promotion gate: every attention item exposes its facts, evidence, freshness,
 rule version, state change, and bounded recommendation.
 
-Batch A design is drafted in
-`architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` and is pending
-owner review. It does not register an implementation pack or authorize Phase 2
-runtime, schema, connector, or real-data work.
+Batch A design is approved in
+`architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. IP-028 Batch B
+may begin on `codex/phase-2-attention-center`; it remains limited to the
+approved deterministic core and does not authorize connector or real-data work.
 
 ### Phase 3 — Delivery execution signal enrichment
 
@@ -460,7 +460,7 @@ Non-goals:
 
 ## Immediate next action
 
-Review and approve or revise
-`architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. Do not register
-a Phase 2 implementation pack or change runtime/schema until that design is
-explicitly approved.
+Execute only IP-028 Batch B on `codex/phase-2-attention-center`: additive
+Attention storage, deterministic reconciliation/lifecycle core, and focused
+synthetic migration/integrity/concurrency tests. Stop for Batch B review before
+any Center interface work.

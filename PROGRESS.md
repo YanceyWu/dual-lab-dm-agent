@@ -1,18 +1,18 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-07-28
-Current branch: `codex/phase-1-intelligence-contract`
+Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
-Gate status: `PHASE 2 BATCH A DESIGN READY FOR REVIEW — IMPLEMENTATION BLOCKED`
+Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
+Gate status: `PHASE 2 DESIGN APPROVED — BATCH B READY`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
-The accepted Phase 2 review corrections are local-only pending validation and
-a local commit; do not push them without a separate authorization. Do not merge
+The approved Phase 2 implementation branch is local-only and has no remote
+tracking branch. Do not push it without a separate authorization. Do not merge
 or push to `main`.
 
 ## Read this first
@@ -172,19 +172,19 @@ database or schema path changed.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
-7. Phase 2 Batch A design is drafted locally and awaits explicit owner review.
-   It does not authorize a Phase 2 implementation pack, runtime/schema change,
-   connector access, or real-data action.
+7. Phase 2 Batch A design is owner-approved. IP-028 Batch B is authorized only
+   for the bounded deterministic storage/reconciliation/lifecycle core and
+   focused synthetic tests. Batch C interfaces, connectors, real data, and
+   Phase 2 promotion remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Review `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` and
-   explicitly approve it, request revisions, or reject it.
-2. If approved, start a new Phase 2 implementation task on an appropriate
-   independent `codex/` branch and then register the bounded implementation
-   pack before Batch B work.
-3. Until approval, do not register a Phase 2 implementation pack or change
-   runtime/schema; do not access connectors or real data.
+1. Begin only IP-028 Batch B deterministic core work on
+   `codex/phase-2-attention-center`.
+2. Validate the bounded batch with focused synthetic migration/integrity/
+   concurrency tests and `make validate`, then stop for Batch B review.
+3. Do not begin Batch C interfaces, connectors, real-data work, release, tag,
+   merge, or push without explicit authorization.
 
 ## Decisions in force
 
@@ -207,6 +207,29 @@ database or schema path changed.
   a separate Phase 2 design is reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 design approved and IP-028 registered
+
+- Owner explicitly approved the reviewed Phase 2 Delivery Attention Center
+  design, including the separate Attention operation boundary, disabled
+  pending-decision rule, greater-than-100% resource-overload threshold, source
+  freshness advisory behavior, contracts, lifecycle, and proposed additive
+  storage.
+- Created local implementation branch `codex/phase-2-attention-center` from
+  the approved design state and registered IP-028 for sequential Phase 2 work.
+- Batch B alone is ready: additive Attention storage, deterministic rules,
+  one-time operation/reconciliation/lifecycle core, and focused synthetic
+  tests. Batch C interfaces and all connector/real-data work remain blocked.
+- No runtime, test, database, schema, migration, connector, configuration,
+  credential, real-data, push, merge, tag, PR, release, deployment, or `main`
+  action was performed by this approval/registration record.
+- `git diff --check` and approval-status scans passed. `make validate` passed:
+  repository boundary, synthetic samples, 153 runtime tests, 21 repository-tool
+  tests with 19 subtests, Ruff, compilation, diff hygiene, package
+  build/inspection, and eight release validation checks.
+- This approval/registration record is committed locally on the Phase 2 branch
+  but intentionally not pushed; the exact local HEAD is reported in the task
+  handoff. The exact next action is IP-028 Batch B implementation.
 
 ### 2026-07-28 — Phase 2 review corrections accepted
 
