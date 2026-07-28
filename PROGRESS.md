@@ -7,13 +7,11 @@ Package version: `0.2.0rc1`
 Current implementation pack: `IP-027 — PHASE 1 INTELLIGENCE CONTRACT`
 Gate status: `PHASE 2 BATCH A DESIGN READY FOR REVIEW — IMPLEMENTATION BLOCKED`
 Git state: independent branch is based on exact validated commit `a272890`;
-planning decision commit `f40f940`, design commit `fdb50a3`, and the approval
-record commit `3d40633` are committed locally and remain unpushed; all Phase 1
-batches, review corrections, Batch D report commit `c4e334d`, the owner
-promotion record, and this final progress record are committed locally on a
-branch created directly from `3d40633` and remain unpushed; the exact HEAD is
-reported in the task handoff because a commit cannot embed its own final hash;
-do not merge or push to `main`
+the planning, Phase 1, and Phase 2 Batch A design commit chain is prepared for
+the owner-authorized push to this same independent branch. This continuity
+record is committed locally as part of that publication; the exact remote HEAD
+must be verified after push because a commit cannot embed its own final hash.
+Do not merge or push to `main`.
 
 ## Read this first
 
@@ -242,6 +240,16 @@ database or schema path changed.
   HEAD is reported in the task handoff because a commit cannot contain its own
   hash. No push occurred. The exact next action is owner review and
   approval/revision of the Phase 2 design.
+
+### 2026-07-28 — Authorized independent-branch publication
+
+- Owner authorized publication of the current local commit chain to remote.
+  The scope is only `codex/phase-1-intelligence-contract`; no PR, tag, merge,
+  release, deployment, connector, real-data, or `main` action is authorized.
+- The local GitHub CLI OAuth token is invalid, but direct Git HTTPS credentials
+  are a separate mechanism. Push and exact remote-HEAD verification are the
+  next in-scope actions; remote CI status remains unknown until a successful
+  remote workflow is observed.
 
 ### 2026-07-28 — Phase 1 promoted
 
