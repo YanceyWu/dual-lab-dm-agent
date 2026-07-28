@@ -5,15 +5,17 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 DESIGN APPROVED — BATCH B READY`
+Gate status: `PHASE 2 BATCH B IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
-The approved Phase 2 implementation branch is local-only and has no remote
-tracking branch. Do not push it without a separate authorization. Do not merge
-or push to `main`.
+The approved Phase 2 implementation branch, including the validated Batch B
+result, is local-only and has no remote tracking branch. The exact Batch B
+commit is reported in the task handoff because a commit cannot embed its own
+final hash. Do not push it without a separate authorization. Do not merge or
+push to `main`.
 
 ## Read this first
 
@@ -143,6 +145,13 @@ validation checks. `make rehearse-release` passed temporary wheel installation,
 isolated synthetic database upgrade, integrity checks, and rollback. No
 database or schema path changed.
 
+Phase 2 Batch B passed 8 focused Attention foundation tests and 46 combined
+Attention/database/bootstrap/Management Attention regression tests. The final
+`make validate` run passed repository-boundary and synthetic-sample checks,
+161 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -172,17 +181,16 @@ database or schema path changed.
    compatibility risk outside the repository.
 6. Phase 1 commits remain unpushed, so remote CI status for this implementation
    is unknown. Local validation and synthetic release rehearsal are green.
-7. Phase 2 Batch A design is owner-approved. IP-028 Batch B is authorized only
-   for the bounded deterministic storage/reconciliation/lifecycle core and
-   focused synthetic tests. Batch C interfaces, connectors, real data, and
-   Phase 2 promotion remain blocked pending their own gates.
+7. IP-028 Batch B is implemented and validated locally but has not passed owner
+   review. Batch C interfaces, connectors, real data, and Phase 2 promotion
+   remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Begin only IP-028 Batch B deterministic core work on
+1. Review only the validated IP-028 Batch B local commit on
    `codex/phase-2-attention-center`.
-2. Validate the bounded batch with focused synthetic migration/integrity/
-   concurrency tests and `make validate`, then stop for Batch B review.
+2. Approve corrections or explicitly authorize Batch C only after Batch B
+   review.
 3. Do not begin Batch C interfaces, connectors, real-data work, release, tag,
    merge, or push without explicit authorization.
 
@@ -203,10 +211,50 @@ database or schema path changed.
 - New Delivery Intelligence capabilities follow
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
-- Do not begin Phase 2 implementation until Phase 1 is explicitly promoted and
-  a separate Phase 2 design is reviewed and approved.
+- Do not begin IP-028 Batch C until the validated Batch B result is explicitly
+  reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 Batch B Attention foundation validated
+
+- Confirmed a clean worktree on `codex/phase-2-attention-center` at exact
+  approved commit `e4431dc0ab5f7122d65affaa917fa3697d634b15` before
+  implementation.
+- Added five additive `attention_*` tables and supporting indexes for the
+  versioned rule catalog, hashed one-time operations, reconciliation audit,
+  canonical current signals, and append-only history. Bootstrap is idempotent,
+  creates no historical backfill, preserves existing tables/views/data, and
+  keeps prior runtimes safe by leaving additive storage unused.
+- Added the internal deterministic Attention core with canonical identity,
+  semantic observation hashing, deduplication, complete/partial/disabled
+  evaluation handling, safe clear/reopen behavior, and bounded lifecycle
+  transitions. It is not exposed through CLI, Dashboard, Copilot, or
+  ToolTransport.
+- Implemented only the four approved active rules: project health, overdue
+  action, required-source freshness, and active-assignment load strictly
+  greater than 100%. `pending_decision_attention` is registered disabled and
+  protected by a database constraint; synthetic decision-log input produces no
+  Attention item or history.
+- Added an Attention-specific five-minute preview/confirm boundary for
+  reconciliation, acknowledgement, snooze, and resolve. Tokens are stored only
+  as hashes, confirmation is atomically claimed with `BEGIN IMMEDIATE`, and
+  confirmation re-evaluates the current bounded scope so stale previews and
+  concurrent reuse cannot partially mutate current/history state.
+- Focused Attention tests passed 8/8. Combined
+  Attention/database/bootstrap/Management Attention regression passed 46/46.
+  `make validate` passed repository-boundary and synthetic-sample checks,
+  161 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and eight release
+  validation checks.
+- No existing Management Attention, execution-trace payload, connector,
+  configuration, credential, real-data, action/project/staffing write,
+  interface, release, tag, merge, push, deployment, or `main` behavior was
+  changed. `make rehearse-release` remains deliberately deferred to Batch D as
+  specified by IP-028.
+- The bounded result is committed locally on the Phase 2 branch and is stopped
+  for Batch B review. The exact commit is reported in the task handoff; no push
+  occurred.
 
 ### 2026-07-28 — Phase 2 design approved and IP-028 registered
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pm_agent.config import settings
@@ -682,6 +682,155 @@ CREATE TABLE IF NOT EXISTS action_tracker (
     created_at      TEXT DEFAULT (datetime('now')),
     updated_at      TEXT DEFAULT (datetime('now'))
 );
+"""
+
+ATTENTION_DDL = """
+-- ────────────────────────────────────────────
+-- PHASE 2 / DELIVERY ATTENTION FOUNDATION
+-- ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS attention_rules (
+    rule_key            TEXT NOT NULL,
+    rule_version        TEXT NOT NULL,
+    is_current          INTEGER NOT NULL DEFAULT 1
+                        CHECK(is_current IN (0, 1)),
+    enabled             INTEGER NOT NULL CHECK(enabled IN (0, 1)),
+    parameters_json     TEXT NOT NULL DEFAULT '{}'
+                        CHECK(json_valid(parameters_json)),
+    created_at          TEXT NOT NULL,
+    updated_at          TEXT NOT NULL,
+    PRIMARY KEY(rule_key, rule_version),
+    CHECK(
+        rule_key != 'pending_decision_attention'
+        OR enabled = 0
+    )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attention_rules_one_current
+    ON attention_rules(rule_key)
+    WHERE is_current = 1;
+
+CREATE TABLE IF NOT EXISTS attention_operations (
+    operation_id        TEXT PRIMARY KEY,
+    action              TEXT NOT NULL CHECK(
+        action IN ('reconcile', 'acknowledge', 'snooze', 'resolve')
+    ),
+    actor               TEXT NOT NULL,
+    status              TEXT NOT NULL CHECK(
+        status IN ('proposed', 'claimed', 'success', 'failed', 'expired')
+    ),
+    scope_json          TEXT NOT NULL CHECK(json_valid(scope_json)),
+    token_hash          TEXT NOT NULL UNIQUE,
+    proposed_json       TEXT NOT NULL DEFAULT '{}'
+                        CHECK(json_valid(proposed_json)),
+    result_json         TEXT NOT NULL DEFAULT '{}'
+                        CHECK(json_valid(result_json)),
+    failure_code        TEXT NOT NULL DEFAULT '',
+    created_at          TEXT NOT NULL,
+    expires_at          TEXT NOT NULL,
+    claimed_at          TEXT NOT NULL DEFAULT '',
+    finished_at         TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_attention_operations_status_expiry
+    ON attention_operations(status, expires_at);
+
+CREATE TABLE IF NOT EXISTS attention_reconciliations (
+    reconciliation_id  TEXT PRIMARY KEY,
+    operation_id       TEXT NOT NULL UNIQUE
+                       REFERENCES attention_operations(operation_id),
+    status              TEXT NOT NULL CHECK(
+        status IN ('success', 'partial', 'failed', 'invalid')
+    ),
+    actor               TEXT NOT NULL,
+    started_at          TEXT NOT NULL,
+    finished_at         TEXT NOT NULL,
+    rule_set_version    TEXT NOT NULL,
+    warning_codes_json  TEXT NOT NULL DEFAULT '[]'
+                        CHECK(json_valid(warning_codes_json)),
+    candidate_count     INTEGER NOT NULL DEFAULT 0 CHECK(candidate_count >= 0),
+    created_count       INTEGER NOT NULL DEFAULT 0 CHECK(created_count >= 0),
+    updated_count       INTEGER NOT NULL DEFAULT 0 CHECK(updated_count >= 0),
+    cleared_count       INTEGER NOT NULL DEFAULT 0 CHECK(cleared_count >= 0),
+    reopened_count      INTEGER NOT NULL DEFAULT 0 CHECK(reopened_count >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attention_reconciliations_finished
+    ON attention_reconciliations(finished_at);
+
+CREATE TABLE IF NOT EXISTS attention_signals (
+    attention_id           TEXT PRIMARY KEY,
+    rule_key               TEXT NOT NULL,
+    rule_version           TEXT NOT NULL,
+    subject_kind           TEXT NOT NULL,
+    subject_id             TEXT NOT NULL,
+    rule_state             TEXT NOT NULL CHECK(
+        rule_state IN ('active', 'clear', 'unknown', 'unavailable')
+    ),
+    attention_state        TEXT NOT NULL CHECK(
+        attention_state IN ('open', 'acknowledged', 'snoozed', 'resolved')
+    ),
+    evaluation_status      TEXT NOT NULL DEFAULT 'complete' CHECK(
+        evaluation_status IN ('complete', 'partial', 'failed', 'disabled')
+    ),
+    severity               TEXT NOT NULL CHECK(
+        severity IN ('critical', 'high', 'medium', 'low', 'none')
+    ),
+    first_seen_at          TEXT NOT NULL,
+    last_seen_at           TEXT NOT NULL,
+    last_reconciliation_id TEXT NOT NULL
+                           REFERENCES attention_reconciliations(reconciliation_id),
+    acknowledged_at        TEXT NOT NULL DEFAULT '',
+    acknowledged_by        TEXT NOT NULL DEFAULT '',
+    snoozed_until          TEXT NOT NULL DEFAULT '',
+    snoozed_by             TEXT NOT NULL DEFAULT '',
+    resolved_at            TEXT NOT NULL DEFAULT '',
+    resolved_by            TEXT NOT NULL DEFAULT '',
+    resolution_reason      TEXT NOT NULL DEFAULT '',
+    observation_hash       TEXT NOT NULL,
+    observation_json       TEXT NOT NULL CHECK(json_valid(observation_json)),
+    created_at             TEXT NOT NULL,
+    updated_at             TEXT NOT NULL,
+    UNIQUE(rule_key, subject_kind, subject_id),
+    FOREIGN KEY(rule_key, rule_version)
+        REFERENCES attention_rules(rule_key, rule_version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attention_signals_active_ranking
+    ON attention_signals(attention_state, rule_state, severity, updated_at);
+
+CREATE INDEX IF NOT EXISTS idx_attention_signals_subject
+    ON attention_signals(subject_kind, subject_id, rule_key);
+
+CREATE TABLE IF NOT EXISTS attention_history (
+    event_id              TEXT PRIMARY KEY,
+    attention_id          TEXT NOT NULL REFERENCES attention_signals(attention_id),
+    operation_id          TEXT NOT NULL REFERENCES attention_operations(operation_id),
+    reconciliation_id     TEXT REFERENCES attention_reconciliations(reconciliation_id),
+    event_type            TEXT NOT NULL CHECK(
+        event_type IN (
+            'detected', 'observed_again', 'cleared', 'reopened',
+            'acknowledged', 'snoozed', 'snooze_expired', 'resolved',
+            'evaluation_limited', 'rule_disabled'
+        )
+    ),
+    prior_rule_state      TEXT NOT NULL DEFAULT '',
+    new_rule_state        TEXT NOT NULL DEFAULT '',
+    prior_attention_state TEXT NOT NULL DEFAULT '',
+    new_attention_state   TEXT NOT NULL DEFAULT '',
+    severity              TEXT NOT NULL,
+    rule_version          TEXT NOT NULL,
+    actor                 TEXT NOT NULL,
+    observation_json      TEXT NOT NULL DEFAULT '{}'
+                          CHECK(json_valid(observation_json)),
+    created_at            TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_attention_history_attention_recent
+    ON attention_history(attention_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_attention_history_reconciliation
+    ON attention_history(reconciliation_id, created_at);
 """
 
 
@@ -2205,6 +2354,62 @@ def _drop_legacy_tables_v19(conn: sqlite3.Connection) -> list[str]:
     return warnings
 
 
+def _seed_attention_rules(conn: sqlite3.Connection) -> None:
+    """Register only the approved deterministic Phase 2 rule catalog."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    rules = [
+        (
+            "project_health_attention",
+            "project-health-attention-v1",
+            1,
+            {"health_states": ["red", "amber"]},
+        ),
+        (
+            "overdue_action_attention",
+            "overdue-action-attention-v1",
+            1,
+            {"status": "open", "due_before": "today"},
+        ),
+        (
+            "source_freshness_attention",
+            "source-freshness-attention-v1",
+            1,
+            {"required_sources": "management_attention"},
+        ),
+        (
+            "resource_overload_attention",
+            "resource-overload-attention-v1",
+            1,
+            {"active_assignment_load_strictly_greater_than": 1.0},
+        ),
+        (
+            "pending_decision_attention",
+            "pending-decision-attention-disabled-v1",
+            0,
+            {"governance_definition": "not_approved"},
+        ),
+    ]
+    conn.executemany(
+        """
+        INSERT OR IGNORE INTO attention_rules
+            (rule_key, rule_version, is_current, enabled, parameters_json,
+             created_at, updated_at)
+        VALUES (?, ?, 1, ?, ?, ?, ?)
+        """,
+        [
+            (
+                rule_key,
+                rule_version,
+                enabled,
+                json.dumps(parameters, sort_keys=True, separators=(",", ":")),
+                now,
+                now,
+            )
+            for rule_key, rule_version, enabled, parameters in rules
+        ],
+    )
+
+
 def main(quiet: bool = False) -> None:
     db_path = Path(settings.database_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2214,6 +2419,7 @@ def main(quiet: bool = False) -> None:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(DDL)
     conn.executescript(EXTRA_DDL)
+    conn.executescript(ATTENTION_DDL)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()
     }
@@ -2250,6 +2456,7 @@ def main(quiet: bool = False) -> None:
         _migrate_action_tracker_v20(conn)
         _seed_use_cases(conn)
         _seed_data_sources(conn)
+        _seed_attention_rules(conn)
         legacy_cleanup_warnings = _drop_legacy_tables_v19(conn)
     except Exception:
         conn.rollback()
