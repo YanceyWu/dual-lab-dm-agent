@@ -11,7 +11,9 @@ the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
-Do not merge or push to `main`.
+The accepted Phase 2 review corrections are local-only pending validation and
+a local commit; do not push them without a separate authorization. Do not merge
+or push to `main`.
 
 ## Read this first
 
@@ -205,6 +207,28 @@ database or schema path changed.
   a separate Phase 2 design is reviewed and approved.
 
 ## Recent change log
+
+### 2026-07-28 — Phase 2 review corrections accepted
+
+- Owner accepted the review decision to use an Attention-specific one-time
+  preview/confirm operation boundary rather than repurposing the existing
+  sync-only Dashboard operation path.
+- Owner accepted that `pending_decision_attention` is registered but disabled
+  in Phase 2. It emits no active signal or recommendation until a separately
+  approved governance definition provides eligible types, ownership/due
+  semantics, threshold, evidence, and rule version.
+- The design also resolves the resource-overload threshold to strictly greater
+  than 100% active-assignment load, makes source-freshness advice available
+  from its normalized local metadata, and specifies bounded Center and write
+  contracts. No runtime/schema/migration or implementation-pack change is
+  authorized.
+- `git diff --check` and stale-design scans passed. `make validate` passed:
+  repository boundary, synthetic samples, 153 runtime tests, 21 repository-tool
+  tests with 19 subtests, Ruff, compilation, diff hygiene, package
+  build/inspection, and eight release validation checks.
+- This correction record is committed locally but intentionally not pushed; the
+  exact local HEAD is reported in the task handoff. The next action remains
+  final owner review and explicit Phase 2 design approval or revision.
 
 ### 2026-07-28 — Phase 2 Batch A Delivery Attention Center design
 

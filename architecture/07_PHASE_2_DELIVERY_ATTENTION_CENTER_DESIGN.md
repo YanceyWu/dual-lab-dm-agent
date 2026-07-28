@@ -104,7 +104,8 @@ In scope after approval:
 
 - durable rule catalog, current attention items, reconciliation audit, and
   append-only state history;
-- deduplication and lifecycle for the five defined initial signal families;
+- deduplication and lifecycle for four active initial signal families, plus a
+  registered-but-disabled pending-decision rule;
 - advisory, bounded recommendations with no implicit business write;
 - read-only Center query plus explicit confirmed reconciliation and lifecycle
   commands; and
@@ -135,16 +136,24 @@ An Attention item has two distinct states:
 
 The canonical identity is a stable, local `attention_id` derived from
 `rule_key + subject.kind + subject.id`. Rule version, severity, reason codes,
-and evidence are attributes of that identity, not deduplication keys. A rule
-version change produces a `rule_changed` history event rather than a duplicate
-current item. IDs are bounded and deterministic; display names remain an
-optional current projection, never part of identity.
+and evidence are attributes of that identity, not deduplication keys. A
+backward-compatible rule-version change produces a `rule_changed` history event
+rather than a duplicate current item. A semantic-breaking rule change requires
+a new `rule_key`; it must not reuse a prior identity. IDs are bounded and
+deterministic; display names remain an optional current projection, never part
+of identity.
 
 Each persisted current item and event carries only the normalized facts,
 reason codes, evidence references, freshness references, source observation
 times, rule version, and a hash of the normalized observation. It must not
 store raw connector payloads, tokens, endpoints, errors, copied execution
 results, or model explanation text.
+
+The observation hash includes only semantic state: rule key/version, subject,
+fact value/value state, signal state/severity/reason codes, and normalized
+evidence/freshness states. It excludes execution IDs, display names, query
+timestamps, and source observation timestamps, so an unchanged successful
+refresh does not create a meaningless history event.
 
 The new Center response remains a `UseCaseResult` 1.0. Its facts, signals, and
 recommendations use the Phase 1 reference rules. Every persistent item exposes
@@ -153,6 +162,43 @@ latest evaluation ID, and a bounded history projection in `data`/`context`.
 Facts and signals retain result-local IDs and are validated by the shared
 executor; `attention_id` is a separate stable field in the Center's data
 projection.
+
+### Center interface contracts
+
+The Center query is the only Center operation exposed through the existing
+read-only ToolTransport and shared executor. Its descriptor has
+`supported_operations = ("query",)` and `read_only = true`.
+
+| Query parameter | Default and bound | Behavior |
+| --- | --- | --- |
+| `attention_states` | `[open, acknowledged, snoozed]`; `resolved` only when requested | Filters local workflow state without changing it |
+| `rule_key`, `subject_kind`, `subject_id` | optional bounded stable identifiers | Narrow current items by canonical identity attributes |
+| `include_history` | `false` | Enables the per-item history projection |
+| `limit` | 20; 1–50 | Bounds returned current items after deterministic sort |
+| `history_limit` | 5; 0–20 | Bounds newest-first events per returned item; zero returns no events |
+
+The response has `data.items`, deterministic summary counts by rule and both
+states, and—only when requested—`recent_events` for each returned item. Each
+item exposes its canonical `attention_id`, current rule/lifecycle state,
+severity, fact/evidence/freshness references, first/last detection timestamps,
+and latest reconciliation ID. Result-local facts, signals, and advisory
+recommendations remain top-level `UseCaseResult` fields and retain shared
+reference validation.
+
+Reconciliation and lifecycle actions do not use ToolTransport. A dedicated
+Attention CLI/Dashboard write boundary exposes only these actions:
+
+| Action | Preview scope | Confirmed effect |
+| --- | --- | --- |
+| `reconcile` | bounded rule keys and optional subject filters | Re-evaluate local facts and atomically materialize transitions |
+| `acknowledge` | one current `attention_id` | Change only lifecycle state to `acknowledged` |
+| `snooze` | one current `attention_id` plus bounded future expiry | Change only lifecycle state to `snoozed` |
+| `resolve` | one current `attention_id` | Allowed only after a complete clear evaluation; records no rule override |
+
+Every preview returns an opaque `operation_id`, one-time confirmation token,
+expiry, actor, bounded scope, and proposed transitions. Confirmation returns
+the actual re-evaluated outcome. Tokens are never persisted in plaintext or
+returned after preview.
 
 ### Initial rule catalog
 
@@ -165,26 +211,34 @@ new rule version and reconciliation preview.
 | --- | --- | --- | --- |
 | `project_health_attention` | `project`; latest local health snapshots | Existing red/amber precedence from Management Attention | `review_project_health` |
 | `overdue_action_attention` | `action`; `v_overdue_actions` | Existing open overdue action criterion and priority severity | `follow_up_action` |
-| `source_freshness_attention` | `source`; data source/sync records | Existing required-source freshness mapping | `restore_source_freshness` |
-| `resource_overload_attention` | `member`; active assignments and `v_member_load` | Existing current-load definition: `current_load >= 1.0` | `review_resource_load` |
-| `pending_decision_attention` | `decision`; `decision_log` | Pending outcome older than an approved, versioned age threshold | `review_pending_decision` |
+| `source_freshness_attention` | `source`; data source/sync records | Existing required-source freshness mapping | `review_source_freshness` |
+| `resource_overload_attention` | `member`; active assignments and `v_member_load` | Current load strictly exceeds `1.0` | `review_resource_load` |
+| `pending_decision_attention` | `decision`; `decision_log` | Registered as `disabled`; emits no Phase 2 active signal | none in Phase 2 |
 
 The current `decision_log` lacks a due date, owner, and a dedicated decision
-workflow. Therefore the pending-decision rule is usable only when the catalog
-has an explicitly approved age threshold and the selected decision-log types
-are explicitly enumerated. Until then it is `UNKNOWN` and produces no active
-item. It must not infer pending status from narrative or arbitrary context
-JSON.
+request workflow. A `pending` outcome means that a recorded decision has no
+recorded outcome yet; it does not reliably mean that a manager decision is
+required. Therefore `pending_decision_attention` is present in the rule
+catalog but disabled for Phase 2: it produces no active signal,
+recommendation, or lifecycle record. Its future activation requires a separate
+approved definition of eligible decision types, ownership/due semantics, age
+threshold, evidence, and rule version. It must never infer those properties
+from narrative or arbitrary context JSON.
 
 Resource overload deliberately uses active assignment load only in Phase 2.
 It does not claim effective capacity, leave, BAU, skills, or future plan
 coverage; those belong to Phase 5. No signal is emitted from a zero or absent
 allocation merely because it is unknown.
 
-All recommendations are `available` only when their supporting signal is
-active and its required evidence/freshness is usable. They are advisory,
-`write_mode = advisory`, and `confirmation_required = false`. They never
-create an action or change a project, decision, or allocation.
+Recommendations are advisory, `write_mode = advisory`, and
+`confirmation_required = false`; they never create an action or change a
+project, decision, or allocation. For health, action, and resource rules, a
+recommendation is `available` only when its signal is active and required
+evidence/freshness is usable. For `source_freshness_attention`, the normalized
+local `data_sources`/`sync_runs` metadata is itself sufficient evidence even
+when the observed source is stale, failed, missing, or unknown; its advisory
+`review_source_freshness` recommendation remains available to explain that
+limitation without treating the source as fresh.
 
 ### Proposed storage and migration boundary
 
@@ -194,14 +248,19 @@ This Batch A does not create it.
 | Table | Purpose | Key fields and constraints |
 | --- | --- | --- |
 | `attention_rules` | Approved local rule catalog and parameters | `rule_key`, `rule_version`, `enabled`, `parameters_json`, timestamps; one active version per key |
+| `attention_operations` | Attention-specific one-time preview/confirm boundary | operation ID, action, actor, bounded scope JSON, token hash, proposed/claimed/success/failed/expired status, expiry and safe failure/result summaries |
 | `attention_reconciliations` | Safe audit of a confirmed evaluation | `reconciliation_id`, status, actor, started/finished timestamps, rule-set version, safe warning codes, candidate and transition counts |
 | `attention_signals` | One current row per canonical identity | `attention_id`, rule key/version, subject kind/id, rule/attention state, severity, first/last seen, last reconciliation, snooze/acknowledgement/resolution fields, normalized snapshot hashes/JSON; unique `(rule_key, subject_kind, subject_id)` |
 | `attention_history` | Append-only detection and lifecycle history | event ID, attention ID, reconciliation ID, event type, prior/new state, severity, rule version, actor, safe normalized observation snapshot, event timestamp |
 
 Foreign keys link current signals and history to their rule and reconciliation
-records where practical. Indexes must support active/open severity ranking,
-subject lookup, recent history, and idempotent reconciliation lookup. JSON is
-limited to normalized, schema-validated local snapshots; filtering and state
+records where practical; confirmed reconciliation and lifecycle history also
+reference their Attention operation. `attention_operations` is intentionally
+separate from the current sync-only `dashboard_operations` path, while using
+the same hashed-token, expiry, atomic-claim, and audit principles. Indexes must
+support active/open severity ranking, subject lookup, recent history,
+operation expiry/claim, and idempotent reconciliation lookup. JSON is limited
+to normalized, schema-validated local snapshots; filtering and state
 transitions do not depend on JSON text.
 
 Migration requirements for a later Batch B:
@@ -228,17 +287,21 @@ Local SQLite facts and freshness
         -> read-only Center query and advisory recommendation
 ```
 
-1. A reconciliation preview reads local repositories, returns candidate counts,
-   rule versions, source freshness, and proposed create/update/clear/reopen
-   transitions. It does not write Attention tables or call connectors.
-2. Explicit confirmation claims a one-time, expiring operation and re-evaluates
-   the same bounded local scope inside the persistence transaction. This avoids
-   persisting a stale preview. It atomically records the reconciliation,
-   current-state changes, and history events.
+1. A reconciliation or lifecycle preview writes only an expiring
+   `attention_operations` proposal. It reads local repositories, returns
+   candidate counts, rule versions, source freshness, and proposed
+   create/update/clear/reopen or lifecycle transitions. It does not write
+   Attention signals/history or call connectors.
+2. Explicit confirmation atomically claims the one-time operation and, for
+   reconciliation, re-evaluates the same bounded local scope inside the
+   persistence transaction. This avoids persisting a stale preview. It
+   atomically records the reconciliation, current-state changes, and history
+   events before finishing the operation.
 3. A newly qualifying identity creates `open` + `active` and a `detected`
    event. An unchanged identity updates `last_seen_at` and appends
-   `observed_again` only when the normalized observation hash, severity,
-   freshness state, or rule version changes; this controls history volume.
+   `observed_again` only when the normalized semantic observation hash,
+   severity, freshness state, or rule version changes; this controls history
+   volume.
 4. A successful, complete evaluation that no longer qualifies changes
    `rule_state` to `clear`, records `cleared`, and resolves the current item
    with machine reason `rule_clear`. A manual resolve is allowed only after the
@@ -252,9 +315,14 @@ Local SQLite facts and freshness
    existing active item. The reconciliation is `partial` or `failed`, creates a
    safe evaluation event/warning, and leaves prior active lifecycle state
    intact. The Center exposes the limitation through freshness and warnings.
-7. Every write uses propose, preview, explicit confirmation, and persist.
-   Read-only query routes never materialize, acknowledge, snooze, resolve, or
-   otherwise mutate Attention state.
+7. A disabled rule is not evaluated. Its previously active items retain their
+   last known rule state, receive a `rule_disabled` history/configuration event,
+   and are surfaced with evaluation status `disabled`; they are never silently
+   cleared. A later enable/semantic change requires its own approved rule
+   version and reconciliation preview.
+8. Every write uses propose, preview, explicit confirmation, and persist.
+   Read-only query routes and ToolTransport never materialize, acknowledge,
+   snooze, resolve, or otherwise mutate Attention state.
 
 ### Failure behavior
 
@@ -266,7 +334,7 @@ Local SQLite facts and freshness
 | SQLite/transaction/concurrency failure | Roll back all current/history changes for the reconciliation; return safe `DATA_ACCESS_FAILED` or operation failure code without payload/error text |
 | Expired, reused, or invalid confirmation | No domain mutation; retain only the operation status allowed by the confirmed-operation boundary |
 | Stale preview differs at confirmation | Re-evaluate and return the current transition preview/result; never apply the old candidate snapshot |
-| Rule disabled or replaced | Record a version/configuration event; do not auto-resolve unrelated active conditions without an explicit approved transition policy |
+| Rule disabled or replaced | Retain last known current item, record a configuration event and evaluation status; do not auto-resolve it or reuse identity across a semantic-breaking rule change |
 
 ## Compatibility strategy
 
@@ -279,8 +347,10 @@ Local SQLite facts and freshness
   only after that behavior is implemented and tested.
 - Retain `UseCaseResult` and descriptor contract version `1.0`; use additive
   data/context fields rather than changing Phase 1 intelligence models.
-- Keep CLI and generic Dashboard thin serializers. A dedicated lifecycle UI is
-  optional Batch C work and must use the same preview/confirm contract.
+- Keep ToolTransport, structured query CLI, and generic Dashboard query routes
+  read-only thin serializers. A dedicated Attention CLI/Dashboard write
+  boundary is Batch C work and must use the Attention-specific preview/confirm
+  contract rather than extending a query into a write.
 - Do not put Attention payloads into `execution_traces`, and do not derive
   history by replaying trace summaries.
 - Keep existing dashboard operation and staffing proposal records isolated.
@@ -303,7 +373,8 @@ write.
 
 The eventual implementation must cover at least these synthetic scenarios:
 
-1. Red project, overdue action, stale source, and overloaded stable member
+1. Red project, overdue action, stale source, and a member above 100% active
+   assignment load
    produce explained, deduplicated active items with valid reference chains.
 2. Repeated unchanged reconciliation does not create duplicate current rows or
    unbounded identical history.
@@ -311,10 +382,12 @@ The eventual implementation must cover at least these synthetic scenarios:
    history event while keeping the same canonical item.
 4. A complete, healthy re-evaluation clears and resolves a prior item; an
    unavailable or partial re-evaluation does neither.
-5. Pending decision is unavailable until approved rule parameters and eligible
-   decision types are present; no text inference occurs.
-6. Acknowledge, snooze, expiry, and resolve all require a valid one-time
-   preview/confirmation transaction and leave an auditable history.
+5. Pending-decision rule is registered disabled, emits no active item, and
+   cannot be enabled without a separately approved governance definition; no
+   text inference occurs.
+6. Reconciliation, acknowledge, snooze, expiry, and resolve all require a
+   valid Attention-specific one-time preview/confirmation transaction and
+   leave an auditable history.
 7. Concurrent confirmations cannot apply the same lifecycle operation twice.
 8. Read-only Center, existing Management Attention, structured CLI, and
    generic Dashboard preserve their defined contracts; legacy Management
@@ -356,8 +429,8 @@ explicitly promote the phase.
 
 ## Approval gate
 
-Owner review must explicitly approve the rule catalog, pending-decision
-eligibility/threshold, lifecycle semantics, proposed schema, reconciliation
-write authority, recommendation set, migration/rollback approach, and batch
-scope before an implementation pack is registered or any Phase 2 runtime or
-schema work starts.
+Owner review must explicitly approve the active four-rule catalog,
+pending-decision disabled status, Center query/write contracts, lifecycle
+semantics, proposed schema, reconciliation write authority, recommendation
+set, migration/rollback approach, and batch scope before an implementation pack
+is registered or any Phase 2 runtime or schema work starts.

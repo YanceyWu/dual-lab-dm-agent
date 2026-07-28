@@ -237,7 +237,8 @@ Initial signals:
 
 - project health red or amber;
 - overdue action;
-- pending decision;
+- pending decision (registered but disabled in Phase 2 pending a separately
+  approved governance definition);
 - resource overload from existing allocation facts;
 - stale or missing source.
 
