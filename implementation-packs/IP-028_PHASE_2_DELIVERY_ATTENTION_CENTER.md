@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `C2 REVIEW CORRECTION VALIDATED — RE-REVIEW REQUIRED`
+Status: `C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -221,5 +221,6 @@ read-only legacy-operation detection.
 Focused synthetic and compatibility coverage passed 93 tests. `make validate`
 passed 183 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
 compilation, boundary/synthetic checks, package build/inspection, and eight
-release validation checks. The result is stopped for C2 correction re-review.
-Batch D and Phase 2 promotion remain unauthorized.
+release validation checks. Technical re-review found no remaining P0-P2 issue.
+The result is stopped for owner acceptance; Batch D and Phase 2 promotion
+remain unauthorized.

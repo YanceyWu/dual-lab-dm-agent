@@ -660,7 +660,8 @@ The owner accepted the implemented and locally validated Batch C1 result on
 Batch C2 passed technical validation but failed product-contract review. The
 replacement architecture was approved on 2026-07-29. The bounded C2
 public-interface correction and mutation-boundary review fix are implemented
-and locally validated; they await re-review. Batch D, Phase 2 promotion,
-Phase 3/4 implementation, release,
+and locally validated. Technical re-review found no remaining P0-P2 issue;
+owner acceptance is pending. Batch D, Phase 2 promotion, Phase 3/4
+implementation, release,
 operational work, connector work, real-data access, push, merge, and tag
 remain separately gated.

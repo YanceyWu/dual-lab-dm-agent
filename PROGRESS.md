@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 C2 REVIEW CORRECTION VALIDATED — RE-REVIEW REQUIRED`
+Gate status: `PHASE 2 C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -95,8 +95,8 @@ belong in Git history and must not be interpreted as current instructions.
   2026-07-29. The bounded C2 correction removes the CLI, Dashboard, and Copilot
   mapping preview paths, rejects direct preview and legacy-token confirmation,
   removes dormant configuration mutation helpers, and retains additive storage
-  unchanged. It is locally validated for re-review; Phase 3/4 runtime remains
-  unauthorized.
+  unchanged. Technical re-review found no remaining P0-P2 issue; owner
+  acceptance is pending and Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -305,7 +305,8 @@ all eight release validation checks.
    `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`, and retains the additive
    configuration-operation table and existing records. The review correction
    also removes dormant configuration-operation and rule-version mutation
-   helpers. It awaits re-review before any Phase 2 promotion decision.
+   helpers. Technical re-review passed; owner acceptance remains pending before
+   any Phase 2 promotion decision.
 9. The layered health and milestone architecture is approved but not
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
@@ -316,12 +317,11 @@ all eight release validation checks.
 
 ## Exact next actions
 
-1. Re-review the bounded IP-028 C2 correction against the approved public-path
-   removal, legacy-token blocking, mutation-helper removal, storage
-   preservation, C1,
-   `UseCaseResult 1.0`, Management Attention, and disabled pending-decision
-   contracts.
-2. Accept the correction or request bounded changes.
+1. Obtain owner acceptance of the bounded IP-028 C2 correction or bounded
+   correction feedback.
+2. Preserve public-path removal, legacy-token blocking, mutation-helper
+   removal, storage preservation, C1, `UseCaseResult 1.0`, Management
+   Attention, and disabled pending-decision contracts.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    Batch D, visual Dashboard UI, connectors, real-data work, Phase 2
    promotion, release, tag, merge, or push without separate authorization.
@@ -349,8 +349,9 @@ all eight release validation checks.
   mapping-oriented DM configuration contract is not accepted. Do not expose or
   promote it as an approved capability.
 - The layered health and milestone architecture is approved. The bounded C2
-  public-interface correction is implemented and locally validated for review;
-  it does not authorize Phase 3/4 runtime.
+  public-interface correction is implemented, locally validated, and passed
+  technical re-review; owner acceptance remains pending and Phase 3/4 runtime
+  remains unauthorized.
 - The unaccepted RAG mapping configuration has no supported CLI, Dashboard, or
   Copilot preview path. Direct preview and confirmation of retained legacy
   configuration operations fail with
@@ -371,6 +372,23 @@ all eight release validation checks.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 C2 correction technical re-review passed
+
+- Re-reviewed the mutation-boundary fix and found no remaining P0-P2 issue.
+- Confirmed production code contains no configuration-operation mutation or
+  project-health rule-version mutation helper. Only schema/bootstrap support,
+  current-rule read support, and legacy configuration-operation read detection
+  remain.
+- Confirmed the fixed Bootstrap v1-to-v2 rule migration is deterministic,
+  idempotent, and does not accept DM configuration input.
+- The validated evidence remains 93 focused tests and a green `make validate`
+  run with 183 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, boundary/synthetic checks, package build/inspection, and eight
+  release validation checks.
+- No code changed during technical re-review. Owner acceptance is the exact
+  next gate; Batch D, Phase 2 promotion, Phase 3/4 runtime, connector,
+  real-data, release, push, merge, and tag work remain unauthorized.
 
 ### 2026-07-29 — Phase 2 C2 mutation-boundary review fix validated
 
