@@ -8,7 +8,11 @@ import pytest
 
 from pm_agent.database import source_evidence
 from pm_agent.database.bootstrap import main as init_db
-from pm_agent.sync.jira.evidence_sync import JiraEvidenceConfig, sync_dataset
+from pm_agent.sync.jira.evidence_sync import (
+    JiraEvidenceConfig,
+    acquire_issue_links,
+    sync_dataset,
+)
 
 
 def _event(
@@ -574,6 +578,115 @@ def test_multiple_directed_links_and_unknown_types_are_not_flattened(
     assert tombstones == [("link-1", "SYN-1", "SYN-2", "tombstone")]
 
 
+def test_stable_link_identity_deduplicates_later_issue_observation(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    first_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_links",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-link-first",
+    )
+    first_link = source_evidence.IssueLink(
+        source_link_ref="link-1",
+        issue_ref="SYN-1",
+        related_issue_ref="SYN-2",
+        link_type="Blocks",
+        direction="outward",
+        observation_state="active",
+        source_updated_at="2026-07-29T01:00:00+00:00",
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert source_evidence.stage_issue_links(
+        first_run,
+        [first_link],
+        manifest_link_refs=["link-1"],
+        db_path=isolated_db,
+    ) == (1, 0)
+    _finish_complete(
+        first_run,
+        isolated_db,
+        cursor_time="2026-07-29T01:00:00+00:00",
+        cursor_ref="SYN-1",
+    )
+    assert source_evidence.publish_run(first_run, db_path=isolated_db) == 1
+
+    replay_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_links",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-link-replay",
+    )
+    later_observation = source_evidence.IssueLink(
+        **{
+            **first_link.__dict__,
+            "source_updated_at": "2026-07-29T02:00:00+00:00",
+            "observed_at": "2026-07-29T02:05:00+00:00",
+        }
+    )
+    assert source_evidence.stage_issue_links(
+        replay_run,
+        [later_observation],
+        manifest_link_refs=["link-1"],
+        db_path=isolated_db,
+    ) == (0, 1)
+    _finish_complete(
+        replay_run,
+        isolated_db,
+        cursor_time="2026-07-29T02:00:00+00:00",
+        cursor_ref="SYN-1",
+    )
+    assert source_evidence.publish_run(replay_run, db_path=isolated_db) == 0
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM jira_issue_links WHERE source_link_ref = 'link-1'"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            """
+            SELECT last_published_run_id
+            FROM jira_issue_links
+            WHERE source_link_ref = 'link-1'
+            """
+        ).fetchone()[0] == replay_run
+
+
+def test_link_staging_requires_stable_source_reference(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    run_id = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_links",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-link-missing-reference",
+    )
+    with pytest.raises(
+        ValueError,
+        match="source_link_ref must contain between 1 and 200 characters",
+    ):
+        source_evidence.stage_issue_links(
+            run_id,
+            [
+                source_evidence.IssueLink(
+                    source_link_ref="",
+                    issue_ref="SYN-1",
+                    related_issue_ref="SYN-2",
+                    link_type="Blocks",
+                    direction="outward",
+                    observation_state="active",
+                    source_updated_at="2026-07-29T01:00:00+00:00",
+                    observed_at="2026-07-29T01:05:00+00:00",
+                )
+            ],
+            db_path=isolated_db,
+        )
+
+
 class _Response:
     def __init__(self, payload: dict, status_code: int = 200):
         self._payload = payload
@@ -597,6 +710,199 @@ class _Session:
     def get(self, url: str, *, params: dict, timeout: int) -> _Response:
         self.gets.append({"url": url, "params": params, "timeout": timeout})
         return self.changelog_pages.pop(0)
+
+
+def test_adapter_rejects_link_without_stable_source_reference(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {
+                                "updated": "2026-07-29T01:00:00+00:00",
+                                "issuelinks": [
+                                    {
+                                        "type": {"name": "Blocks"},
+                                        "outwardIssue": {"key": "SYN-2"},
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                    "isLast": True,
+                }
+            )
+        ]
+    )
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+        supported_link_types=("Blocks",),
+    )
+    run_id, result = sync_dataset(
+        session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_links",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert result.coverage_status == "partial"
+    assert result.rows_rejected == 1
+    assert result.field_coverage["issuelinks"] is False
+    assert result.warning_codes == ["MALFORMED_ISSUE_LINK"]
+    assert result.manifest_refs == set()
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT publication_status
+            FROM source_evidence_runs
+            WHERE run_id = ?
+            """,
+            [run_id],
+        ).fetchone()[0] == "rejected"
+        assert connection.execute("SELECT COUNT(*) FROM jira_issue_links").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM source_evidence_cursors").fetchone()[0] == 0
+
+
+def test_adapter_canonicalizes_mirrored_issue_link_observations(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {
+                                "updated": "2026-07-29T01:00:00+00:00",
+                                "issuelinks": [
+                                    {
+                                        "id": "link-1",
+                                        "type": {"name": "Blocks"},
+                                        "outwardIssue": {"key": "SYN-2"},
+                                    }
+                                ],
+                            },
+                        },
+                        {
+                            "key": "SYN-2",
+                            "fields": {
+                                "updated": "2026-07-29T01:30:00+00:00",
+                                "issuelinks": [
+                                    {
+                                        "id": "link-1",
+                                        "type": {"name": "Blocks"},
+                                        "inwardIssue": {"key": "SYN-1"},
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    "isLast": True,
+                }
+            )
+        ]
+    )
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+        supported_link_types=("Blocks",),
+    )
+    _run_id, result = sync_dataset(
+        session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_links",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T02:00:00+00:00",
+    )
+    assert result.coverage_status == "complete"
+    assert len(result.issue_links) == 1
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT source_link_ref, issue_ref, related_issue_ref, direction,
+                   source_updated_at
+            FROM jira_issue_links
+            """
+        ).fetchone() == (
+            "link-1",
+            "SYN-1",
+            "SYN-2",
+            "outward",
+            "2026-07-29T01:30:00+00:00",
+        )
+
+
+def test_adapter_marks_conflicting_stable_link_identity_partial() -> None:
+    session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {
+                                "updated": "2026-07-29T01:00:00+00:00",
+                                "issuelinks": [
+                                    {
+                                        "id": "link-1",
+                                        "type": {"name": "Blocks"},
+                                        "outwardIssue": {"key": "SYN-2"},
+                                    }
+                                ],
+                            },
+                        },
+                        {
+                            "key": "SYN-3",
+                            "fields": {
+                                "updated": "2026-07-29T01:30:00+00:00",
+                                "issuelinks": [
+                                    {
+                                        "id": "link-1",
+                                        "type": {"name": "Blocks"},
+                                        "outwardIssue": {"key": "SYN-4"},
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    "isLast": True,
+                }
+            )
+        ]
+    )
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+        supported_link_types=("Blocks",),
+    )
+    result = acquire_issue_links(
+        session,
+        "https://synthetic.invalid",
+        config,
+        {},
+        observed_at="2026-07-29T02:00:00+00:00",
+    )
+    assert result.coverage_status == "partial"
+    assert result.rows_rejected == 1
+    assert result.warning_codes == ["CONFLICTING_ISSUE_LINK"]
+    assert result.field_coverage["issuelinks"] is False
+    assert len(result.issue_links) == 1
 
 
 def test_adapter_marks_missing_pagination_token_partial_and_does_not_publish(
@@ -894,6 +1200,61 @@ def test_adapter_paginates_changelog_and_stores_only_normalized_fields(
         ("status", "", "status-2"),
     ]
     assert "Private" not in serialized
+
+
+def test_adapter_extracts_jira_status_category_key(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {
+                                "updated": "2026-07-29T01:00:00+00:00",
+                                "status": {
+                                    "id": "status-2",
+                                    "name": "Synthetic Complete",
+                                    "statusCategory": {
+                                        "id": 3,
+                                        "key": "done",
+                                        "name": "Synthetic Done",
+                                    },
+                                },
+                            },
+                        }
+                    ],
+                    "isLast": True,
+                }
+            )
+        ],
+        [_Response({"values": [], "total": 0})],
+    )
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={"status": "status_category"},
+    )
+    _run_id, result = sync_dataset(
+        session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_history",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert result.coverage_status == "complete"
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT to_value
+            FROM jira_issue_events
+            WHERE field_key = 'status_category'
+              AND event_type = 'issue_observed'
+            """
+        ).fetchone()[0] == "done"
 
 
 def test_concurrent_publication_claims_run_once(isolated_db: Path) -> None:

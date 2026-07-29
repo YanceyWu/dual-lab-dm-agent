@@ -181,7 +181,16 @@ def _normalized_current_value(normalized_field: str, value: object) -> object:
                 raise ValueError("fix_versions entries require stable source IDs")
             identifiers.append(item["id"])
         return sorted(set(identifiers))
-    if normalized_field in {"status", "status_category", "sprint"}:
+    if normalized_field == "status_category" and isinstance(value, dict):
+        category = value.get("statusCategory")
+        if isinstance(category, dict):
+            identifier = category.get("key")
+        else:
+            identifier = value.get("key")
+        if not isinstance(identifier, str) or not identifier:
+            raise ValueError("status_category requires a stable category key")
+        return identifier
+    if normalized_field in {"status", "sprint"}:
         if isinstance(value, dict):
             identifier = value.get("id") or value.get("key")
             if not isinstance(identifier, str) or not identifier:
@@ -294,6 +303,7 @@ def acquire_issue_links(
     )
     high_water: tuple[str, str] = ("", "")
     supported = set(config.supported_link_types)
+    links_by_ref: dict[str, source_evidence.IssueLink] = {}
     for issue in issues:
         issue_ref = issue.get("key")
         fields = issue.get("fields")
@@ -322,38 +332,85 @@ def acquire_issue_links(
             if not isinstance(raw_link, dict):
                 result.rows_rejected += 1
                 result.coverage_status = "partial"
+                result.warning_codes.append("MALFORMED_ISSUE_LINK")
+                result.field_coverage["issuelinks"] = False
                 continue
-            link_ref = str(raw_link.get("id") or "")
-            type_data = raw_link.get("type") or {}
-            link_name = str(type_data.get("name") or "UNKNOWN")
+            raw_link_ref = raw_link.get("id")
+            if not isinstance(raw_link_ref, str) or not raw_link_ref.strip():
+                result.rows_rejected += 1
+                result.coverage_status = "partial"
+                result.warning_codes.append("MALFORMED_ISSUE_LINK")
+                result.field_coverage["issuelinks"] = False
+                continue
+            link_ref = raw_link_ref.strip()
+            type_data = raw_link.get("type")
+            link_name = type_data.get("name") if isinstance(type_data, dict) else None
+            if not isinstance(link_name, str) or not link_name.strip():
+                result.rows_rejected += 1
+                result.coverage_status = "partial"
+                result.warning_codes.append("MALFORMED_ISSUE_LINK")
+                result.field_coverage["issuelinks"] = False
+                continue
+            link_name = link_name.strip()
             outward = raw_link.get("outwardIssue")
             inward = raw_link.get("inwardIssue")
-            if isinstance(outward, dict) and isinstance(outward.get("key"), str):
-                related = outward["key"]
+            outward_ref = outward.get("key") if isinstance(outward, dict) else None
+            inward_ref = inward.get("key") if isinstance(inward, dict) else None
+            if isinstance(outward_ref, str) and outward_ref.strip():
+                canonical_issue_ref = issue_ref
+                related = outward_ref.strip()
                 direction = "outward"
-            elif isinstance(inward, dict) and isinstance(inward.get("key"), str):
-                related = inward["key"]
-                direction = "inward"
+            elif isinstance(inward_ref, str) and inward_ref.strip():
+                canonical_issue_ref = inward_ref.strip()
+                related = issue_ref
+                direction = "outward"
             else:
                 result.rows_rejected += 1
                 result.coverage_status = "partial"
                 result.warning_codes.append("MALFORMED_ISSUE_LINK")
+                result.field_coverage["issuelinks"] = False
                 continue
             state = "active" if link_name in supported else "unsupported"
-            result.issue_links.append(
-                source_evidence.IssueLink(
-                    source_link_ref=link_ref,
-                    issue_ref=issue_ref,
-                    related_issue_ref=related,
-                    link_type=link_name,
-                    direction=direction,
-                    observation_state=state,
-                    source_updated_at=updated,
-                    observed_at=observed_at,
-                )
+            candidate = source_evidence.IssueLink(
+                source_link_ref=link_ref,
+                issue_ref=canonical_issue_ref,
+                related_issue_ref=related,
+                link_type=link_name,
+                direction=direction,
+                observation_state=state,
+                source_updated_at=updated,
+                observed_at=observed_at,
             )
-            if link_ref:
-                result.manifest_refs.add(link_ref)
+            previous = links_by_ref.get(link_ref)
+            if previous:
+                previous_semantics = (
+                    previous.issue_ref,
+                    previous.related_issue_ref,
+                    previous.link_type,
+                    previous.direction,
+                    previous.observation_state,
+                )
+                candidate_semantics = (
+                    candidate.issue_ref,
+                    candidate.related_issue_ref,
+                    candidate.link_type,
+                    candidate.direction,
+                    candidate.observation_state,
+                )
+                if previous_semantics != candidate_semantics:
+                    result.rows_rejected += 1
+                    result.coverage_status = "partial"
+                    result.warning_codes.append("CONFLICTING_ISSUE_LINK")
+                    result.field_coverage["issuelinks"] = False
+                    continue
+                if _parse_timestamp(updated) > _parse_timestamp(
+                    previous.source_updated_at
+                ):
+                    links_by_ref[link_ref] = candidate
+            else:
+                links_by_ref[link_ref] = candidate
+            result.manifest_refs.add(link_ref)
+    result.issue_links.extend(links_by_ref.values())
     if high_water != ("", ""):
         result.cursor_time, result.cursor_ref = high_water
     elif cursor:

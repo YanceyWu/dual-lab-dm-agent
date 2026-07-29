@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B1 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH B1 SECOND-REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -116,9 +116,9 @@ belong in Git history and must not be interpreted as current instructions.
   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
   was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
   branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
-  whose bounded incremental source-evidence implementation and first-Review
-  corrections are now locally validated and stopped for B1 re-review. B2 and
-  all later batches remain unauthorized.
+  whose bounded incremental source-evidence implementation, first-Review
+  corrections, and second-review corrections are now locally validated and
+  stopped for B1 re-review. B2 and all later batches remain unauthorized.
 
 ## Current validation evidence
 
@@ -320,6 +320,19 @@ bootstrap, populated synthetic legacy upgrade, successful evidence
 publication, rejected partial staged-run retention, prior-cursor preservation,
 integrity/count/view checks, and rollback.
 
+The Phase 3 Batch B1 second-review corrections passed 22 focused source-evidence
+and registry tests. They require stable Issue Link source references, reject
+missing or conflicting link identity as partial coverage, canonicalize mirrored
+Jira inward/outward observations, deduplicate the same relationship across
+unrelated Issue timestamp changes, and extract Jira `statusCategory.key`
+without substituting the status ID. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 203 runtime tests, 21
+repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks.
+`make rehearse-release` passed installed clean bootstrap, populated synthetic
+legacy upgrade, complete and partial evidence behavior, integrity/count/view
+checks, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -366,8 +379,8 @@ integrity/count/view checks, and rollback.
    execution/milestone foundation design are approved. Phase 3 owns
    canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
    conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   IP-029 Batch B1 and its first-Review corrections are implemented and locally
-   validated; B1 re-review is pending and B2 is not authorized.
+   IP-029 Batch B1 and its first- and second-review corrections are implemented
+   and locally validated; B1 re-review is pending and B2 is not authorized.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
@@ -440,11 +453,37 @@ integrity/count/view checks, and rollback.
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
-- IP-029 Batch B1 and its first-Review corrections are implemented and locally
-  validated on `codex/phase-3-execution-signals`. The current gate is B1
-  re-review; B2 and all later batches remain unauthorized.
+- IP-029 Batch B1 and its first- and second-review corrections are implemented
+  and locally validated on `codex/phase-3-execution-signals`. The current gate
+  is B1 re-review; B2 and all later batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 Batch B1 second-review findings corrected
+
+- Required every Issue Link at both the Jira adapter and repository boundaries
+  to carry a bounded stable source reference. Missing IDs and conflicting
+  repeated semantics now produce partial/rejected coverage with no cursor
+  advance or published relationship.
+- Canonicalized Jira mirrored inward/outward representations into one directed
+  source-to-target relationship. The adapter retains the latest observation
+  within the acquisition, while the repository dedup identity no longer changes
+  because an endpoint Issue received an unrelated update.
+- Corrected `status_category` normalization to use Jira's nested
+  `statusCategory.key` rather than the parent status ID.
+- Added six synthetic regressions covering repository rejection of empty link
+  IDs, adapter partial coverage for missing IDs and conflicting stable
+  identities, mirrored-link collapse, stable replay deduplication across
+  timestamps, and status-category extraction.
+- Focused source-evidence and registry coverage passed 22/22. `make validate`
+  passed 203 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, repository-boundary and synthetic-sample checks, package
+  build/inspection, and all eight release validation checks.
+  `make rehearse-release` passed the installed-package contract.
+- No B2 canonical model or calculation, C1/C2/D, use-case/interface, Attention
+  change, live connector, real data, operational configuration, Phase 4, push,
+  merge, tag, release, or deployment was added. `pending_decision_attention`
+  remains disabled. The result is stopped for another B1 re-review.
 
 ### 2026-07-29 — Phase 3 Batch B1 Review findings corrected
 

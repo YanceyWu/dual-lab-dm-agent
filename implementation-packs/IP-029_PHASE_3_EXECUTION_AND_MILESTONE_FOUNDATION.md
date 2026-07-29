@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `BATCH B1 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Status: `BATCH B1 SECOND-REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:
@@ -333,8 +333,8 @@ The Batch D report must record:
 ## Current authorization
 
 The owner authorized only Batch B1 on 2026-07-29. Its bounded implementation,
-first Review corrections, and local validation are complete and stopped for
-B1 re-review.
+first- and second-review corrections, and local validation are complete and
+stopped for B1 re-review.
 
 The exact next decision is whether to accept the corrected B1 result or require
 further corrections. B2, C1/C2/D, live connector access, real data, Phase 4,

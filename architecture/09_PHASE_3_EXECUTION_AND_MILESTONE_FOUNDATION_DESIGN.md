@@ -1,6 +1,6 @@
 # Phase 3 — Execution and Milestone Signal Foundation
 
-Status: `APPROVED — BATCH B1 REVIEW CORRECTIONS IMPLEMENTED; RE-REVIEW REQUIRED`
+Status: `APPROVED — BATCH B1 SECOND-REVIEW CORRECTIONS IMPLEMENTED; RE-REVIEW REQUIRED`
 Date: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
@@ -597,8 +597,8 @@ dedicated branch `codex/phase-3-execution-signals`, whose history contains the
 exact promoted Phase 2 baseline
 `2185334c890e79480a39514cf1d1e45f74e062f1`.
 
-IP-029 Batch B1 and its bounded first-Review corrections are implemented and
-locally validated. The exact next decision is whether to accept the corrected
-B1 result or require further corrections. B2, C1/C2/D, live connector use,
-real-data access, Phase 4, push, merge, tag, release, and deployment remain
-unauthorized.
+IP-029 Batch B1 and its bounded first- and second-review corrections are
+implemented and locally validated. The exact next decision is whether to accept
+the corrected B1 result or require further corrections. B2, C1/C2/D, live
+connector use, real-data access, Phase 4, push, merge, tag, release, and
+deployment remain unauthorized.

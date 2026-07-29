@@ -190,11 +190,11 @@ def _link_record(link: IssueLink) -> dict[str, str]:
         link.source_updated_at, name="source_updated_at"
     )
     observed_at = _normalized_timestamp(link.observed_at, name="observed_at")
-    if not isinstance(link.source_link_ref, str):
-        raise ValueError("source_link_ref must be a string")
-    source_link_ref = link.source_link_ref.strip()
-    if len(source_link_ref) > 200:
-        raise ValueError("source_link_ref must not exceed 200 characters")
+    source_link_ref = _bounded_text(
+        link.source_link_ref,
+        name="source_link_ref",
+        maximum=200,
+    )
     if direction not in LINK_DIRECTIONS:
         raise ValueError(f"Unsupported link direction: {direction}")
     if state not in LINK_STATES:
@@ -206,7 +206,6 @@ def _link_record(link: IssueLink) -> dict[str, str]:
         link_type,
         direction,
         state,
-        source_updated_at,
     )
     return {
         "dedup_key": dedup_key,
