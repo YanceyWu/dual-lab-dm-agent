@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -54,9 +54,10 @@ missing from the phase plan. The owner approved the correction architecture in
 review fix are implemented, locally validated, and passed technical re-review.
 The owner accepted the correction on 2026-07-29. Batch D regression,
 schema/portable review, and synthetic installed-package rehearsal passed.
-The owner accepted the Batch D Review on 2026-07-29. The explicit Phase 2
-promotion decision is next; Phase 3/4 implementation, connector work, real
-data, and publication remain separately gated.
+The owner accepted the Batch D Review and promoted the result as the local
+Phase 2 development baseline on 2026-07-29. Phase 3 current-state and design
+review is the next independent gate; Phase 3/4 implementation, connector work,
+real data, and publication remain separately gated.
 
 ## Delivery loop
 
@@ -286,8 +287,10 @@ abstraction. The layered health revision in
 approved on 2026-07-29. The bounded C2 public-interface correction and its
 mutation-boundary review fix are implemented, locally validated, and passed
 technical re-review. The owner accepted the correction and Batch D validation
-passed. The Phase 2 promotion decision, connector work, real data, Phase 3/4
-runtime, and publication remain separately gated.
+passed. The owner promoted the completed result as the local Phase 2
+development baseline on 2026-07-29. Phase 3 current-state and design review,
+connector work, real data, Phase 3/4 runtime, and publication remain separately
+gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 

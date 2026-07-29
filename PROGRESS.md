@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
+Gate status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -99,8 +99,9 @@ belong in Git history and must not be interpreted as current instructions.
   accepted the correction and authorized the next Batch D step on 2026-07-29.
 - Phase 2 Batch D focused regression, full validation, schema/portable review,
   and synthetic installed-package upgrade/rollback rehearsal passed. Phase 2
-  Batch D Review was completed and accepted on 2026-07-29. Phase 2 is not
-  promoted; Phase 3/4 runtime remains unauthorized.
+  Batch D Review was completed and accepted on 2026-07-29. The owner then
+  promoted the completed implementation as the local Phase 2 development
+  baseline. Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -313,7 +314,7 @@ behavior, and rollback.
    implemented and locally validated with reconciliation coverage, lifecycle
    no-op protection, exact interface projections, bounded history, and
    advisory recommendations. The owner accepted the corrected C1 result on
-   2026-07-29; Phase 2 is not promoted.
+   2026-07-29. The completed Phase 2 implementation is promoted locally.
 8. Batch C2's mapping-oriented product contract was not accepted. The bounded
    correction removes its CLI, Dashboard, and Copilot preview paths, rejects
    direct preview and legacy configuration confirmation with
@@ -325,16 +326,18 @@ behavior, and rollback.
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
    promoted milestone history. None of that runtime is authorized by the
-   current C2 correction gate.
-10. Batch D validation is green, but Phase 2 is not promoted. Connector work,
-    real data, visual Dashboard Center UI, push, and promotion remain blocked
+   current Phase 3 design-review gate.
+10. Phase 2 is promoted only as a local development baseline. Remote CI for
+    the local Phase 2 commits remains unknown. Connector work, real data,
+    visual Dashboard Center UI, push, and operational promotion remain blocked
     pending their own gates.
 
 ## Exact next actions
 
-1. Make the explicit local Phase 2 promotion decision.
-2. If promoted, record only the local development baseline and next Phase 3
-   design gate; do not begin Phase 3 implementation in the promotion record.
+1. Begin a separate Phase 3 current-state and design review only when
+   explicitly authorized; do not implement Phase 3 under this promotion.
+2. Preserve the promoted Phase 2 contracts, compatibility behavior, and
+   `pending_decision_attention` disabled state.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    visual Dashboard UI, connectors, real-data work, release, tag, merge, or
    push without separate authorization.
@@ -371,8 +374,9 @@ behavior, and rollback.
 - No configuration-operation create/claim/expire/finish/fail helper or
   project-health rule-version mutation helper remains in the runtime.
   Configuration storage and legacy-operation read detection remain intact.
-- IP-028 Batch D validation is green. Phase 2 promotion requires a separate
-  explicit owner decision and does not automatically authorize Phase 3.
+- IP-028 Batch D validation and Review are accepted. The owner promoted the
+  result as the local Phase 2 development baseline on 2026-07-29. Promotion
+  does not automatically authorize Phase 3 implementation.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
@@ -386,6 +390,22 @@ behavior, and rollback.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 promoted locally
+
+- The owner explicitly promoted the completed IP-028 implementation after
+  accepting the Batch D Review.
+- The promotion establishes only the local Phase 2 development baseline and
+  preserves the exact validated runtime, schema, migration, compatibility,
+  interface, and disabled `pending_decision_attention` behavior.
+- No runtime, schema, test, connector, real-data, visual Dashboard, push,
+  merge, tag, release, deployment, or operational action was performed.
+- The documentation-only promotion record passed `make validate`: 183 runtime
+  tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  repository-boundary and synthetic-sample checks, package build and
+  inspection, and all eight release validation checks.
+- The next independent gate is Phase 3 current-state and design review. Phase 3
+  implementation and all Phase 4 work remain unauthorized.
 
 ### 2026-07-29 — Phase 2 Batch D Review accepted
 

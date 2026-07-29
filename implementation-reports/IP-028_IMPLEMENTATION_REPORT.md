@@ -1,6 +1,6 @@
 # IP-028 Implementation Report
 
-Status: `BATCH D REVIEW ACCEPTED — PHASE 2 PROMOTION DECISION REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
 Date: 2026-07-29
 Branch: `codex/phase-2-attention-center`
 Approved planning commit: `e4431dc0ab5f7122d65affaa917fa3697d634b15`
@@ -144,11 +144,12 @@ configuration input.
 ## Promotion gate
 
 The local Phase 2 implementation satisfies its approved Batch D validation,
-schema, compatibility, migration, and portable-scope criteria. It is ready for
-an explicit owner promotion decision. The owner accepted the Batch D Review on
-2026-07-29; that acceptance does not itself promote Phase 2.
+schema, compatibility, migration, and portable-scope criteria. The owner
+accepted the Batch D Review and promoted the completed result as the local
+Phase 2 development baseline on 2026-07-29.
 
-Promotion would establish the completed local Phase 2 development baseline
-only. It would not authorize merge, push, tag, release, deployment, connector
-access, active-database migration, real-data UAT, Phase 3 implementation, or
-Phase 4 implementation.
+Promotion establishes the completed local Phase 2 development baseline only.
+It does not authorize merge, push, tag, release, deployment, connector access,
+active-database migration, real-data UAT, Phase 3 implementation, or Phase 4
+implementation. Phase 3 current-state and design review is the next independent
+gate.

@@ -1,6 +1,6 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
@@ -131,8 +131,9 @@ Forecast to reuse promoted milestone history. The bounded C2 correction
 removes or blocks the unaccepted public mapping paths, removes dormant
 configuration mutation helpers, and passed technical re-review. Owner
 accepted the correction. Batch D regression, schema/portable review, and
-synthetic release rehearsal passed. The explicit Phase 2 promotion decision is
-next after the owner accepted the Batch D Review on 2026-07-29. Do not begin
-Phase 3/4 runtime, connector or real-data work under this gate. Deferred
+synthetic release rehearsal passed. The owner accepted the Batch D Review and
+promoted the result as the local Phase 2 development baseline on 2026-07-29.
+The next independent gate is Phase 3 current-state and design review; Phase 3/4
+runtime, connector and real-data work remain unauthorized. Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.
