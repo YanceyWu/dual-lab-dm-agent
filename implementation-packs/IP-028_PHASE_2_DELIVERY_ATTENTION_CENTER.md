@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
+Status: `BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -72,7 +72,7 @@ interface integration until that review is approved.
 
 The owner accepted the Batch B result and Batch C design review findings on
 2026-07-28. Batch C1 below was the only authorized next implementation and is
-now stopped at its validated local result for review.
+now accepted after review of its validated local result on 2026-07-29.
 
 ## Batch C1 scope
 
@@ -149,4 +149,5 @@ passed 176 runtime tests, 21
 repository-tool tests with 19 subtests, Ruff, compilation, boundary/synthetic
 checks, package build/inspection, and eight release validation checks.
 `pending_decision_attention` remains disabled. The result is stopped for
-explicit Batch C1 review; Batch C2 and Phase 2 promotion are not authorized.
+separate Batch C2 authorization; Batch C2 and Phase 2 promotion are not
+authorized.

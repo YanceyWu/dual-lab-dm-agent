@@ -1,18 +1,18 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 2 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
 `origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
 verified in the task handoff because a commit cannot embed its own final hash.
 The approved Phase 2 implementation branch, including the accepted Batch B
-result, review corrections, Batch C design handoff, validated Batch C1
+result, review corrections, Batch C design handoff, accepted Batch C1
 implementation, and C1 review corrections, is local-only and has no remote
 tracking branch. The exact current commit is reported in the task handoff
 because a commit cannot embed its own final hash. Do not push it without a
@@ -68,12 +68,13 @@ belong in Git history and must not be interpreted as current instructions.
   promotion before the next phase begins.
 - The owner accepted the corrected IP-028 Batch B implementation and the
   implementation-level Batch C design review on 2026-07-28. Only Batch C1 is
-  authorized next. Batch C2 DM-operable RAG configuration and Phase 2
-  promotion retain separate gates.
-- IP-028 Batch C1 now implements the read-only Delivery Attention Center and
-  the exact Attention CLI, Dashboard API, and Copilot projections. It is
-  locally validated and awaits explicit review; this is not Batch C2 or Phase
-  2 promotion approval.
+  authorized by that decision. Batch C1 was subsequently accepted on
+  2026-07-29; Batch C2 DM-operable RAG configuration and Phase 2 promotion
+  retain separate gates.
+- IP-028 Batch C1 implements the read-only Delivery Attention Center and the
+  exact Attention CLI, Dashboard API, and Copilot projections. The owner
+  completed review and accepted the corrected result on 2026-07-29. This does
+  not authorize Batch C2 or Phase 2 promotion.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -240,8 +241,8 @@ validation checks.
    accepted locally. Batch C1 and its bounded review corrections are
    implemented and locally validated with reconciliation coverage, lifecycle
    no-op protection, exact interface projections, bounded history, and
-   advisory recommendations. The corrected result awaits explicit owner review
-   and is not promoted.
+   advisory recommendations. The owner accepted the corrected C1 result on
+   2026-07-29; Phase 2 is not promoted.
 8. The persisted project-health RAG model is data-configurable, but no
    DM-operable configuration interface exists. Batch C2 must add a separately
    approved Attention-specific configuration preview/confirm boundary before
@@ -251,11 +252,9 @@ validation checks.
 
 ## Exact next actions
 
-1. Review the corrected local IP-028 Batch C1 commit against the approved Center,
-   reconciliation-coverage, lifecycle no-op, interface, recommendation, and
-   compatibility contracts.
-2. Decide whether to accept Batch C1 or request bounded corrections.
-3. Do not begin Batch C2, visual Dashboard UI, connectors, real-data work,
+1. Decide whether to authorize only the bounded IP-028 Batch C2
+   Attention-specific RAG configuration preview/confirm implementation.
+2. Do not begin Batch C2, visual Dashboard UI, connectors, real-data work,
    Phase 2 promotion, release, tag, merge, or push without separate
    authorization.
 
@@ -276,15 +275,32 @@ validation checks.
 - New Delivery Intelligence capabilities follow
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
-- IP-028 Batch C1 is implemented and validated under the exact approved design
-  and pack contract. Stop at its local commit for owner review.
+- IP-028 Batch C1 is implemented, validated, reviewed, and accepted under the
+  exact approved design and pack contract. Stop pending a separate Batch C2
+  authorization.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
-- Do not begin Batch C2 DM-operable RAG configuration until Batch C1 is
-  reviewed and the separate configuration write contract is authorized.
+- Do not begin Batch C2 DM-operable RAG configuration until the separate
+  configuration write contract is explicitly authorized.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 Batch C1 review accepted
+
+- The owner completed review and accepted the corrected IP-028 Batch C1 local
+  result.
+- Scheme A remains the accepted lifecycle: complete clear reconciliation
+  automatically resolves an item with `rule_clear`; no public manager resolve
+  step is exposed.
+- No runtime, schema, test, connector, configuration, real-data, push, or
+  promotion change was made by this gate update.
+- The documentation-only gate update passed `make validate`: 176 runtime
+  tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  repository-boundary and synthetic-sample checks, package build/inspection,
+  and all eight release validation checks.
+- Batch C2 remains unstarted and requires separate explicit authorization. The
+  exact next action is the owner's Batch C2 authorization decision.
 
 ### 2026-07-28 — Phase 2 Batch C1 review corrections validated
 

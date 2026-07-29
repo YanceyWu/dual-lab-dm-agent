@@ -1,7 +1,7 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH C1 REVIEW CORRECTIONS VALIDATED — REVIEW REQUIRED`
-Last updated: 2026-07-28
+Status: `BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
 Implementation pack: `IP-028 — DELIVERY ATTENTION CENTER`
@@ -21,10 +21,10 @@ data into a clear or healthy condition.
 
 The owner approved this Batch A design on 2026-07-28 and accepted the
 implementation-level Batch C review decisions below on the same date. Batch C1
-is implemented and locally validated on the dedicated branch and awaits
-explicit review. This does not authorize Batch C2, connector calls, source
-sync, real-data access, push, merge, tag, release, deployment, or Phase 2
-promotion.
+is implemented and locally validated on the dedicated branch; the owner
+accepted the corrected result on 2026-07-29. This does not authorize Batch C2,
+connector calls, source sync, real-data access, push, merge, tag, release,
+deployment, or Phase 2 promotion.
 
 ## Verified current state
 
@@ -617,6 +617,6 @@ accepted the Batch C review findings covering reconciliation coverage,
 lifecycle no-op behavior, exact interface contracts, bounded history,
 recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
 
-Batch C1 is implemented and locally validated and now requires explicit owner
-review. Batch C2, Phase 2 promotion, release, operational work, connector work,
-real-data access, push, merge, and tag remain separately gated.
+The owner accepted the implemented and locally validated Batch C1 result on
+2026-07-29. Batch C2, Phase 2 promotion, release, operational work, connector
+work, real-data access, push, merge, and tag remain separately gated.
