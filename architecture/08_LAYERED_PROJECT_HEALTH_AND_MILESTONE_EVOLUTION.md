@@ -1,6 +1,6 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `DESIGN APPROVED — PHASE 2 BATCH D VALIDATED`
+Status: `DESIGN APPROVED — PHASE 2 BATCH D REVIEW ACCEPTED`
 Last updated: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review

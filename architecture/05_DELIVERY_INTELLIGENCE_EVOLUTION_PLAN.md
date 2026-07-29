@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 2 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -54,8 +54,9 @@ missing from the phase plan. The owner approved the correction architecture in
 review fix are implemented, locally validated, and passed technical re-review.
 The owner accepted the correction on 2026-07-29. Batch D regression,
 schema/portable review, and synthetic installed-package rehearsal passed.
-The explicit Phase 2 promotion decision is next; Phase 3/4 implementation,
-connector work, real data, and publication remain separately gated.
+The owner accepted the Batch D Review on 2026-07-29. The explicit Phase 2
+promotion decision is next; Phase 3/4 implementation, connector work, real
+data, and publication remain separately gated.
 
 ## Delivery loop
 

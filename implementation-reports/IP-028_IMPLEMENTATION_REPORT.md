@@ -1,6 +1,6 @@
 # IP-028 Implementation Report
 
-Status: `BATCH D VALIDATED — PHASE 2 PROMOTION DECISION REQUIRED`
+Status: `BATCH D REVIEW ACCEPTED — PHASE 2 PROMOTION DECISION REQUIRED`
 Date: 2026-07-29
 Branch: `codex/phase-2-attention-center`
 Approved planning commit: `e4431dc0ab5f7122d65affaa917fa3697d634b15`
@@ -145,7 +145,8 @@ configuration input.
 
 The local Phase 2 implementation satisfies its approved Batch D validation,
 schema, compatibility, migration, and portable-scope criteria. It is ready for
-an explicit owner promotion decision.
+an explicit owner promotion decision. The owner accepted the Batch D Review on
+2026-07-29; that acceptance does not itself promote Phase 2.
 
 Promotion would establish the completed local Phase 2 development baseline
 only. It would not authorize merge, push, tag, release, deployment, connector

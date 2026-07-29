@@ -1,6 +1,6 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 2 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
@@ -132,6 +132,7 @@ removes or blocks the unaccepted public mapping paths, removes dormant
 configuration mutation helpers, and passed technical re-review. Owner
 accepted the correction. Batch D regression, schema/portable review, and
 synthetic release rehearsal passed. The explicit Phase 2 promotion decision is
-next. Do not begin Phase 3/4 runtime, connector or real-data work under this
-gate. Deferred migration rehearsal and real-environment
+next after the owner accepted the Batch D Review on 2026-07-29. Do not begin
+Phase 3/4 runtime, connector or real-data work under this gate. Deferred
+migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.

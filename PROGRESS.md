@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
+Gate status: `PHASE 2 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -99,7 +99,8 @@ belong in Git history and must not be interpreted as current instructions.
   accepted the correction and authorized the next Batch D step on 2026-07-29.
 - Phase 2 Batch D focused regression, full validation, schema/portable review,
   and synthetic installed-package upgrade/rollback rehearsal passed. Phase 2
-  is not promoted; Phase 3/4 runtime remains unauthorized.
+  Batch D Review was completed and accepted on 2026-07-29. Phase 2 is not
+  promoted; Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -331,8 +332,7 @@ behavior, and rollback.
 
 ## Exact next actions
 
-1. Review `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` and make the
-   explicit local Phase 2 promotion decision.
+1. Make the explicit local Phase 2 promotion decision.
 2. If promoted, record only the local development baseline and next Phase 3
    design gate; do not begin Phase 3 implementation in the promotion record.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
@@ -386,6 +386,19 @@ behavior, and rollback.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 Batch D Review accepted
+
+- The owner completed Review of the Batch D evidence, implementation report,
+  remaining risks, and planned later-phase controls.
+- No code, schema, test, connector, real-data, push, or promotion change was
+  made by this review record.
+- The documentation-only acceptance record passed `make validate`: 183 runtime
+  tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  repository-boundary and synthetic-sample checks, package build and
+  inspection, and all eight release validation checks.
+- Phase 2 remains unpromoted. The exact next gate is the explicit decision to
+  promote or not promote the current local Phase 2 development baseline.
 
 ### 2026-07-29 — Phase 2 Batch D validated
 

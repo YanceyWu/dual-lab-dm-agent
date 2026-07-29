@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH D VALIDATED — PHASE 2 PROMOTION DECISION REQUIRED`
+Status: `BATCH D REVIEW ACCEPTED — PHASE 2 PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -664,5 +664,6 @@ and locally validated. Technical re-review found no remaining P0-P2 issue, and
 the owner accepted the correction on 2026-07-29. Batch D focused regression,
 full validation, schema/portable review, and synthetic installed-package
 upgrade/rollback rehearsal passed. The explicit Phase 2 promotion decision is
-next. Phase 3/4 implementation, release, operational work, connector work,
-real-data access, push, merge, and tag remain separately gated.
+next after the owner accepted the Batch D Review on 2026-07-29. Phase 3/4
+implementation, release, operational work, connector work, real-data access,
+push, merge, and tag remain separately gated.
