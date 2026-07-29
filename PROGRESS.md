@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B1 IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH B1 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -116,9 +116,9 @@ belong in Git history and must not be interpreted as current instructions.
   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
   was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
   branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
-  whose bounded incremental source-evidence implementation is now locally
-  validated and stopped for B1 Review. B2 and all later batches remain
-  unauthorized.
+  whose bounded incremental source-evidence implementation and first-Review
+  corrections are now locally validated and stopped for B1 re-review. B2 and
+  all later batches remain unauthorized.
 
 ## Current validation evidence
 
@@ -306,6 +306,20 @@ validation checks. `make rehearse-release` passed temporary wheel
 installation, additive synthetic legacy-database upgrade, installed Phase 3
 evidence publication, integrity/count/view checks, and rollback.
 
+The Phase 3 Batch B1 Review corrections passed 76 combined focused and
+compatibility tests. They cover stale parallel-run rejection, compound-cursor
+monotonicity, authoritative-manifest isolation, ISO timestamp validation,
+malformed Issue/changelog partial coverage, unexpected-failure audit,
+cross-call repeated-page idempotency, connector-local configuration
+preservation, and the original B1/legacy compatibility scope. The final
+`make validate` run passed repository-boundary and synthetic-sample checks,
+197 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks. The expanded `make rehearse-release` passed installed clean
+bootstrap, populated synthetic legacy upgrade, successful evidence
+publication, rejected partial staged-run retention, prior-cursor preservation,
+integrity/count/view checks, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -352,8 +366,8 @@ evidence publication, integrity/count/view checks, and rollback.
    execution/milestone foundation design are approved. Phase 3 owns
    canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
    conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   IP-029 Batch B1 is implemented and locally validated; B1 Review is pending
-   and B2 is not authorized.
+   IP-029 Batch B1 and its first-Review corrections are implemented and locally
+   validated; B1 re-review is pending and B2 is not authorized.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
@@ -368,8 +382,8 @@ evidence publication, integrity/count/view checks, and rollback.
 
 ## Exact next actions
 
-1. Review the implemented IP-029 Batch B1 incremental source evidence core and
-   decide whether to accept it or require bounded corrections.
+1. Re-review the corrected IP-029 Batch B1 incremental source evidence core
+   and decide whether to accept it or require further bounded corrections.
 2. Do not begin B2 canonical execution/commitment storage or calculations
    without separate explicit authorization after B1 acceptance.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
@@ -426,11 +440,43 @@ evidence publication, integrity/count/view checks, and rollback.
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
-- IP-029 Batch B1 is implemented and locally validated on
-  `codex/phase-3-execution-signals`. The current gate is B1 Review; B2 and all
-  later batches remain unauthorized.
+- IP-029 Batch B1 and its first-Review corrections are implemented and locally
+  validated on `codex/phase-3-execution-signals`. The current gate is B1
+  re-review; B2 and all later batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 Batch B1 Review findings corrected
+
+- Corrected concurrent publication so a run must still reference the current
+  published predecessor and cannot regress the compound cursor. A stale run is
+  rejected before it can publish events, alter the cursor, or apply an older
+  authoritative manifest.
+- Added normalized ISO timestamp validation at the repository and Jira adapter
+  boundaries. Malformed Issue rows, changelog histories/items, and timestamps
+  now produce partial/rejected coverage; unexpected adapter errors produce an
+  audited failed/rejected run instead of leaving an unexplained staged run.
+- Corrected event and link staging counts across repeated per-run calls so
+  overlap pages and retries remain idempotent without negative accepted-row
+  counts.
+- Preserved connector-local evidence mappings, supported link types, horizons,
+  overlap, and page/Issue limits when the Board registry is re-imported, while
+  still refreshing registry-owned Board and Project references.
+- Expanded installed-package rehearsal to verify all eight B1 tables, clean
+  bootstrap, populated synthetic legacy upgrade, successful publication,
+  partial staged-run retention, prior-cursor preservation, integrity/count/view
+  checks, and rollback.
+- Focused and compatibility coverage passed 76/76. `make validate` passed
+  197 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, repository-boundary and synthetic-sample checks, package
+  build/inspection, and all eight release validation checks.
+  `make rehearse-release` passed the expanded installed-package contract.
+- No B2 canonical model or calculation, C1/C2/D, use-case/interface,
+  Attention change, live connector, real data, operational configuration,
+  Phase 4, push, merge, tag, release, or deployment was added.
+  `pending_decision_attention` remains disabled. The corrected result is
+  stopped for B1 re-review; the exact local commit is reported in the task
+  handoff.
 
 ### 2026-07-29 — Phase 3 Batch B1 incremental source evidence validated
 

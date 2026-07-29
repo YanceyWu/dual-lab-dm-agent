@@ -170,6 +170,173 @@ def test_complete_publication_is_atomic_replay_safe_and_uses_compound_cursor(
     assert cursor["overlap_seconds"] == 300
 
 
+def test_repeated_stage_calls_remain_idempotent_for_published_overlap(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    published_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-published",
+    )
+    event = _event("SYN-1", event_ref="evt-1")
+    source_evidence.stage_issue_events(published_run, [event], db_path=isolated_db)
+    _finish_complete(
+        published_run,
+        isolated_db,
+        cursor_time="2026-07-29T01:00:00+00:00",
+        cursor_ref="SYN-1",
+    )
+    source_evidence.publish_run(published_run, db_path=isolated_db)
+
+    replay_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-multi-stage-replay",
+    )
+    assert source_evidence.stage_issue_events(
+        replay_run, [event], db_path=isolated_db
+    ) == (0, 1)
+    assert source_evidence.stage_issue_events(
+        replay_run, [event], db_path=isolated_db
+    ) == (0, 1)
+
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT rows_read, rows_accepted, rows_deduplicated
+            FROM source_evidence_runs WHERE run_id = ?
+            """,
+            [replay_run],
+        ).fetchone() == (2, 0, 2)
+
+
+def test_stale_parallel_run_cannot_regress_cursor_or_apply_manifest(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    base_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-base",
+    )
+    source_evidence.stage_issue_events(
+        base_run,
+        [_event("SYN-1", event_ref="evt-base")],
+        manifest_issue_refs=["SYN-1"],
+        db_path=isolated_db,
+    )
+    _finish_complete(
+        base_run,
+        isolated_db,
+        cursor_time="2026-07-29T01:00:00+00:00",
+        cursor_ref="SYN-1",
+    )
+    source_evidence.publish_run(base_run, db_path=isolated_db)
+
+    old_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-old",
+    )
+    new_run = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="run-new",
+    )
+    source_evidence.stage_issue_events(
+        old_run,
+        [_event("SYN-1", event_ref="evt-old", source_time="2026-07-29T02:00:00+00:00")],
+        manifest_issue_refs=["SYN-1"],
+        db_path=isolated_db,
+    )
+    _finish_complete(
+        old_run,
+        isolated_db,
+        cursor_time="2026-07-29T02:00:00+00:00",
+        cursor_ref="SYN-1",
+    )
+    source_evidence.stage_issue_events(
+        new_run,
+        [
+            _event("SYN-1", event_ref="evt-new-1", source_time="2026-07-29T03:00:00+00:00"),
+            _event("SYN-2", event_ref="evt-new-2", source_time="2026-07-29T03:00:00+00:00"),
+        ],
+        manifest_issue_refs=["SYN-1", "SYN-2"],
+        db_path=isolated_db,
+    )
+    _finish_complete(
+        new_run,
+        isolated_db,
+        cursor_time="2026-07-29T03:00:00+00:00",
+        cursor_ref="SYN-2",
+    )
+    source_evidence.publish_run(new_run, db_path=isolated_db)
+
+    with pytest.raises(ValueError, match="stale"):
+        source_evidence.publish_run(old_run, db_path=isolated_db)
+
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT cursor_time, cursor_ref, published_run_id
+            FROM source_evidence_cursors
+            """
+        ).fetchone() == ("2026-07-29T03:00:00+00:00", "SYN-2", "run-new")
+        assert connection.execute(
+            """
+            SELECT item_ref FROM source_evidence_published_items
+            WHERE is_current = 1 ORDER BY item_ref
+            """
+        ).fetchall() == [("SYN-1",), ("SYN-2",)]
+        assert connection.execute(
+            """
+            SELECT publication_status, error_code
+            FROM source_evidence_runs WHERE run_id = 'run-old'
+            """
+        ).fetchone() == ("rejected", "STALE_PUBLISHED_RUN")
+
+
+def test_invalid_repository_timestamp_is_rejected_before_staging(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    run_id = source_evidence.start_run(
+        "jira-evidence-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+    )
+    invalid = source_evidence.IssueEvent(
+        issue_ref="SYN-1",
+        event_type="issue_observed",
+        field_key="issue_observed",
+        source_updated_at="not-a-date",
+        observed_at="2026-07-29T01:00:00+00:00",
+    )
+    with pytest.raises(ValueError, match="ISO-8601"):
+        source_evidence.stage_issue_events(run_id, [invalid], db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM jira_issue_event_stage WHERE run_id = ?",
+            [run_id],
+        ).fetchone()[0] == 0
+
+
 def test_partial_run_cannot_advance_cursor_or_close_manifest_item(isolated_db: Path) -> None:
     init_db(quiet=True)
     complete_run = source_evidence.start_run(
@@ -476,6 +643,152 @@ def test_adapter_marks_missing_pagination_token_partial_and_does_not_publish(
         ).fetchone()[0] == "rejected"
         assert connection.execute("SELECT COUNT(*) FROM source_evidence_cursors").fetchone()[0] == 0
         assert connection.execute("SELECT COUNT(*) FROM jira_issue_links").fetchone()[0] == 0
+
+
+def test_adapter_rejects_malformed_issue_and_invalid_timestamp_without_cursor(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+    )
+    malformed_session = _Session([_Response({"issues": ["malformed"], "isLast": True})])
+    malformed_run, malformed_result = sync_dataset(
+        malformed_session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_history",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert malformed_result.coverage_status == "partial"
+    assert "MALFORMED_ISSUE" in malformed_result.warning_codes
+
+    timestamp_session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {"updated": "not-a-date", "issuelinks": []},
+                        }
+                    ],
+                    "isLast": True,
+                }
+            )
+        ]
+    )
+    timestamp_run, timestamp_result = sync_dataset(
+        timestamp_session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_links",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert timestamp_result.coverage_status == "partial"
+    assert "MALFORMED_SOURCE_TIMESTAMP" in timestamp_result.warning_codes
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM source_evidence_cursors"
+        ).fetchone()[0] == 0
+        assert connection.execute(
+            """
+            SELECT run_id, publication_status
+            FROM source_evidence_runs
+            WHERE run_id IN (?, ?) ORDER BY run_id
+            """,
+            [malformed_run, timestamp_run],
+        ).fetchall() == sorted(
+            [(malformed_run, "rejected"), (timestamp_run, "rejected")]
+        )
+
+
+def test_unexpected_adapter_error_is_audited_as_failed(isolated_db: Path) -> None:
+    init_db(quiet=True)
+
+    class BrokenSession:
+        def post(self, *_args, **_kwargs):
+            raise RuntimeError("synthetic adapter failure")
+
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+    )
+    with pytest.raises(RuntimeError, match="synthetic adapter failure"):
+        sync_dataset(
+            BrokenSession(),
+            "https://synthetic.invalid",
+            config,
+            "jira_issue_links",
+            db_path=str(isolated_db),
+        )
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT coverage_status, publication_status, error_code
+            FROM source_evidence_runs
+            """
+        ).fetchone() == (
+            "failed",
+            "rejected",
+            "EVIDENCE_ACQUISITION_FAILED",
+        )
+
+
+def test_malformed_changelog_record_cannot_publish_complete_coverage(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    session = _Session(
+        [
+            _Response(
+                {
+                    "issues": [
+                        {
+                            "key": "SYN-1",
+                            "fields": {"updated": "2026-07-29T01:00:00+00:00"},
+                        }
+                    ],
+                    "isLast": True,
+                }
+            )
+        ],
+        [_Response({"values": ["malformed"], "total": 1})],
+    )
+    config = JiraEvidenceConfig(
+        source_id="jira-evidence-synthetic",
+        board_id="board-synthetic",
+        base_jql="project = SYN",
+        field_mappings={},
+    )
+    run_id, result = sync_dataset(
+        session,
+        "https://synthetic.invalid",
+        config,
+        "jira_issue_history",
+        db_path=str(isolated_db),
+        observed_at="2026-07-29T01:05:00+00:00",
+    )
+    assert result.coverage_status == "partial"
+    assert "MALFORMED_CHANGELOG_RECORD" in result.warning_codes
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            """
+            SELECT publication_status FROM source_evidence_runs
+            WHERE run_id = ?
+            """,
+            [run_id],
+        ).fetchone()[0] == "rejected"
+        assert connection.execute(
+            "SELECT COUNT(*) FROM source_evidence_cursors"
+        ).fetchone()[0] == 0
 
 
 def test_adapter_paginates_changelog_and_stores_only_normalized_fields(

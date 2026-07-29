@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import sqlite3
 from pathlib import Path
 
@@ -165,6 +166,31 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
     assert evidence_config.bootstrap_days == 90
     assert evidence_config.overlap_seconds == 300
     assert evidence_config.field_mappings == {}
+    with sqlite3.connect(isolated_db) as connection:
+        configured = json.loads(
+            connection.execute(
+                """
+                SELECT config_json FROM data_sources
+                WHERE id = 'jira-evidence-keep-board'
+                """
+            ).fetchone()[0]
+        )
+        configured["field_mappings"] = {"status": "status"}
+        configured["supported_link_types"] = ["Blocks"]
+        configured["bootstrap_days"] = 120
+        connection.execute(
+            """
+            UPDATE data_sources SET config_json = ?
+            WHERE id = 'jira-evidence-keep-board'
+            """,
+            [json.dumps(configured)],
+        )
+        connection.commit()
+    import_jira_boards(csv_path)
+    preserved_config = load_evidence_config("keep-board", db_path=isolated_db)
+    assert preserved_config.field_mappings == {"status": "status"}
+    assert preserved_config.supported_link_types == ("Blocks",)
+    assert preserved_config.bootstrap_days == 120
 
     con = sqlite3.connect(isolated_db)
     try:

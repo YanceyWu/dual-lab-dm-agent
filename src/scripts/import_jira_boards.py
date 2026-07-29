@@ -17,6 +17,16 @@ sys.path.insert(0, str(ROOT))
 from pm_agent.config import settings
 from pm_agent.database.bootstrap import main as init_db
 
+EVIDENCE_LOCAL_CONFIG_KEYS = {
+    "field_mappings",
+    "supported_link_types",
+    "bootstrap_days",
+    "overlap_seconds",
+    "page_size",
+    "max_pages",
+    "max_issues",
+}
+
 
 def _to_bool(value: str | None, default: bool = False) -> int:
     if value is None or value == "":
@@ -59,6 +69,30 @@ def _upsert_data_source(con: sqlite3.Connection, payload: dict) -> None:
             payload.get("notes", ""),
         ],
     )
+
+
+def _merge_evidence_config(
+    con: sqlite3.Connection,
+    source_id: str,
+    registry_config: dict,
+) -> dict:
+    row = con.execute(
+        "SELECT config_json FROM data_sources WHERE id = ?",
+        [source_id],
+    ).fetchone()
+    if not row:
+        return registry_config
+    try:
+        existing = json.loads(row[0] or "{}")
+    except json.JSONDecodeError:
+        existing = {}
+    if not isinstance(existing, dict):
+        existing = {}
+    merged = dict(registry_config)
+    for key in EVIDENCE_LOCAL_CONFIG_KEYS:
+        if key in existing:
+            merged[key] = existing[key]
+    return merged
 
 
 def _delete_board_family(con: sqlite3.Connection, board_ids: list[str]) -> None:
@@ -244,13 +278,17 @@ def import_jira_boards(
                     "ingestion_mode": "api",
                     "refresh_sla_hours": 24,
                     "active": bool(active),
-                    "config": {
-                        "board_id": board_key,
-                        "project_key": project_key,
-                        "bootstrap_days": 90,
-                        "overlap_seconds": 300,
-                        "field_mappings": {},
-                    },
+                    "config": _merge_evidence_config(
+                        con,
+                        f"jira-evidence-{board_key}",
+                        {
+                            "board_id": board_key,
+                            "project_key": project_key,
+                            "bootstrap_days": 90,
+                            "overlap_seconds": 300,
+                            "field_mappings": {},
+                        },
+                    ),
                     "notes": (
                         "Phase 3 incremental Issue history and Issue Link evidence. "
                         "Connector-local field mappings require explicit local configuration."

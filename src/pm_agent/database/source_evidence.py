@@ -83,6 +83,19 @@ def _bounded_text(value: object, *, name: str, maximum: int = 500) -> str:
     return normalized
 
 
+def _normalized_timestamp(value: object, *, name: str) -> str:
+    raw = _bounded_text(value, name=name, maximum=80)
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a valid ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    parsed = parsed.astimezone(timezone.utc)
+    timespec = "microseconds" if parsed.microsecond else "seconds"
+    return parsed.isoformat(timespec=timespec)
+
+
 def _safe_value(value: object) -> str:
     if value is None:
         return ""
@@ -125,10 +138,12 @@ def _event_record(event: IssueEvent) -> dict[str, str]:
     issue_ref = _bounded_text(event.issue_ref, name="issue_ref", maximum=200)
     event_type = _bounded_text(event.event_type, name="event_type", maximum=40)
     field_key = _bounded_text(event.field_key, name="field_key", maximum=80)
-    source_updated_at = _bounded_text(
-        event.source_updated_at, name="source_updated_at", maximum=80
+    source_updated_at = _normalized_timestamp(
+        event.source_updated_at, name="source_updated_at"
     )
-    observed_at = _bounded_text(event.observed_at, name="observed_at", maximum=80)
+    observed_at = _normalized_timestamp(event.observed_at, name="observed_at")
+    if not isinstance(event.source_event_ref, str):
+        raise ValueError("source_event_ref must be a string")
     source_event_ref = event.source_event_ref.strip()
     if len(source_event_ref) > 200:
         raise ValueError("source_event_ref must not exceed 200 characters")
@@ -171,10 +186,12 @@ def _link_record(link: IssueLink) -> dict[str, str]:
     link_type = _bounded_text(link.link_type, name="link_type", maximum=120)
     direction = _bounded_text(link.direction, name="direction", maximum=20)
     state = _bounded_text(link.observation_state, name="observation_state", maximum=20)
-    source_updated_at = _bounded_text(
-        link.source_updated_at, name="source_updated_at", maximum=80
+    source_updated_at = _normalized_timestamp(
+        link.source_updated_at, name="source_updated_at"
     )
-    observed_at = _bounded_text(link.observed_at, name="observed_at", maximum=80)
+    observed_at = _normalized_timestamp(link.observed_at, name="observed_at")
+    if not isinstance(link.source_link_ref, str):
+        raise ValueError("source_link_ref must be a string")
     source_link_ref = link.source_link_ref.strip()
     if len(source_link_ref) > 200:
         raise ValueError("source_link_ref must not exceed 200 characters")
@@ -293,11 +310,24 @@ def stage_issue_events(
     with _connection(db_path) as connection:
         connection.execute("BEGIN IMMEDIATE")
         run = _require_staged_run(connection, run_id, "jira_issue_history")
-        stage_accepted = 0
+        accepted = 0
+        duplicated = 0
+        seen_keys: set[str] = set()
         for record in records:
-            cursor = connection.execute(
+            dedup_key = record["dedup_key"]
+            if dedup_key in seen_keys or connection.execute(
                 """
-                INSERT OR IGNORE INTO jira_issue_event_stage
+                SELECT 1 FROM jira_issue_event_stage
+                WHERE run_id = ? AND dedup_key = ?
+                """,
+                [run_id, dedup_key],
+            ).fetchone():
+                duplicated += 1
+                continue
+            seen_keys.add(dedup_key)
+            connection.execute(
+                """
+                INSERT INTO jira_issue_event_stage
                     (run_id, dedup_key, issue_ref, source_event_ref, event_type,
                      field_key, from_value, to_value, source_updated_at, observed_at)
                 VALUES
@@ -306,21 +336,16 @@ def stage_issue_events(
                 """,
                 {"run_id": run["run_id"], **record},
             )
-            stage_accepted += cursor.rowcount
-        staged_keys = {record["dedup_key"] for record in records}
-        published_duplicates = sum(
-            1
-            for dedup_key in staged_keys
             if connection.execute(
                 """
                 SELECT 1 FROM jira_issue_events
                 WHERE source_id = ? AND board_id = ? AND dedup_key = ?
                 """,
                 [run["source_id"], run["board_id"], dedup_key],
-            ).fetchone()
-        )
-        accepted = stage_accepted - published_duplicates
-        duplicated = len(records) - accepted
+            ).fetchone():
+                duplicated += 1
+            else:
+                accepted += 1
         for item_ref in manifest:
             connection.execute(
                 """
@@ -358,11 +383,24 @@ def stage_issue_links(
     with _connection(db_path) as connection:
         connection.execute("BEGIN IMMEDIATE")
         run = _require_staged_run(connection, run_id, "jira_issue_links")
-        stage_accepted = 0
+        accepted = 0
+        duplicated = 0
+        seen_keys: set[str] = set()
         for record in records:
-            cursor = connection.execute(
+            dedup_key = record["dedup_key"]
+            if dedup_key in seen_keys or connection.execute(
                 """
-                INSERT OR IGNORE INTO jira_issue_link_stage
+                SELECT 1 FROM jira_issue_link_stage
+                WHERE run_id = ? AND dedup_key = ?
+                """,
+                [run_id, dedup_key],
+            ).fetchone():
+                duplicated += 1
+                continue
+            seen_keys.add(dedup_key)
+            connection.execute(
+                """
+                INSERT INTO jira_issue_link_stage
                     (run_id, dedup_key, source_link_ref, issue_ref, related_issue_ref,
                      link_type, direction, observation_state, source_updated_at, observed_at)
                 VALUES
@@ -372,21 +410,16 @@ def stage_issue_links(
                 """,
                 {"run_id": run["run_id"], **record},
             )
-            stage_accepted += cursor.rowcount
-        staged_keys = {record["dedup_key"] for record in records}
-        published_duplicates = sum(
-            1
-            for dedup_key in staged_keys
             if connection.execute(
                 """
                 SELECT 1 FROM jira_issue_links
                 WHERE source_id = ? AND board_id = ? AND dedup_key = ?
                 """,
                 [run["source_id"], run["board_id"], dedup_key],
-            ).fetchone()
-        )
-        accepted = stage_accepted - published_duplicates
-        duplicated = len(records) - accepted
+            ).fetchone():
+                duplicated += 1
+            else:
+                accepted += 1
         for item_ref in manifest:
             connection.execute(
                 """
@@ -426,7 +459,17 @@ def finish_staging(
 ) -> None:
     if coverage_status not in COVERAGE_STATES:
         raise ValueError(f"Unsupported coverage status: {coverage_status}")
-    if pages_received < 0 or pages_expected is not None and pages_expected < 0:
+    if (
+        not isinstance(pages_received, int)
+        or isinstance(pages_received, bool)
+        or pages_received < 0
+        or pages_expected is not None
+        and (
+            not isinstance(pages_expected, int)
+            or isinstance(pages_expected, bool)
+            or pages_expected < 0
+        )
+    ):
         raise ValueError("Page counts must not be negative")
     warnings = list(warning_codes or [])
     if not all(isinstance(code, str) and 0 < len(code) <= 100 for code in warnings):
@@ -435,8 +478,17 @@ def finish_staging(
         coverage_status = "partial"
         if "PAGE_COUNT_MISMATCH" not in warnings:
             warnings.append("PAGE_COUNT_MISMATCH")
+    if not isinstance(proposed_cursor_time, str) or not isinstance(proposed_cursor_ref, str):
+        raise ValueError("Proposed cursor values must be strings")
+    proposed_cursor_time = proposed_cursor_time.strip()
+    proposed_cursor_ref = proposed_cursor_ref.strip()
+    if proposed_cursor_time:
+        proposed_cursor_time = _normalized_timestamp(
+            proposed_cursor_time,
+            name="proposed_cursor_time",
+        )
     if coverage_status == "complete" and (
-        not proposed_cursor_time.strip() or not proposed_cursor_ref.strip()
+        not proposed_cursor_time or not proposed_cursor_ref
     ):
         raise ValueError("Complete coverage requires a compound proposed cursor")
     with _connection(db_path) as connection:
@@ -460,8 +512,8 @@ def finish_staging(
             """,
             [
                 coverage_status,
-                proposed_cursor_time.strip(),
-                proposed_cursor_ref.strip(),
+                proposed_cursor_time,
+                proposed_cursor_ref,
                 1 if authoritative_manifest else 0,
                 pages_expected,
                 pages_received,
@@ -490,6 +542,26 @@ def publish_run(run_id: str, *, db_path: str | Path | None = None) -> int:
             raise ValueError("Incomplete pagination cannot be published")
         if not run["proposed_cursor_time"] or not run["proposed_cursor_ref"]:
             raise ValueError("A complete compound cursor is required for publication")
+        current_cursor = connection.execute(
+            """
+            SELECT cursor_time, cursor_ref, published_run_id
+            FROM source_evidence_cursors
+            WHERE source_id = ? AND board_id = ? AND dataset = ?
+            """,
+            [run["source_id"], run["board_id"], run["dataset"]],
+        ).fetchone()
+        current_run_id = current_cursor["published_run_id"] if current_cursor else ""
+        if current_run_id != run["prior_published_run_id"]:
+            _reject_stale_run(connection, run_id, "STALE_PUBLISHED_RUN")
+            connection.commit()
+            raise ValueError("The evidence run is stale relative to the published cursor")
+        if current_cursor and _cursor_key(
+            run["proposed_cursor_time"],
+            run["proposed_cursor_ref"],
+        ) < _cursor_key(current_cursor["cursor_time"], current_cursor["cursor_ref"]):
+            _reject_stale_run(connection, run_id, "CURSOR_REGRESSION")
+            connection.commit()
+            raise ValueError("The proposed evidence cursor would move backwards")
 
         if run["dataset"] == "jira_issue_history":
             published = _publish_issue_events(connection, run)
@@ -551,6 +623,59 @@ def reject_run(run_id: str, *, db_path: str | Path | None = None) -> None:
             [_now(), run_id],
         )
         connection.commit()
+
+
+def fail_run(
+    run_id: str,
+    *,
+    error_code: str,
+    db_path: str | Path | None = None,
+) -> None:
+    with _connection(db_path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT publication_status FROM source_evidence_runs WHERE run_id = ?",
+            [run_id],
+        ).fetchone()
+        if not row:
+            raise ValueError(f"Unknown source evidence run: {run_id}")
+        if row["publication_status"] == "staged":
+            connection.execute(
+                """
+                UPDATE source_evidence_runs
+                SET coverage_status = 'failed',
+                    publication_status = 'rejected',
+                    error_code = ?,
+                    finished_at = ?
+                WHERE run_id = ?
+                """,
+                [error_code[:100], _now(), run_id],
+            )
+        connection.commit()
+
+
+def _cursor_key(cursor_time: str, cursor_ref: str) -> tuple[datetime, str]:
+    return (
+        datetime.fromisoformat(cursor_time.replace("Z", "+00:00")).astimezone(timezone.utc),
+        cursor_ref,
+    )
+
+
+def _reject_stale_run(
+    connection: sqlite3.Connection,
+    run_id: str,
+    error_code: str,
+) -> None:
+    connection.execute(
+        """
+        UPDATE source_evidence_runs
+        SET publication_status = 'rejected',
+            error_code = ?,
+            finished_at = CASE WHEN finished_at = '' THEN ? ELSE finished_at END
+        WHERE run_id = ?
+        """,
+        [error_code, _now(), run_id],
+    )
 
 
 def _require_staged_run(

@@ -30,7 +30,10 @@ class JiraEvidenceConfig:
     supported_link_types: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if not self.source_id.strip() or not self.board_id.strip() or not self.base_jql.strip():
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (self.source_id, self.board_id, self.base_jql)
+        ):
             raise ValueError("source_id, board_id, and base_jql are required")
         if not 1 <= self.bootstrap_days <= 3650:
             raise ValueError("bootstrap_days must be between 1 and 3650")
@@ -42,14 +45,7 @@ class JiraEvidenceConfig:
             raise ValueError("max_pages must be between 1 and 1000")
         if not 1 <= self.max_issues <= 50000:
             raise ValueError("max_issues must be between 1 and 50000")
-        allowed = source_evidence.NORMALIZED_FIELD_KEYS - {
-            "issue_observed",
-            "tombstone",
-        }
-        invalid = set(self.field_mappings.values()) - allowed
-        if invalid:
-            raise ValueError(f"Unsupported normalized field mapping(s): {sorted(invalid)}")
-        if not all(
+        if not isinstance(self.field_mappings, dict) or not all(
             isinstance(key, str)
             and key.strip()
             and isinstance(value, str)
@@ -57,6 +53,18 @@ class JiraEvidenceConfig:
             for key, value in self.field_mappings.items()
         ):
             raise ValueError("field_mappings must contain non-empty string keys and values")
+        allowed = source_evidence.NORMALIZED_FIELD_KEYS - {
+            "issue_observed",
+            "tombstone",
+        }
+        invalid = set(self.field_mappings.values()) - allowed
+        if invalid:
+            raise ValueError(f"Unsupported normalized field mapping(s): {sorted(invalid)}")
+        if not isinstance(self.supported_link_types, tuple) or not all(
+            isinstance(value, str) and value.strip() and len(value) <= 120
+            for value in self.supported_link_types
+        ):
+            raise ValueError("supported_link_types must contain bounded non-empty strings")
 
 
 @dataclass
@@ -128,6 +136,14 @@ def _parse_timestamp(value: str) -> datetime:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def _normalized_timestamp(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Source timestamp must be a non-empty string")
+    parsed = _parse_timestamp(value)
+    timespec = "microseconds" if parsed.microsecond else "seconds"
+    return parsed.isoformat(timespec=timespec)
 
 
 def _incremental_jql(config: JiraEvidenceConfig, cursor: dict | None) -> str:
@@ -220,7 +236,15 @@ def _search_issues(
         if not isinstance(page_issues, list):
             return issues, pages_received, warnings + ["MALFORMED_SEARCH_PAGE"], "MALFORMED_PAGE"
         pages_received += 1
-        issues.extend(item for item in page_issues if isinstance(item, dict))
+        if not all(isinstance(item, dict) for item in page_issues):
+            issues.extend(item for item in page_issues if isinstance(item, dict))
+            return (
+                issues,
+                pages_received,
+                warnings + ["MALFORMED_ISSUE"],
+                "MALFORMED_PAGE",
+            )
+        issues.extend(page_issues)
         if len(issues) > config.max_issues:
             return (
                 issues[: config.max_issues],
@@ -263,7 +287,10 @@ def acquire_issue_links(
         pages_expected=page_count if not error_code else None,
         warning_codes=warnings,
         error_code=error_code,
-        field_coverage={"updated": True, "issuelinks": not bool(error_code)},
+        field_coverage={
+            "updated": not bool(error_code),
+            "issuelinks": not bool(error_code),
+        },
     )
     high_water: tuple[str, str] = ("", "")
     supported = set(config.supported_link_types)
@@ -281,6 +308,14 @@ def acquire_issue_links(
             result.rows_rejected += 1
             result.coverage_status = "partial"
             result.warning_codes.append("REQUIRED_FIELD_UNAVAILABLE")
+            continue
+        try:
+            updated = _normalized_timestamp(updated)
+        except ValueError:
+            result.rows_rejected += 1
+            result.coverage_status = "partial"
+            result.warning_codes.append("MALFORMED_SOURCE_TIMESTAMP")
+            result.field_coverage["updated"] = False
             continue
         high_water = max(high_water, (updated, issue_ref))
         for raw_link in links:
@@ -354,7 +389,11 @@ def acquire_issue_history(
         warning_codes=warnings,
         error_code=error_code,
         field_coverage={
-            normalized: True for normalized in sorted(set(config.field_mappings.values()))
+            "updated": not bool(error_code),
+            **{
+                normalized: not bool(error_code)
+                for normalized in sorted(set(config.field_mappings.values()))
+            },
         },
     )
     high_water: tuple[str, str] = ("", "")
@@ -371,6 +410,14 @@ def acquire_issue_history(
             result.rows_rejected += 1
             result.coverage_status = "partial"
             result.warning_codes.append("REQUIRED_FIELD_UNAVAILABLE")
+            continue
+        try:
+            updated = _normalized_timestamp(updated)
+        except ValueError:
+            result.rows_rejected += 1
+            result.coverage_status = "partial"
+            result.warning_codes.append("MALFORMED_SOURCE_TIMESTAMP")
+            result.field_coverage["updated"] = False
             continue
         high_water = max(high_water, (updated, issue_ref))
         result.manifest_refs.add(issue_ref)
@@ -466,15 +513,19 @@ def _fetch_changelog(
         pages += 1
         for history in histories:
             if not isinstance(history, dict):
-                continue
+                return events, pages, "MALFORMED_CHANGELOG_RECORD"
             created = history.get("created")
             event_ref = str(history.get("id") or "")
             items = history.get("items")
             if not isinstance(created, str) or not isinstance(items, list):
-                continue
+                return events, pages, "MALFORMED_CHANGELOG_RECORD"
+            try:
+                created = _normalized_timestamp(created)
+            except ValueError:
+                return events, pages, "MALFORMED_CHANGELOG_TIMESTAMP"
             for index, item in enumerate(items):
                 if not isinstance(item, dict):
-                    continue
+                    return events, pages, "MALFORMED_CHANGELOG_RECORD"
                 source_field = str(item.get("fieldId") or item.get("field") or "")
                 normalized_field = config.field_mappings.get(source_field)
                 if not normalized_field:
@@ -508,6 +559,8 @@ def sync_dataset(
     db_path: str | None = None,
     observed_at: str | None = None,
 ) -> tuple[str, AcquisitionResult]:
+    if dataset not in source_evidence.DATASETS:
+        raise ValueError(f"Unsupported evidence dataset: {dataset}")
     cursor = source_evidence.get_cursor(
         config.source_id,
         config.board_id,
@@ -521,55 +574,61 @@ def sync_dataset(
         overlap_seconds=config.overlap_seconds,
         db_path=db_path,
     )
-    if dataset == "jira_issue_history":
-        result = acquire_issue_history(
-            session,
-            base_url,
-            config,
-            cursor,
-            observed_at=observed_at,
-        )
-        source_evidence.stage_issue_events(
+    try:
+        if dataset == "jira_issue_history":
+            result = acquire_issue_history(
+                session,
+                base_url,
+                config,
+                cursor,
+                observed_at=observed_at,
+            )
+            source_evidence.stage_issue_events(
+                run_id,
+                result.issue_events,
+                manifest_issue_refs=result.manifest_refs,
+                db_path=db_path,
+            )
+        else:
+            result = acquire_issue_links(
+                session,
+                base_url,
+                config,
+                cursor,
+                observed_at=observed_at,
+            )
+            source_evidence.stage_issue_links(
+                run_id,
+                result.issue_links,
+                manifest_link_refs=result.manifest_refs,
+                db_path=db_path,
+            )
+        source_evidence.finish_staging(
             run_id,
-            result.issue_events,
-            manifest_issue_refs=result.manifest_refs,
+            coverage_status=result.coverage_status,
+            pages_received=result.pages_received,
+            pages_expected=result.pages_expected,
+            proposed_cursor_time=result.cursor_time,
+            proposed_cursor_ref=result.cursor_ref,
+            # Incremental updated-since acquisition is not an authoritative full-scope
+            # manifest. A separately validated complete manifest must opt into closure
+            # through the repository publication contract.
+            authoritative_manifest=False,
+            field_coverage=result.field_coverage,
+            warning_codes=result.warning_codes,
+            error_code=result.error_code,
+            rows_rejected=result.rows_rejected,
             db_path=db_path,
         )
-    elif dataset == "jira_issue_links":
-        result = acquire_issue_links(
-            session,
-            base_url,
-            config,
-            cursor,
-            observed_at=observed_at,
-        )
-        source_evidence.stage_issue_links(
+        if result.coverage_status == "complete":
+            source_evidence.publish_run(run_id, db_path=db_path)
+        else:
+            source_evidence.reject_run(run_id, db_path=db_path)
+        return run_id, result
+    except Exception:
+        source_evidence.fail_run(
             run_id,
-            result.issue_links,
-            manifest_link_refs=result.manifest_refs,
+            error_code="EVIDENCE_ACQUISITION_FAILED",
             db_path=db_path,
         )
-    else:
-        raise ValueError(f"Unsupported evidence dataset: {dataset}")
-    source_evidence.finish_staging(
-        run_id,
-        coverage_status=result.coverage_status,
-        pages_received=result.pages_received,
-        pages_expected=result.pages_expected,
-        proposed_cursor_time=result.cursor_time,
-        proposed_cursor_ref=result.cursor_ref,
-        # Incremental updated-since acquisition is not an authoritative full-scope
-        # manifest. A separately validated complete manifest must opt into closure
-        # through the repository publication contract.
-        authoritative_manifest=False,
-        field_coverage=result.field_coverage,
-        warning_codes=result.warning_codes,
-        error_code=result.error_code,
-        rows_rejected=result.rows_rejected,
-        db_path=db_path,
-    )
-    if result.coverage_status == "complete":
-        source_evidence.publish_run(run_id, db_path=db_path)
-    else:
-        source_evidence.reject_run(run_id, db_path=db_path)
-    return run_id, result
+        raise

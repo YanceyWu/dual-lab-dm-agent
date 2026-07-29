@@ -58,6 +58,8 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'dashboard_operations',
                     'source_evidence_runs',
                     'source_evidence_cursors',
+                    'source_evidence_manifest_stage',
+                    'source_evidence_published_items',
                     'jira_issue_event_stage',
                     'jira_issue_events',
                     'jira_issue_link_stage',
@@ -87,6 +89,8 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "dashboard_operations",
         "source_evidence_runs",
         "source_evidence_cursors",
+        "source_evidence_manifest_stage",
+        "source_evidence_published_items",
         "jira_issue_event_stage",
         "jira_issue_events",
         "jira_issue_link_stage",
@@ -143,6 +147,7 @@ def rehearse() -> None:
             raise RuntimeError("INSTALLED_VERSION_MISMATCH")
 
         backup_db = workspace / "before-upgrade.db"
+        clean_db = workspace / "clean-bootstrap.db"
         upgrade_db = workspace / "upgrade-copy.db"
         rollback_db = workspace / "rollback-copy.db"
         shutil.copy2(SAMPLE_DB, backup_db)
@@ -152,6 +157,22 @@ def rehearse() -> None:
 
         upgrade_env = installed_env.copy()
         upgrade_env["DATABASE_PATH"] = str(upgrade_db)
+        clean_env = installed_env.copy()
+        clean_env["DATABASE_PATH"] = str(clean_db)
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from pm_agent.database.bootstrap import main; main()",
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+        )
+        verify_upgraded_database(
+            clean_db,
+            {table: 0 for table in CORE_TABLES},
+        )
         subprocess.run(
             [
                 sys.executable,
@@ -179,6 +200,17 @@ def rehearse() -> None:
                     "pages_expected=1,proposed_cursor_time="
                     "'2026-07-29T01:00:00+00:00',proposed_cursor_ref='SYN-1');"
                     "e.publish_run(r)"
+                    ";p=e.start_run('jira-evidence-synthetic','board-synthetic',"
+                    "'jira_issue_history',overlap_seconds=300,run_id='installed-partial');"
+                    "e.stage_issue_events(p,[e.IssueEvent(issue_ref='SYN-2',"
+                    "source_event_ref='evt-2',event_type='field_changed',"
+                    "field_key='status',from_value='todo',to_value='done',"
+                    "source_updated_at='2026-07-29T02:00:00+00:00',"
+                    "observed_at='2026-07-29T02:05:00+00:00')]);"
+                    "e.finish_staging(p,coverage_status='complete',pages_received=1,"
+                    "pages_expected=2,proposed_cursor_time="
+                    "'2026-07-29T02:00:00+00:00',proposed_cursor_ref='SYN-2');"
+                    "e.reject_run(p)"
                 ),
             ],
             check=True,
@@ -193,6 +225,29 @@ def rehearse() -> None:
                 "SELECT published_run_id FROM source_evidence_cursors"
             ).fetchone()[0] != "installed-run":
                 raise RuntimeError("INSTALLED_PHASE3_CURSOR_BEHAVIOR_INVALID")
+            partial_state = connection.execute(
+                """
+                SELECT coverage_status, publication_status
+                FROM source_evidence_runs
+                WHERE run_id = 'installed-partial'
+                """
+            ).fetchone()
+            if partial_state != ("partial", "rejected"):
+                raise RuntimeError("INSTALLED_PHASE3_PARTIAL_STATE_INVALID")
+            if connection.execute(
+                """
+                SELECT COUNT(*) FROM jira_issue_event_stage
+                WHERE run_id = 'installed-partial'
+                """
+            ).fetchone()[0] != 1:
+                raise RuntimeError("INSTALLED_PHASE3_PARTIAL_STAGE_MISSING")
+            if connection.execute(
+                """
+                SELECT COUNT(*) FROM jira_issue_events
+                WHERE issue_ref = 'SYN-2'
+                """
+            ).fetchone()[0] != 0:
+                raise RuntimeError("INSTALLED_PHASE3_PARTIAL_RUN_PUBLISHED")
 
         shutil.copy2(backup_db, rollback_db)
         if sha256(rollback_db) != original_hash:

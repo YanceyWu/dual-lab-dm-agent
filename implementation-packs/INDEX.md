@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-029 BATCH B1 IMPLEMENTED — REVIEW REQUIRED`
+Status: `IP-029 BATCH B1 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -22,7 +22,7 @@ recoverable from Git history.
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
 | IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29 | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
-| IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Batch B1 incremental source evidence core implemented and locally validated; stopped for B1 Review | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | Not created; required in Batch D |
+| IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Batch B1 and first-Review corrections implemented and locally validated; stopped for B1 re-review | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | Not created; required in Batch D |
 
 ## Current execution order
 
@@ -34,10 +34,10 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review the implemented IP-029 Batch B1 incremental source evidence core.
-   Decide whether to accept it or require corrections; do not begin B2 or any
-   later batch, Phase 4, live connector use, real data, release, push, merge,
-   or tag work under the current gate.
+4. Re-review the corrected IP-029 Batch B1 incremental source evidence core.
+   Decide whether to accept it or require further corrections; do not begin B2
+   or any later batch, Phase 4, live connector use, real data, release, push,
+   merge, or tag work under the current gate.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
