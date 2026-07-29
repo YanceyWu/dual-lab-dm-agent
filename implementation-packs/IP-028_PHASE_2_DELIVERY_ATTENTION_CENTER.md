@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH D VALIDATED — PHASE 2 PROMOTION DECISION REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -224,3 +224,26 @@ compilation, boundary/synthetic checks, package build/inspection, and eight
 release validation checks. Technical re-review found no remaining P0-P2 issue.
 The result is stopped for owner acceptance; Batch D and Phase 2 promotion
 remain unauthorized.
+
+## Batch D result
+
+The owner accepted the corrected C2 result and authorized the next Batch D
+validation step on 2026-07-29.
+
+Combined focused regression passed 109 tests across Attention rules, storage,
+reconciliation, lifecycle, Center projections, retained configuration
+storage, interface rejection, migration, concurrency, Management Attention,
+`UseCaseResult 1.0`, discovery, CLI build, and Copilot.
+
+`make validate` passed 183 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, repository-boundary and synthetic-sample
+checks, diff hygiene, package build/inspection, and eight release validation
+checks. `make rehearse-release` passed temporary wheel installation, isolated
+synthetic database upgrade, integrity checks, installed behavior, and
+rollback.
+
+Schema and portable-scope review found no blocking issue. The full result is
+recorded in `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md`. Phase 2
+is not promoted; the exact next gate is the explicit owner promotion decision.
+Phase 3/4, connector, real-data, release, push, merge, and tag work remain
+unauthorized.

@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Status: `IP-028 BATCH D VALIDATED — PHASE 2 PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -21,7 +21,7 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Corrected Batch C1 accepted; unaccepted Batch C2 mapping paths removed/blocked; dormant mutation helpers removed; additive storage retained; technical re-review passed; owner acceptance pending | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | C2 correction accepted; Batch D regression, schema/portable review, and synthetic release rehearsal passed; explicit Phase 2 promotion decision required | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
 
 ## Current execution order
 
@@ -33,9 +33,9 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Obtain owner acceptance of the bounded IP-028 C2 correction or bounded
-   feedback. Do not begin Phase 3, Phase 4, Batch D, or promotion under the
-   current gate.
+4. Review the IP-028 Batch D implementation report and make the explicit local
+   Phase 2 promotion decision. Do not begin Phase 3, Phase 4, release, push,
+   merge, or tag work under the current gate.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

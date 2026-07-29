@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH C2 REVIEW CHANGES REQUIRED — PUBLIC MAPPING CONFIG NOT ACCEPTED`
+Status: `BATCH D VALIDATED — PHASE 2 PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -660,8 +660,9 @@ The owner accepted the implemented and locally validated Batch C1 result on
 Batch C2 passed technical validation but failed product-contract review. The
 replacement architecture was approved on 2026-07-29. The bounded C2
 public-interface correction and mutation-boundary review fix are implemented
-and locally validated. Technical re-review found no remaining P0-P2 issue;
-owner acceptance is pending. Batch D, Phase 2 promotion, Phase 3/4
-implementation, release,
-operational work, connector work, real-data access, push, merge, and tag
-remain separately gated.
+and locally validated. Technical re-review found no remaining P0-P2 issue, and
+the owner accepted the correction on 2026-07-29. Batch D focused regression,
+full validation, schema/portable review, and synthetic installed-package
+upgrade/rollback rehearsal passed. The explicit Phase 2 promotion decision is
+next. Phase 3/4 implementation, release, operational work, connector work,
+real-data access, push, merge, and tag remain separately gated.

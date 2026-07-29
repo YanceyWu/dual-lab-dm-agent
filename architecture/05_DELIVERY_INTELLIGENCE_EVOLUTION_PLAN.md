@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 2 C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Status: `PHASE 2 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -52,9 +52,10 @@ missing from the phase plan. The owner approved the correction architecture in
 `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` on
 2026-07-29. The bounded C2 public-interface correction and its mutation-boundary
 review fix are implemented, locally validated, and passed technical re-review.
-Owner acceptance remains pending. Batch D, Phase 2 promotion, Phase 3/4
-implementation, connector work, real data, and publication remain separately
-gated.
+The owner accepted the correction on 2026-07-29. Batch D regression,
+schema/portable review, and synthetic installed-package rehearsal passed.
+The explicit Phase 2 promotion decision is next; Phase 3/4 implementation,
+connector work, real data, and publication remain separately gated.
 
 ## Delivery loop
 
@@ -283,8 +284,9 @@ abstraction. The layered health revision in
 `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` was
 approved on 2026-07-29. The bounded C2 public-interface correction and its
 mutation-boundary review fix are implemented, locally validated, and passed
-technical re-review. Owner acceptance, connector work, real data, Phase 3/4
-runtime, and promotion remain separately gated.
+technical re-review. The owner accepted the correction and Batch D validation
+passed. The Phase 2 promotion decision, connector work, real data, Phase 3/4
+runtime, and publication remain separately gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 

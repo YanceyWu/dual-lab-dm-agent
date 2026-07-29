@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 C2 RE-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Gate status: `PHASE 2 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -95,8 +95,11 @@ belong in Git history and must not be interpreted as current instructions.
   2026-07-29. The bounded C2 correction removes the CLI, Dashboard, and Copilot
   mapping preview paths, rejects direct preview and legacy-token confirmation,
   removes dormant configuration mutation helpers, and retains additive storage
-  unchanged. Technical re-review found no remaining P0-P2 issue; owner
-  acceptance is pending and Phase 3/4 runtime remains unauthorized.
+  unchanged. Technical re-review found no remaining P0-P2 issue. The owner
+  accepted the correction and authorized the next Batch D step on 2026-07-29.
+- Phase 2 Batch D focused regression, full validation, schema/portable review,
+  and synthetic installed-package upgrade/rollback rehearsal passed. Phase 2
+  is not promoted; Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -264,6 +267,17 @@ synthetic-sample checks, 183 runtime tests, 21 repository-tool tests with
 19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and
 all eight release validation checks.
 
+Phase 2 Batch D passed 109 combined focused tests covering Attention rules,
+storage, reconciliation, lifecycle, Center projections, retained
+configuration storage, public-interface rejection, migration, concurrency,
+Management Attention, `UseCaseResult 1.0`, discovery, CLI build, and Copilot.
+`make validate` passed repository-boundary and synthetic-sample checks,
+183 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks. `make rehearse-release` passed temporary wheel
+installation, isolated synthetic database upgrade, integrity checks, installed
+behavior, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -305,26 +319,25 @@ all eight release validation checks.
    `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`, and retains the additive
    configuration-operation table and existing records. The review correction
    also removes dormant configuration-operation and rule-version mutation
-   helpers. Technical re-review passed; owner acceptance remains pending before
-   any Phase 2 promotion decision.
+   helpers. Technical re-review passed and the owner accepted the correction.
 9. The layered health and milestone architecture is approved but not
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
    promoted milestone history. None of that runtime is authorized by the
    current C2 correction gate.
-10. Connector work, real data, visual Dashboard Center UI, Batch D, push, and
-   Phase 2 promotion remain blocked pending their own gates.
+10. Batch D validation is green, but Phase 2 is not promoted. Connector work,
+    real data, visual Dashboard Center UI, push, and promotion remain blocked
+    pending their own gates.
 
 ## Exact next actions
 
-1. Obtain owner acceptance of the bounded IP-028 C2 correction or bounded
-   correction feedback.
-2. Preserve public-path removal, legacy-token blocking, mutation-helper
-   removal, storage preservation, C1, `UseCaseResult 1.0`, Management
-   Attention, and disabled pending-decision contracts.
+1. Review `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` and make the
+   explicit local Phase 2 promotion decision.
+2. If promoted, record only the local development baseline and next Phase 3
+   design gate; do not begin Phase 3 implementation in the promotion record.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
-   Batch D, visual Dashboard UI, connectors, real-data work, Phase 2
-   promotion, release, tag, merge, or push without separate authorization.
+   visual Dashboard UI, connectors, real-data work, release, tag, merge, or
+   push without separate authorization.
 
 ## Decisions in force
 
@@ -350,8 +363,7 @@ all eight release validation checks.
   promote it as an approved capability.
 - The layered health and milestone architecture is approved. The bounded C2
   public-interface correction is implemented, locally validated, and passed
-  technical re-review; owner acceptance remains pending and Phase 3/4 runtime
-  remains unauthorized.
+  technical re-review. The owner accepted it on 2026-07-29.
 - The unaccepted RAG mapping configuration has no supported CLI, Dashboard, or
   Copilot preview path. Direct preview and confirmation of retained legacy
   configuration operations fail with
@@ -359,6 +371,8 @@ all eight release validation checks.
 - No configuration-operation create/claim/expire/finish/fail helper or
   project-health rule-version mutation helper remains in the runtime.
   Configuration storage and legacy-operation read detection remain intact.
+- IP-028 Batch D validation is green. Phase 2 promotion requires a separate
+  explicit owner decision and does not automatically authorize Phase 3.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
@@ -372,6 +386,33 @@ all eight release validation checks.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 Batch D validated
+
+- The owner accepted the bounded C2 correction and authorized the next Batch D
+  validation step.
+- Combined focused regression passed 109/109 across Attention rules, storage,
+  reconciliation, lifecycle, Center projections, retained configuration
+  storage, interface rejection, migration, concurrency, Management Attention,
+  `UseCaseResult 1.0`, discovery, CLI build, and Copilot.
+- `make validate` passed repository-boundary and synthetic-sample checks,
+  183 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and all eight release
+  validation checks.
+- `make rehearse-release` passed temporary wheel installation, isolated
+  synthetic database upgrade, integrity checks, installed behavior, and
+  rollback for `ai-pm-agent 0.2.0rc1`.
+- Schema review confirmed six additive Attention tables, bounded constraints,
+  hashed tokens, migration/backfill coverage, retained legacy configuration
+  rows, and disabled pending-decision enforcement. Portable review found no
+  operational data, connector, credential, private path, or company-derived
+  content.
+- Added `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` with
+  implementation, validation, schema, compatibility, remaining-risk, and
+  promotion-gate evidence.
+- No runtime behavior changed in Batch D. Phase 2 is not promoted; the explicit
+  owner promotion decision is next. Phase 3/4 runtime, connector, real-data,
+  release, push, merge, and tag work remain unauthorized.
 
 ### 2026-07-29 — Phase 2 C2 correction technical re-review passed
 
