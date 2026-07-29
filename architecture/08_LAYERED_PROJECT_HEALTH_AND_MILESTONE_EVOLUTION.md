@@ -1,6 +1,6 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `DESIGN REVISION PROPOSED — REVIEW REQUIRED`
+Status: `DESIGN REVISION APPROVED — C2 CORRECTION NEXT`
 Last updated: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review
@@ -18,9 +18,11 @@ Story points remain useful evidence for Sprint execution. They are not a
 substitute for Release commitments, milestone achievement, dependency
 readiness, or overall Project Health.
 
-This document changes architecture intent and phase ownership only. It does
-not authorize runtime, schema, connector, real-data, migration, or promotion
-work.
+The owner approved this architecture revision on 2026-07-29. The approval
+establishes architecture intent and phase ownership and makes the bounded
+IP-028 C2 public-interface correction the next implementation action. It does
+not authorize Phase 3/4 runtime, connector, real-data, milestone schema,
+promotion, release, push, merge, or tag work.
 
 ## Verified current behavior
 
@@ -356,9 +358,9 @@ does not become the first owner of milestone data.
 - no Phase 2 promotion, release, push, merge, or tag; and
 - no silent deletion of the unaccepted local C2 storage.
 
-## Review gate and exact next action
+## Approved decisions and exact next action
 
-Owner review must confirm:
+Owner review confirmed on 2026-07-29:
 
 1. the Sprint/Release/Project layer separation;
 2. milestone ownership moving to Phase 3 and reuse in Phases 4 and 7;
@@ -368,7 +370,7 @@ Owner review must confirm:
 6. existing-project-only overrides; and
 7. the unaccepted C2 mapping interface disposition.
 
-After approval, the next bounded implementation action is an IP-028 C2
+The next bounded implementation action is an IP-028 C2
 correction that disables/removes the unaccepted public mapping-configuration
 surface while preserving accepted C1 behavior and additive data. It must run
 focused compatibility tests and `make validate`, update `PROGRESS.md`, commit

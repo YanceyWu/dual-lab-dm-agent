@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 2 C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH REVISION PROPOSED`
+Status: `PHASE 2 LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -48,9 +48,10 @@ The owner then authorized only bounded Batch C2 RAG configuration. Its local
 implementation passed validation but failed product-contract review on
 2026-07-29: a label-mapping interface is not the required layered
 Sprint/Release/Project Health condition model, and milestone ownership was
-missing from the phase plan. The proposed correction is defined in
-`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`. Batch D,
-Phase 2 promotion, Phase 3 implementation, connector work, real data, and
+missing from the phase plan. The owner approved the correction architecture in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` on
+2026-07-29. The bounded C2 public-interface correction is next; Batch D,
+Phase 2 promotion, Phase 3/4 implementation, connector work, real data, and
 publication remain separately gated.
 
 ## Delivery loop
@@ -277,9 +278,10 @@ review corrections are implemented, validated, and accepted on
 `codex/phase-2-attention-center`. Batch C2 mapping mechanics are technically
 validated at `71d90d3`, but product review did not accept that DM-facing
 abstraction. The layered health revision in
-`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` awaits
-design review; its correction, connector work, real data, and promotion remain
-separately gated.
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` was
+approved on 2026-07-29. The bounded C2 public-interface correction is next;
+connector work, real data, Phase 3/4 runtime, and promotion remain separately
+gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 

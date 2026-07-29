@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH DESIGN REVIEW`
+Status: `LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -205,10 +205,10 @@ seven-dimension Project Health, treats unavailable Story Point evidence
 explicitly, and makes milestone commitments first-class inputs. The accepted
 C1 behavior and compatibility contracts remain unchanged.
 
-The proposed replacement architecture is recorded in
-`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`. After
-that design is explicitly reviewed, the only authorized next implementation
-is a bounded C2 correction that disables or removes the unaccepted public
+The replacement architecture in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` was
+approved on 2026-07-29. The only next implementation is a bounded C2
+correction that disables or removes the unaccepted public
 mapping configuration CLI, Dashboard, and Copilot paths while retaining or
 safely migrating additive storage. It must add no Phase 3 milestone runtime or
 Phase 4 health engine. Batch D and Phase 2 promotion remain unauthorized.

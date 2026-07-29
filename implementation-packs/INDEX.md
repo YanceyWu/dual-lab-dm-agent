@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 BATCH C2 REVIEW CHANGES REQUIRED — DESIGN REVIEW`
+Status: `IP-028 LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -21,7 +21,7 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Corrected Batch C1 accepted; Batch C2 mapping mechanics technically validated but its product contract was not accepted; layered health and milestone revision awaits design review | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Corrected Batch C1 accepted; Batch C2 mapping mechanics technically validated but its product contract was not accepted; layered health and milestone revision approved; bounded C2 correction is next | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
@@ -29,11 +29,11 @@ recoverable from Git history.
    baseline.
 2. Preserve the accepted corrected IP-028 Batch C1 implementation on
    `codex/phase-2-attention-center`.
-3. Review
+3. Preserve the approved
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Only after explicit design approval, implement the bounded IP-028 C2
+4. Implement the bounded IP-028 C2
    correction that disables or removes the unaccepted public mapping
    configuration paths while preserving accepted C1 and compatibility
    behavior. Do not implement the Phase 3 milestone foundation or Phase 4

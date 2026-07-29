@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH DESIGN REVIEW`
+Gate status: `PHASE 2 LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -91,6 +91,10 @@ belong in Git history and must not be interpreted as current instructions.
   fabricated neutral score. Milestone and Release commitments become canonical
   Phase 3 facts, feed Phase 4 Project Health, and are reused by Phase 7
   Forecast.
+- The owner approved the layered health and milestone architecture on
+  2026-07-29. The bounded C2 correction that disables or removes the
+  unaccepted public mapping configuration paths is the next implementation;
+  Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -238,6 +242,12 @@ synthetic-sample checks, 187 runtime tests, 21 repository-tool tests with
 19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and
 all eight release validation checks.
 
+The documentation-only layered health design approval record passed the same
+`make validate` suite: 187 runtime tests, 21 repository-tool tests with
+19 subtests, repository-boundary and synthetic-sample checks, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -278,23 +288,22 @@ all eight release validation checks.
    configuration, and Copilot configuration paths remain present in local code
    at `71d90d3` and must be disabled or removed by a separately approved
    bounded correction before Phase 2 promotion.
-9. The layered health and milestone architecture is proposed, not approved or
+9. The layered health and milestone architecture is approved but not
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
-   promoted milestone history.
+   promoted milestone history. None of that runtime is authorized by the
+   current C2 correction gate.
 10. Connector work, real data, visual Dashboard Center UI, Batch D, push, and
    Phase 2 promotion remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Review
-   `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`,
-   especially the three health layers, fixed factor catalog, bounded
-   conditions, milestone model, critical guards, and Phase 3/4/7 ownership.
-2. Approve or revise that design. Only after approval, implement a bounded
-   IP-028 C2 correction that disables or removes the unaccepted public mapping
+1. Implement a bounded IP-028 C2 correction that disables or removes the
+   unaccepted public mapping
    configuration paths while preserving accepted C1, `UseCaseResult 1.0`,
    Management Attention, existing data, and disabled pending-decision state.
+2. Add focused synthetic and compatibility tests, run `make validate`, update
+   this continuity record, commit locally, and stop for C2 correction review.
 3. Do not add Phase 3 milestone runtime or Phase 4 health configuration in the
    C2 correction. Do not begin Batch D, visual Dashboard UI, connectors,
    real-data work, Phase 2 promotion, release, tag, merge, or push without
@@ -322,6 +331,9 @@ all eight release validation checks.
 - IP-028 Batch C2 mechanics are implemented and technically validated, but the
   mapping-oriented DM configuration contract is not accepted. Do not expose or
   promote it as an approved capability.
+- The layered health and milestone architecture is approved. The bounded C2
+  public-interface correction is the next implementation scope; it does not
+  authorize Phase 3/4 runtime.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
@@ -335,6 +347,25 @@ all eight release validation checks.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Layered health and milestone design review approved
+
+- The owner approved the three-layer Sprint Execution, Release/Milestone, and
+  seven-dimension Project Health architecture.
+- The fixed factor catalog, bounded DM-configurable conditions,
+  existing-project-only overrides, explicit unavailable Story Point state,
+  critical milestone guards, and Phase 3/4/7 ownership are now decisions in
+  force.
+- The exact next implementation is the bounded IP-028 C2 correction that
+  disables or removes the unaccepted public mapping configuration CLI,
+  Dashboard, and Copilot paths while preserving C1, compatibility contracts,
+  additive data, and disabled `pending_decision_attention`.
+- No runtime, schema, test, connector, real-data, push, promotion, or Phase 3/4
+  implementation change was made by this approval record.
+- `make validate` passed 187 runtime tests, 21 repository-tool tests with
+  19 subtests, repository-boundary and synthetic-sample checks, Ruff,
+  compilation, diff hygiene, package build/inspection, and all eight release
+  validation checks.
 
 ### 2026-07-29 — Layered health and milestone design revision proposed
 

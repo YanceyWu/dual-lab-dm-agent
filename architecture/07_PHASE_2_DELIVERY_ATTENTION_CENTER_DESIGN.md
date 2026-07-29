@@ -655,7 +655,8 @@ recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
 The owner accepted the implemented and locally validated Batch C1 result on
 2026-07-29 and then authorized only the bounded Batch C2 implementation.
 Batch C2 passed technical validation but failed product-contract review. The
-replacement architecture is proposed, not approved. The correction, Batch D,
-Phase 2 promotion, Phase 3 implementation, release, operational work,
-connector work, real-data access, push, merge, and tag remain separately
+replacement architecture was approved on 2026-07-29, making the bounded C2
+public-interface correction the next action. Batch D, Phase 2 promotion,
+Phase 3/4 implementation, release, operational work, connector work,
+real-data access, push, merge, and tag remain separately
 gated.
