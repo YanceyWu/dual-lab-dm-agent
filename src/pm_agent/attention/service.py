@@ -79,52 +79,8 @@ class AttentionService:
         project_id: str | None = None,
         remove_override: bool = False,
     ) -> dict[str, Any]:
-        """Preview one bounded project-health RAG configuration version."""
-        try:
-            normalized_actor = _bounded_id(actor, "actor")
-            normalized_target, normalized_project_id = _configuration_scope(
-                target=target,
-                project_id=project_id,
-                remove_override=remove_override,
-            )
-            with attention_repository.attention_connection() as connection:
-                current = _current_project_health_rule(connection)
-                proposed_parameters, change = _configuration_change(
-                    current["parameters"],
-                    target=normalized_target,
-                    project_id=normalized_project_id,
-                    configuration=configuration,
-                    remove_override=remove_override,
-                )
-                rules.validate_project_health_parameters(proposed_parameters)
-                if _payload_hash(current["parameters"]) == _payload_hash(
-                    proposed_parameters
-                ):
-                    return _failure("ATTENTION_CONFIGURATION_UNCHANGED")
-                new_rule_version = (
-                    attention_repository.next_project_health_rule_version(
-                        connection
-                    )
-                )
-                return _create_configuration_preview(
-                    connection,
-                    actor=normalized_actor,
-                    target=normalized_target,
-                    project_id=normalized_project_id,
-                    current_rule_version=current["rule_version"],
-                    current_parameters_hash=_payload_hash(current["parameters"]),
-                    proposed={
-                        "rule_key": rules.PROJECT_HEALTH_RULE,
-                        "new_rule_version": new_rule_version,
-                        "parameters": proposed_parameters,
-                        "change": change,
-                        "reconciliation_required": True,
-                    },
-                )
-        except (rules.InvalidAttentionCatalog, ValueError):
-            return _failure("ATTENTION_RAG_CONFIG_INVALID")
-        except (json.JSONDecodeError, sqlite3.Error):
-            return _failure("DATA_ACCESS_FAILED")
+        """Reject the unaccepted legacy mapping-configuration surface."""
+        return _failure("ATTENTION_RAG_CONFIGURATION_UNAVAILABLE")
 
     def preview_snooze(
         self,
@@ -248,19 +204,12 @@ class AttentionService:
         with attention_repository.attention_connection(immediate=True) as connection:
             operation = attention_repository.get_operation(connection, operation_id)
             if operation is None:
-                configuration_operation = (
-                    attention_repository.get_configuration_operation(
-                        connection,
-                        operation_id,
-                    )
-                )
-                if configuration_operation is None:
-                    return _failure("ATTENTION_OPERATION_NOT_FOUND")
-                return self._confirm_configuration_transaction(
+                if attention_repository.get_configuration_operation(
                     connection,
-                    configuration_operation,
-                    confirmation_token,
-                )
+                    operation_id,
+                ):
+                    return _failure("ATTENTION_RAG_CONFIGURATION_UNAVAILABLE")
+                return _failure("ATTENTION_OPERATION_NOT_FOUND")
             if operation["status"] != "proposed":
                 return _failure("ATTENTION_OPERATION_ALREADY_USED")
             if not secrets.compare_digest(
@@ -1379,12 +1328,6 @@ def _record_operation_failure(operation_id: str, failure_code: str) -> None:
     try:
         with attention_repository.attention_connection(immediate=True) as connection:
             attention_repository.fail_operation(
-                connection,
-                operation_id=operation_id,
-                failure_code=failure_code,
-                finished_at=_iso(_utc_now()),
-            )
-            attention_repository.fail_configuration_operation(
                 connection,
                 operation_id=operation_id,
                 failure_code=failure_code,

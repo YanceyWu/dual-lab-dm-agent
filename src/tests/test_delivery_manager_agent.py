@@ -52,10 +52,11 @@ def test_delivery_manager_agent_preserves_intelligence_result_priority() -> None
     assert "Do not create a missing fact, signal, or recommendation." in content
 
 
-def test_delivery_manager_agent_keeps_rag_configuration_explicit_and_separate() -> None:
+def test_delivery_manager_agent_rejects_legacy_rag_configuration() -> None:
     content = AGENT_FILE.read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
 
-    assert "`rag-config-preview`" in content
-    assert "never infer labels, precedence, project IDs, or removal intent" in content
-    assert "A confirmed RAG configuration creates only a new rule version" in content
-    assert "separately previews and confirms a project-health reconciliation" in content
+    assert "`rag-config-preview`" not in content
+    assert "RAG configuration is unavailable" in normalized
+    assert "never invoke a legacy mapping configuration path" in normalized
+    assert "attempt to confirm a legacy configuration operation" in normalized

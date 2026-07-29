@@ -1,6 +1,6 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `DESIGN REVISION APPROVED — C2 CORRECTION NEXT`
+Status: `DESIGN APPROVED — C2 CORRECTION VALIDATED FOR REVIEW`
 Last updated: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review
@@ -19,10 +19,10 @@ substitute for Release commitments, milestone achievement, dependency
 readiness, or overall Project Health.
 
 The owner approved this architecture revision on 2026-07-29. The approval
-establishes architecture intent and phase ownership and makes the bounded
-IP-028 C2 public-interface correction the next implementation action. It does
-not authorize Phase 3/4 runtime, connector, real-data, milestone schema,
-promotion, release, push, merge, or tag work.
+establishes architecture intent and phase ownership. The bounded IP-028 C2
+public-interface correction is implemented and locally validated for review.
+This does not authorize Phase 3/4 runtime, connector, real-data, milestone
+schema, promotion, release, push, merge, or tag work.
 
 ## Verified current behavior
 
@@ -370,8 +370,8 @@ Owner review confirmed on 2026-07-29:
 6. existing-project-only overrides; and
 7. the unaccepted C2 mapping interface disposition.
 
-The next bounded implementation action is an IP-028 C2
-correction that disables/removes the unaccepted public mapping-configuration
-surface while preserving accepted C1 behavior and additive data. It must run
-focused compatibility tests and `make validate`, update `PROGRESS.md`, commit
-locally, and stop for review. Phase 3 implementation remains unauthorized.
+The bounded IP-028 C2 correction removes the unaccepted public
+mapping-configuration preview paths, blocks direct preview and legacy-token
+confirmation, preserves accepted C1 behavior and additive data, and is locally
+validated. The exact next action is review of that correction. Phase 3
+implementation remains unauthorized.

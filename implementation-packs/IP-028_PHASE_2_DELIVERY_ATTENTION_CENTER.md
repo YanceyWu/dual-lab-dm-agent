@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
+Status: `C2 CORRECTION VALIDATED — REVIEW REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -207,8 +207,14 @@ C1 behavior and compatibility contracts remain unchanged.
 
 The replacement architecture in
 `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` was
-approved on 2026-07-29. The only next implementation is a bounded C2
-correction that disables or removes the unaccepted public
-mapping configuration CLI, Dashboard, and Copilot paths while retaining or
-safely migrating additive storage. It must add no Phase 3 milestone runtime or
-Phase 4 health engine. Batch D and Phase 2 promotion remain unauthorized.
+approved on 2026-07-29. The bounded C2 correction is implemented: the
+unaccepted configuration CLI, Dashboard, and Copilot preview paths are
+removed; direct preview and legacy-token confirmation fail safely; additive
+storage is retained unchanged. It adds no Phase 3 milestone runtime or Phase 4
+health engine.
+
+Focused synthetic and compatibility coverage passed 92 tests. `make validate`
+passed 182 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, boundary/synthetic checks, package build/inspection, and eight
+release validation checks. The result is stopped for C2 correction review.
+Batch D and Phase 2 promotion remain unauthorized.

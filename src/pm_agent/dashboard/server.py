@@ -684,39 +684,6 @@ def attention_operations():
                 actor=_dashboard_actor(),
                 snoozed_until=payload["snoozed_until"],
             )
-    elif action == "configure-project-health-rag":
-        allowed = {
-            "operation",
-            "action",
-            "target",
-            "configuration",
-            "project_id",
-            "remove_override",
-        }
-        if (
-            set(payload) - allowed
-            or not isinstance(payload.get("target"), str)
-            or (
-                "project_id" in payload
-                and not isinstance(payload.get("project_id"), str)
-            )
-            or (
-                "remove_override" in payload
-                and not isinstance(payload.get("remove_override"), bool)
-            )
-        ):
-            result = {
-                "status": "failed",
-                "failure_code": "ATTENTION_RAG_CONFIG_INVALID",
-            }
-        else:
-            result = service.preview_project_health_rag_configuration(
-                actor=_dashboard_actor(),
-                target=payload["target"],
-                configuration=payload.get("configuration"),
-                project_id=payload.get("project_id"),
-                remove_override=payload.get("remove_override", False),
-            )
     else:
         result = {
             "status": "failed",

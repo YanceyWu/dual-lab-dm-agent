@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
+Gate status: `PHASE 2 C2 CORRECTION VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -92,8 +92,9 @@ belong in Git history and must not be interpreted as current instructions.
   Phase 3 facts, feed Phase 4 Project Health, and are reused by Phase 7
   Forecast.
 - The owner approved the layered health and milestone architecture on
-  2026-07-29. The bounded C2 correction that disables or removes the
-  unaccepted public mapping configuration paths is the next implementation;
+  2026-07-29. The bounded C2 correction removes the CLI, Dashboard, and Copilot
+  mapping preview paths, rejects direct preview and legacy-token confirmation,
+  and retains additive storage unchanged. It is locally validated for review;
   Phase 3/4 runtime remains unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
@@ -248,6 +249,13 @@ The documentation-only layered health design approval record passed the same
 compilation, diff hygiene, package build/inspection, and all eight release
 validation checks.
 
+The bounded C2 correction passed 92 focused Attention configuration, Center,
+foundation, Management Attention, agent, discovery, and unified-contract
+tests. `make validate` passed repository-boundary and synthetic-sample checks,
+182 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -283,11 +291,12 @@ validation checks.
    no-op protection, exact interface projections, bounded history, and
    advisory recommendations. The owner accepted the corrected C1 result on
    2026-07-29; Phase 2 is not promoted.
-8. Batch C2's local mechanics passed validation, but its mapping-oriented
-   product contract was not accepted. Public `rag-config-preview`, Dashboard
-   configuration, and Copilot configuration paths remain present in local code
-   at `71d90d3` and must be disabled or removed by a separately approved
-   bounded correction before Phase 2 promotion.
+8. Batch C2's mapping-oriented product contract was not accepted. The bounded
+   correction removes its CLI, Dashboard, and Copilot preview paths, rejects
+   direct preview and legacy configuration confirmation with
+   `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`, and retains the additive
+   configuration-operation table and existing records. The correction awaits
+   review before any Phase 2 promotion decision.
 9. The layered health and milestone architecture is approved but not
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
@@ -298,16 +307,14 @@ validation checks.
 
 ## Exact next actions
 
-1. Implement a bounded IP-028 C2 correction that disables or removes the
-   unaccepted public mapping
-   configuration paths while preserving accepted C1, `UseCaseResult 1.0`,
-   Management Attention, existing data, and disabled pending-decision state.
-2. Add focused synthetic and compatibility tests, run `make validate`, update
-   this continuity record, commit locally, and stop for C2 correction review.
-3. Do not add Phase 3 milestone runtime or Phase 4 health configuration in the
-   C2 correction. Do not begin Batch D, visual Dashboard UI, connectors,
-   real-data work, Phase 2 promotion, release, tag, merge, or push without
-   separate authorization.
+1. Review the bounded IP-028 C2 correction against the approved public-path
+   removal, legacy-token blocking, storage preservation, C1,
+   `UseCaseResult 1.0`, Management Attention, and disabled pending-decision
+   contracts.
+2. Accept the correction or request bounded changes.
+3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
+   Batch D, visual Dashboard UI, connectors, real-data work, Phase 2
+   promotion, release, tag, merge, or push without separate authorization.
 
 ## Decisions in force
 
@@ -332,8 +339,12 @@ validation checks.
   mapping-oriented DM configuration contract is not accepted. Do not expose or
   promote it as an approved capability.
 - The layered health and milestone architecture is approved. The bounded C2
-  public-interface correction is the next implementation scope; it does not
-  authorize Phase 3/4 runtime.
+  public-interface correction is implemented and locally validated for review;
+  it does not authorize Phase 3/4 runtime.
+- The unaccepted RAG mapping configuration has no supported CLI, Dashboard, or
+  Copilot preview path. Direct preview and confirmation of retained legacy
+  configuration operations fail with
+  `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
@@ -347,6 +358,31 @@ validation checks.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 C2 public-interface correction validated
+
+- Removed the unaccepted `rag-config-preview` CLI command and
+  `configure-project-health-rag` Dashboard preview action.
+- Updated the Delivery Manager Copilot contract to state that project-health
+  RAG configuration is unavailable in the current Phase 2 interface and that
+  legacy mapping configuration operations must not be invoked or confirmed.
+- Made direct configuration preview fail deterministically with
+  `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`. Shared confirmation now detects a
+  retained legacy configuration operation and returns the same failure without
+  claiming, expiring, failing, or otherwise mutating it.
+- Retained the additive `attention_configuration_operations` table and existing
+  rows unchanged; no schema migration or data deletion was introduced.
+- Replaced superseded configuration-write tests with focused synthetic
+  coverage for disabled service/CLI/Dashboard paths, blocked legacy tokens,
+  bootstrap storage preservation, Management Attention compatibility, and
+  disabled `pending_decision_attention`.
+- Focused combined coverage passed 92/92. `make validate` passed
+  repository-boundary and synthetic-sample checks, 182 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build/inspection, and all eight release validation checks.
+- No C1 behavior, `UseCaseResult 1.0`, Management Attention, connector,
+  real-data, visual Dashboard, Phase 3/4 runtime, Batch D, push, or promotion
+  work was added. The result is stopped for C2 correction review.
 
 ### 2026-07-29 — Layered health and milestone design review approved
 

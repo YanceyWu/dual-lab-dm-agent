@@ -616,16 +616,17 @@ Blocking findings:
 - Jira Sprint/Release score factors and Project Health are conflated; and
 - milestone/release commitment is missing from the factor architecture.
 
-The next bounded IP-028 correction, only after design review approval, must:
+The approved bounded IP-028 correction now:
 
-- disable or remove the unaccepted public mapping configuration CLI,
-  Dashboard, and Copilot paths;
-- preserve accepted C1 behavior and `UseCaseResult 1.0`;
-- retain additive storage safely or migrate it only under an approved,
-  rehearsed plan; never silently drop data;
-- keep `pending_decision_attention` disabled;
-- add no layered Project Health or milestone runtime; and
-- validate, commit locally, and stop for review.
+- removes the unaccepted public mapping configuration CLI, Dashboard, and
+  Copilot preview paths;
+- rejects direct service preview and legacy configuration confirmation with
+  `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`;
+- preserves accepted C1 behavior and `UseCaseResult 1.0`;
+- retains additive storage and existing records without migration or deletion;
+- keeps `pending_decision_attention` disabled;
+- adds no layered Project Health or milestone runtime; and
+- is locally validated and stopped for review.
 
 DM-operable layered health configuration moves to Phase 4 after Phase 3
 provides canonical execution, milestone, Release, and dependency facts.
@@ -655,8 +656,8 @@ recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
 The owner accepted the implemented and locally validated Batch C1 result on
 2026-07-29 and then authorized only the bounded Batch C2 implementation.
 Batch C2 passed technical validation but failed product-contract review. The
-replacement architecture was approved on 2026-07-29, making the bounded C2
-public-interface correction the next action. Batch D, Phase 2 promotion,
-Phase 3/4 implementation, release, operational work, connector work,
-real-data access, push, merge, and tag remain separately
-gated.
+replacement architecture was approved on 2026-07-29. The bounded C2
+public-interface correction is implemented and locally validated; it awaits
+review. Batch D, Phase 2 promotion, Phase 3/4 implementation, release,
+operational work, connector work, real-data access, push, merge, and tag
+remain separately gated.

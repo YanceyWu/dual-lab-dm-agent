@@ -1,6 +1,6 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 2 LAYERED HEALTH REVISION APPROVED — C2 CORRECTION NEXT`
+Status: `PHASE 2 C2 CORRECTION VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
@@ -127,8 +127,9 @@ The owner approved
 separates Sprint Execution, Release/Milestone, and Project Health; assigns the
 canonical milestone and Release commitment foundation to Phase 3; assigns
 bounded DM-configurable health conditions to Phase 4; and requires Phase 7
-Forecast to reuse promoted milestone history. The next bounded C2 correction
-disables or removes the unaccepted public mapping paths.
+Forecast to reuse promoted milestone history. The bounded C2 correction now
+removes or blocks the unaccepted public mapping paths and is locally validated
+for review.
 Do not begin Phase 3/4 runtime, Batch D, connector or real-data work, or Phase 2
 promotion under this gate. Deferred migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.
