@@ -4,8 +4,8 @@ Last updated: 2026-07-29
 Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Current implementation pack: `NONE — PHASE 3 DESIGN REVIEW`
+Gate status: `PHASE 3 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -106,6 +106,13 @@ belong in Git history and must not be interpreted as current instructions.
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
   optional assistance rather than mandatory closure work.
+- Phase 3 current-state review confirmed that the current Jira path stores
+  mutable Release Version, Issue, and Sprint snapshots plus legacy health
+  scores, but no Issue changelog, Issue Link, temporal scope membership,
+  canonical Release commitment, canonical Milestone, or canonical Dependency.
+  The proposed Phase 3 design is recorded in
+  `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
+  awaits owner review; no implementation pack is registered.
 
 ## Current validation evidence
 
@@ -322,11 +329,12 @@ behavior, and rollback.
    configuration-operation table and existing records. The review correction
    also removes dormant configuration-operation and rule-version mutation
    helpers. Technical re-review passed and the owner accepted the correction.
-9. The layered health and milestone architecture is approved but not
-   implemented. Phase 3 owns canonical milestone/Release commitment facts;
-   Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
-   promoted milestone history. None of that runtime is authorized by the
-   current Phase 3 design-review gate.
+9. The layered health architecture is approved, and a bounded Phase 3
+   execution/milestone foundation design is now proposed. Phase 3 owns
+   canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
+   conditions and Project Health; Phase 7 reuses promoted Milestone history.
+   No Phase 3 runtime or implementation pack is authorized by the current
+   owner-review gate.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
@@ -334,10 +342,12 @@ behavior, and rollback.
 
 ## Exact next actions
 
-1. Begin a separate Phase 3 current-state and design review only when
-   explicitly authorized; do not implement Phase 3 under this promotion.
-2. Preserve the promoted Phase 2 contracts, compatibility behavior, and
-   `pending_decision_attention` disabled state.
+1. Review
+   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
+   approve or revise its four recorded product/architecture decisions.
+2. If approved, register only the bounded Phase 3 implementation pack and
+   dedicated branch from exact promoted baseline `2185334`; do not implement
+   Batch B1 in the approval record.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    visual Dashboard UI, connectors, real-data work, release, tag, merge, or
    push without separate authorization.
@@ -388,8 +398,40 @@ behavior, and rollback.
 - Phase 3 owns canonical milestone and Release commitment facts; Phase 4 owns
   bounded DM-configurable health conditions; Phase 7 Forecast reuses promoted
   milestone history.
+- The proposed Phase 3 design keeps Jira target dates distinct from approved
+  commitments, refuses narrative-derived Milestones, separates execution facts
+  from health RAG, and recommends automatic post-sync derived reconciliation
+  without an extra manager confirmation. These remain proposed until owner
+  approval.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 current-state and design Review proposed
+
+- Inspected the current SQLite bootstrap/migration path, Jira Release and
+  health sync, connector wrapper, Dashboard sync confirmation, Project Health
+  repository/use case, Attention rules and reconciliation, registry cleanup,
+  and focused synthetic compatibility tests.
+- Verified the current path has mutable Release Version, Issue, and Sprint
+  snapshots and append-only legacy health scores, but no Issue changelog,
+  Issue Link, temporal scope membership, canonical Release commitment,
+  canonical Milestone, or canonical Dependency.
+- Added
+  `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` with
+  canonical concepts, date authority, incremental cursor/staging semantics,
+  explicit missing/partial/conflict handling, deterministic fact definitions,
+  read-only use-case and Attention boundaries, migration/rollback, synthetic
+  scenarios, and proposed B1/B2/C1/C2/D batches.
+- Focused current-contract verification passed 44 tests covering Dashboard
+  Jira sync confirmation, registry cleanup, unified use-case compatibility,
+  database bootstrap, and Attention reconciliation.
+- The documentation-only design working tree passed `make validate`: 183
+  runtime tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  repository-boundary and synthetic-sample checks, package build and
+  inspection, and all eight release validation checks.
+- No runtime, schema, migration, connector behavior, implementation pack,
+  real-data access, push, promotion, or Phase 4 change was made. The design is
+  stopped for owner review.
 
 ### 2026-07-29 — Phase 2 promoted locally
 

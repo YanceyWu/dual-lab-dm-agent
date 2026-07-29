@@ -1,6 +1,6 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 3 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
@@ -133,7 +133,10 @@ configuration mutation helpers, and passed technical re-review. Owner
 accepted the correction. Batch D regression, schema/portable review, and
 synthetic release rehearsal passed. The owner accepted the Batch D Review and
 promoted the result as the local Phase 2 development baseline on 2026-07-29.
-The next independent gate is Phase 3 current-state and design review; Phase 3/4
-runtime, connector and real-data work remain unauthorized. Deferred
+The Phase 3 current-state review and proposed execution/milestone foundation
+are recorded in
+`architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
+Owner approval or revision is the next gate; Phase 3/4 runtime, connector and
+real-data work remain unauthorized. Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.

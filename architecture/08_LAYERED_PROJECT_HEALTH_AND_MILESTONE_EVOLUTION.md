@@ -1,6 +1,6 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `DESIGN APPROVED — PHASE 2 PROMOTED LOCALLY`
+Status: `DESIGN APPROVED — PHASE 3 FOUNDATION DESIGN PROPOSED`
 Last updated: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review
@@ -381,4 +381,6 @@ accepted C1 behavior and additive data, and is locally validated. Technical
 re-review found no remaining P0-P2 issue. The owner accepted the
 correction and Batch D validation passed. The owner then promoted Phase 2
 locally on 2026-07-29. Phase 3 current-state and design review is the next
-independent gate; Phase 3 implementation remains unauthorized.
+independent gate. That review is now recorded in
+`architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
+awaits owner approval; Phase 3 implementation remains unauthorized.

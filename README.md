@@ -129,9 +129,11 @@ Read:
 - `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` for the
   approved Phase 1 implementation boundary and batch sequence;
 - `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` for the
-  accepted Attention Center contract and current C2 correction gate;
+  promoted Attention Center contract;
 - `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` for the
-  proposed layered health, milestone, and bounded DM configuration model.
+  approved layered health, milestone, and bounded DM configuration direction;
+- `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` for
+  the proposed Phase 3 current-state findings and implementation boundary.
 
 ## Safety boundary
 

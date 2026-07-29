@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 3 DESIGN PROPOSED — NO IP-029 REGISTERED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -33,9 +33,10 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Begin Phase 3 current-state and design review only with explicit
-   authorization. Do not begin Phase 3 implementation, Phase 4, release, push,
-   merge, or tag work under the current gate.
+4. Review
+   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
+   Do not register IP-029 or begin Phase 3 implementation, Phase 4, connector,
+   real-data, release, push, merge, or tag work under the current gate.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 3 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -512,9 +512,10 @@ Non-goals:
 
 ## Immediate next action
 
-Review the corrected local IP-028 Batch C1 implementation on
-`codex/phase-2-attention-center` against the approved read-only Center,
-reconciliation coverage, lifecycle no-op, exact interface, recommendation,
-and compatibility contracts. Accept it or request bounded corrections. Do not
-begin Batch C2, connector, real-data, publication, or promotion work without
-separate authorization.
+Review
+`architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
+approve or revise the four recorded decisions covering Release date authority,
+structured Milestone inputs, separation from health RAG, and automatic
+post-sync derived reconciliation. Do not register IP-029, create the Phase 3
+implementation branch, implement Batch B1, use connectors or real data, or
+begin Phase 4 without the applicable separate authorization.
