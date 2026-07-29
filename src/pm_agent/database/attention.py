@@ -72,64 +72,6 @@ def get_current_project_health_rule(
     return item
 
 
-def next_project_health_rule_version(
-    connection: sqlite3.Connection,
-) -> str:
-    rows = connection.execute(
-        """
-        SELECT rule_version
-        FROM attention_rules
-        WHERE rule_key = 'project_health_attention'
-        """
-    ).fetchall()
-    versions = []
-    prefix = "project-health-attention-v"
-    for row in rows:
-        value = row["rule_version"]
-        if value.startswith(prefix) and value[len(prefix):].isdigit():
-            versions.append(int(value[len(prefix):]))
-    return f"{prefix}{max(versions, default=0) + 1}"
-
-
-def insert_project_health_rule_version(
-    connection: sqlite3.Connection,
-    *,
-    prior_rule_version: str,
-    new_rule_version: str,
-    parameters: dict[str, Any],
-    created_at: str,
-) -> bool:
-    cursor = connection.execute(
-        """
-        UPDATE attention_rules
-        SET is_current = 0, updated_at = ?
-        WHERE rule_key = 'project_health_attention'
-          AND rule_version = ?
-          AND is_current = 1
-        """,
-        [created_at, prior_rule_version],
-    )
-    if cursor.rowcount != 1:
-        return False
-    connection.execute(
-        """
-        INSERT INTO attention_rules
-            (rule_key, rule_version, is_current, enabled, parameters_json,
-             created_at, updated_at)
-        VALUES (
-            'project_health_attention', ?, 1, 1, ?, ?, ?
-        )
-        """,
-        [
-            new_rule_version,
-            _json(parameters),
-            created_at,
-            created_at,
-        ],
-    )
-    return True
-
-
 def load_project_health_inputs(
     connection: sqlite3.Connection,
 ) -> list[dict[str, Any]]:
@@ -283,33 +225,6 @@ def create_operation(
     )
 
 
-def create_configuration_operation(
-    connection: sqlite3.Connection,
-    record: dict[str, Any],
-) -> None:
-    connection.execute(
-        """
-        INSERT INTO attention_configuration_operations
-            (operation_id, actor, status, target, project_id,
-             current_rule_version, current_parameters_hash, proposed_json,
-             token_hash, created_at, expires_at)
-        VALUES (?, ?, 'proposed', ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        [
-            record["operation_id"],
-            record["actor"],
-            record["target"],
-            record["project_id"],
-            record["current_rule_version"],
-            record["current_parameters_hash"],
-            _json(record["proposed"]),
-            record["token_hash"],
-            record["created_at"],
-            record["expires_at"],
-        ],
-    )
-
-
 def get_configuration_operation(
     connection: sqlite3.Connection,
     operation_id: str,
@@ -328,83 +243,6 @@ def get_configuration_operation(
     item["proposed"] = json.loads(item.pop("proposed_json"))
     item["result"] = json.loads(item.pop("result_json"))
     return item
-
-
-def claim_configuration_operation(
-    connection: sqlite3.Connection,
-    *,
-    operation_id: str,
-    claimed_at: str,
-) -> bool:
-    cursor = connection.execute(
-        """
-        UPDATE attention_configuration_operations
-        SET status = 'claimed', claimed_at = ?
-        WHERE operation_id = ? AND status = 'proposed'
-        """,
-        [claimed_at, operation_id],
-    )
-    return cursor.rowcount == 1
-
-
-def expire_configuration_operation(
-    connection: sqlite3.Connection,
-    *,
-    operation_id: str,
-    finished_at: str,
-) -> None:
-    connection.execute(
-        """
-        UPDATE attention_configuration_operations
-        SET status = 'expired',
-            failure_code = 'ATTENTION_CONFIRMATION_EXPIRED',
-            finished_at = ?
-        WHERE operation_id = ? AND status = 'proposed'
-        """,
-        [finished_at, operation_id],
-    )
-
-
-def finish_configuration_operation(
-    connection: sqlite3.Connection,
-    *,
-    operation_id: str,
-    success: bool,
-    result: dict[str, Any],
-    finished_at: str,
-    failure_code: str = "",
-) -> None:
-    connection.execute(
-        """
-        UPDATE attention_configuration_operations
-        SET status = ?, result_json = ?, failure_code = ?, finished_at = ?
-        WHERE operation_id = ? AND status = 'claimed'
-        """,
-        [
-            "success" if success else "failed",
-            _json(result),
-            failure_code,
-            finished_at,
-            operation_id,
-        ],
-    )
-
-
-def fail_configuration_operation(
-    connection: sqlite3.Connection,
-    *,
-    operation_id: str,
-    failure_code: str,
-    finished_at: str,
-) -> None:
-    connection.execute(
-        """
-        UPDATE attention_configuration_operations
-        SET status = 'failed', failure_code = ?, finished_at = ?
-        WHERE operation_id = ? AND status IN ('proposed', 'claimed')
-        """,
-        [failure_code, finished_at, operation_id],
-    )
 
 
 def get_operation(

@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 from pm_agent.attention import AttentionService
 from pm_agent.cli import app as app_module
 from pm_agent.dashboard import server as dashboard_server
+from pm_agent.database import attention as attention_repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
@@ -89,6 +90,24 @@ def test_rag_configuration_service_is_disabled_without_persistence(
     }
     assert _configuration_operation_count(isolated_db) == 0
     assert _current_rule_version(isolated_db) == before_version
+
+
+def test_legacy_configuration_mutation_helpers_are_not_exposed() -> None:
+    assert not hasattr(
+        AttentionService,
+        "_confirm_configuration_transaction",
+    )
+    assert not hasattr(AttentionService, "_confirm_configuration")
+    for name in (
+        "next_project_health_rule_version",
+        "insert_project_health_rule_version",
+        "create_configuration_operation",
+        "claim_configuration_operation",
+        "expire_configuration_operation",
+        "finish_configuration_operation",
+        "fail_configuration_operation",
+    ):
+        assert not hasattr(attention_repository, name)
 
 
 def test_rag_configuration_cli_and_dashboard_preview_are_unavailable(

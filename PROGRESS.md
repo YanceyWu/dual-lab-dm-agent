@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 C2 CORRECTION VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 2 C2 REVIEW CORRECTION VALIDATED — RE-REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -94,8 +94,9 @@ belong in Git history and must not be interpreted as current instructions.
 - The owner approved the layered health and milestone architecture on
   2026-07-29. The bounded C2 correction removes the CLI, Dashboard, and Copilot
   mapping preview paths, rejects direct preview and legacy-token confirmation,
-  and retains additive storage unchanged. It is locally validated for review;
-  Phase 3/4 runtime remains unauthorized.
+  removes dormant configuration mutation helpers, and retains additive storage
+  unchanged. It is locally validated for re-review; Phase 3/4 runtime remains
+  unauthorized.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -256,6 +257,13 @@ tests. `make validate` passed repository-boundary and synthetic-sample checks,
 compilation, diff hygiene, package build/inspection, and all eight release
 validation checks.
 
+The C2 mutation-boundary review fix passed 93 focused tests across the same
+configuration, Center, foundation, Management Attention, agent, discovery, and
+unified-contract scope. `make validate` passed repository-boundary and
+synthetic-sample checks, 183 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and
+all eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -295,8 +303,9 @@ validation checks.
    correction removes its CLI, Dashboard, and Copilot preview paths, rejects
    direct preview and legacy configuration confirmation with
    `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`, and retains the additive
-   configuration-operation table and existing records. The correction awaits
-   review before any Phase 2 promotion decision.
+   configuration-operation table and existing records. The review correction
+   also removes dormant configuration-operation and rule-version mutation
+   helpers. It awaits re-review before any Phase 2 promotion decision.
 9. The layered health and milestone architecture is approved but not
    implemented. Phase 3 owns canonical milestone/Release commitment facts;
    Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
@@ -307,8 +316,9 @@ validation checks.
 
 ## Exact next actions
 
-1. Review the bounded IP-028 C2 correction against the approved public-path
-   removal, legacy-token blocking, storage preservation, C1,
+1. Re-review the bounded IP-028 C2 correction against the approved public-path
+   removal, legacy-token blocking, mutation-helper removal, storage
+   preservation, C1,
    `UseCaseResult 1.0`, Management Attention, and disabled pending-decision
    contracts.
 2. Accept the correction or request bounded changes.
@@ -345,6 +355,9 @@ validation checks.
   Copilot preview path. Direct preview and confirmation of retained legacy
   configuration operations fail with
   `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`.
+- No configuration-operation create/claim/expire/finish/fail helper or
+  project-health rule-version mutation helper remains in the runtime.
+  Configuration storage and legacy-operation read detection remain intact.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
@@ -358,6 +371,28 @@ validation checks.
   milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 C2 mutation-boundary review fix validated
+
+- Addressed the C2 correction Review finding that public routing was blocked
+  while dormant internal configuration confirmation and rule-version mutation
+  code remained executable.
+- Removed service-level configuration confirmation, configuration preview
+  construction, configuration-change, and parameter-hash helpers.
+- Removed repository helpers that created or mutated configuration operations
+  or created new project-health rule versions. Retained the additive table,
+  existing records, current-rule read support, and legacy-operation read
+  detection.
+- Added a boundary test proving the retired mutation helpers are not exposed,
+  alongside existing tests proving preview/confirm rejection, record
+  preservation, C1 compatibility, and disabled pending-decision state.
+- Focused combined coverage passed 93/93. `make validate` passed
+  repository-boundary and synthetic-sample checks, 183 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build/inspection, and all eight release validation checks.
+- No schema, migration, connector, real-data, visual Dashboard, Phase 3/4,
+  Batch D, push, or promotion work was added. The result is stopped for C2
+  correction re-review.
 
 ### 2026-07-29 — Phase 2 C2 public-interface correction validated
 

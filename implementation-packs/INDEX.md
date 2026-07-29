@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 C2 CORRECTION VALIDATED — REVIEW REQUIRED`
+Status: `IP-028 C2 REVIEW CORRECTION VALIDATED — RE-REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -21,7 +21,7 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Corrected Batch C1 accepted; unaccepted Batch C2 mapping public paths removed/blocked; additive storage retained; bounded correction locally validated for review | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Corrected Batch C1 accepted; unaccepted Batch C2 mapping paths removed/blocked; dormant mutation helpers removed; additive storage retained; review correction validated for re-review | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
@@ -33,10 +33,10 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review the bounded IP-028 C2 correction against public-path removal,
-   legacy-token blocking, storage preservation, accepted C1 behavior, and
-   compatibility evidence. Do not begin Phase 3, Phase 4, Batch D, or
-   promotion during this review.
+4. Re-review the bounded IP-028 C2 correction against public-path removal,
+   legacy-token blocking, mutation-helper removal, storage preservation,
+   accepted C1 behavior, and compatibility evidence. Do not begin Phase 3,
+   Phase 4, Batch D, or promotion during this review.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

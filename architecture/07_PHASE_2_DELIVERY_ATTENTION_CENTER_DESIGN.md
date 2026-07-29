@@ -622,6 +622,8 @@ The approved bounded IP-028 correction now:
   Copilot preview paths;
 - rejects direct service preview and legacy configuration confirmation with
   `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`;
+- removes the dormant configuration-operation and rule-version mutation
+  helpers so the unavailable state cannot be bypassed by an internal caller;
 - preserves accepted C1 behavior and `UseCaseResult 1.0`;
 - retains additive storage and existing records without migration or deletion;
 - keeps `pending_decision_attention` disabled;
@@ -657,7 +659,8 @@ The owner accepted the implemented and locally validated Batch C1 result on
 2026-07-29 and then authorized only the bounded Batch C2 implementation.
 Batch C2 passed technical validation but failed product-contract review. The
 replacement architecture was approved on 2026-07-29. The bounded C2
-public-interface correction is implemented and locally validated; it awaits
-review. Batch D, Phase 2 promotion, Phase 3/4 implementation, release,
+public-interface correction and mutation-boundary review fix are implemented
+and locally validated; they await re-review. Batch D, Phase 2 promotion,
+Phase 3/4 implementation, release,
 operational work, connector work, real-data access, push, merge, and tag
 remain separately gated.

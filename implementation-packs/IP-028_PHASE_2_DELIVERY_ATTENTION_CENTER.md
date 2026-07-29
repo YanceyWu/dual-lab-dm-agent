@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `C2 CORRECTION VALIDATED — REVIEW REQUIRED`
+Status: `C2 REVIEW CORRECTION VALIDATED — RE-REVIEW REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -213,8 +213,13 @@ removed; direct preview and legacy-token confirmation fail safely; additive
 storage is retained unchanged. It adds no Phase 3 milestone runtime or Phase 4
 health engine.
 
-Focused synthetic and compatibility coverage passed 92 tests. `make validate`
-passed 182 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+The first correction review found that dormant internal configuration
+confirmation and repository mutation helpers remained executable. The review
+fix removes those helpers while retaining the table, existing records, and
+read-only legacy-operation detection.
+
+Focused synthetic and compatibility coverage passed 93 tests. `make validate`
+passed 183 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
 compilation, boundary/synthetic checks, package build/inspection, and eight
-release validation checks. The result is stopped for C2 correction review.
+release validation checks. The result is stopped for C2 correction re-review.
 Batch D and Phase 2 promotion remain unauthorized.
