@@ -133,7 +133,7 @@ Read:
 - `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` for the
   approved layered health, milestone, and bounded DM configuration direction;
 - `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` for
-  the proposed Phase 3 current-state findings and implementation boundary.
+  the approved Phase 3 current-state findings and implementation boundary.
 
 ## Safety boundary
 

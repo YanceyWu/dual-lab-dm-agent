@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY — IP-029 REGISTERED`
 Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -665,6 +665,7 @@ the owner accepted the correction on 2026-07-29. Batch D focused regression,
 full validation, schema/portable review, and synthetic installed-package
 upgrade/rollback rehearsal passed. The owner accepted the Batch D Review and
 promoted the result as the local Phase 2 development baseline on 2026-07-29.
-The next independent gate is Phase 3 current-state and design review. Phase 3/4
-implementation, release, operational work, connector work, real-data access,
-push, merge, and tag remain separately gated.
+The Phase 3 design was subsequently approved and IP-029 registered. Phase 3
+Batch B1 and all Phase 3/4 implementation, release, operational work,
+connector work, real-data access, push, merge, and tag remain separately
+gated.

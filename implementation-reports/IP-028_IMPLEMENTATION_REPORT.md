@@ -1,6 +1,6 @@
 # IP-028 Implementation Report
 
-Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY`
 Date: 2026-07-29
 Branch: `codex/phase-2-attention-center`
 Approved planning commit: `e4431dc0ab5f7122d65affaa917fa3697d634b15`
@@ -151,5 +151,6 @@ Phase 2 development baseline on 2026-07-29.
 Promotion establishes the completed local Phase 2 development baseline only.
 It does not authorize merge, push, tag, release, deployment, connector access,
 active-database migration, real-data UAT, Phase 3 implementation, or Phase 4
-implementation. Phase 3 current-state and design review is the next independent
-gate.
+implementation. The subsequent Phase 3 design was approved and IP-029
+registered; no Phase 3 implementation batch is authorized by that
+registration.

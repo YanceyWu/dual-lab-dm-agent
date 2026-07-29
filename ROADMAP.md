@@ -1,6 +1,6 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 3 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
+Status: `PHASE 3 DESIGN APPROVED — BATCH B1 AUTHORIZATION REQUIRED`
 Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
@@ -136,7 +136,9 @@ promoted the result as the local Phase 2 development baseline on 2026-07-29.
 The Phase 3 current-state review and proposed execution/milestone foundation
 are recorded in
 `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
-Owner approval or revision is the next gate; Phase 3/4 runtime, connector and
-real-data work remain unauthorized. Deferred
+The owner approved all four design decisions and IP-029 is registered on the
+dedicated local Phase 3 branch. Batch B1 requires separate explicit
+authorization; Phase 3/4 runtime, connector and real-data work remain
+unauthorized. Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.

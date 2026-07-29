@@ -1,6 +1,6 @@
 # Phase 3 — Execution and Milestone Signal Foundation
 
-Status: `PROPOSED — OWNER REVIEW REQUIRED`
+Status: `APPROVED — IP-029 REGISTERED; BATCH B1 AUTHORIZATION REQUIRED`
 Date: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
@@ -575,9 +575,9 @@ Filtering and state transitions must not depend on arbitrary JSON text.
 
 Each implementation batch requires its own review before the next batch.
 
-## Owner decisions required
+## Approved decisions and exact next action
 
-The design recommends approval of these four decisions:
+The owner approved these four decisions on 2026-07-29:
 
 1. Jira Version `releaseDate` is an observed source target, not automatically
    an approved plan or forecast; dates and authority remain separate.
@@ -591,8 +591,13 @@ The design recommends approval of these four decisions:
    calculation, and high-confidence Attention reconciliation are automatic,
    with manual reconciliation retained only for retry/recovery.
 
-Approval of this design authorizes only registration of a bounded Phase 3
-implementation pack and a dedicated implementation branch from exact promoted
-baseline `2185334c890e79480a39514cf1d1e45f74e062f1`. It does not authorize Batch
-B1 implementation, connector use, real-data access, Phase 4, push, merge, tag,
-release, or deployment.
+The approved design is registered as
+`implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` on
+dedicated branch `codex/phase-3-execution-signals`, whose history contains the
+exact promoted Phase 2 baseline
+`2185334c890e79480a39514cf1d1e45f74e062f1`.
+
+The exact next decision is whether to authorize only IP-029 Batch B1.
+Design approval and pack registration do not authorize Batch B1
+implementation, connector behavior, live connector use, real-data access,
+Batch B2/C1/C2/D, Phase 4, push, merge, tag, release, or deployment.

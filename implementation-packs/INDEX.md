@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 3 DESIGN PROPOSED — NO IP-029 REGISTERED`
+Status: `IP-029 REGISTERED — BATCH B1 AUTHORIZATION REQUIRED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -21,7 +21,8 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29; Phase 3 design review is separately gated | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29 | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
+| IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Registered from approved design; no implementation batch authorized | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | Not created; required in Batch D |
 
 ## Current execution order
 
@@ -33,10 +34,10 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review
-   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
-   Do not register IP-029 or begin Phase 3 implementation, Phase 4, connector,
-   real-data, release, push, merge, or tag work under the current gate.
+4. Preserve the approved Phase 3 design and registered IP-029. Decide whether
+   to authorize only Batch B1; do not begin B1 or any later batch, Phase 4,
+   connector use, real data, release, push, merge, or tag work under the
+   current gate.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

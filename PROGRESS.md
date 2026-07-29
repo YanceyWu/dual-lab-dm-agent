@@ -1,11 +1,11 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-07-29
-Current branch: `codex/phase-2-attention-center`
+Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 3 DESIGN REVIEW`
-Gate status: `PHASE 3 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
+Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
+Gate status: `PHASE 3 DESIGN APPROVED — BATCH B1 AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -18,6 +18,8 @@ Batch C2 mapping implementation at `71d90d3`, is local-only and has no remote
 tracking branch. The exact current commit is reported in the task handoff
 because a commit cannot embed its own final hash. Do not push it without a
 separate authorization. Do not merge or push to `main`.
+The dedicated Phase 3 branch is also local-only and has no remote tracking
+branch.
 
 ## Read this first
 
@@ -110,9 +112,11 @@ belong in Git history and must not be interpreted as current instructions.
   mutable Release Version, Issue, and Sprint snapshots plus legacy health
   scores, but no Issue changelog, Issue Link, temporal scope membership,
   canonical Release commitment, canonical Milestone, or canonical Dependency.
-  The proposed Phase 3 design is recorded in
+  The Phase 3 design is recorded in
   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
-  awaits owner review; no implementation pack is registered.
+  was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
+  branch `codex/phase-3-execution-signals`; no implementation batch is
+  authorized.
 
 ## Current validation evidence
 
@@ -329,12 +333,11 @@ behavior, and rollback.
    configuration-operation table and existing records. The review correction
    also removes dormant configuration-operation and rule-version mutation
    helpers. Technical re-review passed and the owner accepted the correction.
-9. The layered health architecture is approved, and a bounded Phase 3
-   execution/milestone foundation design is now proposed. Phase 3 owns
+9. The layered health architecture and bounded Phase 3
+   execution/milestone foundation design are approved. Phase 3 owns
    canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
    conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   No Phase 3 runtime or implementation pack is authorized by the current
-   owner-review gate.
+   IP-029 is registered, but no Phase 3 implementation batch is authorized.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
@@ -342,12 +345,11 @@ behavior, and rollback.
 
 ## Exact next actions
 
-1. Review
-   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
-   approve or revise its four recorded product/architecture decisions.
-2. If approved, register only the bounded Phase 3 implementation pack and
-   dedicated branch from exact promoted baseline `2185334`; do not implement
-   Batch B1 in the approval record.
+1. Decide whether to authorize only IP-029 Batch B1, the incremental source
+   evidence core.
+2. If B1 is authorized, implement only additive cursor/coverage/staging, Jira
+   Issue history and Issue Link evidence, bounded connector adapters, and
+   focused synthetic/migration/rollback tests; stop for B1 Review.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    visual Dashboard UI, connectors, real-data work, release, tag, merge, or
    push without separate authorization.
@@ -398,13 +400,36 @@ behavior, and rollback.
 - Phase 3 owns canonical milestone and Release commitment facts; Phase 4 owns
   bounded DM-configurable health conditions; Phase 7 Forecast reuses promoted
   milestone history.
-- The proposed Phase 3 design keeps Jira target dates distinct from approved
+- The approved Phase 3 design keeps Jira target dates distinct from approved
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
-  without an extra manager confirmation. These remain proposed until owner
-  approval.
+  without an extra manager confirmation.
+- IP-029 is registered on `codex/phase-3-execution-signals`. Registration
+  authorizes no implementation batch; Batch B1 requires a separate explicit
+  owner decision.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 design approved and IP-029 registered
+
+- The owner accepted all four Phase 3 architecture decisions: Release date
+  authority separation, structured-only canonical Milestones, no Phase 3
+  health RAG, and automatic post-sync derived reconciliation.
+- Created dedicated local branch `codex/phase-3-execution-signals` from the
+  history containing exact promoted Phase 2 baseline `2185334`.
+- Registered
+  `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md`
+  with bounded B1/B2/C1/C2/D scopes, acceptance criteria, compatibility,
+  migration, rollback, synthetic-data, and stop gates.
+- No runtime, schema, migration, connector behavior, live connector use,
+  real-data access, test, push, or Phase 4 change was made.
+- The documentation-only approval and registration record passed
+  `make validate`: 183 runtime tests, 21 repository-tool tests with 19
+  subtests, Ruff, compilation, repository-boundary and synthetic-sample
+  checks, package build and inspection, and all eight release validation
+  checks.
+- The exact next gate is explicit authorization or rejection of only IP-029
+  Batch B1.
 
 ### 2026-07-29 — Phase 3 current-state and design Review proposed
 

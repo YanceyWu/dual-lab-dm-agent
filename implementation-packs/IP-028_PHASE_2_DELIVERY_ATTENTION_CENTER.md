@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `PHASE 2 PROMOTED LOCALLY — PHASE 3 DESIGN REVIEW REQUIRED`
+Status: `PHASE 2 PROMOTED LOCALLY`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -246,5 +246,6 @@ Schema and portable-scope review found no blocking issue. The full result is
 recorded in `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md`. Phase 2
 Batch D Review was accepted by the owner on 2026-07-29. The owner then promoted
 the completed result as the local Phase 2 development baseline. Phase 3
-current-state and design review is the next independent gate; Phase 3/4,
-connector, real-data, release, push, merge, and tag work remain unauthorized.
+design was subsequently approved and IP-029 registered. Phase 3 Batch B1,
+Phase 3/4 implementation, connector, real-data, release, push, merge, and tag
+work remain unauthorized.
