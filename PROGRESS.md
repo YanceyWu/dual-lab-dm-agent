@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B1 SECOND-REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH B1 ACCEPTED — BATCH B2 DESIGN REVIEW READY; IMPLEMENTATION AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -116,9 +116,10 @@ belong in Git history and must not be interpreted as current instructions.
   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
   was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
   branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
-  whose bounded incremental source-evidence implementation, first-Review
-  corrections, and second-review corrections are now locally validated and
-  stopped for B1 re-review. B2 and all later batches remain unauthorized.
+  whose bounded incremental source-evidence implementation and two correction
+  rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
+  next stage; the B2 implementation-level design is now ready for review, but
+  B2 coding and all later batches remain unauthorized.
 
 ## Current validation evidence
 
@@ -379,8 +380,9 @@ checks, and rollback.
    execution/milestone foundation design are approved. Phase 3 owns
    canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
    conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   IP-029 Batch B1 and its first- and second-review corrections are implemented
-   and locally validated; B1 re-review is pending and B2 is not authorized.
+   IP-029 Batch B1 and its first- and second-review corrections are implemented,
+   locally validated, and accepted. The B2 implementation-level design is ready
+   for review; B2 coding is not yet authorized.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
@@ -395,10 +397,10 @@ checks, and rollback.
 
 ## Exact next actions
 
-1. Re-review the corrected IP-029 Batch B1 incremental source evidence core
-   and decide whether to accept it or require further bounded corrections.
-2. Do not begin B2 canonical execution/commitment storage or calculations
-   without separate explicit authorization after B1 acceptance.
+1. Review the frozen IP-029 B2 canonical execution/commitment design and decide
+   whether to authorize bounded B2 implementation or require design changes.
+2. Do not begin B2 canonical storage, derivation, or structured Milestone import
+   without that separate explicit implementation authorization.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    visual Dashboard UI, connectors, real-data work, release, tag, merge, or
    push without separate authorization.
@@ -453,11 +455,38 @@ checks, and rollback.
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
-- IP-029 Batch B1 and its first- and second-review corrections are implemented
-  and locally validated on `codex/phase-3-execution-signals`. The current gate
-  is B1 re-review; B2 and all later batches remain unauthorized.
+- IP-029 Batch B1 and its first- and second-review corrections are implemented,
+  locally validated, and accepted on `codex/phase-3-execution-signals`. The B2
+  implementation-level design is ready for review; B2 coding and all later
+  batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
+
+- The owner completed re-review, accepted corrected B1, and asked to enter the
+  next stage.
+- Rechecked exact local HEAD `bb80b4d`, branch
+  `codex/phase-3-execution-signals`, clean worktree, the additive B1 schema,
+  existing Jira snapshot relationships, controlled preview/confirm patterns,
+  and the approved Phase 3 authority/freshness boundaries.
+- Added an implementation-level B2 handoff that freezes inputs and trigger
+  boundaries, additive canonical/observation/derivation/operation storage
+  families, canonicalization and fact rules, structured Milestone
+  preview/confirm behavior, sequential implementation order, and acceptance
+  criteria.
+- The design explicitly keeps current incremental Jira evidence
+  non-authoritative for scope closure, legacy snapshots as current
+  `legacy_observed` context only, automatic post-sync triggering in C2, and
+  C1 interfaces out of B2.
+- `make validate` passed repository-boundary and synthetic-sample checks, 203
+  runtime tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  diff hygiene, package build/inspection, and all eight release validation
+  checks. No schema changed, so no new release rehearsal was required.
+- No runtime, schema, test, connector, real-data, use-case, Attention,
+  `pending_decision_attention`, Phase 4, push, merge, tag, release, or
+  deployment change was made. The exact next decision is B2 implementation
+  authorization or design revision.
 
 ### 2026-07-29 — Phase 3 Batch B1 second-review findings corrected
 
