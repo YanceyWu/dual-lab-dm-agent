@@ -1,6 +1,6 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Status: `BATCH C2 VALIDATED — REVIEW REQUIRED`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
@@ -132,14 +132,44 @@ now accepted after review of its validated local result on 2026-07-29.
 8. Focused synthetic tests and `make validate` pass. Update `PROGRESS.md`,
    create a local commit, and stop for Batch C1 review.
 
-## Batch C2 gate
+## Batch C2 scope
 
 DM-operable project-health RAG configuration is a separately reviewed
-Attention write capability. Batch C2 must define validated versioned
-default/project-override configuration preview/confirm without executable
-expressions, direct SQL, display names, or real identifiers. It requires
-explicit authorization after Batch C1 review and must complete before Phase 2
-may claim DM-operable RAG configuration or enter promotion review.
+Attention write capability. The owner authorized only this bounded
+implementation on 2026-07-29:
+
+- add a dedicated audited store for expiring, hashed, one-time configuration
+  previews;
+- accept only complete default replacement, bounded stable-anonymous-project
+  override, or explicit override removal;
+- validate the full resulting configuration and reject unsupported fields,
+  executable expressions, prompts, direct SQL, display names, malformed IDs,
+  no-ops, stale previews, expiry, reuse, and concurrent duplicate confirmation;
+- atomically retain the prior rule version and create one new current
+  `project_health_attention` version on confirmation;
+- require a separately previewed and confirmed reconciliation before the new
+  version affects current Attention signals;
+- expose exact JSON CLI, Dashboard API, and Copilot preview/confirm behavior;
+- preserve `UseCaseResult 1.0`, Management Attention, all unrelated writes,
+  and disabled `pending_decision_attention`.
+
+## Batch C2 acceptance criteria
+
+1. Preview persists no rule/configuration change and returns only an expiring
+   token plus exact target, bounded change, prior/new versions, and the
+   reconciliation-required flag.
+2. Confirmation atomically creates one new current rule version, retains the
+   prior version, and creates no reconciliation, signal, or history mutation.
+3. Invalid, unchanged, stale, expired, reused, concurrent, or failed writes
+   cannot produce an unintended rule version or lose the prior current version.
+4. CLI, Dashboard API, and direct service preserve the same safe result and
+   failure codes; caller-supplied Dashboard actor and unsupported payload
+   fields are rejected.
+5. Management Attention, `UseCaseResult 1.0`, pending-decision disabled state,
+   connector/real-data boundaries, and unrelated write contracts remain
+   unchanged.
+6. Focused synthetic and compatibility tests plus `make validate` pass. Update
+   `PROGRESS.md`, create a local commit, and stop for Batch C2 review.
 
 ## Batch C1 result
 
@@ -149,5 +179,20 @@ passed 176 runtime tests, 21
 repository-tool tests with 19 subtests, Ruff, compilation, boundary/synthetic
 checks, package build/inspection, and eight release validation checks.
 `pending_decision_attention` remains disabled. The result is stopped for
-separate Batch C2 authorization; Batch C2 and Phase 2 promotion are not
-authorized.
+separate Batch C2 authorization. The owner subsequently supplied that bounded
+authorization; Phase 2 promotion remains unauthorized.
+
+## Batch C2 result
+
+Batch C2 is implemented and locally validated. It adds only the dedicated
+configuration operation store, strict versioned default/project-override
+preview/confirm service, exact JSON CLI/Dashboard/Copilot projections, and
+focused synthetic/compatibility coverage. Focused combined coverage passed
+82 tests, and `make validate` passed 187 runtime tests, 21 repository-tool
+tests with 19 subtests, Ruff, compilation, boundary/synthetic checks, package
+build/inspection, and eight release validation checks.
+
+Configuration confirmation creates a new current rule version but no
+reconciliation, signal, or history mutation. `pending_decision_attention`
+remains disabled. The result is stopped for explicit Batch C2 review; Batch D
+and Phase 2 promotion are not authorized.

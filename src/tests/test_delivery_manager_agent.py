@@ -50,3 +50,12 @@ def test_delivery_manager_agent_preserves_intelligence_result_priority() -> None
     )
     assert "an empty `recommendations` array remains empty" in content
     assert "Do not create a missing fact, signal, or recommendation." in content
+
+
+def test_delivery_manager_agent_keeps_rag_configuration_explicit_and_separate() -> None:
+    content = AGENT_FILE.read_text(encoding="utf-8")
+
+    assert "`rag-config-preview`" in content
+    assert "never infer labels, precedence, project IDs, or removal intent" in content
+    assert "A confirmed RAG configuration creates only a new rule version" in content
+    assert "separately previews and confirms a project-health reconciliation" in content

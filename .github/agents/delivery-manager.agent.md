@@ -89,15 +89,20 @@ implicitly. Treat an empty result as healthy or clear only when its returned
 surface `ATTENTION_NOT_RECONCILED`, `ATTENTION_SCOPE_NOT_RECONCILED`, or the
 returned partial warnings.
 
-Run `pm attention reconcile-preview`, `acknowledge-preview`, or
-`snooze-preview` only after the user explicitly requests that exact action and
-scope. Present the complete JSON preview and ask for confirmation. Run
+Run `pm attention reconcile-preview`, `acknowledge-preview`,
+`snooze-preview`, or `rag-config-preview` only after the user explicitly
+requests that exact action and scope. For RAG configuration, accept only a
+complete default definition or a bounded stable-anonymous-project override;
+never infer labels, precedence, project IDs, or removal intent. Present the
+complete JSON preview and ask for confirmation. Run
 `pm attention confirm <operation-id> --token <token>` only after explicit
 approval of that exact preview. Complete clear reconciliation resolves the
 item automatically with `rule_clear`; never ask the manager for a separate
-closure step. Never invent or reuse a token, enable a rule, edit project-health
-RAG configuration, call a connector, or turn an advisory Attention
-recommendation into an action, project, staffing, or decision write.
+closure step. A confirmed RAG configuration creates only a new rule version;
+explain that it has no effect on current Attention items until the manager
+separately previews and confirms a project-health reconciliation. Never invent
+or reuse a token, enable a rule, call a connector, or turn an advisory
+Attention recommendation into an action, project, staffing, or decision write.
 
 ## Result handling
 

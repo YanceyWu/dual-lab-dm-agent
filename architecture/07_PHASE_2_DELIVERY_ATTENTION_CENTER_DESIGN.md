@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Status: `BATCH C2 VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -276,7 +276,7 @@ All recommendations use `write_mode = advisory` and
 
 #### Attention write interface contract
 
-Batch C1 exposes these exact JSON-only CLI commands:
+Batch C1 exposes these JSON-only lifecycle/reconciliation CLI commands:
 
 ```text
 pm attention reconcile-preview [--rule <rule-key>] [--subject-kind <kind>] [--subject-id <id>]
@@ -284,6 +284,18 @@ pm attention acknowledge-preview <attention-id>
 pm attention snooze-preview <attention-id> --until <timestamp>
 pm attention confirm <operation-id> --token <confirmation-token>
 ```
+
+Batch C2 adds this exact configuration preview command and reuses the same
+confirmation command:
+
+```text
+pm attention rag-config-preview --target <default|project_override> [--project-id <stable-anonymous-id>] [--configuration-json <object>] [--remove-override]
+```
+
+`default` requires a complete validated definition and accepts neither
+`project_id` nor removal. `project_override` requires a stable anonymous
+project ID and either one non-empty bounded override definition or
+`remove_override`; removal accepts no configuration object.
 
 The Dashboard projection is API-only in Batch C1 and uses
 `POST /api/attention/operations`. A preview request has
@@ -301,15 +313,16 @@ data-access failure to 503. CLI failure returns JSON and a non-zero exit code.
 Only a successful preview returns a confirmation token.
 
 Copilot may query the persisted Center without reconciliation. It may create a
-reconciliation, acknowledgement, or snooze preview only after the user
-explicitly asks for that action. It must present the exact bounded preview and
-ask for confirmation, and may confirm only that preview with the runtime-issued
-token after explicit approval. Complete clear reconciliation resolves the item
-automatically with machine reason `rule_clear`; no manager closure step is
-exposed. The internal resolve validator remains defensive compatibility logic,
-not a CLI, Dashboard, or Copilot operation. Copilot never enables rules, edits
-RAG configuration, calls a connector, or converts an advisory recommendation
-into a business write.
+reconciliation, acknowledgement, snooze, or RAG configuration preview only
+after the user explicitly asks for that exact action and scope. It must present
+the exact bounded preview and ask for confirmation, and may confirm only that
+preview with the runtime-issued token after explicit approval. Complete clear
+reconciliation resolves the item automatically with machine reason
+`rule_clear`; no manager closure step is exposed. The internal resolve
+validator remains defensive compatibility logic, not a CLI, Dashboard, or
+Copilot operation. Copilot never infers RAG labels, precedence, project IDs, or
+override removal, enables rules, calls a connector, or converts an advisory
+recommendation into a business write.
 
 Batch C1 adds no visual Dashboard Center page. A browser UI is a separately
 reviewed scope rather than an implication of the API projection.
@@ -583,17 +596,32 @@ explicitly promote the phase.
 
 ### Batch C2 — DM-operable RAG configuration
 
-- Define an Attention-specific preview/confirm operation for validated
-  versioned project-health RAG defaults and stable-anonymous-project overrides.
+- Add an Attention-specific, expiring, hashed, one-time configuration operation
+  store separate from reconciliation and lifecycle operations.
+- Preview only a complete default replacement, a bounded
+  stable-anonymous-project override, or explicit override removal. Return the
+  exact affected scope, prior/new rule versions, bounded change, and
+  `reconciliation_required = true`.
+- Confirmation must atomically reject stale/current-version drift and create
+  one new current `project_health_attention` rule version while retaining the
+  prior version. It must not reconcile or mutate current signals/history.
 - Never accept executable expressions, prompts, display names, real project
   identifiers, or direct SQL. A semantic configuration change creates a new
   rule version and takes effect only through separately confirmed
   reconciliation.
+- Expose only the exact JSON CLI command and
+  `configure-project-health-rag` Dashboard API preview action defined above.
+  Reuse the existing Attention confirmation command/endpoint and safe status
+  mapping. Copilot must require separate explicit preview and confirmation.
+- Prove invalid/no-op/stale/expired/reused/concurrent operations create no
+  unintended rule version; persistence failure rolls back the current-version
+  switch; Management Attention and `UseCaseResult 1.0` remain unchanged.
 - Add no connector or real-data behavior and keep
   `pending_decision_attention` disabled.
-- Batch C2 requires separate owner authorization after C1 review and must
-  complete before Phase 2 may claim DM-operable RAG configuration or enter
-  promotion review.
+- The owner authorized only this bounded Batch C2 implementation on
+  2026-07-29. Stop after focused tests, `make validate`, documentation, and a
+  local commit for explicit Batch C2 review. Batch D and Phase 2 promotion
+  remain separately gated.
 
 ### Batch D — Regression and promotion decision
 
@@ -618,5 +646,7 @@ lifecycle no-op behavior, exact interface contracts, bounded history,
 recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
 
 The owner accepted the implemented and locally validated Batch C1 result on
-2026-07-29. Batch C2, Phase 2 promotion, release, operational work, connector
-work, real-data access, push, merge, and tag remain separately gated.
+2026-07-29 and then authorized only the bounded Batch C2 implementation.
+Batch C2 is implemented and locally validated and now requires explicit owner
+review. Batch D, Phase 2 promotion, release, operational work, connector work,
+real-data access, push, merge, and tag remain separately gated.

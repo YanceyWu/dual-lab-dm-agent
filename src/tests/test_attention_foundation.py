@@ -250,6 +250,7 @@ def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
             table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             for table in (
                 "attention_operations",
+                "attention_configuration_operations",
                 "attention_reconciliations",
                 "attention_signals",
                 "attention_history",
@@ -260,6 +261,7 @@ def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
     assert attention_tables == {
         "attention_rules",
         "attention_operations",
+        "attention_configuration_operations",
         "attention_reconciliations",
         "attention_signals",
         "attention_history",
@@ -267,6 +269,7 @@ def test_bootstrap_adds_attention_schema_without_backfill_and_preserves_legacy(
     assert legacy_row == ("project-legacy-990001", "active")
     assert counts == {
         "attention_operations": 0,
+        "attention_configuration_operations": 0,
         "attention_reconciliations": 0,
         "attention_signals": 0,
         "attention_history": 0,

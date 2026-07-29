@@ -152,7 +152,7 @@ def _validated_catalog(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         if rule_key == PROJECT_HEALTH_RULE:
             if not PROJECT_HEALTH_VERSION.fullmatch(actual["rule_version"]):
                 raise InvalidAttentionCatalog("ATTENTION_RULE_CATALOG_INVALID")
-            _validate_project_health_parameters(actual["parameters"])
+            validate_project_health_parameters(actual["parameters"])
         elif (
             actual["rule_version"] != expected["version"]
             or actual["parameters"] != expected["parameters"]
@@ -170,7 +170,8 @@ def _validate_requested_keys(rule_keys: list[str]) -> None:
         raise InvalidAttentionCatalog("ATTENTION_SCOPE_INVALID")
 
 
-def _validate_project_health_parameters(parameters: Any) -> None:
+def validate_project_health_parameters(parameters: Any) -> None:
+    """Validate the complete persisted project-health RAG configuration."""
     if not isinstance(parameters, dict) or set(parameters) != {
         "config_version",
         "default",

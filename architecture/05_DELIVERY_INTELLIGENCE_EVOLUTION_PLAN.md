@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C1 ACCEPTED`
+Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C2 VALIDATED REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -44,8 +44,10 @@ The owner subsequently approved the Phase 2 Attention design, accepted the
 validated Batch B implementation and review corrections, and approved the
 implementation-level Batch C review on 2026-07-28. Batch C1 is now implemented
 and locally validated; the owner accepted its corrected result on 2026-07-29.
-Batch C2, Phase 2 promotion, connector work, real data, and publication remain
-separately gated.
+The owner then authorized only bounded Batch C2 RAG configuration; it is
+implemented and locally validated and now requires explicit review. Batch D,
+Phase 2 promotion, connector work, real data, and publication remain separately
+gated.
 
 ## Delivery loop
 

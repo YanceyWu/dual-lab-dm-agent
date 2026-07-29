@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import re
@@ -68,6 +69,62 @@ class AttentionService:
             attention_id=attention_id,
             actor=actor,
         )
+
+    def preview_project_health_rag_configuration(
+        self,
+        *,
+        actor: str,
+        target: str,
+        configuration: dict[str, Any] | None = None,
+        project_id: str | None = None,
+        remove_override: bool = False,
+    ) -> dict[str, Any]:
+        """Preview one bounded project-health RAG configuration version."""
+        try:
+            normalized_actor = _bounded_id(actor, "actor")
+            normalized_target, normalized_project_id = _configuration_scope(
+                target=target,
+                project_id=project_id,
+                remove_override=remove_override,
+            )
+            with attention_repository.attention_connection() as connection:
+                current = _current_project_health_rule(connection)
+                proposed_parameters, change = _configuration_change(
+                    current["parameters"],
+                    target=normalized_target,
+                    project_id=normalized_project_id,
+                    configuration=configuration,
+                    remove_override=remove_override,
+                )
+                rules.validate_project_health_parameters(proposed_parameters)
+                if _payload_hash(current["parameters"]) == _payload_hash(
+                    proposed_parameters
+                ):
+                    return _failure("ATTENTION_CONFIGURATION_UNCHANGED")
+                new_rule_version = (
+                    attention_repository.next_project_health_rule_version(
+                        connection
+                    )
+                )
+                return _create_configuration_preview(
+                    connection,
+                    actor=normalized_actor,
+                    target=normalized_target,
+                    project_id=normalized_project_id,
+                    current_rule_version=current["rule_version"],
+                    current_parameters_hash=_payload_hash(current["parameters"]),
+                    proposed={
+                        "rule_key": rules.PROJECT_HEALTH_RULE,
+                        "new_rule_version": new_rule_version,
+                        "parameters": proposed_parameters,
+                        "change": change,
+                        "reconciliation_required": True,
+                    },
+                )
+        except (rules.InvalidAttentionCatalog, ValueError):
+            return _failure("ATTENTION_RAG_CONFIG_INVALID")
+        except (json.JSONDecodeError, sqlite3.Error):
+            return _failure("DATA_ACCESS_FAILED")
 
     def preview_snooze(
         self,
@@ -191,7 +248,19 @@ class AttentionService:
         with attention_repository.attention_connection(immediate=True) as connection:
             operation = attention_repository.get_operation(connection, operation_id)
             if operation is None:
-                return _failure("ATTENTION_OPERATION_NOT_FOUND")
+                configuration_operation = (
+                    attention_repository.get_configuration_operation(
+                        connection,
+                        operation_id,
+                    )
+                )
+                if configuration_operation is None:
+                    return _failure("ATTENTION_OPERATION_NOT_FOUND")
+                return self._confirm_configuration_transaction(
+                    connection,
+                    configuration_operation,
+                    confirmation_token,
+                )
             if operation["status"] != "proposed":
                 return _failure("ATTENTION_OPERATION_ALREADY_USED")
             if not secrets.compare_digest(
@@ -235,6 +304,85 @@ class AttentionService:
                 finished_at=_iso(_utc_now()),
             )
             return result
+
+    def _confirm_configuration_transaction(
+        self,
+        connection,
+        operation: dict[str, Any],
+        confirmation_token: str,
+    ) -> dict[str, Any]:
+        if operation["status"] != "proposed":
+            return _failure("ATTENTION_OPERATION_ALREADY_USED")
+        if not secrets.compare_digest(
+            operation["token_hash"],
+            _token_hash(confirmation_token),
+        ):
+            return _failure("ATTENTION_CONFIRMATION_INVALID")
+        now = _utc_now()
+        if _parse_timestamp(operation["expires_at"]) <= now:
+            attention_repository.expire_configuration_operation(
+                connection,
+                operation_id=operation["operation_id"],
+                finished_at=_iso(now),
+            )
+            return _failure("ATTENTION_CONFIRMATION_EXPIRED")
+        if not attention_repository.claim_configuration_operation(
+            connection,
+            operation_id=operation["operation_id"],
+            claimed_at=_iso(now),
+        ):
+            return _failure("ATTENTION_OPERATION_ALREADY_USED")
+
+        result = self._confirm_configuration(connection, operation, now)
+        attention_repository.finish_configuration_operation(
+            connection,
+            operation_id=operation["operation_id"],
+            success=result["status"] == "success",
+            result=result,
+            failure_code=result.get("failure_code", ""),
+            finished_at=_iso(_utc_now()),
+        )
+        return result
+
+    def _confirm_configuration(
+        self,
+        connection,
+        operation: dict[str, Any],
+        now: datetime,
+    ) -> dict[str, Any]:
+        current = _current_project_health_rule(connection)
+        proposed = operation["proposed"]
+        proposed_parameters = proposed["parameters"]
+        rules.validate_project_health_parameters(proposed_parameters)
+        if (
+            current["rule_version"] != operation["current_rule_version"]
+            or _payload_hash(current["parameters"])
+            != operation["current_parameters_hash"]
+            or proposed["new_rule_version"]
+            != attention_repository.next_project_health_rule_version(connection)
+        ):
+            return _failure("ATTENTION_CONFIGURATION_STALE")
+        if _payload_hash(current["parameters"]) == _payload_hash(
+            proposed_parameters
+        ):
+            return _failure("ATTENTION_CONFIGURATION_UNCHANGED")
+        if not attention_repository.insert_project_health_rule_version(
+            connection,
+            prior_rule_version=current["rule_version"],
+            new_rule_version=proposed["new_rule_version"],
+            parameters=proposed_parameters,
+            created_at=_iso(now),
+        ):
+            return _failure("ATTENTION_CONFIGURATION_STALE")
+        return {
+            "status": "success",
+            "rule_key": rules.PROJECT_HEALTH_RULE,
+            "prior_rule_version": current["rule_version"],
+            "rule_version": proposed["new_rule_version"],
+            "target": operation["target"],
+            "project_id": operation["project_id"],
+            "reconciliation_required": True,
+        }
 
     def _confirm_reconciliation(
         self,
@@ -400,6 +548,131 @@ def _create_preview(
         "actor": actor,
         "scope": scope,
         "proposed": proposed,
+    }
+
+
+def _create_configuration_preview(
+    connection,
+    *,
+    actor: str,
+    target: str,
+    project_id: str,
+    current_rule_version: str,
+    current_parameters_hash: str,
+    proposed: dict[str, Any],
+) -> dict[str, Any]:
+    now = _utc_now()
+    expires_at = now + timedelta(seconds=TOKEN_TTL_SECONDS)
+    operation_id = f"attcfg-{uuid4().hex}"
+    token = secrets.token_urlsafe(32)
+    attention_repository.create_configuration_operation(
+        connection,
+        {
+            "operation_id": operation_id,
+            "actor": actor,
+            "target": target,
+            "project_id": project_id,
+            "current_rule_version": current_rule_version,
+            "current_parameters_hash": current_parameters_hash,
+            "proposed": proposed,
+            "token_hash": _token_hash(token),
+            "created_at": _iso(now),
+            "expires_at": _iso(expires_at),
+        },
+    )
+    return {
+        "status": "proposed",
+        "operation_id": operation_id,
+        "confirmation_token": token,
+        "expires_at": _iso(expires_at),
+        "actor": actor,
+        "scope": {
+            "rule_key": rules.PROJECT_HEALTH_RULE,
+            "target": target,
+            "project_id": project_id,
+        },
+        "proposed": {
+            "prior_rule_version": current_rule_version,
+            "new_rule_version": proposed["new_rule_version"],
+            "change": proposed["change"],
+            "reconciliation_required": True,
+        },
+    }
+
+
+def _current_project_health_rule(connection) -> dict[str, Any]:
+    current = attention_repository.get_current_project_health_rule(connection)
+    if (
+        current is None
+        or not current["enabled"]
+        or not rules.PROJECT_HEALTH_VERSION.fullmatch(current["rule_version"])
+    ):
+        raise rules.InvalidAttentionCatalog("ATTENTION_RULE_CATALOG_INVALID")
+    rules.validate_project_health_parameters(current["parameters"])
+    return current
+
+
+def _configuration_scope(
+    *,
+    target: str,
+    project_id: str | None,
+    remove_override: bool,
+) -> tuple[str, str]:
+    if not isinstance(target, str) or target not in {
+        "default",
+        "project_override",
+    }:
+        raise ValueError("Invalid configuration target")
+    if not isinstance(remove_override, bool):
+        raise ValueError("Invalid remove flag")
+    if target == "default":
+        if project_id is not None or remove_override:
+            raise ValueError("Default configuration has no project scope")
+        return target, ""
+    if project_id is None:
+        raise ValueError("Project override requires project ID")
+    return target, _bounded_id(project_id, "project_id")
+
+
+def _configuration_change(
+    current_parameters: dict[str, Any],
+    *,
+    target: str,
+    project_id: str,
+    configuration: dict[str, Any] | None,
+    remove_override: bool,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    proposed = copy.deepcopy(current_parameters)
+    if target == "default":
+        if not isinstance(configuration, dict):
+            raise ValueError("Default configuration is required")
+        proposed["default"] = copy.deepcopy(configuration)
+        change = {
+            "target": target,
+            "configuration": copy.deepcopy(configuration),
+            "remove_override": False,
+        }
+        return proposed, change
+
+    overrides = proposed["project_overrides"]
+    if remove_override:
+        if configuration is not None:
+            raise ValueError("Removal does not accept configuration")
+        overrides.pop(project_id, None)
+        return proposed, {
+            "target": target,
+            "project_id": project_id,
+            "configuration": None,
+            "remove_override": True,
+        }
+    if not isinstance(configuration, dict) or not configuration:
+        raise ValueError("Project override configuration is required")
+    overrides[project_id] = copy.deepcopy(configuration)
+    return proposed, {
+        "target": target,
+        "project_id": project_id,
+        "configuration": copy.deepcopy(configuration),
+        "remove_override": False,
     }
 
 
@@ -1086,6 +1359,16 @@ def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def _payload_hash(payload: dict[str, Any]) -> str:
+    normalized = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def _failure(code: str) -> dict[str, Any]:
     return {"status": "failed", "failure_code": code}
 
@@ -1096,6 +1379,12 @@ def _record_operation_failure(operation_id: str, failure_code: str) -> None:
     try:
         with attention_repository.attention_connection(immediate=True) as connection:
             attention_repository.fail_operation(
+                connection,
+                operation_id=operation_id,
+                failure_code=failure_code,
+                finished_at=_iso(_utc_now()),
+            )
+            attention_repository.fail_configuration_operation(
                 connection,
                 operation_id=operation_id,
                 failure_code=failure_code,

@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-028 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Status: `IP-028 BATCH C2 VALIDATED — REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 This checkout intentionally contains only implementation material that remains
@@ -21,7 +21,7 @@ recoverable from Git history.
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
 | IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
-| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and controlled Center integration | Corrected Batch C1 accepted on 2026-07-29; separate Batch C2 authorization required | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
+| IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, configurable project-health RAG semantics, and controlled Center integration | Corrected Batch C1 accepted; bounded Batch C2 RAG configuration implemented and locally validated for explicit review | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | Not started |
 
 ## Current execution order
 
@@ -29,9 +29,9 @@ recoverable from Git history.
    baseline.
 2. Preserve the accepted corrected IP-028 Batch C1 implementation on
    `codex/phase-2-attention-center`.
-3. Decide whether to authorize only Batch C2 DM-operable RAG configuration.
-   Do not begin Batch C2, connector work, real-data work, or Phase 2 promotion
-   without separate authorization.
+3. Review the bounded Batch C2 DM-operable RAG configuration result and accept
+   it or request corrections. Do not begin Batch D, connector work, real-data
+   work, or Phase 2 promotion.
 4. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

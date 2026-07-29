@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Gate status: `PHASE 2 BATCH C2 VALIDATED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -13,10 +13,11 @@ continuity record is pushed to and tracks
 verified in the task handoff because a commit cannot embed its own final hash.
 The approved Phase 2 implementation branch, including the accepted Batch B
 result, review corrections, Batch C design handoff, accepted Batch C1
-implementation, and C1 review corrections, is local-only and has no remote
-tracking branch. The exact current commit is reported in the task handoff
-because a commit cannot embed its own final hash. Do not push it without a
-separate authorization. Do not merge or push to `main`.
+implementation and corrections, and validated Batch C2 implementation, is
+local-only and has no remote tracking branch. The exact current commit is
+reported in the task handoff because a commit cannot embed its own final hash.
+Do not push it without a separate authorization. Do not merge or push to
+`main`.
 
 ## Read this first
 
@@ -75,6 +76,12 @@ belong in Git history and must not be interpreted as current instructions.
   exact Attention CLI, Dashboard API, and Copilot projections. The owner
   completed review and accepted the corrected result on 2026-07-29. This does
   not authorize Batch C2 or Phase 2 promotion.
+- The owner then authorized only IP-028 Batch C2. It now provides validated
+  default/stable-anonymous-project RAG configuration preview/confirm through a
+  dedicated audited operation store, exact CLI/Dashboard/Copilot projections,
+  and versioned `project_health_attention` persistence. Confirmation does not
+  reconcile or mutate current Attention items; a separate reconciliation
+  preview/confirm remains mandatory.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -208,6 +215,14 @@ The Batch C1 review corrections passed 71 combined focused tests. The final
 compilation, diff hygiene, package build/inspection, and all eight release
 validation checks.
 
+Phase 2 Batch C2 passed 82 combined focused Attention configuration, Center,
+foundation, discovery, Management Attention, unified-contract, CLI-build, and
+Copilot-agent tests. The final `make validate` run passed repository-boundary
+and synthetic-sample checks, 187 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and
+all eight release validation checks. `make rehearse-release` remains
+deliberately deferred to Batch D.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -243,18 +258,20 @@ validation checks.
    no-op protection, exact interface projections, bounded history, and
    advisory recommendations. The owner accepted the corrected C1 result on
    2026-07-29; Phase 2 is not promoted.
-8. The persisted project-health RAG model is data-configurable, but no
-   DM-operable configuration interface exists. Batch C2 must add a separately
-   approved Attention-specific configuration preview/confirm boundary before
-   Phase 2 may claim DM-operable RAG configuration or enter promotion review.
-9. Connector work, real data, visual Dashboard Center UI, Batch C2, push, and
+8. Batch C2 now supplies the DM-operable project-health RAG configuration
+   preview/confirm boundary, but the validated local result awaits explicit
+   owner review. A confirmed configuration still requires a separately
+   confirmed reconciliation before it affects current Attention items.
+9. Connector work, real data, visual Dashboard Center UI, Batch D, push, and
    Phase 2 promotion remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Decide whether to authorize only the bounded IP-028 Batch C2
-   Attention-specific RAG configuration preview/confirm implementation.
-2. Do not begin Batch C2, visual Dashboard UI, connectors, real-data work,
+1. Review the local IP-028 Batch C2 commit against the approved configuration
+   validation, versioning, preview/confirm, stale/concurrency, reconciliation
+   separation, and compatibility contracts.
+2. Decide whether to accept Batch C2 or request bounded corrections.
+3. Do not begin Batch D, visual Dashboard UI, connectors, real-data work,
    Phase 2 promotion, release, tag, merge, or push without separate
    authorization.
 
@@ -276,15 +293,49 @@ validation checks.
   `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md`; one phase and one
   bounded outcome are active at a time.
 - IP-028 Batch C1 is implemented, validated, reviewed, and accepted under the
-  exact approved design and pack contract. Stop pending a separate Batch C2
-  authorization.
+  exact approved design and pack contract.
+- IP-028 Batch C2 is implemented and validated under its bounded configuration
+  contract. Stop at its local commit for owner review.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
-- Do not begin Batch C2 DM-operable RAG configuration until the separate
-  configuration write contract is explicitly authorized.
+- A confirmed RAG configuration creates only a new current rule version. It
+  must not affect current Attention signals until a separate project-health
+  reconciliation preview is explicitly confirmed.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 2 Batch C2 RAG configuration validated
+
+- Added the dedicated additive `attention_configuration_operations` store for
+  expiring, hashed, one-time configuration previews without changing existing
+  reconciliation/lifecycle operation contracts.
+- Added strict full-result validation for complete default replacement,
+  bounded stable-anonymous-project overrides, and explicit override removal.
+  Unsupported fields, prompts/SQL-shaped fields, malformed IDs/labels, empty
+  overrides, and no-op removal fail before an operation is created.
+- Confirmation rechecks the current rule version and canonical parameter hash,
+  rejects stale previews, retains prior versions, and atomically creates one
+  new current `project_health_attention` version. It creates no reconciliation,
+  signal, or history mutation and explicitly reports that reconciliation is
+  required.
+- Added exact JSON `rag-config-preview` CLI behavior, the
+  `configure-project-health-rag` Dashboard API preview action, shared confirm
+  behavior, safe HTTP conflicts, and Copilot instructions requiring explicit
+  preview/confirmation plus separately confirmed reconciliation.
+- Added focused synthetic coverage for clean/additive bootstrap, hashed token
+  storage, default/override/removal, invalid/no-op input, stale previews,
+  expiry, reuse, concurrent confirmation, transaction rollback, exact
+  CLI/Dashboard projections, Management Attention compatibility, and disabled
+  pending-decision state.
+- Focused combined tests passed 82/82. `make validate` passed
+  repository-boundary and synthetic-sample checks, 187 runtime tests,
+  21 repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build/inspection, and all eight release validation checks.
+- No visual Dashboard Center, connector, source sync, real data, automatic
+  action/project/staffing/decision write, pending-decision activation, push,
+  Batch D, or Phase 2 promotion was introduced. The local result is stopped
+  for Batch C2 review.
 
 ### 2026-07-29 — Phase 2 Batch C1 review accepted
 

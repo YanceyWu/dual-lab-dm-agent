@@ -735,6 +735,37 @@ CREATE TABLE IF NOT EXISTS attention_operations (
 CREATE INDEX IF NOT EXISTS idx_attention_operations_status_expiry
     ON attention_operations(status, expires_at);
 
+CREATE TABLE IF NOT EXISTS attention_configuration_operations (
+    operation_id            TEXT PRIMARY KEY,
+    actor                   TEXT NOT NULL,
+    status                  TEXT NOT NULL CHECK(
+        status IN ('proposed', 'claimed', 'success', 'failed', 'expired')
+    ),
+    target                  TEXT NOT NULL CHECK(
+        target IN ('default', 'project_override')
+    ),
+    project_id              TEXT NOT NULL DEFAULT '',
+    current_rule_version    TEXT NOT NULL,
+    current_parameters_hash TEXT NOT NULL,
+    proposed_json           TEXT NOT NULL CHECK(json_valid(proposed_json)),
+    token_hash              TEXT NOT NULL UNIQUE,
+    result_json             TEXT NOT NULL DEFAULT '{}'
+                            CHECK(json_valid(result_json)),
+    failure_code            TEXT NOT NULL DEFAULT '',
+    created_at              TEXT NOT NULL,
+    expires_at              TEXT NOT NULL,
+    claimed_at              TEXT NOT NULL DEFAULT '',
+    finished_at             TEXT NOT NULL DEFAULT '',
+    CHECK(
+        (target = 'default' AND project_id = '')
+        OR
+        (target = 'project_override' AND project_id != '')
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_attention_configuration_operations_status_expiry
+    ON attention_configuration_operations(status, expires_at);
+
 CREATE TABLE IF NOT EXISTS attention_reconciliations (
     reconciliation_id  TEXT PRIMARY KEY,
     operation_id       TEXT NOT NULL UNIQUE

@@ -90,6 +90,42 @@ def snooze_preview(
     )
 
 
+@attention_app.command("rag-config-preview")
+def rag_config_preview(
+    target: str = typer.Option(..., "--target"),
+    configuration_json: Optional[str] = typer.Option(
+        None,
+        "--configuration-json",
+    ),
+    project_id: Optional[str] = typer.Option(None, "--project-id"),
+    remove_override: bool = typer.Option(False, "--remove-override"),
+) -> None:
+    """Preview one project-health RAG configuration version."""
+    try:
+        configuration = (
+            json.loads(configuration_json)
+            if configuration_json is not None
+            else None
+        )
+    except json.JSONDecodeError:
+        _emit(
+            {
+                "status": "failed",
+                "failure_code": "ATTENTION_RAG_CONFIG_INVALID",
+            }
+        )
+        return
+    _emit(
+        service.preview_project_health_rag_configuration(
+            actor=CLI_ACTOR,
+            target=target,
+            configuration=configuration,
+            project_id=project_id,
+            remove_override=remove_override,
+        )
+    )
+
+
 @attention_app.command("confirm")
 def confirm(
     operation_id: str = typer.Argument(...),
