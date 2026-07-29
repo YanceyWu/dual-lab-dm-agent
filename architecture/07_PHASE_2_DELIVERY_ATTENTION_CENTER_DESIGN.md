@@ -1,6 +1,6 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `BATCH C2 VALIDATED — REVIEW REQUIRED`
+Status: `BATCH C2 REVIEW CHANGES REQUIRED — PUBLIC MAPPING CONFIG NOT ACCEPTED`
 Last updated: 2026-07-29
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
@@ -25,6 +25,14 @@ is implemented and locally validated on the dedicated branch; the owner
 accepted the corrected result on 2026-07-29. This does not authorize Batch C2,
 connector calls, source sync, real-data access, push, merge, tag, release,
 deployment, or Phase 2 promotion.
+
+The owner later authorized bounded Batch C2 implementation, but review on
+2026-07-29 did not accept its product contract. The validated local
+label-mapping interface lacks a safe current-configuration projection, does
+not enforce an existing anonymous project target, and configures the wrong
+abstraction. The required replacement is the layered factor/condition and
+milestone direction in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
 
 ## Verified current state
 
@@ -285,17 +293,16 @@ pm attention snooze-preview <attention-id> --until <timestamp>
 pm attention confirm <operation-id> --token <confirmation-token>
 ```
 
-Batch C2 adds this exact configuration preview command and reuses the same
-confirmation command:
+The local, unaccepted Batch C2 implementation at `71d90d3` exposes this
+configuration preview command and reuses the same confirmation command:
 
 ```text
 pm attention rag-config-preview --target <default|project_override> [--project-id <stable-anonymous-id>] [--configuration-json <object>] [--remove-override]
 ```
 
-`default` requires a complete validated definition and accepts neither
-`project_id` nor removal. `project_override` requires a stable anonymous
-project ID and either one non-empty bounded override definition or
-`remove_override`; removal accepts no configuration object.
+This command is verified current code, not an accepted product interface. It
+must be removed or disabled by a bounded correction before Phase 2 promotion.
+No future agent should treat it as authority to persist mapping configuration.
 
 The Dashboard projection is API-only in Batch C1 and uses
 `POST /api/attention/operations`. A preview request has
@@ -313,16 +320,17 @@ data-access failure to 503. CLI failure returns JSON and a non-zero exit code.
 Only a successful preview returns a confirmation token.
 
 Copilot may query the persisted Center without reconciliation. It may create a
-reconciliation, acknowledgement, snooze, or RAG configuration preview only
-after the user explicitly asks for that exact action and scope. It must present
-the exact bounded preview and ask for confirmation, and may confirm only that
-preview with the runtime-issued token after explicit approval. Complete clear
+reconciliation, acknowledgement, or snooze preview only after the user
+explicitly asks for that exact action and scope. It must present the exact
+bounded preview and ask for confirmation, and may confirm only that preview
+with the runtime-issued token after explicit approval. Complete clear
 reconciliation resolves the item automatically with machine reason
 `rule_clear`; no manager closure step is exposed. The internal resolve
 validator remains defensive compatibility logic, not a CLI, Dashboard, or
-Copilot operation. Copilot never infers RAG labels, precedence, project IDs, or
-override removal, enables rules, calls a connector, or converts an advisory
-recommendation into a business write.
+Copilot operation. Until an approved layered condition contract exists,
+Copilot must not run the local `rag-config-preview` command or claim that RAG
+configuration is DM-operable. It never enables rules, calls a connector, or
+converts an advisory recommendation into a business write.
 
 Batch C1 adds no visual Dashboard Center page. A browser UI is a separately
 reviewed scope rather than an implication of the API projection.
@@ -334,25 +342,21 @@ status, approved parameter values, rule version, and timestamps; it never
 stores executable expressions or model prompts. A parameter change requires a
 new rule version and reconciliation preview.
 
-Project-health RAG semantics are configuration, not fixed runtime constants.
-The current project-health rule version stores a local DM default plus optional
-per-project overrides keyed only by stable anonymous project ID. The validated
-parameters define:
+The verified current project-health rule version stores a local default plus
+optional per-project mapping overrides. Its parameters define:
 
 - source precedence across normalized Jira grade and Confluence RAG inputs;
 - precedence across normalized active `red` and `amber` states; and
 - source-specific mappings from bounded external labels to those normalized
   states.
 
-Project overrides merge onto the local DM default and may replace only those
-bounded fields. Seed values preserve the existing Management Attention
-precedence, but are initial configuration rather than hard-coded behavior.
-Changing any mapping or precedence requires a new project-health rule version
-and takes effect only through Attention reconciliation preview/confirm. An
-unknown label or a missing value for any configured source is an incomplete
-observation and never clears an active item. A source can be omitted only by
-removing it from that default or project override's `source_precedence` in a
-new rule version. Malformed configuration fails before a reconciliation write.
+Project overrides merge onto the local default. These mappings remain
+versioned legacy evaluation semantics for the accepted Attention foundation,
+not the accepted DM-facing configuration abstraction. Changing them through
+the local C2 write surface is not approved. Future DM configuration belongs to
+the fixed factor catalog and bounded condition model; milestone and Release
+facts are introduced in later separately gated phases. Unknown, missing,
+stale, or conflicting inputs still never clear an active item or imply health.
 Batch B and Batch C1 do not add a configuration write UI or API. The persisted
 model is data-configurable, but it is not yet DM-operable configuration.
 Batch C2, separately gated below, must add an Attention-specific
@@ -594,34 +598,37 @@ explicitly promote the phase.
 - Stop after focused tests, `make validate`, documentation, and a local commit
   for explicit Batch C1 review.
 
-### Batch C2 — DM-operable RAG configuration
+### Batch C2 — Review outcome and required correction
 
-- Add an Attention-specific, expiring, hashed, one-time configuration operation
-  store separate from reconciliation and lifecycle operations.
-- Preview only a complete default replacement, a bounded
-  stable-anonymous-project override, or explicit override removal. Return the
-  exact affected scope, prior/new rule versions, bounded change, and
-  `reconciliation_required = true`.
-- Confirmation must atomically reject stale/current-version drift and create
-  one new current `project_health_attention` rule version while retaining the
-  prior version. It must not reconcile or mutate current signals/history.
-- Never accept executable expressions, prompts, display names, real project
-  identifiers, or direct SQL. A semantic configuration change creates a new
-  rule version and takes effect only through separately confirmed
-  reconciliation.
-- Expose only the exact JSON CLI command and
-  `configure-project-health-rag` Dashboard API preview action defined above.
-  Reuse the existing Attention confirmation command/endpoint and safe status
-  mapping. Copilot must require separate explicit preview and confirmation.
-- Prove invalid/no-op/stale/expired/reused/concurrent operations create no
-  unintended rule version; persistence failure rolls back the current-version
-  switch; Management Attention and `UseCaseResult 1.0` remain unchanged.
-- Add no connector or real-data behavior and keep
-  `pending_decision_attention` disabled.
-- The owner authorized only this bounded Batch C2 implementation on
-  2026-07-29. Stop after focused tests, `make validate`, documentation, and a
-  local commit for explicit Batch C2 review. Batch D and Phase 2 promotion
-  remain separately gated.
+The local implementation proved the hashed preview/confirm mechanics, stale
+protection, concurrency, rollback, and interface consistency, but the owner did
+not accept the configured product abstraction.
+
+Blocking findings:
+
+- no supported read-only current/default/override/effective configuration
+  projection;
+- preview does not show sufficient prior and resulting effective conditions;
+- a syntactically valid but nonexistent or meaningful project identifier can be
+  persisted;
+- label mapping and source precedence are not the required DM-facing health
+  condition model;
+- Jira Sprint/Release score factors and Project Health are conflated; and
+- milestone/release commitment is missing from the factor architecture.
+
+The next bounded IP-028 correction, only after design review approval, must:
+
+- disable or remove the unaccepted public mapping configuration CLI,
+  Dashboard, and Copilot paths;
+- preserve accepted C1 behavior and `UseCaseResult 1.0`;
+- retain additive storage safely or migrate it only under an approved,
+  rehearsed plan; never silently drop data;
+- keep `pending_decision_attention` disabled;
+- add no layered Project Health or milestone runtime; and
+- validate, commit locally, and stop for review.
+
+DM-operable layered health configuration moves to Phase 4 after Phase 3
+provides canonical execution, milestone, Release, and dependency facts.
 
 ### Batch D — Regression and promotion decision
 
@@ -647,6 +654,8 @@ recommendation mapping, API-only Dashboard scope, and the C1/C2 split.
 
 The owner accepted the implemented and locally validated Batch C1 result on
 2026-07-29 and then authorized only the bounded Batch C2 implementation.
-Batch C2 is implemented and locally validated and now requires explicit owner
-review. Batch D, Phase 2 promotion, release, operational work, connector work,
-real-data access, push, merge, and tag remain separately gated.
+Batch C2 passed technical validation but failed product-contract review. The
+replacement architecture is proposed, not approved. The correction, Batch D,
+Phase 2 promotion, Phase 3 implementation, release, operational work,
+connector work, real-data access, push, merge, and tag remain separately
+gated.

@@ -127,7 +127,11 @@ Read:
 - `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` for the approved
   phase sequence, gates, and cross-session continuation model;
 - `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` for the
-  approved Phase 1 implementation boundary and batch sequence.
+  approved Phase 1 implementation boundary and batch sequence;
+- `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` for the
+  accepted Attention Center contract and current C2 correction gate;
+- `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` for the
+  proposed layered health, milestone, and bounded DM configuration model.
 
 ## Safety boundary
 

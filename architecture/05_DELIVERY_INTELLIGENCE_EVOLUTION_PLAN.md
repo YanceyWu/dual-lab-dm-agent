@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 1 PROMOTED — PHASE 2 BATCH C2 VALIDATED REVIEW REQUIRED`
+Status: `PHASE 2 C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH REVISION PROPOSED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -44,10 +44,14 @@ The owner subsequently approved the Phase 2 Attention design, accepted the
 validated Batch B implementation and review corrections, and approved the
 implementation-level Batch C review on 2026-07-28. Batch C1 is now implemented
 and locally validated; the owner accepted its corrected result on 2026-07-29.
-The owner then authorized only bounded Batch C2 RAG configuration; it is
-implemented and locally validated and now requires explicit review. Batch D,
-Phase 2 promotion, connector work, real data, and publication remain separately
-gated.
+The owner then authorized only bounded Batch C2 RAG configuration. Its local
+implementation passed validation but failed product-contract review on
+2026-07-29: a label-mapping interface is not the required layered
+Sprint/Release/Project Health condition model, and milestone ownership was
+missing from the phase plan. The proposed correction is defined in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`. Batch D,
+Phase 2 promotion, Phase 3 implementation, connector work, real data, and
+publication remain separately gated.
 
 ## Delivery loop
 
@@ -269,31 +273,44 @@ rule version, state change, and bounded recommendation.
 Batch A and the implementation-level Batch C design review are approved in
 `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`. IP-028 Batch B
 is implemented, validated, and accepted locally. Batch C1 and its bounded
-review corrections are implemented and locally validated on
-`codex/phase-2-attention-center` and await review. Batch C2 DM-operable RAG
-configuration, connector work, real data, and promotion remain separately
-gated.
+review corrections are implemented, validated, and accepted on
+`codex/phase-2-attention-center`. Batch C2 mapping mechanics are technically
+validated at `71d90d3`, but product review did not accept that DM-facing
+abstraction. The layered health revision in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` awaits
+design review; its correction, connector work, real data, and promotion remain
+separately gated.
 
 ### Phase 3 — Delivery execution signal enrichment
 
-Goal: provide the source facts required for aging blockers, scope growth,
-sprint risk, release risk, and dependency observations.
+Goal: provide the canonical facts required for aging blockers, scope growth,
+Sprint risk, Release risk, milestone adherence, commitment tracking, and
+dependency observations.
 
 Expected additions, subject to design approval:
 
 - incremental Jira issue-history cache;
 - Jira issue-link cache;
 - deterministic duration and scope-delta calculations;
+- canonical stable-anonymous milestone and release-commitment records;
+- Release-to-milestone and canonical dependency references;
+- planned, forecast, and actual milestone dates with bounded lifecycle,
+  criticality, evidence, and freshness;
+- explicit no-story-point, unavailable, stale, and conflicting states;
+- separate Sprint Execution and Release/Milestone signals; and
 - additional Attention signal producers.
 
 Non-goals:
 
 - no Forecast engine;
 - no replacement of the current Jira issue snapshot;
+- no seven-dimension overall Project Health;
+- no Story Point fallback presented as Release Health;
 - no management judgment inside connector code.
 
 Promotion gate: sync is bounded, incremental, idempotent, observable, and
-partial-state aware; every new signal traces to source history.
+partial-state aware; every new signal traces to source history; milestone and
+Release facts remain usable when Story Point evidence is unavailable.
 
 ### Phase 4 — Seven-dimension Project Health
 
@@ -305,22 +322,31 @@ Reuse:
 - current project-health review;
 - Jira and Confluence observations;
 - Attention signals;
+- promoted Sprint Execution, Release/Milestone, and dependency facts from
+  Phase 3;
 - resource, action, decision, and project-snapshot facts.
 
 Expected additions, subject to design approval:
 
-- health score definitions;
+- versioned fixed health-factor catalog;
+- bounded DM-configurable factor conditions, thresholds, tolerances, windows,
+  applicability, and approved same-layer weights;
+- critical milestone guards that cannot be averaged away;
+- read-only prior/proposed/effective configuration projections;
 - project health snapshots;
 - health factors with evidence, freshness, and rule versions.
 
 Non-goals:
 
 - no silent project-status update;
+- no arbitrary expression, prompt, SQL, or source-field configuration;
+- no fabricated neutral score for missing Story Point or milestone evidence;
 - no conversion of missing dimensions into healthy scores;
 - no concealment of source conflicts.
 
 Promotion gate: green, amber, red, unknown, stale, missing, and conflicting
-scenarios are independently explainable and regression tested.
+scenarios are independently explainable and regression tested; Sprint risk,
+Release/Milestone risk, and seven-dimension Project Health remain distinct.
 
 ### Phase 5 — Resource Intelligence
 
@@ -383,7 +409,7 @@ Prerequisites:
 
 - sufficient execution history from Phase 3;
 - promoted health and effective-capacity models;
-- normalized milestone or release-commitment inputs.
+- promoted normalized milestone and release-commitment history from Phase 3.
 
 Expected additions, subject to design approval:
 
@@ -397,6 +423,9 @@ Non-goals:
 - no cross-team story-point comparison without normalization evidence;
 - no forecast presented as a commitment;
 - no precise forecast when facts are insufficient.
+
+Phase 7 reuses milestones; it is not the first owner of milestone or
+release-commitment data.
 
 Promotion gate: repeatable backtesting exposes error and confidence, and
 insufficient data produces unavailable or low-confidence results.

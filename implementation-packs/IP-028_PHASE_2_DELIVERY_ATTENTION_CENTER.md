@@ -1,9 +1,11 @@
 # IP-028 — Phase 2 Delivery Attention Center
 
-Status: `BATCH C2 VALIDATED — REVIEW REQUIRED`
+Status: `BATCH C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH DESIGN REVIEW`
 Approved: 2026-07-28
 Implementation branch: `codex/phase-2-attention-center`
 Design: `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md`
+Revision design:
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`
 
 ## Goal
 
@@ -132,11 +134,11 @@ now accepted after review of its validated local result on 2026-07-29.
 8. Focused synthetic tests and `make validate` pass. Update `PROGRESS.md`,
    create a local commit, and stop for Batch C1 review.
 
-## Batch C2 scope
+## Batch C2 implemented scope
 
-DM-operable project-health RAG configuration is a separately reviewed
-Attention write capability. The owner authorized only this bounded
-implementation on 2026-07-29:
+The owner authorized the following bounded implementation on 2026-07-29. This
+section records what commit `71d90d3` technically implemented; review later
+determined that it is not an accepted DM-facing product contract:
 
 - add a dedicated audited store for expiring, hashed, one-time configuration
   previews;
@@ -153,7 +155,7 @@ implementation on 2026-07-29:
 - preserve `UseCaseResult 1.0`, Management Attention, all unrelated writes,
   and disabled `pending_decision_attention`.
 
-## Batch C2 acceptance criteria
+## Batch C2 technical acceptance criteria
 
 1. Preview persists no rule/configuration change and returns only an expiring
    token plus exact target, bounded change, prior/new versions, and the
@@ -182,9 +184,9 @@ checks, package build/inspection, and eight release validation checks.
 separate Batch C2 authorization. The owner subsequently supplied that bounded
 authorization; Phase 2 promotion remains unauthorized.
 
-## Batch C2 result
+## Batch C2 result and review disposition
 
-Batch C2 is implemented and locally validated. It adds only the dedicated
+Batch C2 is implemented and locally technically validated. It adds only the dedicated
 configuration operation store, strict versioned default/project-override
 preview/confirm service, exact JSON CLI/Dashboard/Copilot projections, and
 focused synthetic/compatibility coverage. Focused combined coverage passed
@@ -194,5 +196,19 @@ build/inspection, and eight release validation checks.
 
 Configuration confirmation creates a new current rule version but no
 reconciliation, signal, or history mutation. `pending_decision_attention`
-remains disabled. The result is stopped for explicit Batch C2 review; Batch D
-and Phase 2 promotion are not authorized.
+remains disabled.
+
+Product review did not accept this mapping-oriented configuration surface.
+The required DM-facing model keeps a fixed factor catalog but makes bounded
+conditions configurable, separates Sprint Execution, Release/Milestone, and
+seven-dimension Project Health, treats unavailable Story Point evidence
+explicitly, and makes milestone commitments first-class inputs. The accepted
+C1 behavior and compatibility contracts remain unchanged.
+
+The proposed replacement architecture is recorded in
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`. After
+that design is explicitly reviewed, the only authorized next implementation
+is a bounded C2 correction that disables or removes the unaccepted public
+mapping configuration CLI, Dashboard, and Copilot paths while retaining or
+safely migrating additive storage. It must add no Phase 3 milestone runtime or
+Phase 4 health engine. Batch D and Phase 2 promotion remain unauthorized.

@@ -1,7 +1,7 @@
 # Delivery Manager Roadmap
 
-Status: `DELIVERY INTELLIGENCE EVOLUTION — PHASE 1 PROMOTED`
-Last updated: 2026-07-28
+Status: `PHASE 2 C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH DESIGN REVIEW`
+Last updated: 2026-07-29
 
 This roadmap begins from the current release candidate. Earlier IP migration
 sequences are historical evidence, not work still waiting to start.
@@ -102,8 +102,8 @@ The Delivery Intelligence sequence is defined in
 
 1. Intelligence output contract;
 2. Delivery Attention Center foundation;
-3. delivery-execution signal enrichment;
-4. seven-dimension Project Health;
+3. delivery-execution, milestone, and Release commitment foundation;
+4. layered seven-dimension Project Health;
 5. Resource Intelligence;
 6. Weekly Brief v2;
 7. Forecast v1;
@@ -116,8 +116,18 @@ explicit promotion decision.
 
 Phase 1 was promoted on 2026-07-28 after its bounded contract, discovery,
 Management Attention reference mapping, regression, portable review, and
-synthetic release rehearsal passed. The next action is a new Phase 2 Batch A
-design task. Do not register a Phase 2 implementation pack or change runtime or
-schema until that design is explicitly approved. Deferred migration rehearsal
-and real-environment UAT return as Phase 9 gates under a refreshed, approved
-runbook.
+synthetic release rehearsal passed. In Phase 2, the corrected Batch C1
+Attention Center is accepted. Batch C2's mapping mechanics passed local
+technical validation, but product review did not accept mapping and source
+precedence as the DM-facing health configuration abstraction.
+
+The current review target is
+`architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`. It
+separates Sprint Execution, Release/Milestone, and Project Health; assigns the
+canonical milestone and Release commitment foundation to Phase 3; assigns
+bounded DM-configurable health conditions to Phase 4; and requires Phase 7
+Forecast to reuse promoted milestone history. Only after design approval may a
+bounded C2 correction disable or remove the unaccepted public mapping paths.
+Do not begin Phase 3/4 runtime, Batch D, connector or real-data work, or Phase 2
+promotion under this gate. Deferred migration rehearsal and real-environment
+UAT return as Phase 9 gates under a refreshed, approved runbook.

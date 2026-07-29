@@ -5,7 +5,7 @@ Current branch: `codex/phase-2-attention-center`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-028 — PHASE 2 DELIVERY ATTENTION CENTER`
-Gate status: `PHASE 2 BATCH C2 VALIDATED — REVIEW REQUIRED`
+Gate status: `PHASE 2 C2 REVIEW CHANGES REQUIRED — LAYERED HEALTH DESIGN REVIEW`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -13,11 +13,11 @@ continuity record is pushed to and tracks
 verified in the task handoff because a commit cannot embed its own final hash.
 The approved Phase 2 implementation branch, including the accepted Batch B
 result, review corrections, Batch C design handoff, accepted Batch C1
-implementation and corrections, and validated Batch C2 implementation, is
-local-only and has no remote tracking branch. The exact current commit is
-reported in the task handoff because a commit cannot embed its own final hash.
-Do not push it without a separate authorization. Do not merge or push to
-`main`.
+implementation and corrections, and technically validated but product-rejected
+Batch C2 mapping implementation at `71d90d3`, is local-only and has no remote
+tracking branch. The exact current commit is reported in the task handoff
+because a commit cannot embed its own final hash. Do not push it without a
+separate authorization. Do not merge or push to `main`.
 
 ## Read this first
 
@@ -76,12 +76,21 @@ belong in Git history and must not be interpreted as current instructions.
   exact Attention CLI, Dashboard API, and Copilot projections. The owner
   completed review and accepted the corrected result on 2026-07-29. This does
   not authorize Batch C2 or Phase 2 promotion.
-- The owner then authorized only IP-028 Batch C2. It now provides validated
-  default/stable-anonymous-project RAG configuration preview/confirm through a
-  dedicated audited operation store, exact CLI/Dashboard/Copilot projections,
-  and versioned `project_health_attention` persistence. Confirmation does not
-  reconcile or mutate current Attention items; a separate reconciliation
-  preview/confirm remains mandatory.
+- The owner then authorized only IP-028 Batch C2. Its mapping mechanics,
+  audited preview/confirm store, and interface projections passed technical
+  validation at `71d90d3`, but product review did not accept mapping and source
+  precedence as the DM-facing health configuration abstraction. The current
+  public mapping configuration paths must not be treated as an accepted
+  capability.
+- The owner requires three distinct health layers: Sprint Execution,
+  Release/Milestone, and seven-dimension Project Health. The factor catalog is
+  fixed and versioned; the DM configures bounded conditions, thresholds,
+  tolerances, windows, applicability, and approved same-layer weights.
+- Story Point evidence belongs to Sprint execution and qualifying Release
+  scope analysis. Missing Story Points are unavailable evidence, never a
+  fabricated neutral score. Milestone and Release commitments become canonical
+  Phase 3 facts, feed Phase 4 Project Health, and are reused by Phase 7
+  Forecast.
 - The owner selected automatic system resolution for complete clear
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
@@ -223,6 +232,12 @@ and synthetic-sample checks, 187 runtime tests, 21 repository-tool tests with
 all eight release validation checks. `make rehearse-release` remains
 deliberately deferred to Batch D.
 
+The layered health and milestone documentation revision passed
+`make validate` without runtime or schema changes: repository-boundary and
+synthetic-sample checks, 187 runtime tests, 21 repository-tool tests with
+19 subtests, Ruff, compilation, diff hygiene, package build/inspection, and
+all eight release validation checks.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -258,22 +273,32 @@ deliberately deferred to Batch D.
    no-op protection, exact interface projections, bounded history, and
    advisory recommendations. The owner accepted the corrected C1 result on
    2026-07-29; Phase 2 is not promoted.
-8. Batch C2 now supplies the DM-operable project-health RAG configuration
-   preview/confirm boundary, but the validated local result awaits explicit
-   owner review. A confirmed configuration still requires a separately
-   confirmed reconciliation before it affects current Attention items.
-9. Connector work, real data, visual Dashboard Center UI, Batch D, push, and
+8. Batch C2's local mechanics passed validation, but its mapping-oriented
+   product contract was not accepted. Public `rag-config-preview`, Dashboard
+   configuration, and Copilot configuration paths remain present in local code
+   at `71d90d3` and must be disabled or removed by a separately approved
+   bounded correction before Phase 2 promotion.
+9. The layered health and milestone architecture is proposed, not approved or
+   implemented. Phase 3 owns canonical milestone/Release commitment facts;
+   Phase 4 owns bounded DM conditions and Project Health; Phase 7 reuses
+   promoted milestone history.
+10. Connector work, real data, visual Dashboard Center UI, Batch D, push, and
    Phase 2 promotion remain blocked pending their own gates.
 
 ## Exact next actions
 
-1. Review the local IP-028 Batch C2 commit against the approved configuration
-   validation, versioning, preview/confirm, stale/concurrency, reconciliation
-   separation, and compatibility contracts.
-2. Decide whether to accept Batch C2 or request bounded corrections.
-3. Do not begin Batch D, visual Dashboard UI, connectors, real-data work,
-   Phase 2 promotion, release, tag, merge, or push without separate
-   authorization.
+1. Review
+   `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`,
+   especially the three health layers, fixed factor catalog, bounded
+   conditions, milestone model, critical guards, and Phase 3/4/7 ownership.
+2. Approve or revise that design. Only after approval, implement a bounded
+   IP-028 C2 correction that disables or removes the unaccepted public mapping
+   configuration paths while preserving accepted C1, `UseCaseResult 1.0`,
+   Management Attention, existing data, and disabled pending-decision state.
+3. Do not add Phase 3 milestone runtime or Phase 4 health configuration in the
+   C2 correction. Do not begin Batch D, visual Dashboard UI, connectors,
+   real-data work, Phase 2 promotion, release, tag, merge, or push without
+   separate authorization.
 
 ## Decisions in force
 
@@ -294,16 +319,47 @@ deliberately deferred to Batch D.
   bounded outcome are active at a time.
 - IP-028 Batch C1 is implemented, validated, reviewed, and accepted under the
   exact approved design and pack contract.
-- IP-028 Batch C2 is implemented and validated under its bounded configuration
-  contract. Stop at its local commit for owner review.
+- IP-028 Batch C2 mechanics are implemented and technically validated, but the
+  mapping-oriented DM configuration contract is not accepted. Do not expose or
+  promote it as an approved capability.
 - Complete clear reconciliation automatically resolves the Attention item with
   system reason `rule_clear`. Do not require or expose a separate manager
   resolve step; Attention assists management rather than supervising it.
-- A confirmed RAG configuration creates only a new current rule version. It
-  must not affect current Attention signals until a separate project-health
-  reconciliation preview is explicitly confirmed.
+- Project overrides, when later designed for layered health, apply only to
+  existing stable-anonymous projects.
+- Sprint Execution, Release/Milestone Health, and seven-dimension Project
+  Health remain distinct. Story Point absence is unavailable evidence, not
+  neutral health.
+- Phase 3 owns canonical milestone and Release commitment facts; Phase 4 owns
+  bounded DM-configurable health conditions; Phase 7 Forecast reuses promoted
+  milestone history.
 
 ## Recent change log
+
+### 2026-07-29 — Layered health and milestone design revision proposed
+
+- Recorded that Batch C2 commit `71d90d3` passed technical validation but
+  failed product-contract review: label mapping and source precedence are not
+  the accepted DM-facing RAG configuration model.
+- Proposed distinct Sprint Execution, Release/Milestone, and Project Health
+  layers with a fixed factor catalog and bounded DM-configurable conditions,
+  thresholds, tolerances, windows, applicability, and approved same-layer
+  weights.
+- Made milestone and Release commitments first-class Phase 3 concepts, inputs
+  to Phase 4 Project Health, and promoted history reused by Phase 7 Forecast.
+  Story Point evidence is never required for milestone-based Release Health,
+  and missing Story Points remain explicitly unavailable.
+- Recorded the existing-project-only override rule, critical milestone guards,
+  non-averaging aggregation, read-only prior/proposed/effective configuration
+  projections, and required synthetic scenarios.
+- No runtime, schema, migration, connector, real-data, Dashboard UI, or
+  automatic project/action/staffing/decision write was added. The exact next
+  gate is design review; only after approval may a bounded C2 correction
+  disable or remove the unaccepted public mapping paths.
+- `make validate` passed repository-boundary and synthetic-sample checks,
+  187 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, diff hygiene, package build/inspection, and all eight release
+  validation checks.
 
 ### 2026-07-29 — Phase 2 Batch C2 RAG configuration validated
 
