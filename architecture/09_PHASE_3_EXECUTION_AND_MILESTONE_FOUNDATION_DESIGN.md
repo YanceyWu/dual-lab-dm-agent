@@ -1,6 +1,6 @@
 # Phase 3 — Execution and Milestone Signal Foundation
 
-Status: `APPROVED — IP-029 REGISTERED; BATCH B1 AUTHORIZATION REQUIRED`
+Status: `APPROVED — BATCH B1 IMPLEMENTED; REVIEW REQUIRED`
 Date: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
@@ -597,7 +597,7 @@ dedicated branch `codex/phase-3-execution-signals`, whose history contains the
 exact promoted Phase 2 baseline
 `2185334c890e79480a39514cf1d1e45f74e062f1`.
 
-The exact next decision is whether to authorize only IP-029 Batch B1.
-Design approval and pack registration do not authorize Batch B1
-implementation, connector behavior, live connector use, real-data access,
-Batch B2/C1/C2/D, Phase 4, push, merge, tag, release, or deployment.
+IP-029 Batch B1 is implemented and locally validated. The exact next decision
+is whether to accept the bounded B1 result or require corrections. B2,
+C1/C2/D, live connector use, real-data access, Phase 4, push, merge, tag,
+release, and deployment remain unauthorized.

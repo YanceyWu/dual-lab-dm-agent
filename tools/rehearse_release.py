@@ -55,7 +55,13 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'v_member_load',
                     'v_project_team',
                     'staffing_proposals',
-                    'dashboard_operations'
+                    'dashboard_operations',
+                    'source_evidence_runs',
+                    'source_evidence_cursors',
+                    'jira_issue_event_stage',
+                    'jira_issue_events',
+                    'jira_issue_link_stage',
+                    'jira_issue_links'
                 )
                 """
             )
@@ -79,6 +85,12 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "v_project_team",
         "staffing_proposals",
         "dashboard_operations",
+        "source_evidence_runs",
+        "source_evidence_cursors",
+        "jira_issue_event_stage",
+        "jira_issue_events",
+        "jira_issue_link_stage",
+        "jira_issue_links",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
     if token_columns != {"confirmation_token_hash"}:
@@ -150,7 +162,37 @@ def rehearse() -> None:
             cwd=workspace,
             env=upgrade_env,
         )
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from pm_agent.database import source_evidence as e;"
+                    "r=e.start_run('jira-evidence-synthetic','board-synthetic',"
+                    "'jira_issue_history',overlap_seconds=300,run_id='installed-run');"
+                    "e.stage_issue_events(r,[e.IssueEvent(issue_ref='SYN-1',"
+                    "source_event_ref='evt-1',event_type='field_changed',"
+                    "field_key='status',from_value='todo',to_value='done',"
+                    "source_updated_at='2026-07-29T01:00:00+00:00',"
+                    "observed_at='2026-07-29T01:05:00+00:00')]);"
+                    "e.finish_staging(r,coverage_status='complete',pages_received=1,"
+                    "pages_expected=1,proposed_cursor_time="
+                    "'2026-07-29T01:00:00+00:00',proposed_cursor_ref='SYN-1');"
+                    "e.publish_run(r)"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=upgrade_env,
+        )
         verify_upgraded_database(upgrade_db, before_counts)
+        with sqlite3.connect(upgrade_db) as connection:
+            if connection.execute("SELECT COUNT(*) FROM jira_issue_events").fetchone()[0] != 1:
+                raise RuntimeError("INSTALLED_PHASE3_EVIDENCE_BEHAVIOR_INVALID")
+            if connection.execute(
+                "SELECT published_run_id FROM source_evidence_cursors"
+            ).fetchone()[0] != "installed-run":
+                raise RuntimeError("INSTALLED_PHASE3_CURSOR_BEHAVIOR_INVALID")
 
         shutil.copy2(backup_db, rollback_db)
         if sha256(rollback_db) != original_hash:

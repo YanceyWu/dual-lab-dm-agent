@@ -73,7 +73,13 @@ def _delete_board_family(con: sqlite3.Connection, board_ids: list[str]) -> None:
     con.execute(f"DELETE FROM jira_board_configs WHERE id IN ({placeholders})", params)
     data_source_ids: list[str] = []
     for board_id in board_ids:
-        data_source_ids.extend([f"jira-release-{board_id}", f"jira-health-{board_id}"])
+        data_source_ids.extend(
+            [
+                f"jira-release-{board_id}",
+                f"jira-health-{board_id}",
+                f"jira-evidence-{board_id}",
+            ]
+        )
     ds_placeholders = ",".join("?" for _ in data_source_ids)
     con.execute(f"DELETE FROM data_sources WHERE id IN ({ds_placeholders})", data_source_ids)
 
@@ -227,6 +233,28 @@ def import_jira_boards(
                         "pm_project_id": pm_project_id or "",
                     },
                     "notes": "Per-board JIRA sprint/health sync.",
+                }
+            )
+            _upsert_data_source(
+                con,
+                {
+                    "id": f"jira-evidence-{board_key}",
+                    "source_type": "jira",
+                    "source_name": f"JIRA Incremental Evidence — {name}",
+                    "ingestion_mode": "api",
+                    "refresh_sla_hours": 24,
+                    "active": bool(active),
+                    "config": {
+                        "board_id": board_key,
+                        "project_key": project_key,
+                        "bootstrap_days": 90,
+                        "overlap_seconds": 300,
+                        "field_mappings": {},
+                    },
+                    "notes": (
+                        "Phase 3 incremental Issue history and Issue Link evidence. "
+                        "Connector-local field mappings require explicit local configuration."
+                    ),
                 }
             )
             imported += 1

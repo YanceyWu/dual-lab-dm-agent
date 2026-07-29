@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 DESIGN APPROVED — BATCH B1 AUTHORIZATION REQUIRED`
+Gate status: `PHASE 3 BATCH B1 IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -115,8 +115,10 @@ belong in Git history and must not be interpreted as current instructions.
   The Phase 3 design is recorded in
   `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
   was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
-  branch `codex/phase-3-execution-signals`; no implementation batch is
-  authorized.
+  branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
+  whose bounded incremental source-evidence implementation is now locally
+  validated and stopped for B1 Review. B2 and all later batches remain
+  unauthorized.
 
 ## Current validation evidence
 
@@ -291,6 +293,19 @@ validation checks. `make rehearse-release` passed temporary wheel
 installation, isolated synthetic database upgrade, integrity checks, installed
 behavior, and rollback.
 
+Phase 3 Batch B1 passed 70 combined focused and compatibility tests covering
+additive bootstrap, compound cursor/replay behavior, page coverage,
+idempotency, partial-state retention, authoritative-manifest tombstones,
+multiple Fix Versions, directed and unsupported Issue Links, concurrency,
+registry cleanup, legacy Jira/Project Health, Attention, Management Attention,
+Dashboard sync confirmation, and `UseCaseResult 1.0`. The final
+`make validate` run passed repository-boundary and synthetic-sample checks,
+191 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+compilation, diff hygiene, package build/inspection, and all eight release
+validation checks. `make rehearse-release` passed temporary wheel
+installation, additive synthetic legacy-database upgrade, installed Phase 3
+evidence publication, integrity/count/view checks, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -337,19 +352,26 @@ behavior, and rollback.
    execution/milestone foundation design are approved. Phase 3 owns
    canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
    conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   IP-029 is registered, but no Phase 3 implementation batch is authorized.
+   IP-029 Batch B1 is implemented and locally validated; B1 Review is pending
+   and B2 is not authorized.
 10. Phase 2 is promoted only as a local development baseline. Remote CI for
     the local Phase 2 commits remains unknown. Connector work, real data,
     visual Dashboard Center UI, push, and operational promotion remain blocked
     pending their own gates.
+11. Batch B1 Jira acquisition is validated only with synthetic sessions.
+    Company-specific field IDs, supported link types, and live API behavior
+    remain `UNKNOWN`; the registered evidence source intentionally starts with
+    empty field mappings. Incremental acquisition never claims an
+    authoritative full manifest, so removal/tombstone transitions require a
+    separately complete authoritative manifest through the publication
+    contract.
 
 ## Exact next actions
 
-1. Decide whether to authorize only IP-029 Batch B1, the incremental source
-   evidence core.
-2. If B1 is authorized, implement only additive cursor/coverage/staging, Jira
-   Issue history and Issue Link evidence, bounded connector adapters, and
-   focused synthetic/migration/rollback tests; stop for B1 Review.
+1. Review the implemented IP-029 Batch B1 incremental source evidence core and
+   decide whether to accept it or require bounded corrections.
+2. Do not begin B2 canonical execution/commitment storage or calculations
+   without separate explicit authorization after B1 acceptance.
 3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
    visual Dashboard UI, connectors, real-data work, release, tag, merge, or
    push without separate authorization.
@@ -404,11 +426,42 @@ behavior, and rollback.
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
-- IP-029 is registered on `codex/phase-3-execution-signals`. Registration
-  authorizes no implementation batch; Batch B1 requires a separate explicit
-  owner decision.
+- IP-029 Batch B1 is implemented and locally validated on
+  `codex/phase-3-execution-signals`. The current gate is B1 Review; B2 and all
+  later batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-29 — Phase 3 Batch B1 incremental source evidence validated
+
+- The owner authorized only IP-029 Batch B1.
+- Added eight additive source-evidence tables for per-source/board/dataset
+  compound cursors, append-only run coverage, staged and published manifests,
+  staged/published Issue history, and staged/published directed Issue Links.
+- Added a transactional repository boundary with bounded normalized fields,
+  stable event/semantic hashes, overlap replay deduplication, page and field
+  coverage, atomic cursor publication, partial/failed rejection, and
+  complete-authoritative-manifest-only tombstones.
+- Added bounded synthetic Jira acquisition for updated-since search,
+  paginated changelog, Issue Links, connector-local field mapping, bootstrap
+  horizon, page/Issue limits, and explicit unsupported link types. It stores
+  stable source references and normalized values rather than Issue summaries,
+  assignee details, raw changelog bodies, or raw payloads.
+- Registered a per-board `jira-evidence-*` local source with empty field
+  mappings by default. Registry removal deletes obsolete mutable Jira caches
+  and source registration while preserving already-published evidence history.
+- Focused and compatibility coverage passed 70/70. `make validate` passed
+  191 runtime tests, 21 repository-tool tests with 19 subtests, Ruff,
+  compilation, repository-boundary and synthetic-sample checks, package
+  build/inspection, and all eight release validation checks.
+  `make rehearse-release` passed installed-package additive upgrade, Phase 3
+  evidence publication, integrity/count/view checks, and rollback.
+- No legacy Jira health behavior, Project Health, use-case/interface,
+  Attention producer/reconciliation, business-object write, live connector,
+  real data, operational configuration, B2/C1/C2/D, Phase 4, push, merge, tag,
+  release, or deployment was added. `pending_decision_attention` remains
+  disabled. The bounded result is stopped for B1 Review; the exact local
+  commit is reported in the task handoff.
 
 ### 2026-07-29 — Phase 3 design approved and IP-029 registered
 

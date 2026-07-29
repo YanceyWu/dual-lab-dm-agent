@@ -4,7 +4,9 @@ import csv
 import sqlite3
 from pathlib import Path
 
+from pm_agent.database import source_evidence
 from pm_agent.database.bootstrap import main as init_db
+from pm_agent.sync.jira.evidence_sync import load_evidence_config
 from scripts.import_confluence_pages import import_confluence_pages
 from scripts.import_jira_boards import import_jira_boards
 
@@ -70,6 +72,7 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
             [
                 ("jira-release-stale-board", "Stale Release Source"),
                 ("jira-health-stale-board", "Stale Health Source"),
+                ("jira-evidence-stale-board", "Stale Evidence Source"),
             ],
         )
         con.execute(
@@ -87,6 +90,41 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
         con.commit()
     finally:
         con.close()
+
+    evidence_run = source_evidence.start_run(
+        "jira-evidence-stale-board",
+        "stale-board",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="evidence-before-registry-removal",
+    )
+    source_evidence.stage_issue_events(
+        evidence_run,
+        [
+            source_evidence.IssueEvent(
+                issue_ref="SYN-1",
+                source_event_ref="event-1",
+                event_type="field_changed",
+                field_key="status",
+                from_value="todo",
+                to_value="done",
+                source_updated_at="2026-07-29T01:00:00+00:00",
+                observed_at="2026-07-29T01:05:00+00:00",
+            )
+        ],
+        db_path=isolated_db,
+    )
+    source_evidence.finish_staging(
+        evidence_run,
+        coverage_status="complete",
+        pages_received=1,
+        pages_expected=1,
+        proposed_cursor_time="2026-07-29T01:00:00+00:00",
+        proposed_cursor_ref="SYN-1",
+        db_path=isolated_db,
+    )
+    source_evidence.publish_run(evidence_run, db_path=isolated_db)
 
     csv_path = tmp_path / "jira_boards.csv"
     _write_csv(
@@ -122,6 +160,11 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
     )
 
     import_jira_boards(csv_path)
+    evidence_config = load_evidence_config("keep-board", db_path=isolated_db)
+    assert evidence_config.source_id == "jira-evidence-keep-board"
+    assert evidence_config.bootstrap_days == 90
+    assert evidence_config.overlap_seconds == 300
+    assert evidence_config.field_mappings == {}
 
     con = sqlite3.connect(isolated_db)
     try:
@@ -129,7 +172,14 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
             "SELECT COUNT(*) FROM jira_board_configs WHERE id = 'stale-board'"
         ).fetchone()[0] == 0
         assert con.execute(
-            "SELECT COUNT(*) FROM data_sources WHERE id IN ('jira-release-stale-board', 'jira-health-stale-board')"
+            """
+            SELECT COUNT(*) FROM data_sources
+            WHERE id IN (
+                'jira-release-stale-board',
+                'jira-health-stale-board',
+                'jira-evidence-stale-board'
+            )
+            """
         ).fetchone()[0] == 0
         assert con.execute(
             "SELECT COUNT(*) FROM jira_stream_versions WHERE board_id = 'stale-board'"
@@ -143,6 +193,18 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
         assert con.execute(
             "SELECT COUNT(*) FROM jira_health_snapshots WHERE board_id = 'stale-board'"
         ).fetchone()[0] == 0
+        assert con.execute(
+            """
+            SELECT COUNT(*) FROM jira_issue_events
+            WHERE board_id = 'stale-board' AND issue_ref = 'SYN-1'
+            """
+        ).fetchone()[0] == 1
+        assert con.execute(
+            """
+            SELECT COUNT(*) FROM source_evidence_cursors
+            WHERE board_id = 'stale-board'
+            """
+        ).fetchone()[0] == 1
         assert con.execute(
             "SELECT COUNT(*) FROM jira_board_configs WHERE id = 'keep-board'"
         ).fetchone()[0] == 1

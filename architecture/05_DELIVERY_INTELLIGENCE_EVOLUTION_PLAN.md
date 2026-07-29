@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 3 DESIGN APPROVED — BATCH B1 AUTHORIZATION REQUIRED`
+Status: `PHASE 3 BATCH B1 IMPLEMENTED — REVIEW REQUIRED`
 Last updated: 2026-07-29
 
 ## Purpose
@@ -56,9 +56,10 @@ The owner accepted the correction on 2026-07-29. Batch D regression,
 schema/portable review, and synthetic installed-package rehearsal passed.
 The owner accepted the Batch D Review and promoted the result as the local
 Phase 2 development baseline on 2026-07-29. The owner subsequently approved
-the Phase 3 design and registered IP-029 on a dedicated local branch. Batch B1
-requires separate authorization; Phase 3/4 implementation, connector use, real
-data, and publication remain separately gated.
+the Phase 3 design, registered IP-029 on a dedicated local branch, and
+authorized only Batch B1. B1 is implemented and locally validated; B1 Review
+is required before B2. Live connector use, real data, Phase 4, and publication
+remain separately gated.
 
 ## Delivery loop
 
@@ -513,9 +514,8 @@ Non-goals:
 
 ## Immediate next action
 
-The owner approved
-`architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
-IP-029 is registered on `codex/phase-3-execution-signals`. Decide whether to
-authorize only IP-029 Batch B1. Do not implement B1, use a live connector or
-real data, begin B2/C1/C2/D or Phase 4, or publish the branch without the
-applicable separate authorization.
+IP-029 Batch B1 is implemented and locally validated on
+`codex/phase-3-execution-signals`. Review the bounded incremental source
+evidence core and decide whether to accept it or require corrections. Do not
+use a live connector or real data, begin B2/C1/C2/D or Phase 4, or publish the
+branch without the applicable separate authorization.

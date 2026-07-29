@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `REGISTERED — BATCH B1 AUTHORIZATION REQUIRED`
+Status: `BATCH B1 IMPLEMENTED — REVIEW REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:
@@ -332,8 +332,9 @@ The Batch D report must record:
 
 ## Current authorization
 
-IP-029 is registered. No implementation batch is authorized.
+The owner authorized only Batch B1 on 2026-07-29. Its bounded implementation
+and local validation are complete and stopped for B1 Review.
 
-The exact next decision is whether to authorize only Batch B1. Registration
-does not authorize code, schema, connector behavior, live connector access,
-real data, Batch B2/C1/C2/D, Phase 4, push, merge, tag, release, or deployment.
+The exact next decision is whether to accept B1 or require corrections. B2,
+C1/C2/D, live connector access, real data, Phase 4, push, merge, tag, release,
+and deployment remain unauthorized.

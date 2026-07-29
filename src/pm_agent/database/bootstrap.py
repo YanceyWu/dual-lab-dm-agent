@@ -865,6 +865,194 @@ CREATE INDEX IF NOT EXISTS idx_attention_history_reconciliation
     ON attention_history(reconciliation_id, created_at);
 """
 
+PHASE3_EVIDENCE_DDL = """
+-- ────────────────────────────────────────────
+-- PHASE 3 B1 / INCREMENTAL SOURCE EVIDENCE
+-- ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS source_evidence_runs (
+    run_id                  TEXT PRIMARY KEY,
+    source_id               TEXT NOT NULL,
+    board_id                TEXT NOT NULL,
+    dataset                 TEXT NOT NULL CHECK(
+        dataset IN ('jira_issue_history', 'jira_issue_links')
+    ),
+    coverage_status         TEXT NOT NULL DEFAULT 'partial' CHECK(
+        coverage_status IN ('complete', 'partial', 'failed', 'unavailable')
+    ),
+    publication_status      TEXT NOT NULL DEFAULT 'staged' CHECK(
+        publication_status IN ('staged', 'published', 'rejected')
+    ),
+    prior_published_run_id  TEXT NOT NULL DEFAULT '',
+    requested_cursor_time   TEXT NOT NULL DEFAULT '',
+    requested_cursor_ref    TEXT NOT NULL DEFAULT '',
+    proposed_cursor_time    TEXT NOT NULL DEFAULT '',
+    proposed_cursor_ref     TEXT NOT NULL DEFAULT '',
+    overlap_seconds         INTEGER NOT NULL DEFAULT 0
+                            CHECK(overlap_seconds BETWEEN 0 AND 86400),
+    authoritative_manifest  INTEGER NOT NULL DEFAULT 0
+                            CHECK(authoritative_manifest IN (0, 1)),
+    pages_expected          INTEGER,
+    pages_received          INTEGER NOT NULL DEFAULT 0
+                            CHECK(pages_received >= 0),
+    rows_read               INTEGER NOT NULL DEFAULT 0 CHECK(rows_read >= 0),
+    rows_accepted           INTEGER NOT NULL DEFAULT 0 CHECK(rows_accepted >= 0),
+    rows_deduplicated       INTEGER NOT NULL DEFAULT 0 CHECK(rows_deduplicated >= 0),
+    rows_rejected           INTEGER NOT NULL DEFAULT 0 CHECK(rows_rejected >= 0),
+    rows_published          INTEGER NOT NULL DEFAULT 0 CHECK(rows_published >= 0),
+    field_coverage_json     TEXT NOT NULL DEFAULT '{}'
+                            CHECK(json_valid(field_coverage_json)),
+    warning_codes_json      TEXT NOT NULL DEFAULT '[]'
+                            CHECK(json_valid(warning_codes_json)),
+    error_code              TEXT NOT NULL DEFAULT '',
+    started_at              TEXT NOT NULL,
+    finished_at             TEXT NOT NULL DEFAULT '',
+    published_at            TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_evidence_runs_scope_started
+    ON source_evidence_runs(source_id, board_id, dataset, started_at);
+
+CREATE INDEX IF NOT EXISTS idx_source_evidence_runs_coverage_publication
+    ON source_evidence_runs(coverage_status, publication_status, started_at);
+
+CREATE TABLE IF NOT EXISTS source_evidence_cursors (
+    source_id               TEXT NOT NULL,
+    board_id                TEXT NOT NULL,
+    dataset                 TEXT NOT NULL CHECK(
+        dataset IN ('jira_issue_history', 'jira_issue_links')
+    ),
+    cursor_time             TEXT NOT NULL,
+    cursor_ref              TEXT NOT NULL,
+    published_run_id        TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    overlap_seconds         INTEGER NOT NULL DEFAULT 0
+                            CHECK(overlap_seconds BETWEEN 0 AND 86400),
+    updated_at              TEXT NOT NULL,
+    PRIMARY KEY(source_id, board_id, dataset)
+);
+
+CREATE TABLE IF NOT EXISTS source_evidence_manifest_stage (
+    run_id                  TEXT NOT NULL REFERENCES source_evidence_runs(run_id)
+                            ON DELETE CASCADE,
+    item_ref                TEXT NOT NULL,
+    PRIMARY KEY(run_id, item_ref)
+);
+
+CREATE TABLE IF NOT EXISTS source_evidence_published_items (
+    source_id               TEXT NOT NULL,
+    board_id                TEXT NOT NULL,
+    dataset                 TEXT NOT NULL CHECK(
+        dataset IN ('jira_issue_history', 'jira_issue_links')
+    ),
+    item_ref                TEXT NOT NULL,
+    is_current              INTEGER NOT NULL DEFAULT 1 CHECK(is_current IN (0, 1)),
+    first_published_run_id  TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    last_published_run_id   TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    removed_run_id          TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY(source_id, board_id, dataset, item_ref)
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_evidence_items_current
+    ON source_evidence_published_items(source_id, board_id, dataset, is_current);
+
+CREATE TABLE IF NOT EXISTS jira_issue_event_stage (
+    run_id                  TEXT NOT NULL REFERENCES source_evidence_runs(run_id)
+                            ON DELETE CASCADE,
+    dedup_key               TEXT NOT NULL,
+    issue_ref               TEXT NOT NULL,
+    source_event_ref        TEXT NOT NULL DEFAULT '',
+    event_type              TEXT NOT NULL CHECK(
+        event_type IN ('field_changed', 'issue_observed', 'tombstone')
+    ),
+    field_key               TEXT NOT NULL,
+    from_value              TEXT NOT NULL DEFAULT '',
+    to_value                TEXT NOT NULL DEFAULT '',
+    source_updated_at       TEXT NOT NULL,
+    observed_at             TEXT NOT NULL,
+    PRIMARY KEY(run_id, dedup_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_event_stage_issue_time
+    ON jira_issue_event_stage(run_id, issue_ref, source_updated_at);
+
+CREATE TABLE IF NOT EXISTS jira_issue_events (
+    source_id               TEXT NOT NULL,
+    board_id                TEXT NOT NULL,
+    dedup_key               TEXT NOT NULL,
+    issue_ref               TEXT NOT NULL,
+    source_event_ref        TEXT NOT NULL DEFAULT '',
+    event_type              TEXT NOT NULL CHECK(
+        event_type IN ('field_changed', 'issue_observed', 'tombstone')
+    ),
+    field_key               TEXT NOT NULL,
+    from_value              TEXT NOT NULL DEFAULT '',
+    to_value                TEXT NOT NULL DEFAULT '',
+    source_updated_at       TEXT NOT NULL,
+    observed_at             TEXT NOT NULL,
+    first_published_run_id  TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    last_published_run_id   TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    PRIMARY KEY(source_id, board_id, dedup_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_events_issue_time
+    ON jira_issue_events(source_id, board_id, issue_ref, source_updated_at);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_events_cursor
+    ON jira_issue_events(source_id, board_id, source_updated_at, issue_ref);
+
+CREATE TABLE IF NOT EXISTS jira_issue_link_stage (
+    run_id                  TEXT NOT NULL REFERENCES source_evidence_runs(run_id)
+                            ON DELETE CASCADE,
+    dedup_key               TEXT NOT NULL,
+    source_link_ref         TEXT NOT NULL DEFAULT '',
+    issue_ref               TEXT NOT NULL,
+    related_issue_ref       TEXT NOT NULL,
+    link_type               TEXT NOT NULL,
+    direction               TEXT NOT NULL CHECK(direction IN ('outward', 'inward')),
+    observation_state       TEXT NOT NULL CHECK(
+        observation_state IN ('active', 'tombstone', 'unsupported')
+    ),
+    source_updated_at       TEXT NOT NULL,
+    observed_at             TEXT NOT NULL,
+    PRIMARY KEY(run_id, dedup_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_link_stage_issue
+    ON jira_issue_link_stage(run_id, issue_ref, related_issue_ref);
+
+CREATE TABLE IF NOT EXISTS jira_issue_links (
+    source_id               TEXT NOT NULL,
+    board_id                TEXT NOT NULL,
+    dedup_key               TEXT NOT NULL,
+    source_link_ref         TEXT NOT NULL DEFAULT '',
+    issue_ref               TEXT NOT NULL,
+    related_issue_ref       TEXT NOT NULL,
+    link_type               TEXT NOT NULL,
+    direction               TEXT NOT NULL CHECK(direction IN ('outward', 'inward')),
+    observation_state       TEXT NOT NULL CHECK(
+        observation_state IN ('active', 'tombstone', 'unsupported')
+    ),
+    source_updated_at       TEXT NOT NULL,
+    observed_at             TEXT NOT NULL,
+    first_published_run_id  TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    last_published_run_id   TEXT NOT NULL
+                            REFERENCES source_evidence_runs(run_id),
+    PRIMARY KEY(source_id, board_id, dedup_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_links_issue
+    ON jira_issue_links(source_id, board_id, issue_ref, related_issue_ref);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issue_links_related
+    ON jira_issue_links(source_id, board_id, related_issue_ref, issue_ref);
+"""
+
 
 def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
     row = conn.execute(
@@ -2628,6 +2816,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(DDL)
     conn.executescript(EXTRA_DDL)
     conn.executescript(ATTENTION_DDL)
+    conn.executescript(PHASE3_EVIDENCE_DDL)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()
     }
