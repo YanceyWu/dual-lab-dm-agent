@@ -202,6 +202,108 @@ def test_authoritative_manifest_closes_missing_scope_memberships(isolated_db: Pa
     assert state == 'closed'
 
 
+def test_legacy_snapshot_change_creates_a_new_derivation_and_target_history(isolated_db: Path) -> None:
+    _seed_board(isolated_db)
+    _publish_evidence(isolated_db, authoritative=True)
+    first = execution.derive_board('board-synthetic', db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            "UPDATE jira_stream_versions SET release_date = '2026-08-20', synced_at = '2026-07-31T02:00:00+00:00'"
+        )
+    second = execution.derive_board('board-synthetic', db_path=isolated_db)
+    assert second['idempotent'] is False
+    assert second['derivation_run_id'] != first['derivation_run_id']
+    with sqlite3.connect(isolated_db) as connection:
+        fact = connection.execute(
+            """
+            SELECT value_state, value_json FROM execution_facts
+            WHERE derivation_run_id = ? AND fact_key = 'release_target_date_change'
+            """,
+            [second['derivation_run_id']],
+        ).fetchone()
+    assert fact == ('known', '{"first":"2026-08-15","latest":"2026-08-20"}')
+
+
+def test_authoritative_scope_movement_closes_prior_release_and_tracks_sprint(isolated_db: Path) -> None:
+    _seed_board(isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            INSERT INTO jira_stream_versions(id, board_id, project_key, name, release_date, status)
+            VALUES ('release-2', 'board-synthetic', 'SYN', 'Synthetic Release 2', '2026-09-15', 'unreleased')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO jira_sprints(id, board_id, name, state)
+            VALUES ('sprint-1', 'board-synthetic', 'Synthetic Sprint', 'active')
+            """
+        )
+    _publish_evidence(isolated_db, authoritative=True)
+    execution.derive_board('board-synthetic', db_path=isolated_db)
+    history = source_evidence.start_run(
+        'jira-evidence-board-synthetic', 'board-synthetic', 'jira_issue_history',
+        overlap_seconds=300, db_path=isolated_db, run_id='history-z-scope-move',
+    )
+    source_evidence.stage_issue_events(
+        history,
+        [
+            _event('SYN-1', 'fix_versions', ['release-2'], 'syn1-release-move'),
+            _event('SYN-1', 'sprint', 'sprint-1', 'syn1-sprint'),
+        ],
+        manifest_issue_refs=['SYN-1', 'SYN-2'], db_path=isolated_db,
+    )
+    source_evidence.finish_staging(
+        history, coverage_status='complete', pages_received=1, pages_expected=1,
+        proposed_cursor_time='2026-07-31T02:00:00+00:00', proposed_cursor_ref='SYN-2',
+        authoritative_manifest=True, db_path=isolated_db,
+    )
+    source_evidence.publish_run(history, db_path=isolated_db)
+    execution.derive_board('board-synthetic', db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        memberships = connection.execute(
+            """
+            SELECT sm.scope_kind, rc.source_ref, sm.state
+            FROM execution_scope_memberships sm
+            JOIN execution_work_items wi ON wi.work_item_id = sm.work_item_id
+            LEFT JOIN execution_release_commitments rc ON rc.release_id = sm.scope_id
+            WHERE wi.source_ref = 'SYN-1'
+            ORDER BY sm.scope_kind, rc.source_ref
+            """
+        ).fetchall()
+    assert memberships == [
+        ('release', 'release-1', 'closed'),
+        ('release', 'release-2', 'open'),
+        ('sprint', None, 'open'),
+    ]
+
+
+def test_authoritative_link_removal_inactivates_dependency(isolated_db: Path) -> None:
+    _seed_board(isolated_db)
+    _publish_evidence(isolated_db, authoritative=True)
+    execution.derive_board('board-synthetic', db_path=isolated_db)
+    links = source_evidence.start_run(
+        'jira-evidence-board-synthetic', 'board-synthetic', 'jira_issue_links',
+        overlap_seconds=300, db_path=isolated_db, run_id='links-z-removed',
+    )
+    source_evidence.stage_issue_links(links, [], manifest_link_refs=[], db_path=isolated_db)
+    source_evidence.finish_staging(
+        links, coverage_status='complete', pages_received=1, pages_expected=1,
+        proposed_cursor_time='2026-07-31T03:00:00+00:00', proposed_cursor_ref='link-1',
+        authoritative_manifest=True, db_path=isolated_db,
+    )
+    source_evidence.publish_run(links, db_path=isolated_db)
+    derived = execution.derive_board('board-synthetic', db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        state = connection.execute("SELECT state FROM execution_dependencies").fetchone()[0]
+        facts = connection.execute(
+            "SELECT COUNT(*) FROM execution_facts WHERE derivation_run_id = ? AND fact_key = 'dependency_readiness'",
+            [derived['derivation_run_id']],
+        ).fetchone()[0]
+    assert state == 'inactive'
+    assert facts == 0
+
+
 def test_milestone_import_preview_confirm_is_atomic_and_preserves_first_target(isolated_db: Path) -> None:
     _seed_board(isolated_db)
     service = ExecutionFoundationService()
@@ -258,6 +360,14 @@ def test_milestone_confirm_requires_valid_unexpired_one_time_token(isolated_db: 
     assert service.confirm_milestone_import(
         preview['operation_id'], preview['confirmation_token'], db_path=isolated_db,
     ) == {'status': 'expired', 'operation_id': preview['operation_id']}
+
+
+def test_milestone_import_rejects_unpersisted_dependency_reference(isolated_db: Path) -> None:
+    _seed_board(isolated_db)
+    payload = _milestone_payload()
+    payload['milestones'][0]['dependency_ids'] = ['dependency-synthetic-1']
+    with pytest.raises(ValueError, match='unsupported fields'):
+        ExecutionFoundationService().preview_milestone_import(payload, db_path=isolated_db)
 
 
 def test_milestone_import_validates_and_persists_explicit_release_links(isolated_db: Path) -> None:

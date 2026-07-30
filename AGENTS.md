@@ -42,6 +42,10 @@ This repository governs a portable Delivery Management intelligence system.
 - An implementation pack and `PROGRESS.md` entry must name the module owner,
   allowed dependencies, validation evidence, and any intentional transitional
   debt. Do not use an arbitrary line-count limit as a substitute for cohesion.
+- After every implementation batch, perform an independent read-only review
+  before requesting acceptance or advancing a gate. Record findings, correct
+  all accepted defects, and repeat the review; passing tests alone do not
+  replace this step.
 
 ## Deliverable rules
 

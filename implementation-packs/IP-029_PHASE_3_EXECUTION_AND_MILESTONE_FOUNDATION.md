@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `BATCH B2 IMPLEMENTED — REVIEW REQUIRED`
+Status: `BATCH B2 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:

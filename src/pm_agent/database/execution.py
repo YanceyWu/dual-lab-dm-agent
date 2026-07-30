@@ -53,6 +53,47 @@ def _parse_list(value: str) -> list[str]:
     return [item for item in parsed if isinstance(item, str) and item]
 
 
+def _parse_refs(value: str) -> list[str]:
+    parsed = _parse_list(value)
+    if parsed:
+        return parsed
+    return [value] if value else []
+
+
+def _legacy_snapshot_input(connection: sqlite3.Connection, board_id: str) -> str:
+    """Return a stable revision for every mutable legacy snapshot B2 reads."""
+    snapshots = {
+        "issues": [
+            tuple(row) for row in connection.execute(
+                """
+                SELECT id, version_id, status, status_category, story_points, synced_at
+                FROM jira_issues WHERE board_id = ? ORDER BY id
+                """,
+                [board_id],
+            )
+        ],
+        "releases": [
+            tuple(row) for row in connection.execute(
+                """
+                SELECT id, release_date, status, released, synced_at
+                FROM jira_stream_versions WHERE board_id = ? ORDER BY id
+                """,
+                [board_id],
+            )
+        ],
+        "sprints": [
+            tuple(row) for row in connection.execute(
+                """
+                SELECT id, state, start_date, end_date, synced_at
+                FROM jira_sprints WHERE board_id = ? ORDER BY id
+                """,
+                [board_id],
+            )
+        ],
+    }
+    return f"legacy-snapshot-{hashlib.sha256(_json(snapshots).encode()).hexdigest()}"
+
+
 def _latest_run(connection: sqlite3.Connection, board_id: str, dataset: str) -> sqlite3.Row | None:
     return connection.execute(
         """
@@ -163,7 +204,8 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
         project_id = _board_project(connection, board_id)
         history_run = _latest_run(connection, board_id, "jira_issue_history")
         links_run = _latest_run(connection, board_id, "jira_issue_links")
-        inputs = [item["run_id"] for item in (history_run, links_run) if item]
+        source_run_ids = [item["run_id"] for item in (history_run, links_run) if item]
+        legacy_snapshot_id = _legacy_snapshot_input(connection, board_id)
         milestone_operations = [
             row[0] for row in connection.execute(
                 """
@@ -175,7 +217,7 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
             )
         ]
         fingerprint = hashlib.sha256(
-            _json([board_id, RULE_VERSION, inputs, milestone_operations]).encode()
+            _json([board_id, RULE_VERSION, source_run_ids, legacy_snapshot_id, milestone_operations]).encode()
         ).hexdigest()
         existing = connection.execute(
             "SELECT * FROM execution_derivation_runs WHERE input_fingerprint = ?", [fingerprint]
@@ -206,11 +248,15 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
             [derivation_run_id, project_id, board_id, RULE_VERSION, fingerprint,
              "complete" if authoritative else "partial", freshness, _json(warnings), _now()],
         )
-        for source_run_id in inputs:
+        for source_run_id in source_run_ids:
             connection.execute(
                 "INSERT INTO execution_derivation_inputs VALUES (?, 'source_evidence_run', ?)",
                 [derivation_run_id, source_run_id],
             )
+        connection.execute(
+            "INSERT INTO execution_derivation_inputs VALUES (?, 'legacy_sync', ?)",
+            [derivation_run_id, legacy_snapshot_id],
+        )
         for operation_id in milestone_operations:
             connection.execute(
                 "INSERT INTO execution_derivation_inputs VALUES (?, 'milestone_operation', ?)",
@@ -276,6 +322,7 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
             release_id = _stable_id("release", board_id, row["id"])
             release_ids[row["id"]] = release_id
             target = row["release_date"] or ""
+            snapshot_observed_at = row["synced_at"] or observed_at
             connection.execute(
                 """
                 INSERT INTO execution_release_commitments
@@ -288,7 +335,7 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                     actual_date=excluded.actual_date, observed_at=excluded.observed_at
                 """,
                 [release_id, project_id, board_id, row["id"], row["status"] or "unknown", target,
-                 target if row["released"] else "", target, observed_at],
+                 target if row["released"] else "", target, snapshot_observed_at],
             )
             connection.execute(
                 """
@@ -300,12 +347,14 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                 [
                     _stable_id("release-observation", release_id, target, row["status"] or "unknown", observed_at),
                     release_id, target, target if row["released"] else "", row["status"] or "unknown",
-                    observed_at, history_run["run_id"] if history_run else "",
+                    snapshot_observed_at, legacy_snapshot_id,
                 ],
             )
 
+        sprint_ids: dict[str, str] = {}
         for row in connection.execute("SELECT * FROM jira_sprints WHERE board_id = ?", [board_id]):
             sprint_id = _stable_id("sprint", board_id, row["id"])
+            sprint_ids[row["id"]] = sprint_id
             connection.execute(
                 """
                 INSERT INTO execution_sprints
@@ -333,6 +382,21 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                         """,
                         [_stable_id("membership", work_item_id, "release", release_id, observed_at),
                          work_item_id, release_id, observed_at,
+                         "authoritative_manifest" if authoritative else "incremental_observation",
+                         history_run["run_id"] if history_run else ""],
+                    )
+            for sprint_ref in _parse_refs(fields.get("sprint", "")):
+                sprint_id = sprint_ids.get(sprint_ref)
+                if sprint_id:
+                    connection.execute(
+                        """
+                        INSERT OR IGNORE INTO execution_scope_memberships
+                            (membership_id, work_item_id, scope_kind, scope_id, valid_from,
+                             boundary_basis, evidence_run_id)
+                        VALUES (?, ?, 'sprint', ?, ?, ?, ?)
+                        """,
+                        [_stable_id("membership", work_item_id, "sprint", sprint_id, observed_at),
+                         work_item_id, sprint_id, observed_at,
                          "authoritative_manifest" if authoritative else "incremental_observation",
                          history_run["run_id"] if history_run else ""],
                     )
@@ -376,13 +440,70 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                     """,
                     [observed_at, board_id, source_id],
                 )
+            for source_ref in manifest_refs:
+                work_item_id = work_items.get(source_ref)
+                if not work_item_id:
+                    continue
+                fields = latest_fields.get(source_ref, {})
+                desired_release_ids = {
+                    release_ids[ref] for ref in _parse_list(fields.get("fix_versions", "[]"))
+                    if ref in release_ids
+                }
+                desired_sprint_refs = _parse_refs(fields.get("sprint", ""))
+                desired_sprint_ids = {
+                    sprint_ids[ref] for ref in desired_sprint_refs if ref in sprint_ids
+                }
+                for scope_kind, desired_ids, complete_mapping in (
+                    ("release", desired_release_ids, True),
+                    ("sprint", desired_sprint_ids, len(desired_sprint_ids) == len(desired_sprint_refs)),
+                ):
+                    if not complete_mapping:
+                        continue
+                    if desired_ids:
+                        placeholders = ", ".join("?" for _ in desired_ids)
+                        connection.execute(
+                            f"""
+                            UPDATE execution_scope_memberships
+                            SET state = 'closed', valid_to = ?
+                            WHERE work_item_id = ? AND scope_kind = ? AND state = 'open'
+                              AND scope_id NOT IN ({placeholders})
+                            """,
+                            [observed_at, work_item_id, scope_kind, *sorted(desired_ids)],
+                        )
+                    else:
+                        connection.execute(
+                            """
+                            UPDATE execution_scope_memberships
+                            SET state = 'closed', valid_to = ?
+                            WHERE work_item_id = ? AND scope_kind = ? AND state = 'open'
+                            """,
+                            [observed_at, work_item_id, scope_kind],
+                        )
 
-        for link in connection.execute(
+        links_authoritative = bool(
+            links_run
+            and links_run["coverage_status"] == "complete"
+            and links_run["authoritative_manifest"]
+        )
+        current_link_refs = {
+            row[0] for row in connection.execute(
+                """
+                SELECT item_ref FROM source_evidence_published_items
+                WHERE source_id = ? AND board_id = ?
+                  AND dataset = 'jira_issue_links' AND is_current = 1
+                """,
+                [links_run["source_id"], board_id],
+            )
+        } if links_authoritative and links_run else set()
+        link_rows = connection.execute(
             """
             SELECT * FROM jira_issue_links WHERE board_id = ? AND observation_state = 'active'
             """,
             [board_id],
-        ):
+        )
+        for link in link_rows:
+            if links_authoritative and link["source_link_ref"] not in current_link_refs:
+                continue
             predecessor = work_items.get(link["issue_ref"])
             successor = work_items.get(link["related_issue_ref"])
             if not predecessor or not successor:
@@ -417,6 +538,40 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                     dependency_id, link["observed_at"], links_run["run_id"] if links_run else "",
                 ],
             )
+
+        if links_authoritative and links_run:
+            closed_dependencies = connection.execute(
+                """
+                SELECT dependency_id FROM execution_dependencies
+                WHERE project_id = ? AND state = 'active'
+                  AND evidence_run_id IN (
+                      SELECT run_id FROM source_evidence_runs
+                      WHERE source_id = ? AND board_id = ? AND dataset = 'jira_issue_links'
+                  )
+                """,
+                [project_id, links_run["source_id"], board_id],
+            ).fetchall()
+            for dependency in closed_dependencies:
+                dependency_id = dependency["dependency_id"]
+                source_link_ref = connection.execute(
+                    "SELECT source_link_ref FROM execution_dependencies WHERE dependency_id = ?",
+                    [dependency_id],
+                ).fetchone()[0]
+                if source_link_ref in current_link_refs:
+                    continue
+                connection.execute(
+                    "UPDATE execution_dependencies SET state = 'inactive', observed_at = ?, evidence_run_id = ? WHERE dependency_id = ?",
+                    [observed_at, links_run["run_id"], dependency_id],
+                )
+                connection.execute(
+                    """
+                    INSERT OR IGNORE INTO execution_dependency_observations
+                        (observation_id, dependency_id, state, observed_at, evidence_run_id)
+                    VALUES (?, ?, 'inactive', ?, ?)
+                    """,
+                    [_stable_id("dependency-observation", dependency_id, "inactive", links_run["run_id"]),
+                     dependency_id, observed_at, links_run["run_id"]],
+                )
 
         fact_count = 0
         for release_ref, release_id in release_ids.items():
@@ -495,7 +650,7 @@ def derive_board(board_id: str, *, db_path: str | Path | None = None) -> dict[st
                   evidence={"planned_date": planned, "actual_date": actual, "authority": milestone["authority"]})
             fact_count += 1
         for dependency in connection.execute(
-            "SELECT * FROM execution_dependencies WHERE project_id = ?", [project_id]
+            "SELECT * FROM execution_dependencies WHERE project_id = ? AND state = 'active'", [project_id]
         ):
             _fact(connection, run_id=derivation_run_id, project_id=project_id,
                   subject_kind="dependency", subject_id=dependency["dependency_id"],
@@ -516,11 +671,14 @@ def _validate_milestones(payload: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(records, list) or not records or len(records) > 100:
         raise ValueError("milestones must contain between 1 and 100 structured records")
     required = {"milestone_id", "project_id", "milestone_type", "criticality", "lifecycle_state", "authority", "completeness_state", "observed_at", "schema_version"}
+    allowed = required | {"planned_date", "source_target_date", "forecast_date", "actual_date", "release_ids"}
     normalized: list[dict[str, Any]] = []
     seen: set[str] = set()
     for record in records:
         if not isinstance(record, dict) or not required <= set(record):
             raise ValueError("Milestone record is missing required structured fields")
+        if set(record) - allowed:
+            raise ValueError("Milestone record contains unsupported fields")
         item = {key: str(record.get(key, "")).strip() for key in required | {"planned_date", "source_target_date", "forecast_date", "actual_date"}}
         if any(not item[key] or len(item[key]) > 200 for key in required):
             raise ValueError("Milestone required fields must be bounded non-empty strings")

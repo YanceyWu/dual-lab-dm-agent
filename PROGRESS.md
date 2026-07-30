@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B2 IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH B2 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -347,6 +347,17 @@ package build/inspection, and all eight release validation checks.
 legacy upgrade, Phase 3 evidence behavior, B2 canonical schema presence,
 integrity/count/view checks, and rollback.
 
+The Phase 3 Batch B2 review corrections passed 12 focused synthetic tests.
+They cover legacy-snapshot derivation input changes, Release scope movement,
+Sprint scope membership, authoritative Issue Link removal, hash-expiring
+Milestone confirmation, and fail-closed rejection of unpersisted dependency
+references. The final `make validate` run passed repository-boundary and
+synthetic-sample checks, 215 runtime tests, 21 repository-tool tests with 19
+subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
+eight release validation checks. `make rehearse-release` again passed wheel
+installation, isolated bootstrap/upgrade, integrity/count/view checks, and
+rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -522,6 +533,29 @@ integrity/count/view checks, and rollback.
   Attention, `pending_decision_attention`, push, merge, tag, release, or
   deployment change was made. This governance change is committed locally and
   remains unpushed. Exact next action remains B2 review.
+
+### 2026-07-30 — Phase 3 Batch B2 review findings corrected
+
+- Added a stable legacy-snapshot input fingerprint and persisted input reference
+  so changes to mutable Jira Issue, Release, or Sprint snapshots trigger a new
+  deterministic derivation rather than an incorrect idempotent return.
+- Reconciled authoritative Release and Sprint memberships, closing obsolete
+  memberships when a present Work Item moves scope. Authoritative Issue Link
+  manifest removal now inactivates the canonical Dependency and appends an
+  inactive observation; unrelated source IDs cannot be closed by that path.
+- Release observations now preserve the legacy snapshot observation time rather
+  than a derived wall-clock time, so first/latest target-date facts retain their
+  true ordering. Unknown Milestone fields, including unsupported dependency
+  references, now fail closed instead of being silently ignored.
+- Added the required post-implementation independent review rule to
+  `AGENTS.md`. Correction re-review found no P0-P2 issue. Focused tests passed
+  12/12; `make validate` passed 215 runtime tests plus 21 repository-tool tests
+  (19 subtests); `make rehearse-release` passed installed-package bootstrap,
+  upgrade, integrity/count/view checks, and rollback.
+- No public use-case/CLI/Dashboard/Copilot, automatic trigger, Attention,
+  connector/live-data, real-data, `pending_decision_attention`, Phase 4, push,
+  merge, tag, release, or deployment change was made. The correction is
+  committed locally, remains unpushed, and awaits explicit B2 re-review.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
