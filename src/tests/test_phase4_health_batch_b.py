@@ -39,3 +39,14 @@ def test_critical_overdue_milestone_is_not_averaged_away(isolated_db: Path) -> N
     assert result["overall_state"] == "red"
     with sqlite3.connect(isolated_db) as conn:
         assert conn.execute("SELECT state FROM project_health_assessment_runs").fetchone()[0] == "red"
+        assert conn.execute("SELECT COUNT(*) FROM project_health_factor_results").fetchone()[0] == 9
+
+
+def test_assessment_compares_stored_legacy_grade_without_changing_it(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    _project(isolated_db)
+    with sqlite3.connect(isolated_db) as conn:
+        conn.execute("INSERT INTO jira_board_configs (id,name,project_key,base_jql,pm_project_id,active) VALUES ('board-b','Synthetic','SYN','project=SYN','project-synthetic-b',1)")
+        conn.execute("INSERT INTO jira_health_snapshots (board_id,snapshot_date,overall_grade) VALUES ('board-b','2026-01-01','AMBER')")
+    result = evaluate("project-synthetic-b", db_path=isolated_db)
+    assert result["legacy_comparison"] == {"states": ["amber"], "state": "available"}
