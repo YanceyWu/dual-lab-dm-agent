@@ -10,7 +10,15 @@ from pm_agent.project_health.service import catalog_projection, confirm_reimport
 
 
 def _package() -> dict[str, object]:
-    return {"package_id": "phase4-synthetic-package-001", "schema_version": "project-health-reimport-v1", "inputs": []}
+    return {"package_id": "phase4-synthetic-package-001", "schema_version": "project-health-reimport-v1", "board_ids": [], "inputs": []}
+
+
+def _seed_board(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as connection:
+        connection.execute("INSERT INTO projects (id,name) VALUES ('project-synthetic-001','Synthetic Project')")
+        connection.execute("""INSERT INTO jira_board_configs
+            (id,name,project_key,base_jql,pm_project_id,active)
+            VALUES ('board-synthetic','Synthetic Board','SYN','project = SYN','project-synthetic-001',1)""")
 
 
 def test_clean_bootstrap_seeds_fixed_catalog_and_no_mutable_configuration(isolated_db: Path) -> None:
@@ -23,14 +31,13 @@ def test_clean_bootstrap_seeds_fixed_catalog_and_no_mutable_configuration(isolat
     assert projection["configuration_mutation"] == "not_available"
     with sqlite3.connect(isolated_db) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    assert {"project_health_factor_catalog", "project_health_default_conditions", "project_health_input_observations", "project_health_reimport_sessions", "project_health_reimport_runs"} <= tables
+    assert {"project_health_factor_catalog", "project_health_default_conditions", "project_health_input_observations", "project_health_reimport_sessions", "project_health_reimport_runs", "project_health_reimport_attempts", "project_health_configuration_operations", "project_health_assessment_runs", "project_health_dimension_results", "project_health_factor_results"} <= tables
 
 
 def test_reimport_preview_confirm_is_audited_idempotent_and_reports_not_available(isolated_db: Path) -> None:
     init_db(quiet=True)
-    with sqlite3.connect(isolated_db) as connection:
-        connection.execute("INSERT INTO projects (id,name) VALUES ('project-synthetic-001','Synthetic Project')")
-    preview = preview_reimport(_package(), db_path=isolated_db)
+    _seed_board(isolated_db)
+    preview = preview_reimport({**_package(), "board_ids": ["board-synthetic"]}, db_path=isolated_db)
     assert preview["status"] == "previewed"
     confirmed = confirm_reimport(preview["session_id"], db_path=isolated_db)
     assert confirmed["status"] == "completed"
@@ -38,8 +45,10 @@ def test_reimport_preview_confirm_is_audited_idempotent_and_reports_not_availabl
     assert confirmed["report"]["dimensions"]["project-synthetic-001"] == {
         "schedule": "unknown", "delivery": "not_available", "scope": "unknown", "quality": "not_available", "resource": "not_available", "dependency": "unknown", "governance": "not_available",
     }
+    assert confirmed["report"]["canonical_derivations"][0]["board_id"] == "board-synthetic"
+    assert confirmed["report"]["integrity"] == {"sqlite_integrity": "ok", "foreign_key_violations": 0, "state": "passed"}
     assert confirm_reimport(preview["session_id"], db_path=isolated_db)["idempotent"] is True
-    assert preview_reimport(_package(), db_path=isolated_db)["status"] == "already_completed"
+    assert preview_reimport({**_package(), "board_ids": ["board-synthetic"]}, db_path=isolated_db)["status"] == "already_completed"
     with sqlite3.connect(isolated_db) as connection:
         assert connection.execute("SELECT COUNT(*) FROM project_health_reimport_runs").fetchone()[0] == 3
 
@@ -65,11 +74,36 @@ def test_reimport_failure_is_audited_without_a_partial_coverage_view(
 ) -> None:
     init_db(quiet=True)
     preview = preview_reimport(_package(), db_path=isolated_db)
-    monkeypatch.setattr("pm_agent.project_health.service._coverage", lambda _connection: (_ for _ in ()).throw(RuntimeError("synthetic failure")))
+    monkeypatch.setattr("pm_agent.project_health.service._coverage", lambda *_args: (_ for _ in ()).throw(RuntimeError("synthetic failure")))
     with pytest.raises(RuntimeError, match="synthetic failure"):
         confirm_reimport(preview["session_id"], db_path=isolated_db)
     with sqlite3.connect(isolated_db) as connection:
         session = connection.execute("SELECT status,report_json FROM project_health_reimport_sessions").fetchone()
         run = connection.execute("SELECT status,warnings_json FROM project_health_reimport_runs").fetchone()
+        attempt = connection.execute("SELECT status,warning_codes_json FROM project_health_reimport_attempts").fetchone()
     assert session == ("failed", "{}")
     assert run == ("failed", '["HEALTH_REIMPORT_PARTIAL_FAILURE"]')
+    assert attempt == ("failed", '["HEALTH_REIMPORT_PARTIAL_FAILURE"]')
+
+
+def test_running_session_can_be_replayed_after_interruption(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    _seed_board(isolated_db)
+    package = {**_package(), "board_ids": ["board-synthetic"]}
+    preview = preview_reimport(package, db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("UPDATE project_health_reimport_sessions SET status='running' WHERE session_id=?", [preview["session_id"]])
+    assert preview_reimport(package, db_path=isolated_db)["status"] == "retryable"
+    replayed = confirm_reimport(preview["session_id"], db_path=isolated_db)
+    assert replayed["status"] == "completed"
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM project_health_reimport_attempts").fetchone()[0] == 1
+
+
+def test_integrity_failure_is_not_published_as_completed(isolated_db: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    init_db(quiet=True)
+    preview = preview_reimport(_package(), db_path=isolated_db)
+    monkeypatch.setattr("pm_agent.project_health.service._integrity", lambda _connection: {"sqlite_integrity": "failed", "foreign_key_violations": 1, "state": "failed"})
+    result = confirm_reimport(preview["session_id"], db_path=isolated_db)
+    assert result["status"] == "failed"
+    assert result["report"]["integrity"]["state"] == "failed"

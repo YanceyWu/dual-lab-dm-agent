@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH A IMPLEMENTED — INDEPENDENT REVIEW REQUIRED`
+Gate status: `PHASE 4 BATCH A REPAIR SELF-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -510,6 +510,25 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch A review findings corrected and self-reviewed
+
+- Bound each versioned re-import package to validated stable-anonymous board
+  IDs, executed Phase 3 canonical derivation for exactly those boards, and
+  stored per-session derivation IDs, coverage/freshness, SQLite integrity,
+  foreign-key results, and explicit reconciliation limitation in the report.
+- Made interrupted or failed sessions retryable with append-only attempt audit.
+  Integrity failure is fail-closed (`failed`), never a completed import.
+  Added additive assessment/configuration contract table families only; no
+  assessment evaluation, configuration mutation, Attention, or public Phase 4
+  projection was added.
+- Focused synthetic tests passed 7/7, including bound derivation, interrupted
+  replay, failure audit, and integrity failure. `make validate` passed 226
+  runtime tests and 21 repository-tool tests (19 subtests); `make
+  rehearse-release` passed wheel installation, isolated bootstrap/upgrade,
+  integrity, and rollback. Self-review found no P0-P2 finding.
+- The repair is committed locally and remains unpushed. The exact next action
+  is owner acceptance of Batch A; Batch B remains separately unauthorized.
 
 ### 2026-07-30 — Phase 4 Batch A clean re-import and catalog foundation implemented
 

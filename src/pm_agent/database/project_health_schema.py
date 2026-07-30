@@ -3,6 +3,10 @@
 The schema is additive.  Batch A owns catalogue and re-import audit only; it
 does not create health assessments, configuration mutations, or Attention.
 """
+
+from __future__ import annotations
+
+import sqlite3
 PHASE4_HEALTH_DDL = """
 CREATE TABLE IF NOT EXISTS project_health_factor_catalog (
     factor_id TEXT PRIMARY KEY,
@@ -39,10 +43,12 @@ CREATE TABLE IF NOT EXISTS project_health_reimport_sessions (
     package_id TEXT NOT NULL,
     package_version TEXT NOT NULL,
     package_fingerprint TEXT NOT NULL UNIQUE,
+    package_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(package_json)),
     status TEXT NOT NULL CHECK(status IN ('previewed','running','completed','failed','rejected')),
     created_at TEXT NOT NULL,
     completed_at TEXT NOT NULL DEFAULT '',
     warning_codes_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(warning_codes_json)),
+    integrity_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(integrity_json)),
     report_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(report_json))
 );
 
@@ -57,8 +63,61 @@ CREATE TABLE IF NOT EXISTS project_health_reimport_runs (
     UNIQUE(session_id, step_key)
 );
 
+CREATE TABLE IF NOT EXISTS project_health_reimport_attempts (
+    attempt_id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES project_health_reimport_sessions(session_id),
+    status TEXT NOT NULL CHECK(status IN ('running','completed','failed')),
+    started_at TEXT NOT NULL,
+    finished_at TEXT NOT NULL DEFAULT '',
+    warning_codes_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(warning_codes_json))
+);
+
+CREATE TABLE IF NOT EXISTS project_health_configuration_operations (
+    operation_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL CHECK(status IN ('reserved')),
+    project_id TEXT REFERENCES projects(id),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS project_health_assessment_runs (
+    assessment_run_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES projects(id),
+    catalog_version TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('not_available')),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS project_health_dimension_results (
+    assessment_run_id TEXT NOT NULL REFERENCES project_health_assessment_runs(assessment_run_id),
+    dimension TEXT NOT NULL,
+    state TEXT NOT NULL,
+    PRIMARY KEY(assessment_run_id, dimension)
+);
+
+CREATE TABLE IF NOT EXISTS project_health_factor_results (
+    assessment_run_id TEXT NOT NULL REFERENCES project_health_assessment_runs(assessment_run_id),
+    factor_id TEXT NOT NULL REFERENCES project_health_factor_catalog(factor_id),
+    state TEXT NOT NULL,
+    evidence_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(evidence_json)),
+    PRIMARY KEY(assessment_run_id, factor_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_project_health_reimport_sessions_status
     ON project_health_reimport_sessions(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_project_health_reimport_attempts_session
+    ON project_health_reimport_attempts(session_id, started_at);
 CREATE INDEX IF NOT EXISTS idx_project_health_input_observations_project
     ON project_health_input_observations(project_id, input_kind, observed_at);
 """
+
+
+def ensure_phase4_batch_a_columns(connection: sqlite3.Connection) -> None:
+    """Keep pre-review Batch A databases readable without relying on them in production."""
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(project_health_reimport_sessions)")}
+    migrations = {
+        "package_json": "ALTER TABLE project_health_reimport_sessions ADD COLUMN package_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(package_json))",
+        "integrity_json": "ALTER TABLE project_health_reimport_sessions ADD COLUMN integrity_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(integrity_json))",
+    }
+    for column, statement in migrations.items():
+        if column not in columns:
+            connection.execute(statement)

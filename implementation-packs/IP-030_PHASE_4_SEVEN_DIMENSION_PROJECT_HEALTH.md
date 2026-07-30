@@ -1,6 +1,6 @@
 # IP-030 — Phase 4 Seven-Dimension Project Health
 
-Status: `BATCH A IMPLEMENTED — INDEPENDENT REVIEW REQUIRED`
+Status: `BATCH A REPAIR SELF-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`
 Implementation branch: `codex/phase-4-project-health-design`
 Baseline: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
