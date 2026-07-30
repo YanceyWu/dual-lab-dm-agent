@@ -107,8 +107,10 @@ being edited.
   healthy, available, or safe.
 - Existing tables and services are extended or adapted before a replacement is
   considered.
-- Database changes are additive or backward compatible, rehearsed on synthetic
-  data, and have a practical rollback.
+- Production data readiness uses clean bootstrap followed by a supported,
+  versioned structured full re-import. Database changes are additive or
+  backward compatible where development compatibility requires it, rehearsed
+  with clean synthetic import, and have a practical software rollback.
 - All business writes follow propose, preview, explicit confirmation, persist.
 - Portable work uses synthetic data only. Operational configuration, data,
   identifiers, logs, and evidence remain inside the approved work environment.
@@ -127,13 +129,15 @@ Required outputs:
 - canonical context and evidence requirements;
 - deterministic rules and configurable thresholds;
 - model role and prohibited inferences;
-- migration and rollback design;
+- clean re-import, integrity, and software-rollback design; any development
+  migration compatibility that remains necessary;
 - scenarios, acceptance criteria, and non-goals;
 - explicit owner design approval.
 
 ### Batch B — Deterministic core
 
-- backward-compatible migration or repository adapter, when required;
+- bootstrap and supported structured-import contract; a backward-compatible
+  migration or repository adapter only when development compatibility requires it;
 - typed domain result or rule implementation;
 - unit, repository, integrity, and migration tests;
 - no interface-specific business behavior.
@@ -165,7 +169,7 @@ A phase is ready for implementation only when:
 - the design pack is approved;
 - input, output, evidence, freshness, and failure behavior are defined;
 - unknown company-specific details are marked `UNKNOWN`;
-- migration, compatibility, and rollback effects are understood;
+- clean re-import, compatibility, and rollback effects are understood;
 - synthetic scenarios and acceptance criteria exist;
 - non-goals prevent work from expanding into later phases.
 

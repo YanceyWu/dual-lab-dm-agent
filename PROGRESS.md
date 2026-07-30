@@ -725,6 +725,22 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - No runtime/schema change or Batch A implementation is authorized by this
   clarification. Exact next action remains Phase 4 design review or revision.
 
+### 2026-07-30 — Global clean re-import policy adopted
+
+- The owner set clean bootstrap plus supported versioned full re-import as the
+  production data path for every future phase. Production readiness must not
+  depend on migration, backfill, or preservation of current records.
+- Existing Phase 1–3 bootstrap, import, and migration paths were inspected.
+  They support portions of the lifecycle but do not yet provide one complete
+  canonical-evidence-to-layered-health re-import path. Phase 4 Batch A is the
+  bounded remediation owner; no unrelated rewrite of promoted behavior is
+  authorized or required before that slice.
+- The repository instructions and phase plan now require every persisted
+  capability to define bootstrap, import, validation, idempotent replay, audit,
+  derivation, coverage/integrity report, and software rollback. This policy
+  change creates no runtime/schema/connector change; Phase 4 design review
+  remains the next gate.
+
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
 - The owner completed re-review, accepted corrected B1, and asked to enter the

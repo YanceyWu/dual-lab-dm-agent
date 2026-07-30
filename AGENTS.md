@@ -21,6 +21,20 @@ This repository governs a portable Delivery Management intelligence system.
 - All writes follow propose, preview, confirm, persist.
 - Every intelligence behavior needs evidence, an output contract, scenarios, and tests.
 
+## Clean re-import policy
+
+- Production capability design assumes an empty local database followed by a
+  supported, versioned, structured full re-import; do not make production
+  readiness depend on migration, backfill, or preservation of current records.
+- Every new persisted capability must define its place in that path: bootstrap,
+  import contract and local command/script, preview/validation, idempotent
+  replay, audit, derivation, coverage/integrity report, and software rollback.
+- Existing migration code may remain for local development compatibility and
+  rollback, but a new capability may not require it as its production data path.
+- If an earlier promoted capability lacks this path, record the gap and create a
+  bounded, independently reviewable remediation slice; do not silently rewrite
+  unrelated historical behavior.
+
 ## Module growth guardrails
 
 - Do not add a new business capability by extending an unrelated existing
