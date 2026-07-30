@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `BATCH C2 REVIEW PASSED — BATCH D AUTHORIZATION REQUIRED`
+Status: `BATCH D REVIEW PASSED — PHASE 3 PROMOTION DECISION REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:
@@ -378,7 +378,8 @@ authorization before combined regression, implementation report, or promotion.
 - Create the IP-029 implementation report and update `PROGRESS.md`.
 - Stop for explicit owner Phase 3 promotion, revision, or rejection.
 
-Batch D remains unauthorized.
+Batch D validation, reporting, and independent review passed. An explicit
+Phase 3 promotion, revision, or rejection decision remains required.
 
 ## Mandatory constraints
 

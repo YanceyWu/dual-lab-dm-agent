@@ -1,6 +1,6 @@
 # Phase 3 — Execution and Milestone Signal Foundation
 
-Status: `APPROVED — BATCH C2 REVIEW PASSED; BATCH D AUTHORIZATION REQUIRED`
+Status: `APPROVED — BATCH D REVIEW PASSED; PROMOTION DECISION REQUIRED`
 Date: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
@@ -597,8 +597,7 @@ dedicated branch `codex/phase-3-execution-signals`, whose history contains the
 exact promoted Phase 2 baseline
 `2185334c890e79480a39514cf1d1e45f74e062f1`.
 
-IP-029 B1/B2/C1 and the approved C2 automatic Attention slice are implemented,
-locally validated, and independently reviewed. The exact next decision is
-whether to authorize bounded Batch D regression and the Phase 3 promotion
-decision, or require a C2 revision. D, live connector use, real-data access,
-Phase 4, push, merge, tag, release, and deployment remain unauthorized.
+IP-029 B1/B2/C1/C2 and Batch D regression/reporting are implemented and
+independently reviewed locally. The exact next action is an explicit owner
+decision to promote, revise, or reject Phase 3. Live connector use, real-data
+access, Phase 4, push, merge, tag, release, and deployment remain unauthorized.

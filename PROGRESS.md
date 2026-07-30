@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH C2 REVIEW PASSED — BATCH D AUTHORIZATION REQUIRED`
+Gate status: `PHASE 3 BATCH D REVIEW PASSED — PROMOTION DECISION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -121,7 +121,8 @@ belong in Git history and must not be interpreted as current instructions.
   next stage; the owner then authorized only B2 implementation. The owner
   completed B2 re-review and accepted the corrected result. The owner then
   authorized only C1 implementation. The owner completed C1 review and accepted
-  the result; C2/D and all later work remain unauthorized.
+  the result; C2 and D reviews have passed. Phase 3 promotion and all later
+  work remain separately unauthorized.
 
 ## Current validation evidence
 
@@ -645,6 +646,33 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - Exact next action: explicit authorization for Batch D regression and Phase 3
   promotion decision, or a C2 revision. This reviewed C2 result is local-only
   and remains unpushed.
+
+### 2026-07-30 — Phase 3 Batch D regression and report implemented
+
+- Ran combined Phase 3/Attention focused regression: 73 synthetic tests
+  passed. `make validate` passed 219 runtime tests, 21 repository-tool tests
+  (19 subtests), Ruff, compilation, boundary/synthetic checks, diff hygiene,
+  and package build. `make rehearse-release` passed synthetic wheel install,
+  isolated bootstrap/upgrade, integrity checks, and rollback.
+- Added `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md`, recording
+  the implementation, commits, schema/migration/compatibility evidence,
+  deferred risks, portable boundary, and promotion recommendation.
+- No new runtime behavior, live connector, real data, `pending_decision_attention`,
+  Phase 4, push, merge, tag, release, or deployment action occurred.
+- Exact next action: independent Batch D review, then explicit owner decision
+  to promote, revise, or reject Phase 3. This Batch D candidate is local-only
+  and remains unpushed.
+
+### 2026-07-30 — Phase 3 Batch D independent review passed
+
+- Read-only review reconciled the IP-029 report against the Phase 3 local
+  commit history, 73-test combined regression, 219-test full validation,
+  installed-package rehearsal, schema/migration/rollback evidence, and
+  portable data boundary. No P0-P2 issue was found.
+- No code changed during review. No live connector, real data, Phase 4, push,
+  merge, tag, release, deployment, or active-database operation occurred.
+- Exact next action: explicit owner decision to promote, revise, or reject the
+  completed local Phase 3 baseline. The branch remains local-only and unpushed.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
