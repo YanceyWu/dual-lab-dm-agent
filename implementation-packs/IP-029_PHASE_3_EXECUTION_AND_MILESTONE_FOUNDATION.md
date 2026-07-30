@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Status: `BATCH C2 REVIEW PASSED — BATCH D AUTHORIZATION REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:
@@ -366,8 +366,8 @@ Review before C2.
 
 ### Stop gate
 
-C2 remains unauthorized. After any future C2 validation, stop for explicit C2
-Review before Batch D.
+C2 implementation and independent review passed. Stop for explicit Batch D
+authorization before combined regression, implementation report, or promotion.
 
 ## Batch D — Regression and promotion
 
@@ -456,6 +456,6 @@ stage, subsequently authorized bounded B2 implementation, and accepted the
 corrected B2 review result. The owner then authorized C1 implementation and
 accepted the reviewed C1 result. C1 is the local Phase 3 public read baseline.
 
-The exact next decision is bounded C2 authorization or a C2 design revision.
-C2/D, live connector access, real data, Phase 4, push, merge, tag, release,
+The exact next decision is bounded Batch D authorization or a C2 revision.
+D, live connector access, real data, Phase 4, push, merge, tag, release,
 and deployment remain unauthorized.

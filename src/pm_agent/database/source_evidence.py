@@ -605,7 +605,41 @@ def publish_run(run_id: str, *, db_path: str | Path | None = None) -> int:
             [published, timestamp, run_id],
         )
         connection.commit()
+        board_id = run["board_id"]
+    # C2 derived processing is deliberately after durable publication.
+    from pm_agent.attention.phase3 import reconcile_after_evidence_publication
+
+    try:
+        reconcile_after_evidence_publication(board_id, db_path=db_path)
+    except Exception:
+        # Publication is already durable; C2 failure must not revoke its cursor.
+        _record_post_publication_warning(run_id, db_path=db_path)
     return published
+
+
+def _record_post_publication_warning(
+    run_id: str,
+    *,
+    db_path: str | Path | None = None,
+) -> None:
+    """Leave durable, non-sensitive evidence that automatic C2 processing failed."""
+    with _connection(db_path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT warning_codes_json FROM source_evidence_runs WHERE run_id = ?",
+            [run_id],
+        ).fetchone()
+        if row is None:
+            connection.rollback()
+            return
+        warnings = json.loads(row["warning_codes_json"])
+        if "PHASE3_RECONCILIATION_FAILED" not in warnings:
+            warnings.append("PHASE3_RECONCILIATION_FAILED")
+            connection.execute(
+                "UPDATE source_evidence_runs SET warning_codes_json = ? WHERE run_id = ?",
+                [json.dumps(sorted(warnings), separators=(",", ":")), run_id],
+            )
+        connection.commit()
 
 
 def reject_run(run_id: str, *, db_path: str | Path | None = None) -> None:

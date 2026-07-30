@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import date, datetime, timezone
 from typing import Any
@@ -9,11 +10,13 @@ from typing import Any
 from pm_agent.database import attention as attention_repository
 
 PENDING_DECISION_RULE = "pending_decision_attention"
+CRITICAL_MILESTONE_RULE = "critical_milestone_overdue_attention"
 ACTIVE_RULE_KEYS = (
     "project_health_attention",
     "overdue_action_attention",
     "source_freshness_attention",
     "resource_overload_attention",
+    CRITICAL_MILESTONE_RULE,
 )
 ALL_RULE_KEYS = (*ACTIVE_RULE_KEYS, PENDING_DECISION_RULE)
 PROJECT_HEALTH_RULE = "project_health_attention"
@@ -46,6 +49,11 @@ RULE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "version": "resource-overload-attention-v1",
         "enabled": True,
         "parameters": {"active_assignment_load_strictly_greater_than": 1.0},
+    },
+    CRITICAL_MILESTONE_RULE: {
+        "version": "critical-milestone-overdue-attention-v1",
+        "enabled": True,
+        "parameters": {"criticality": "critical", "adherence": "overdue"},
     },
     PENDING_DECISION_RULE: {
         "version": "pending-decision-attention-disabled-v1",
@@ -108,6 +116,8 @@ def evaluate(
             connection,
             catalog,
         )
+    if CRITICAL_MILESTONE_RULE in enabled_selected_keys:
+        evaluations[CRITICAL_MILESTONE_RULE] = _evaluate_critical_milestones(connection, catalog)
 
     observations: list[dict[str, Any]] = []
     warning_codes: list[str] = []
@@ -585,6 +595,75 @@ def _evaluate_resources(
             )
         )
     return {"status": "complete", "warning_codes": [], "observations": observations}
+
+
+def _evaluate_critical_milestones(
+    connection,
+    catalog: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    rule_key = CRITICAL_MILESTONE_RULE
+    version = catalog[rule_key]["rule_version"]
+    rows = connection.execute(
+        """
+        SELECT f.subject_id, f.value_json, f.value_state, f.freshness_state,
+               dr.completeness_state, dr.derivation_run_id, m.criticality
+        FROM execution_facts f
+        JOIN execution_derivation_runs dr
+          ON dr.derivation_run_id = f.derivation_run_id
+        JOIN execution_milestones m ON m.milestone_id=f.subject_id
+        WHERE f.fact_key = 'milestone_adherence'
+          AND f.subject_kind = 'milestone'
+          AND NOT EXISTS (
+              SELECT 1 FROM execution_derivation_runs later
+              WHERE later.project_id = dr.project_id
+                AND later.board_id = dr.board_id
+                AND later.finished_at > dr.finished_at
+          )
+        """
+    ).fetchall()
+    observations = []
+    limited = False
+    for row in rows:
+        complete = (
+            row["completeness_state"] == "complete"
+            and row["freshness_state"] == "fresh"
+        )
+        limited = limited or not complete
+        fact_value = json.loads(row["value_json"]) if row["value_state"] == "known" else None
+        active = (
+            complete
+            and row["criticality"] == "critical"
+            and fact_value == "overdue"
+        )
+        observations.append(
+            _observation(
+                rule_key=rule_key,
+                rule_version=version,
+                subject_kind="milestone",
+                subject_id=row["subject_id"],
+                active=active,
+                complete=complete,
+                severity="critical" if active else "none",
+                reason_codes=(
+                    ["critical_milestone_overdue"]
+                    if active else ["milestone_not_critical_overdue"]
+                ),
+                fact_type="milestone_adherence",
+                fact_value=fact_value,
+                value_state=row["value_state"],
+                evidence={
+                    "entity_kind": "execution_derivation",
+                    "derivation_run_id": row["derivation_run_id"],
+                    "criticality": row["criticality"],
+                },
+                freshness={"state": row["freshness_state"]},
+            )
+        )
+    return {
+        "status": "partial" if limited else "complete",
+        "warning_codes": ["ATTENTION_MILESTONE_INPUT_LIMITED"] if limited else [],
+        "observations": observations,
+    }
 
 
 def _observation(

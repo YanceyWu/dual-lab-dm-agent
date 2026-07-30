@@ -8,6 +8,7 @@ import re
 import secrets
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -23,11 +24,15 @@ _SUBJECT_KIND_BY_RULE = {
     "source_freshness_attention": "source",
     "resource_overload_attention": "member",
     "pending_decision_attention": "decision",
+    "critical_milestone_overdue_attention": "milestone",
 }
 
 
 class AttentionService:
     """Attention-specific preview/confirm service outside ToolTransport."""
+
+    def __init__(self, *, db_path: str | Path | None = None) -> None:
+        self._db_path = db_path
 
     def preview_reconciliation(
         self,
@@ -40,7 +45,7 @@ class AttentionService:
         try:
             normalized_actor = _bounded_id(actor, "actor")
             scope = _reconciliation_scope(rule_keys, subject_kind, subject_id)
-            with attention_repository.attention_connection() as connection:
+            with attention_repository.attention_connection(db_path=self._db_path) as connection:
                 now = _utc_now()
                 evaluation = rules.evaluate(connection, **scope, now=now)
                 current = attention_repository.list_signals(connection, **scope)
@@ -137,18 +142,21 @@ class AttentionService:
             _record_operation_failure(
                 normalized_operation_id,
                 "ATTENTION_RULE_CATALOG_INVALID",
+                db_path=self._db_path,
             )
             return _failure("ATTENTION_RULE_CATALOG_INVALID")
         except ValueError:
             _record_operation_failure(
                 normalized_operation_id,
                 "ATTENTION_CONFIRMATION_INVALID",
+                db_path=self._db_path,
             )
             return _failure("ATTENTION_CONFIRMATION_INVALID")
         except (json.JSONDecodeError, KeyError, TypeError, sqlite3.Error):
             _record_operation_failure(
                 normalized_operation_id,
                 "DATA_ACCESS_FAILED",
+                db_path=self._db_path,
             )
             return _failure("DATA_ACCESS_FAILED")
 
@@ -163,7 +171,7 @@ class AttentionService:
         try:
             normalized_actor = _bounded_id(actor, "actor")
             normalized_attention_id = _bounded_id(attention_id, "attention_id")
-            with attention_repository.attention_connection() as connection:
+            with attention_repository.attention_connection(db_path=self._db_path) as connection:
                 signal = attention_repository.get_signal(
                     connection,
                     normalized_attention_id,
@@ -200,7 +208,9 @@ class AttentionService:
         operation_id: str,
         confirmation_token: str,
     ) -> dict[str, Any]:
-        with attention_repository.attention_connection(immediate=True) as connection:
+        with attention_repository.attention_connection(
+            immediate=True, db_path=self._db_path
+        ) as connection:
             operation = attention_repository.get_operation(connection, operation_id)
             if operation is None:
                 if attention_repository.get_configuration_operation(
@@ -1107,11 +1117,18 @@ def _failure(code: str) -> dict[str, Any]:
     return {"status": "failed", "failure_code": code}
 
 
-def _record_operation_failure(operation_id: str, failure_code: str) -> None:
+def _record_operation_failure(
+    operation_id: str,
+    failure_code: str,
+    *,
+    db_path: str | Path | None = None,
+) -> None:
     if not operation_id:
         return
     try:
-        with attention_repository.attention_connection(immediate=True) as connection:
+        with attention_repository.attention_connection(
+            immediate=True, db_path=db_path
+        ) as connection:
             attention_repository.fail_operation(
                 connection,
                 operation_id=operation_id,

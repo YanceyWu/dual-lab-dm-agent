@@ -3009,6 +3009,7 @@ def _seed_attention_rules(conn: sqlite3.Connection) -> None:
             1,
             {"active_assignment_load_strictly_greater_than": 1.0},
         ),
+        ("critical_milestone_overdue_attention", "critical-milestone-overdue-attention-v1", 1, {"criticality": "critical", "adherence": "overdue"}),
         (
             "pending_decision_attention",
             "pending-decision-attention-disabled-v1",

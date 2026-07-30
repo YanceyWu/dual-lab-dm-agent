@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 3 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Status: `PHASE 3 BATCH C2 REVIEW PASSED — BATCH D AUTHORIZATION REQUIRED`
 Last updated: 2026-07-30
 
 ## Purpose
@@ -518,8 +518,8 @@ Non-goals:
 
 ## Immediate next action
 
-IP-029 Batch B1 is accepted on `codex/phase-3-execution-signals`. Review the
-frozen B2 implementation-level design and decide whether to authorize its
-bounded canonical execution/commitment implementation or require design
-changes. Do not use a live connector or real data, begin C1/C2/D or Phase 4, or
-publish the branch without the applicable separate authorization.
+IP-029 Batch C2 is reviewed on `codex/phase-3-execution-signals`. Decide
+whether to authorize bounded Batch D regression and the Phase 3 promotion
+decision, or require a C2 revision. Do not use a live connector or real data,
+begin Phase 4, or publish the branch without the applicable separate
+authorization.

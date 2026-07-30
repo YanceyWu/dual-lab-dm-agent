@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
+Gate status: `PHASE 3 BATCH C2 REVIEW PASSED — BATCH D AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -368,6 +368,16 @@ package build/inspection, and all eight release validation checks. C1 changes
 no schema or installed behavior, so release rehearsal remains a later Batch D
 gate.
 
+Phase 3 Batch C2 passed 37 focused execution-foundation and Attention tests.
+They cover the sole enabled producer, automatic critical-overdue creation,
+automatic rule-clear resolution, partial retention, the complete
+history-and-links publication boundary, and durable failure warnings without
+cursor rollback. The final `make validate` run passed repository-boundary and
+synthetic-sample checks, 219 runtime tests, 21 repository-tool tests with 19
+subtests, Ruff, compilation, diff hygiene, package build/inspection, and all
+eight release validation checks. `make rehearse-release` passed wheel
+installation plus isolated bootstrap, upgrade, integrity, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -613,6 +623,28 @@ gate.
 - Exact next action: decide whether to authorize bounded C2 automatic derived
   Attention integration, or require a C2 design revision first. This acceptance
   record is local-only and remains unpushed.
+
+### 2026-07-30 — Phase 3 Batch C2 automatic derived Attention implemented and reviewed
+
+- Added exactly one enabled producer: `critical_milestone_overdue_attention`.
+  It opens only for a fresh, complete, structured `critical` Milestone whose
+  canonical `milestone_adherence` fact is known `overdue`, with `critical`
+  severity. `pending_decision_attention` remains disabled.
+- Published evidence triggers canonical derivation and scoped reconciliation
+  only when a complete Issue History and Issue Link pair is present. Confirmed
+  structured Milestone imports refresh each affected active board. Existing
+  scoped Attention reconciliation remains the retry/recovery path.
+- Complete non-match clears automatically with `rule_clear`; partial or failed
+  input does not clear a prior active signal. A post-publication failure retains
+  the durable cursor and records `PHASE3_RECONCILIATION_FAILED` on that run.
+- Independent review found no P0-P2 issue. Focused tests passed 37/37;
+  `make validate` passed 219 runtime tests plus 21 repository-tool tests (19
+  subtests), and `make rehearse-release` passed. No real data, live connector,
+  `pending_decision_attention`, Phase 4, push, merge, tag, release, or
+  deployment action occurred.
+- Exact next action: explicit authorization for Batch D regression and Phase 3
+  promotion decision, or a C2 revision. This reviewed C2 result is local-only
+  and remains unpushed.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 

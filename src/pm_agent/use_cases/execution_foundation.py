@@ -34,8 +34,19 @@ class ExecutionFoundationService:
         *,
         db_path: str | Path | None = None,
     ) -> dict[str, Any]:
-        return execution.confirm_milestone_import(
+        result = execution.confirm_milestone_import(
             operation_id,
             confirmation_token,
             db_path=db_path,
         )
+        if result.get("status") == "confirmed":
+            from pm_agent.attention.phase3 import reconcile_after_milestone_import
+
+            reconciliations = reconcile_after_milestone_import(
+                operation_id, db_path=db_path
+            )
+            return {
+                **result,
+                "attention_reconciliations": [item["status"] for item in reconciliations],
+            }
+        return result

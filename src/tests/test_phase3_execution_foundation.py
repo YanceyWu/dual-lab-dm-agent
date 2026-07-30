@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from pm_agent.database import execution, source_evidence
+from pm_agent.attention import phase3
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases.execution_foundation import ExecutionFoundationService
 
@@ -148,7 +149,8 @@ def test_derivation_projects_authoritative_evidence_and_is_idempotent(isolated_d
         assert connection.execute("SELECT COUNT(*) FROM execution_release_observations").fetchone()[0] == 1
         assert connection.execute("SELECT COUNT(*) FROM execution_dependency_observations").fetchone()[0] == 1
         facts = connection.execute(
-            "SELECT fact_key, value_state, value_json FROM execution_facts ORDER BY fact_key"
+            "SELECT fact_key, value_state, value_json FROM execution_facts WHERE derivation_run_id = ? ORDER BY fact_key",
+            [first['derivation_run_id']],
         ).fetchall()
     assert facts == [
         ('dependency_readiness', 'known', '{"state":"active"}'),
@@ -167,7 +169,10 @@ def test_non_authoritative_evidence_cannot_produce_known_scope_fact(isolated_db:
             "SELECT completeness_state, warning_codes_json FROM execution_derivation_runs WHERE derivation_run_id = ?",
             [result['derivation_run_id']],
         ).fetchone()
-        facts = connection.execute("SELECT value_state FROM execution_facts ORDER BY fact_key").fetchall()
+        facts = connection.execute(
+            "SELECT value_state FROM execution_facts WHERE derivation_run_id = ? ORDER BY fact_key",
+            [result['derivation_run_id']],
+        ).fetchall()
     assert run == ('partial', '["SCOPE_MANIFEST_NOT_AUTHORITATIVE"]')
     assert facts == [('known',), ('unavailable',), ('unavailable',), ('unknown',)]
 
@@ -382,7 +387,7 @@ def test_milestone_import_validates_and_persists_explicit_release_links(isolated
     preview = service.preview_milestone_import(payload, db_path=isolated_db)
     service.confirm_milestone_import(preview['operation_id'], preview['confirmation_token'], db_path=isolated_db)
     derived = execution.derive_board('board-synthetic', db_path=isolated_db)
-    assert derived['idempotent'] is False
+    assert derived['idempotent'] is True
     with sqlite3.connect(isolated_db) as connection:
         assert connection.execute("SELECT milestone_id, release_id FROM execution_milestone_release_links").fetchone() == (
             'milestone-synthetic-1', release_id,
@@ -390,3 +395,97 @@ def test_milestone_import_validates_and_persists_explicit_release_links(isolated
         assert connection.execute(
             "SELECT value_json, value_state FROM execution_facts WHERE fact_key = 'milestone_adherence'"
         ).fetchone() == ('"on_track"', 'known')
+
+
+def test_c2_automatically_opens_and_rule_clears_critical_overdue_milestone(
+    isolated_db: Path,
+) -> None:
+    _seed_board(isolated_db)
+    service = ExecutionFoundationService()
+    overdue = _milestone_payload()
+    overdue["milestones"][0].update(
+        criticality="critical",
+        planned_date="2020-01-01",
+        source_target_date="2020-01-01",
+    )
+    preview = service.preview_milestone_import(overdue, db_path=isolated_db)
+    service.confirm_milestone_import(
+        preview["operation_id"], preview["confirmation_token"], db_path=isolated_db
+    )
+    _publish_evidence(isolated_db, authoritative=True)
+    with sqlite3.connect(isolated_db) as connection:
+        active = connection.execute(
+            """
+            SELECT rule_state, attention_state, severity FROM attention_signals
+            WHERE rule_key = 'critical_milestone_overdue_attention'
+            """
+        ).fetchone()
+    assert active == ("active", "open", "critical")
+
+    cleared = _milestone_payload(observed_at="2026-07-30T04:00:00+00:00")
+    cleared["milestones"][0].update(
+        criticality="critical",
+        lifecycle_state="achieved",
+        planned_date="2020-01-01",
+        source_target_date="2020-01-01",
+        actual_date="2020-01-01",
+    )
+    preview = service.preview_milestone_import(cleared, db_path=isolated_db)
+    service.confirm_milestone_import(
+        preview["operation_id"], preview["confirmation_token"], db_path=isolated_db
+    )
+    with sqlite3.connect(isolated_db) as connection:
+        resolved = connection.execute(
+            """
+            SELECT rule_state, attention_state, resolution_reason FROM attention_signals
+            WHERE rule_key = 'critical_milestone_overdue_attention'
+            """
+        ).fetchone()
+    assert resolved == ("clear", "resolved", "rule_clear")
+
+
+def test_c2_failure_is_recorded_without_reverting_published_evidence(
+    isolated_db: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_board(isolated_db)
+    run_id = source_evidence.start_run(
+        "jira-evidence-board-synthetic",
+        "board-synthetic",
+        "jira_issue_history",
+        overlap_seconds=300,
+        db_path=isolated_db,
+        run_id="history-c2-failure",
+    )
+    source_evidence.stage_issue_events(
+        run_id,
+        [_event("SYN-1", "status_category", "done", "syn1-c2-failure")],
+        manifest_issue_refs=["SYN-1", "SYN-2"],
+        db_path=isolated_db,
+    )
+    source_evidence.finish_staging(
+        run_id,
+        coverage_status="complete",
+        pages_received=1,
+        pages_expected=1,
+        proposed_cursor_time="2026-07-30T01:00:00+00:00",
+        proposed_cursor_ref="SYN-2",
+        authoritative_manifest=True,
+        db_path=isolated_db,
+    )
+
+    def fail_reconciliation(*_args, **_kwargs):
+        raise RuntimeError("synthetic C2 failure")
+
+    monkeypatch.setattr(phase3, "reconcile_after_evidence_publication", fail_reconciliation)
+    source_evidence.publish_run(run_id, db_path=isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        published = connection.execute(
+            "SELECT publication_status, warning_codes_json FROM source_evidence_runs WHERE run_id = ?",
+            [run_id],
+        ).fetchone()
+        cursor = connection.execute(
+            "SELECT published_run_id FROM source_evidence_cursors WHERE board_id = 'board-synthetic'"
+        ).fetchone()
+    assert published == ("published", '["PHASE3_RECONCILIATION_FAILED"]')
+    assert cursor == (run_id,)

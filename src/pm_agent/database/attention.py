@@ -15,9 +15,10 @@ from pm_agent.config import settings
 def attention_connection(
     *,
     immediate: bool = False,
+    db_path: str | Path | None = None,
 ) -> Generator[sqlite3.Connection, None, None]:
     connection = sqlite3.connect(
-        Path(settings.database_path),
+        Path(db_path or settings.database_path),
         timeout=10,
         isolation_level=None,
     )

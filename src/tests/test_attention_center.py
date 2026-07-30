@@ -197,6 +197,7 @@ def test_center_projects_references_recommendations_summary_and_history(
         "overdue_action_attention": 1,
         "source_freshness_attention": 1,
         "resource_overload_attention": 1,
+        "critical_milestone_overdue_attention": 0,
         "pending_decision_attention": 0,
     }
     assert result.data["reconciliation_coverage"]["status"] == "partial"
