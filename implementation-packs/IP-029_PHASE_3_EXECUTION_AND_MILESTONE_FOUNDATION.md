@@ -1,6 +1,6 @@
 # IP-029 — Phase 3 Execution and Milestone Signal Foundation
 
-Status: `BATCH B2 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Status: `BATCH B2 ACCEPTED — BATCH C1 AUTHORIZATION REQUIRED`
 Approved design: 2026-07-29
 Implementation branch: `codex/phase-3-execution-signals`
 Promoted Phase 2 baseline:
@@ -452,9 +452,9 @@ The Batch D report must record:
 ## Current authorization
 
 The owner accepted corrected Batch B1 on 2026-07-29, entered the B2 design
-stage, and subsequently authorized bounded B2 implementation. B2 is complete
-and stopped for explicit review under this frozen contract.
+stage, subsequently authorized bounded B2 implementation, and accepted the
+corrected B2 review result. B2 is now the local Phase 3 foundation baseline.
 
-The exact next decision is B2 acceptance, required corrections, or rejection.
+The exact next decision is bounded C1 authorization or a C1 design revision.
 C1/C2/D, live connector access, real data, Phase 4, push, merge, tag, release,
 and deployment remain unauthorized.

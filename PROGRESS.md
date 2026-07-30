@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B2 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH B2 ACCEPTED — BATCH C1 AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -118,8 +118,9 @@ belong in Git history and must not be interpreted as current instructions.
   branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
   whose bounded incremental source-evidence implementation and two correction
   rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
-  next stage; the owner then authorized only B2 implementation. B2 is now
-  implemented and awaits explicit review; all later batches remain unauthorized.
+  next stage; the owner then authorized only B2 implementation. The owner
+  completed B2 re-review and accepted the corrected result. C1 and all later
+  batches remain unauthorized.
 
 ## Current validation evidence
 
@@ -482,8 +483,8 @@ rollback.
 - IP-029 Batch B1 and its first- and second-review corrections are implemented,
   locally validated, and accepted on `codex/phase-3-execution-signals`. The
   owner authorized B2; its bounded canonical execution and Milestone foundation
-  is implemented, locally validated, and stopped for review. C1/C2/D and all
-  later batches remain unauthorized.
+  is implemented, corrected, reviewed, and accepted. C1/C2/D and all later
+  batches remain unauthorized.
 
 ## Recent change log
 
@@ -555,7 +556,21 @@ rollback.
 - No public use-case/CLI/Dashboard/Copilot, automatic trigger, Attention,
   connector/live-data, real-data, `pending_decision_attention`, Phase 4, push,
   merge, tag, release, or deployment change was made. The correction is
-  committed locally, remains unpushed, and awaits explicit B2 re-review.
+  committed locally and remains unpushed. The owner subsequently completed B2
+  re-review and accepted this corrected result; the next decision is bounded C1
+  authorization or C1 design revision.
+
+### 2026-07-30 — Phase 3 Batch B2 re-review accepted
+
+- The owner completed review of the corrected B2 result and accepted it as the
+  local Phase 3 canonical execution and Milestone foundation baseline.
+- This acceptance authorizes neither C1 implementation nor C2/D, Phase 4,
+  connector/live-data access, real data, Attention changes,
+  `pending_decision_attention`, push, merge, tag, release, or deployment.
+- Exact next action: decide whether to authorize the bounded C1 read-only
+  execution-review implementation under IP-029, or require a C1 design
+  revision first. This acceptance record is committed locally and remains
+  unpushed.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 

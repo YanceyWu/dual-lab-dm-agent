@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 3 BATCH B2 REVIEW CORRECTIONS IMPLEMENTED — RE-REVIEW REQUIRED`
+Status: `PHASE 3 BATCH B2 ACCEPTED — BATCH C1 AUTHORIZATION REQUIRED`
 Last updated: 2026-07-30
 
 ## Purpose
@@ -60,8 +60,8 @@ the Phase 3 design, registered IP-029 on a dedicated local branch, and
 authorized only Batch B1. B1 and the bounded corrections from its first and
 second reviews are implemented, locally validated, and accepted. The owner
 asked to enter the next stage and subsequently authorized bounded B2
-implementation. B2 is implemented, locally validated, and stopped for explicit
-review; C1 and later batches remain separately gated.
+implementation. B2 is implemented, locally validated, corrected, reviewed, and
+accepted; C1 and later batches remain separately gated.
 Live connector use, real data, Phase 4, and publication remain separately
 gated.
 
