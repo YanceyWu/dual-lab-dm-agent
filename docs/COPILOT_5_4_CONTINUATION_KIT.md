@@ -13,6 +13,9 @@ conflict with this document.
 - Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`.
 - Do not implement Phase 5 or register an implementation pack until the owner
   explicitly approves that design and authorizes one named batch.
+- For a brand-new Copilot Chat, copy
+  `prompts/COPILOT_5_4_FIRST_SESSION_PROMPT.md` verbatim before using any other
+  task template.
 
 ## Non-negotiable operating sequence
 

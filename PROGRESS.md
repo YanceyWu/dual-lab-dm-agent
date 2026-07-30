@@ -508,6 +508,17 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-07-30 — First Copilot session prompt added
+
+- Added `prompts/COPILOT_5_4_FIRST_SESSION_PROMPT.md`, a copy-ready first-chat
+  preflight that restores the repository state, audits the current Phase 5
+  design, and explicitly blocks implementation until a later owner approval.
+  It is linked from the Copilot continuation kit. No runtime or gate change was
+  made. Validation: `make validate` passed (237 runtime tests, 21 repository
+  tool tests, Ruff, compile, package build); read-only document review found no
+  gate, privacy, or scope-boundary defect. Committed locally as `39b5216`;
+  not pushed.
+
 ### 2026-07-30 — Copilot 5.4 continuation kit created
 
 - Added `docs/COPILOT_5_4_CONTINUATION_KIT.md` plus reusable design,
