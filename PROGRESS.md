@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 3 BATCH C1 ACCEPTED — BATCH C2 AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -120,8 +120,8 @@ belong in Git history and must not be interpreted as current instructions.
   rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
   next stage; the owner then authorized only B2 implementation. The owner
   completed B2 re-review and accepted the corrected result. The owner then
-  authorized only C1 implementation; C1 is now implemented and awaits review.
-  C2/D and all later work remain unauthorized.
+  authorized only C1 implementation. The owner completed C1 review and accepted
+  the result; C2/D and all later work remain unauthorized.
 
 ## Current validation evidence
 
@@ -599,8 +599,20 @@ gate.
   required before review.
 - No C2 automatic processing or Attention producer, real data, live connector,
   `pending_decision_attention`, Phase 4, push, merge, tag, release, or
-  deployment change was made. This C1 review candidate is committed locally,
-  remains unpushed, and awaits explicit C1 review.
+  deployment change was made. This C1 review candidate is committed locally and
+  remains unpushed.
+
+### 2026-07-30 — Phase 3 Batch C1 review accepted
+
+- The owner completed review of the C1 read-only execution-review result and
+  accepted it as the local Phase 3 public read path.
+- This acceptance does not authorize C2 automatic post-sync derivation or
+  Attention reconciliation, any business-object write, real data/live connector
+  access, `pending_decision_attention`, Phase 4, push, merge, tag, release, or
+  deployment.
+- Exact next action: decide whether to authorize bounded C2 automatic derived
+  Attention integration, or require a C2 design revision first. This acceptance
+  record is local-only and remains unpushed.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
