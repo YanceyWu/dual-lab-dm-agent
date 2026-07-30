@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS project_health_assessment_runs (
     assessment_run_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL REFERENCES projects(id),
     catalog_version TEXT NOT NULL,
-    state TEXT NOT NULL CHECK(state IN ('not_available')),
+    state TEXT NOT NULL CHECK(state IN ('red','amber','green','unknown','stale','missing','conflicting','not_available','not_applicable')),
     created_at TEXT NOT NULL
 );
 
@@ -100,6 +100,32 @@ CREATE TABLE IF NOT EXISTS project_health_factor_results (
     state TEXT NOT NULL,
     evidence_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(evidence_json)),
     PRIMARY KEY(assessment_run_id, factor_id)
+);
+
+CREATE TABLE IF NOT EXISTS project_health_configuration_versions (
+    configuration_version_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL DEFAULT '',
+    scope TEXT NOT NULL CHECK(scope IN ('default','project')),
+    parameters_json TEXT NOT NULL CHECK(json_valid(parameters_json)),
+    is_current INTEGER NOT NULL CHECK(is_current IN (0,1)),
+    created_at TEXT NOT NULL,
+    UNIQUE(scope, project_id, configuration_version_id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_health_configuration_current
+    ON project_health_configuration_versions(scope, project_id) WHERE is_current=1;
+
+CREATE TABLE IF NOT EXISTS project_health_configuration_changes (
+    operation_id TEXT PRIMARY KEY,
+    scope TEXT NOT NULL CHECK(scope IN ('default','project')),
+    project_id TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL CHECK(status IN ('proposed','claimed','confirmed','expired','rejected')),
+    token_hash TEXT NOT NULL UNIQUE,
+    fingerprint TEXT NOT NULL,
+    proposed_json TEXT NOT NULL CHECK(json_valid(proposed_json)),
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    result_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(result_json))
 );
 
 CREATE INDEX IF NOT EXISTS idx_project_health_reimport_sessions_status

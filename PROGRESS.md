@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH A ACCEPTED — BATCH B AUTHORIZATION REQUIRED`
+Gate status: `PHASE 4 BATCH B IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -510,6 +510,19 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch B implemented
+
+- Added internally owned `project_health.configuration` and
+  `project_health.evaluation` modules: bounded tolerance preview/confirm,
+  existing-project validation, one-time token, stale/no-op/replay handling,
+  deterministic critical-Milestone Schedule guard, seven-dimension persisted
+  assessment, and explicit legacy-comparison limitation.
+- No public interface, Attention producer, legacy health replacement, connector,
+  real data, or Batch C/D work was added. Focused tests passed 9/9; `make
+  validate` passed 228 runtime tests plus 21 repository-tool tests; release
+  rehearsal passed. Read-only self-review found no P0-P2 issue. Next action is
+  Batch B review; the result is not yet committed or pushed.
 
 ### 2026-07-30 — Phase 4 Batch A accepted
 
