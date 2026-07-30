@@ -21,6 +21,28 @@ This repository governs a portable Delivery Management intelligence system.
 - All writes follow propose, preview, confirm, persist.
 - Every intelligence behavior needs evidence, an output contract, scenarios, and tests.
 
+## Module growth guardrails
+
+- Do not add a new business capability by extending an unrelated existing
+  module. Identify the owning bounded capability, its public contract, and its
+  focused test entry point before editing runtime code.
+- `database/bootstrap.py` is an initialization and migration-composition
+  boundary, not a home for capability rules, queries, transactions, or public
+  service behavior. The existing embedded Phase 3 DDL is transitional schema
+  debt: do not add tables to it. The next authorized Phase 3 schema change must
+  first extract that family into a dedicated schema module without changing
+  behavior.
+- A module that owns both a derivation pipeline and a controlled write/import
+  flow must not absorb a third responsibility. For Phase 3, further changes to
+  `database/execution.py` require first splitting derivation and Milestone
+  operation code at a behavior-preserving, separately reviewable boundary.
+- New use-case, connector, presentation, and persistence concerns remain in
+  their respective layers. A dependency may point inward to a capability
+  contract, never sideways into another capability's storage internals.
+- An implementation pack and `PROGRESS.md` entry must name the module owner,
+  allowed dependencies, validation evidence, and any intentional transitional
+  debt. Do not use an arbitrary line-count limit as a substitute for cohesion.
+
 ## Deliverable rules
 
 - External instructions state architecture intent, contracts, constraints,

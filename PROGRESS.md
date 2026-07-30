@@ -504,6 +504,25 @@ integrity/count/view checks, and rollback.
   authoritative scope closure when a future adapter explicitly supplies a
   complete manifest. The exact next action is explicit B2 review.
 
+### 2026-07-30 — Module growth and context guardrails adopted
+
+- Added binding repository instructions and an active architecture constraint
+  requiring a named capability owner, inward dependency path, focused test
+  entry point, and explicit transitional-debt decision before a new feature is
+  added.
+- Froze further growth of embedded Phase 3 canonical DDL in bootstrap and
+  further responsibility growth of the B2 execution module. The next authorized
+  change at either boundary must first perform the named behavior-preserving
+  extraction; this record does not alter B2 behavior or authorize C1/C2/D.
+- Refreshed the implementation index and evolution-plan gate text to the actual
+  B2-review state. `make validate` passed repository-boundary and
+  synthetic-sample checks, 211 runtime tests, 21 repository-tool tests (19
+  subtests), Ruff, compilation, diff hygiene, and package build/inspection.
+  No runtime, schema, test behavior, connector, real-data, public-interface,
+  Attention, `pending_decision_attention`, push, merge, tag, release, or
+  deployment change was made. This governance change is committed locally and
+  remains unpushed. Exact next action remains B2 review.
+
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
 - The owner completed re-review, accepted corrected B1, and asked to enter the
