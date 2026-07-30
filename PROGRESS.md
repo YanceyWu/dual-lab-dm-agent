@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH C IMPLEMENTED — OWNER REVIEW REQUIRED`
+Gate status: `PHASE 4 BATCH D VALIDATED — PROMOTION DECISION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -508,6 +508,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch D validated
+
+- Combined Project Health regression passed 52/52. `make validate` passed 237
+  runtime tests and 21 repository-tool tests; `make rehearse-release` passed
+  synthetic wheel install, clean bootstrap, isolated upgrade, integrity, and
+  rollback.
+- Added `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md`. No runtime
+  behavior changed in Batch D. Owner review and an explicit promotion decision
+  remain required; no push, merge, tag, release, or deployment occurred.
 
 ### 2026-07-30 — Phase 4 Batch C implemented and self-reviewed
 
