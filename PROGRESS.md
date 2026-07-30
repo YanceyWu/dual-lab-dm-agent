@@ -712,6 +712,19 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   integrity checks, and software rollback rehearsal instead of populated-data
   upgrade preservation. This changes no runtime, schema, connector, or gate.
 
+### 2026-07-30 — Phase 4 clean re-import path made mandatory
+
+- The owner clarified that all future Phase 4 design must ensure a supported
+  path from empty database through bootstrap, structured full import, canonical
+  derivation, health assessment, and coverage/integrity reporting.
+- IP-030 Batch A now owns the design and implementation of the versioned
+  structured import package, non-interactive local script/command, preview and
+  validation, audit/idempotency record, additive table families, and synthetic
+  clean-bootstrap/replay tests. Quality, Resource, and Governance may remain
+  explicitly `not_available` until approved structured records are imported.
+- No runtime/schema change or Batch A implementation is authorized by this
+  clarification. Exact next action remains Phase 4 design review or revision.
+
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
 - The owner completed re-review, accepted corrected B1, and asked to enter the

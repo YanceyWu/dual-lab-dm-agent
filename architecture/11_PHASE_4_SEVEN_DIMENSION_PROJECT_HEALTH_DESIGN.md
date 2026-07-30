@@ -36,6 +36,46 @@ Schema changes must still bootstrap idempotently, and release rehearsal must
 verify clean initialization, full synthetic re-import, integrity, and software
 version rollback; it need not prove populated-data upgrade preservation.
 
+## Clean re-import is a product capability
+
+All Phase 4 design and implementation is based on a supported clean re-import
+path, not a one-off development procedure. Batch A must define and implement
+the deterministic local workflow below before any health assessment is treated
+as available:
+
+```text
+empty local database
+  -> idempotent bootstrap of Phase 3 and Phase 4 tables
+  -> validated Phase 3 evidence and structured-Milestone import
+  -> validated Phase 4 structured-input import package
+  -> canonical derivation and health assessment
+  -> integrity, coverage, freshness, and reconciliation report
+```
+
+The import package uses only stable anonymous IDs and versioned structured
+records. It must have a non-interactive local script/command path, a dry-run
+or preview result, deterministic validation errors, an import-run audit, and
+an explicit final report. It must be possible to repeat the same package
+without duplicating observations or assessments. No live connector is required
+or implied by this path.
+
+The required additive table families are:
+
+| Table family | Purpose |
+| --- | --- |
+| Phase 3 evidence/canonical tables | imported source evidence, Milestones, and the facts Phase 4 consumes |
+| health factor catalog and condition versions | fixed catalog plus versioned default condition definitions |
+| project override and configuration-operation audit | existing-project scoped preview/confirm changes and replay safety |
+| structured health-input observations | validated Quality, Resource, and Governance records when an approved source is available; no narrative blobs |
+| assessment run, dimension, and factor results | versioned result, evidence references, freshness, guard outcomes, and legacy comparison |
+| re-import session/run records | package identity, ordered step status, counts, warnings, integrity result, and idempotency key |
+
+The first clean package may legitimately omit Quality, Resource, or Governance
+records. Their dimensions then report `not_available` with the import coverage
+reason. Later approved source adapters extend the package and their structured
+observation family; they do not change the re-import contract or fabricate
+history.
+
 ## Decisions proposed for approval
 
 1. Phase 4 owns a new, versioned Project Health assessment; it does not
@@ -103,11 +143,14 @@ configuration only; evaluation is a distinct, auditable operation.
 
 ## Batch plan and gates
 
-### A — Contract and read-only catalog foundation
+### A — Clean re-import contract and catalog foundation
 
-Add additive versioned catalog/configuration/assessment contracts and a
-read-only catalog/effective-configuration projection. No condition mutation,
-assessment persistence, Attention change, or legacy behavior change.
+Add additive versioned catalog/configuration/assessment contracts, the clean
+re-import session/audit and structured-input boundary, and a read-only
+catalog/effective-configuration projection. Prove clean bootstrap followed by
+synthetic package import, canonical derivation, coverage reporting, and
+idempotent replay. No condition mutation, Attention change, or legacy behavior
+change.
 
 ### B — Controlled configuration and deterministic assessment
 
@@ -141,6 +184,9 @@ authorizes no implementation batch.
   green.
 - Default/override preview, stale confirmation, one-time token, no-op,
   nonexistent project, replay, and concurrency behavior are deterministic.
+- A clean database can be bootstrapped and loaded through the supported local
+  import path; malformed/partial packages fail without a partial current view,
+  and replay produces no duplicate canonical observation or assessment.
 - Legacy grade and layered assessment are shown together without modifying
   Management Attention, `UseCaseResult 1.0`, or legacy snapshots.
 - All records, payloads, and reports use synthetic stable anonymous IDs only.

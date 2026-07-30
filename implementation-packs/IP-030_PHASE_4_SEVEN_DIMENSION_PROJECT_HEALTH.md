@@ -14,9 +14,9 @@ configuration logic.
 ## Approved-scope candidate
 
 This pack is effective only after owner approval of its design. It follows the
-four batches in the design: A catalog/read projection, B controlled
-configuration and assessment, C separate read-only review plus a later
-Attention decision, and D regression/promotion.
+four batches in the design: A supported clean re-import plus catalog/read
+projection, B controlled configuration and assessment, C separate read-only
+review plus a later Attention decision, and D regression/promotion.
 
 ## Constraints
 
@@ -30,7 +30,9 @@ Attention decision, and D regression/promotion.
   `pending_decision_attention` activation, live connector, or real data.
 - Production adoption uses clean initialization plus full authorized re-import;
   this pack does not require current operational-record migration or backfill.
-  It still requires idempotent bootstrap, synthetic re-import, integrity, and
+  Batch A must provide a versioned structured package, local non-interactive
+  import path, preview/validation, import audit, idempotent replay, coverage
+  report, and clean-bootstrap/full-import integrity tests. It still requires
   software rollback rehearsal.
 - Each batch is independently reviewable/reversible and requires focused
   synthetic tests, full validation, and review before the next batch.
