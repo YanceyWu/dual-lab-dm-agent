@@ -376,6 +376,9 @@ Release/Milestone risk, and seven-dimension Project Health remain distinct.
 
 ### Phase 5 — Resource Intelligence
 
+Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
+(`DESIGN REVIEW REQUIRED`; no implementation pack or runtime authorization).
+
 Goal: evolve allocation views into effective-capacity and resource-risk views.
 
 Reuse:

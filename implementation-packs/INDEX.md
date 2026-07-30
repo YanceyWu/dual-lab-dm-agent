@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 4 PROMOTED — LOCAL DEVELOPMENT BASELINE`
+Status: `PHASE 5 DESIGN REVIEW REQUIRED`
 Last updated: 2026-07-30
 
 This checkout intentionally contains only implementation material that remains
@@ -25,6 +25,12 @@ recoverable from Git history.
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 
+## Proposed design
+
+| Phase | Purpose | Current state | Design |
+| --- | --- | --- | --- |
+| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Design review required; no pack registered | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+
 ## Current execution order
 
 1. Preserve the promoted IP-027 contract and Management Attention compatibility
@@ -35,9 +41,9 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Preserve the promoted local IP-030 baseline. Do not begin a later Project
-   Health capability, use a live connector or real data, release, push, merge,
-   or tag without a separate authorization.
+4. Review the bounded Phase 5 Resource Intelligence design. Do not register or
+   implement a Phase 5 pack, use a live connector or real data, release, push,
+   merge, or tag without a separate authorization.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

@@ -4,8 +4,8 @@ Last updated: 2026-07-30
 Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 PROMOTED — LOCAL DEVELOPMENT BASELINE`
+Current implementation pack: `NONE — PHASE 5 DESIGN REVIEW`
+Gate status: `PHASE 5 DESIGN REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -507,6 +507,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 5 Resource Intelligence design and boundary review
+
+- Inspected the promoted capacity/allocation, plan-version, Staffing,
+  placeholder, skills, HIREF, workload, and Project Health boundaries.
+- Added `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`, defining
+  structured effective capacity, fail-closed availability, heatmap and signal
+  boundaries, clean re-import, shared Staffing formula, synthetic scenarios,
+  and A–D gates. No runtime/schema/import pack, connector, real data, Attention,
+  push, merge, tag, release, or deployment change was made.
+- Exact next action: owner design review/approval or revision; Batch B requires
+  separate authorization.
 
 ### 2026-07-30 — Phase 4 promoted locally
 
