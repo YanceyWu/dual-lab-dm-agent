@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
+Gate status: `PHASE 4 DESIGN APPROVED — BATCH A AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -739,7 +739,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   capability to define bootstrap, import, validation, idempotent replay, audit,
   derivation, coverage/integrity report, and software rollback. This policy
   change creates no runtime/schema/connector change; Phase 4 design review
-  remains the next gate.
+  remained the next gate at that time.
+
+### 2026-07-30 — Phase 4 design approved
+
+- The owner approved the bounded seven-dimension Project Health design and
+  IP-030, including clean bootstrap/full structured re-import, explicit
+  unavailable states, critical-Milestone non-averaging guards, and the
+  controlled configuration boundary.
+- This authorizes no runtime, schema, import script, connector, Attention,
+  real-data, push, merge, tag, release, or deployment work.
+- Exact next action: explicit authorization for IP-030 Batch A clean re-import
+  contract and catalog foundation, or a design revision.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 

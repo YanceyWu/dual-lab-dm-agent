@@ -1,6 +1,6 @@
 # Phase 4 — Seven-Dimension Project Health Design
 
-Status: `DESIGN PROPOSED — OWNER REVIEW REQUIRED`
+Status: `DESIGN APPROVED — BATCH A AUTHORIZATION REQUIRED`
 Date: 2026-07-30
 Baseline branch: `codex/phase-3-execution-signals`
 Baseline commit: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -193,6 +193,7 @@ authorizes no implementation batch.
 
 ## Exact next action
 
-Review and approve this design and the implementation-pack batch plan, or
-request a revision. Do not begin Phase 4 runtime, schema, connector, real-data,
-push, merge, tag, release, or deployment work.
+The owner approved this design and IP-030 on 2026-07-30. The exact next action
+is explicit authorization for Batch A, or a design revision. Do not begin any
+other Phase 4 runtime, schema, connector, real-data, push, merge, tag, release,
+or deployment work.

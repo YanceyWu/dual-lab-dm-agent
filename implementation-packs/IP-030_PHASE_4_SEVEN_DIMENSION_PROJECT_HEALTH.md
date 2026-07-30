@@ -1,6 +1,6 @@
 # IP-030 — Phase 4 Seven-Dimension Project Health
 
-Status: `DESIGN PROPOSED — OWNER REVIEW REQUIRED`
+Status: `DESIGN APPROVED — BATCH A AUTHORIZATION REQUIRED`
 Design: `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`
 Implementation branch: `codex/phase-4-project-health-design`
 Baseline: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -39,5 +39,5 @@ review plus a later Attention decision, and D regression/promotion.
 
 ## Current gate
 
-Phase 4 design review is required. Batch A and all subsequent work remain
-unauthorized.
+The owner approved the Phase 4 design on 2026-07-30. Batch A and all
+subsequent work still require separate explicit authorization.
