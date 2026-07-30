@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 DESIGN APPROVED — BATCH A AUTHORIZATION REQUIRED`
+Gate status: `PHASE 4 BATCH A IMPLEMENTED — INDEPENDENT REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -445,13 +445,13 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review the frozen IP-029 B2 canonical execution/commitment design and decide
-   whether to authorize bounded B2 implementation or require design changes.
-2. Do not begin B2 canonical storage, derivation, or structured Milestone import
-   without that separate explicit implementation authorization.
-3. Do not begin Phase 3 milestone runtime, Phase 4 health configuration,
-   visual Dashboard UI, connectors, real-data work, release, tag, merge, or
-   push without separate authorization.
+1. Independently review the IP-030 Batch A implementation, correct any accepted
+   findings, and obtain owner acceptance before considering a separate Batch B
+   authorization.
+2. Do not implement deterministic health assessment persistence, DM condition
+   preview/confirm, project overrides, a Phase 4 use-case projection, any new
+   Attention producer, or legacy `project-health-review` replacement.
+3. Do not use connectors or real data, or push, merge, tag, release, or deploy.
 
 ## Decisions in force
 
@@ -510,6 +510,30 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch A clean re-import and catalog foundation implemented
+
+- Added additive Phase 4 catalog/default-condition, structured-input reserve,
+  and re-import session/run audit tables through a dedicated schema module.
+  The fixed seven-dimension catalog is read-only; the effective projection
+  explicitly reports configuration mutation and overrides as `not_available`.
+- Added the internal versioned structured re-import preview/confirm boundary
+  and non-interactive local script. Empty Quality, Resource, and Governance
+  inputs are valid and report `not_available`; nonempty records fail closed
+  until a separately approved structured producer exists. Replays are
+  idempotent; execution failure records a failed session without coverage view.
+- Added a portable stable-anonymous sample package and five focused synthetic
+  tests. Focused tests passed 5/5; `make validate` passed 224 runtime tests,
+  21 repository-tool tests (19 subtests), Ruff, compilation, boundary/synthetic
+  checks, diff hygiene, and package build. `make rehearse-release` passed wheel
+  installation, isolated bootstrap/upgrade, integrity, and rollback.
+- Read-only implementation review found no P0-P2 issue; the required
+  independent review remains the next gate. No Phase 4 assessment persistence,
+  DM configuration mutation, override, public use case, Attention producer,
+  legacy health replacement, connector/live-data action, real data,
+  `pending_decision_attention` activation, push, merge, tag, release, or
+  deployment was performed. The Batch A change is committed locally and remains
+  unpushed. The exact next action is independent Batch A review.
 
 ### 2026-07-30 — Phase 3 Batch B2 canonical execution and Milestone foundation implemented
 

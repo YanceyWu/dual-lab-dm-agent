@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pm_agent.config import settings
+from pm_agent.database.project_health_schema import PHASE4_HEALTH_DDL
 from pm_agent.rules.identity import (
     build_default_resource_portal_id,
     build_placeholder_id,
@@ -3050,6 +3051,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(ATTENTION_DDL)
     conn.executescript(PHASE3_EVIDENCE_DDL)
     conn.executescript(PHASE3_CANONICAL_DDL)
+    conn.executescript(PHASE4_HEALTH_DDL)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()
     }
@@ -3090,6 +3092,9 @@ def main(quiet: bool = False) -> None:
         _seed_data_sources(conn)
         _migrate_project_health_rule_v2(conn)
         _seed_attention_rules(conn)
+        from pm_agent.project_health.service import seed_catalog
+
+        seed_catalog(conn)
         legacy_cleanup_warnings = _drop_legacy_tables_v19(conn)
     except Exception:
         conn.rollback()

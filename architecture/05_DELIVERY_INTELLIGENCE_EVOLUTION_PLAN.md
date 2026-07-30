@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 4 DESIGN APPROVED — BATCH A AUTHORIZATION REQUIRED`
+Status: `PHASE 4 BATCH A IMPLEMENTED — INDEPENDENT REVIEW REQUIRED`
 Last updated: 2026-07-30
 
 ## Purpose
@@ -527,8 +527,7 @@ Non-goals:
 
 ## Immediate next action
 
-Phase 3 is promoted locally. The owner approved the Phase 4 design and IP-030
-on `codex/phase-4-project-health-design`. Decide whether to authorize Batch A
-or require a design revision. Do not use a live connector or real data, begin
-Batch B+ or other Phase 4 runtime work, or publish the branch without the
-applicable separate authorization.
+Phase 3 is promoted locally. IP-030 Batch A is implemented on
+`codex/phase-4-project-health-design` and awaits owner review. Do not use a
+live connector or real data, begin Batch B+ or other Phase 4 runtime work, or
+publish the branch without the applicable separate authorization.

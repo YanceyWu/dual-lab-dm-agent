@@ -31,6 +31,10 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
 The generated database is classified as synthetic only while every input passes
 the checker and the characterization suite passes.
 
+`json/phase4_health_reimport.sample.json` is the versioned Phase 4 Batch A
+clean re-import package. It intentionally contains no Quality, Resource, or
+Governance observations, so those dimensions remain `not_available`.
+
 ## Transfer status
 
 `APPROVED_FOR_PUBLIC_TRANSFER`.
