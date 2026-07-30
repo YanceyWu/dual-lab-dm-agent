@@ -11,6 +11,9 @@ conflict with this document.
   and a clean worktree yourself.
 - Current next gate: Phase 5 Resource Intelligence design review.
 - Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`.
+- Whole-program context: `docs/COPILOT_5_4_PROGRAM_CONTEXT.md`. It supplies
+  the Phase 0–9 map and durable architecture decisions; `PROGRESS.md` still
+  determines the current gate.
 - Do not implement Phase 5 or register an implementation pack until the owner
   explicitly approves that design and authorizes one named batch.
 - For a brand-new Copilot Chat, copy

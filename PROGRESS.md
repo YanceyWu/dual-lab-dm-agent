@@ -508,6 +508,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-07-30 — Copilot full-program context added
+
+- Added `docs/COPILOT_5_4_PROGRAM_CONTEXT.md` and expanded the first-session
+  prompt to require the whole Phase 0–9 roadmap, architecture/design history,
+  current gate, and explicit authorization boundaries. This makes a new Copilot
+  Chat aware of future dependencies without treating planned phases as approved
+  work. No runtime, schema, data, or gate change was made. Validation:
+  `make validate` passed (237 runtime tests, 21 repository tool tests, Ruff,
+  compile, and package build); read-only document review found the current-gate
+  precedence and future-phase non-authorization explicit. Committed locally;
+  not pushed.
+
 ### 2026-07-30 — First Copilot session prompt added
 
 - Added `prompts/COPILOT_5_4_FIRST_SESSION_PROMPT.md`, a copy-ready first-chat
