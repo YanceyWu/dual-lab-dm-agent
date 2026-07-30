@@ -1,6 +1,6 @@
 # Phase 4 — Seven-Dimension Project Health Design
 
-Status: `BATCH A REPAIR SELF-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH A ACCEPTED — BATCH B AUTHORIZATION REQUIRED`
 Date: 2026-07-30
 Baseline branch: `codex/phase-3-execution-signals`
 Baseline commit: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -193,7 +193,7 @@ authorizes no implementation batch.
 
 ## Exact next action
 
-The owner approved this design and IP-030 on 2026-07-30. Batch A is implemented
-and awaits independent owner review. Do not begin Batch B+ configuration,
-assessment, connector, real-data, push, merge, tag, release, or deployment
-work without a separate authorization.
+The owner approved this design and IP-030 on 2026-07-30 and accepted the
+corrected Batch A result. Do not begin Batch B+ configuration, assessment,
+connector, real-data, push, merge, tag, release, or deployment work without a
+separate authorization.

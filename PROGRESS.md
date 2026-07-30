@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH A REPAIR SELF-REVIEW PASSED — OWNER ACCEPTANCE REQUIRED`
+Gate status: `PHASE 4 BATCH A ACCEPTED — BATCH B AUTHORIZATION REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -510,6 +510,20 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch A accepted
+
+- Owner accepted the corrected and self-reviewed IP-030 Batch A foundation:
+  fixed catalog/read projection, supported structured re-import contract,
+  board-bound canonical derivation audit, fail-closed integrity reporting, and
+  retryable partial-failure protection.
+- Acceptance authorizes no Batch B code. Deterministic assessment persistence,
+  DM configuration preview/confirm, overrides, public Phase 4 projection,
+  Attention integration, legacy health replacement, connector/live-data work,
+  push, merge, tag, release, and deployment remain blocked.
+- Batch A corrections are committed locally at the current branch HEAD and
+  remain unpushed. Exact next action: separately authorize Batch B or request a
+  design revision.
 
 ### 2026-07-30 — Phase 4 Batch A review findings corrected and self-reviewed
 
