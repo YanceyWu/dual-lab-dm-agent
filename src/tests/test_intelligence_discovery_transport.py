@@ -37,12 +37,19 @@ CENTER_CAPABILITIES = {
     "recommendations": True,
 }
 
+EXECUTION_REVIEW_CAPABILITIES = {
+    "facts": True,
+    "signals": True,
+    "recommendations": False,
+}
+
 PRODUCTION_USE_CASE_IDS = {
     "action-followup",
     "connector-status-review",
     "connector-sync-results",
     "contract-continuity-review",
     "delivery-attention-center",
+    "delivery-execution-review",
     "management-attention",
     "project-health-review",
     "project-snapshot-list",
@@ -150,6 +157,8 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
             if item["use_case_id"] == "management-attention"
             else CENTER_CAPABILITIES
             if item["use_case_id"] == "delivery-attention-center"
+            else EXECUTION_REVIEW_CAPABILITIES
+            if item["use_case_id"] == "delivery-execution-review"
             else EMPTY_CAPABILITIES
         )
         assert item["intelligence_capabilities"] == expected
@@ -163,6 +172,8 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
             if item["use_case_id"] == "management-attention"
             else CENTER_CAPABILITIES
             if item["use_case_id"] == "delivery-attention-center"
+            else EXECUTION_REVIEW_CAPABILITIES
+            if item["use_case_id"] == "delivery-execution-review"
             else EMPTY_CAPABILITIES
         )
         assert item["intelligence_capabilities"] == expected

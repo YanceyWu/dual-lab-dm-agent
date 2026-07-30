@@ -8,6 +8,7 @@ from pm_agent.use_cases.connector_sync_results import execute_connector_sync_res
 from pm_agent.use_cases.delivery_attention_center import (
     execute_delivery_attention_center,
 )
+from pm_agent.use_cases.delivery_execution_review import execute_delivery_execution_review
 from pm_agent.use_cases.execution import (
     IntelligenceCapabilities,
     UseCaseDescriptor,
@@ -37,6 +38,22 @@ SERVICES = {
 }
 
 use_case_executor = UseCaseExecutor()
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="delivery-execution-review",
+        purpose="Return bounded read-only Sprint Execution and Release/Milestone facts from local derivations.",
+        parameter_schema={
+            "project_id": {"type": "string", "required": True, "maximum_length": 128, "description": "Existing stable anonymous project ID."},
+            "layer": {"type": "string", "required": False, "enum": ["sprint", "release_milestone", "all"], "description": "Execution layer; defaults to all."},
+            "subject_kind": {"type": "string", "required": False, "enum": ["sprint", "release", "milestone", "dependency"], "description": "Optional canonical subject kind."},
+            "subject_id": {"type": "string", "required": False, "maximum_length": 128, "description": "Optional canonical subject ID; requires subject_kind."},
+            "window_days": {"type": "integer", "required": False, "minimum": 1, "maximum": 365, "description": "Observation window in days; defaults to 30."},
+            "limit": {"type": "integer", "required": False, "minimum": 1, "maximum": 200, "description": "Maximum facts, 1 to 200."},
+        },
+        intelligence_capabilities=IntelligenceCapabilities(facts=True, signals=True),
+    ),
+    execute_delivery_execution_review,
+)
 use_case_executor.register(
     UseCaseDescriptor(
         use_case_id="team-workload-overview",

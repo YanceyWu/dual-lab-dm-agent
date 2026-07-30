@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B2 ACCEPTED — BATCH C1 AUTHORIZATION REQUIRED`
+Gate status: `PHASE 3 BATCH C1 IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -119,8 +119,9 @@ belong in Git history and must not be interpreted as current instructions.
   whose bounded incremental source-evidence implementation and two correction
   rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
   next stage; the owner then authorized only B2 implementation. The owner
-  completed B2 re-review and accepted the corrected result. C1 and all later
-  batches remain unauthorized.
+  completed B2 re-review and accepted the corrected result. The owner then
+  authorized only C1 implementation; C1 is now implemented and awaits review.
+  C2/D and all later work remain unauthorized.
 
 ## Current validation evidence
 
@@ -359,6 +360,14 @@ eight release validation checks. `make rehearse-release` again passed wheel
 installation, isolated bootstrap/upgrade, integrity/count/view checks, and
 rollback.
 
+Phase 3 Batch C1 passed 9 focused execution-review, discovery, CLI, and
+Dashboard Tool Transport tests. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 217 runtime tests, 21
+repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks. C1 changes
+no schema or installed behavior, so release rehearsal remains a later Batch D
+gate.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -571,6 +580,27 @@ rollback.
   execution-review implementation under IP-029, or require a C1 design
   revision first. This acceptance record is committed locally and remains
   unpushed.
+
+### 2026-07-30 — Phase 3 Batch C1 read-only execution review implemented
+
+- Added `delivery-execution-review` through the shared executor using unchanged
+  `UseCaseResult 1.0`. It validates bounded project/layer/subject/window/limit
+  filters and reads only the newest stored derivation facts per board.
+- Added separate Sprint Execution and Release/Milestone projections, typed
+  facts, evidence, freshness, source coverage, limitations, and only
+  deterministic evidence-limited or Milestone schedule-exception signals.
+  Recommendations remain empty.
+- Added generic CLI, Dashboard Tool Transport, and Copilot agent instruction
+  compatibility without a dedicated page, sync, derivation trigger, or write.
+- Independent post-implementation review found no P0-P2 issue. Focused tests
+  passed 9/9; `make validate` passed 217 runtime tests plus 21 repository-tool
+  tests (19 subtests), Ruff, compilation, boundary/synthetic checks, diff
+  hygiene, and package build. No schema changed, so no C1 release rehearsal is
+  required before review.
+- No C2 automatic processing or Attention producer, real data, live connector,
+  `pending_decision_attention`, Phase 4, push, merge, tag, release, or
+  deployment change was made. This C1 review candidate is committed locally,
+  remains unpushed, and awaits explicit C1 review.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
