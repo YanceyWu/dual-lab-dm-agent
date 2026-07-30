@@ -1,11 +1,11 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-07-30
-Current branch: `codex/phase-3-execution-signals`
+Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 PROMOTED LOCALLY — PHASE 4 DESIGN/GATE REQUIRED`
+Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
+Gate status: `PHASE 4 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -123,7 +123,9 @@ belong in Git history and must not be interpreted as current instructions.
   authorized only C1 implementation. The owner completed C1 review and accepted
   the result; C2 and D reviews have passed, and the owner promoted Phase 3 as
   the local development baseline. Phase 4 and all external actions remain
-  separately unauthorized.
+  separately unauthorized. The owner then requested the Phase 4 design only;
+  IP-030 is drafted on its dedicated local branch. No Phase 4 implementation is
+  authorized.
 
 ## Current validation evidence
 
@@ -686,6 +688,20 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   real-data UAT, connector authorization, or Phase 4 authorization.
 - Exact next action: separately inspect and approve the bounded Phase 4 design
   and its first implementation gate before any Phase 4 runtime work.
+
+### 2026-07-30 — Phase 4 design proposed
+
+- Created dedicated local branch `codex/phase-4-project-health-design` from
+  promoted Phase 3 commit `bdfee9c` and drafted the bounded Phase 4 design and
+  IP-030 implementation pack.
+- The design fixes seven dimensions, canonical-fact allowlists, explicit
+  unavailable/limited states, critical-Milestone non-averaging guards, bounded
+  default/existing-project configuration, legacy strangler comparison, and four
+  separately reviewed batches.
+- No runtime code, schema, connector, real data, Attention producer,
+  `pending_decision_attention`, push, merge, tag, release, or deployment was
+  changed. Exact next action: owner design review/approval or revision; Batch A
+  remains unauthorized.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 

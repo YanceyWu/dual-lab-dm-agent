@@ -1,6 +1,6 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `DESIGN APPROVED — PHASE 3 FOUNDATION DESIGN APPROVED`
+Status: `LAYERED HEALTH INTENT APPROVED — PHASE 4 DESIGN PROPOSED`
 Last updated: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review
@@ -382,5 +382,7 @@ re-review found no remaining P0-P2 issue. The owner accepted the
 correction and Batch D validation passed. The owner then promoted Phase 2
 locally on 2026-07-29. The subsequent Phase 3 review is recorded in
 `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
-was approved by the owner on 2026-07-29. IP-029 is registered; Phase 3 Batch
-B1 and all later implementation remain unauthorized.
+was approved by the owner on 2026-07-29. Phase 3 is subsequently promoted
+locally. The implementation-level Phase 4 design is now proposed in
+`architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`; Phase 4
+implementation remains unauthorized pending owner review.

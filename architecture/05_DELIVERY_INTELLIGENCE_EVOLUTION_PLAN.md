@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 3 PROMOTED LOCALLY — PHASE 4 DESIGN/GATE REQUIRED`
+Status: `PHASE 4 DESIGN PROPOSED — OWNER REVIEW REQUIRED`
 Last updated: 2026-07-30
 
 ## Purpose
@@ -523,7 +523,7 @@ Non-goals:
 
 ## Immediate next action
 
-Phase 3 is promoted locally on `codex/phase-3-execution-signals`. Inspect and
-approve the bounded Phase 4 design and first gate before implementation. Do not
-use a live connector or real data, begin Phase 4 runtime work, or publish the
-branch without the applicable separate authorization.
+Phase 3 is promoted locally. The Phase 4 design and IP-030 are proposed on
+`codex/phase-4-project-health-design`; review or revise them before any Batch A
+implementation. Do not use a live connector or real data, begin Phase 4 runtime
+work, or publish the branch without the applicable separate authorization.

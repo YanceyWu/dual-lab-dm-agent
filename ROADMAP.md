@@ -139,6 +139,9 @@ recorded in
 The owner approved all four design decisions, completed IP-029 on the
 dedicated local Phase 3 branch, and promoted Phase 3 locally on 2026-07-30.
 Phase 4 runtime, connector and real-data work remain separately unauthorized.
+The bounded Phase 4 design is proposed in
+`architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md` and awaits
+owner review; no Phase 4 implementation batch is authorized.
 Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.
