@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH B IMPLEMENTED — REVIEW REQUIRED`
+Gate status: `PHASE 4 BATCH B IMPLEMENTED — OWNER REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -445,12 +445,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Independently review the IP-030 Batch A implementation, correct any accepted
-   findings, and obtain owner acceptance before considering a separate Batch B
-   authorization.
-2. Do not implement deterministic health assessment persistence, DM condition
-   preview/confirm, project overrides, a Phase 4 use-case projection, any new
-   Attention producer, or legacy `project-health-review` replacement.
+1. Owner-review the completed IP-030 Batch B implementation and either accept
+   it or request bounded corrections. Batch C requires a separate authorization.
+2. Do not add a Phase 4 use-case projection, any new Attention producer, or a
+   legacy `project-health-review` replacement.
 3. Do not use connectors or real data, or push, merge, tag, release, or deploy.
 
 ## Decisions in force
@@ -511,18 +509,27 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
-### 2026-07-30 — Phase 4 Batch B implemented
+### 2026-07-30 — Phase 4 Batch B implementation completed and self-reviewed
 
-- Added internally owned `project_health.configuration` and
-  `project_health.evaluation` modules: bounded tolerance preview/confirm,
-  existing-project validation, one-time token, stale/no-op/replay handling,
-  deterministic critical-Milestone Schedule guard, seven-dimension persisted
-  assessment, and explicit legacy-comparison limitation.
-- No public interface, Attention producer, legacy health replacement, connector,
-  real data, or Batch C/D work was added. Focused tests passed 9/9; `make
-  validate` passed 228 runtime tests plus 21 repository-tool tests; release
-  rehearsal passed. Read-only self-review found no P0-P2 issue. Next action is
-  Batch B review; the result is not yet committed or pushed.
+- Completed controlled health configuration through the capability-owned
+  `project_health.configuration` module: fixed-key bounded default and
+  existing-project override preview/confirm, effective-version projection,
+  hashed expiring one-time token, atomic claim, stale/no-op/expiry rejection,
+  idempotent replay, and append-only change/version audit.
+- Completed deterministic assessment in `project_health.evaluation`: fixed
+  per-factor canonical-fact allowlists, explicit factor metadata/evidence,
+  freshness/completeness fail-closed handling, critical-Milestone Schedule
+  guard, non-averaging dimension/overall aggregation, persisted configuration
+  version/guard outcomes/legacy comparison, and no model-generated facts.
+- Renamed capability files and tests to remove phase/batch runtime naming.
+  No public use case, Attention producer, legacy health replacement, connector,
+  real data, or Batch C/D work was added.
+- Focused synthetic Project Health tests passed 15/15; `make validate` passed
+  234 runtime tests and 21 repository-tool tests; `make rehearse-release`
+  passed wheel installation, isolated bootstrap/upgrade, integrity, and
+  rollback. Read-only self-review found no P0-P2 issue. The result is committed
+  locally, remains unpushed, and awaits owner review. Exact next action: owner
+  review or bounded correction only.
 
 ### 2026-07-30 — Phase 4 Batch A accepted
 

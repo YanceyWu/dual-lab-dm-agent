@@ -1,13 +1,13 @@
-"""Dedicated Phase 4 Project Health schema composition.
+"""Dedicated Project Health schema composition.
 
-The schema is additive.  Batch A owns catalogue and re-import audit only; it
-does not create health assessments, configuration mutations, or Attention.
+The schema is additive. The catalog and re-import audit coexist with the
+controlled configuration and assessment capability; no Attention is created.
 """
 
 from __future__ import annotations
 
 import sqlite3
-PHASE4_HEALTH_DDL = """
+PROJECT_HEALTH_DDL = """
 CREATE TABLE IF NOT EXISTS project_health_factor_catalog (
     factor_id TEXT PRIMARY KEY,
     catalog_version TEXT NOT NULL,
@@ -102,6 +102,13 @@ CREATE TABLE IF NOT EXISTS project_health_factor_results (
     PRIMARY KEY(assessment_run_id, factor_id)
 );
 
+CREATE TABLE IF NOT EXISTS project_health_assessment_details (
+    assessment_run_id TEXT PRIMARY KEY REFERENCES project_health_assessment_runs(assessment_run_id),
+    configuration_version_id TEXT NOT NULL,
+    guard_outcomes_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(guard_outcomes_json)),
+    legacy_comparison_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(legacy_comparison_json))
+);
+
 CREATE TABLE IF NOT EXISTS project_health_configuration_versions (
     configuration_version_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL DEFAULT '',
@@ -137,8 +144,8 @@ CREATE INDEX IF NOT EXISTS idx_project_health_input_observations_project
 """
 
 
-def ensure_phase4_batch_a_columns(connection: sqlite3.Connection) -> None:
-    """Keep pre-review Batch A databases readable without relying on them in production."""
+def ensure_project_health_reimport_columns(connection: sqlite3.Connection) -> None:
+    """Keep pre-review local databases readable without relying on them in production."""
     columns = {row[1] for row in connection.execute("PRAGMA table_info(project_health_reimport_sessions)")}
     migrations = {
         "package_json": "ALTER TABLE project_health_reimport_sessions ADD COLUMN package_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(package_json))",

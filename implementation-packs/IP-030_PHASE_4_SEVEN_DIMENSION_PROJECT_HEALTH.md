@@ -1,6 +1,6 @@
 # IP-030 — Phase 4 Seven-Dimension Project Health
 
-Status: `BATCH A ACCEPTED — BATCH B AUTHORIZATION REQUIRED`
+Status: `BATCH B IMPLEMENTED — OWNER REVIEW REQUIRED`
 Design: `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`
 Implementation branch: `codex/phase-4-project-health-design`
 Baseline: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -39,5 +39,6 @@ review plus a later Attention decision, and D regression/promotion.
 
 ## Current gate
 
-The owner accepted the corrected Batch A result on 2026-07-30. Batch B requires
-separate explicit authorization.
+The owner accepted the corrected Batch A result and separately authorized
+Batch B. The bounded implementation is complete and awaits owner review;
+Batch C and later work remain separately gated.

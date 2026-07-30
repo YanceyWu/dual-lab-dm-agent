@@ -1,4 +1,4 @@
-"""Batch A catalog projection and clean structured re-import contract."""
+"""Project Health catalog projection and clean structured re-import contract."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def _connection(db_path: str | Path | None = None) -> Iterator[sqlite3.Connectio
 
 
 def seed_catalog(connection: sqlite3.Connection) -> None:
-    """Seed the immutable Batch A catalogue and default read projection."""
+    """Seed the immutable Project Health catalogue and default read projection."""
     for factor_id, dimension, boundary, policy in _FACTORS:
         connection.execute(
             """INSERT OR IGNORE INTO project_health_factor_catalog
@@ -68,7 +68,7 @@ def seed_catalog(connection: sqlite3.Connection) -> None:
 
 
 def catalog_projection(*, project_id: str | None = None, db_path: str | Path | None = None) -> dict[str, Any]:
-    """Read the fixed catalogue and effective defaults; overrides are intentionally absent."""
+    """Read the fixed catalogue and the current bounded configuration projection."""
     with _connection(db_path) as connection:
         if project_id is not None and not connection.execute("SELECT 1 FROM projects WHERE id = ?", [project_id]).fetchone():
             raise ValueError("PROJECT_NOT_FOUND")
@@ -79,12 +79,26 @@ def catalog_projection(*, project_id: str | None = None, db_path: str | Path | N
                  JOIN project_health_default_conditions d ON d.factor_id=c.factor_id AND d.active=1
                 WHERE c.active=1 ORDER BY c.dimension,c.factor_id"""
         ).fetchall()
+        # Local import avoids a configuration/service import cycle while keeping this
+        # catalogue read model independent from the controlled-write owner.
+        from pm_agent.project_health.configuration import _params, effective_current
+
+        configuration = effective_current(connection, project_id)
+        effective_configuration = _params(json.loads(configuration["parameters_json"]))
     factors = []
     for row in rows:
         item = dict(row)
         item["condition"] = json.loads(item.pop("condition_json"))
         factors.append(item)
-    return {"catalog_version": CATALOG_VERSION, "project_id": project_id, "factors": factors, "override_state": "not_available", "configuration_mutation": "not_available"}
+    return {
+        "catalog_version": CATALOG_VERSION,
+        "project_id": project_id,
+        "factors": factors,
+        "effective_configuration": effective_configuration,
+        "configuration_version_id": configuration["configuration_version_id"],
+        "override_state": "available" if project_id and configuration["configuration_version_id"] != "catalog-default-v1" and configuration["scope"] == "project" else "not_available",
+        "configuration_mutation": "internal_controlled_preview_confirm",
+    }
 
 
 def _validate_package(payload: object) -> dict[str, Any]:
@@ -102,7 +116,7 @@ def _validate_package(payload: object) -> dict[str, Any]:
         isinstance(item, str) and item.strip() and len(item.strip()) <= 200 for item in board_ids
     ):
         raise ValueError("HEALTH_REIMPORT_BOARD_IDS_INVALID")
-    # Batch A reserves the structured-input family but deliberately has no approved producer.
+    # The structured-input family is reserved until an approved producer exists.
     if payload["inputs"]:
         raise ValueError("HEALTH_INPUT_PRODUCER_NOT_AVAILABLE")
     return {"package_id": package_id.strip(), "schema_version": PACKAGE_VERSION, "board_ids": sorted(set(item.strip() for item in board_ids)), "inputs": []}
@@ -147,7 +161,7 @@ def _coverage(connection: sqlite3.Connection, derivations: list[dict[str, Any]])
             "schedule": "unknown", "delivery": "not_available", "scope": "unknown",
             "quality": "not_available", "resource": "not_available", "dependency": "unknown", "governance": "not_available",
         }
-    return {"project_count": len(projects), "dimensions": dimensions, "assessment_state": "not_available", "reason_codes": ["PHASE4_ASSESSMENT_BATCH_B_NOT_IMPLEMENTED", "QUALITY_INPUT_NOT_AVAILABLE", "RESOURCE_INPUT_NOT_AVAILABLE", "GOVERNANCE_INPUT_NOT_AVAILABLE"], "canonical_derivations": derivations}
+    return {"project_count": len(projects), "dimensions": dimensions, "assessment_state": "not_available", "reason_codes": ["PROJECT_HEALTH_ASSESSMENT_NOT_RUN", "QUALITY_INPUT_NOT_AVAILABLE", "RESOURCE_INPUT_NOT_AVAILABLE", "GOVERNANCE_INPUT_NOT_AVAILABLE"], "canonical_derivations": derivations}
 
 
 def _integrity(connection: sqlite3.Connection) -> dict[str, Any]:

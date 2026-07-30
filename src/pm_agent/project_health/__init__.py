@@ -1,1 +1,1 @@
-"""Phase 4 Project Health bounded internal services."""
+"""Bounded internal Project Health services."""

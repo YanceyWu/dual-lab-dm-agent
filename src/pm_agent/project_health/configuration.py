@@ -1,4 +1,4 @@
-"""Controlled Phase 4 health-condition configuration; no public transport."""
+"""Controlled health-condition configuration; no public transport."""
 
 from __future__ import annotations
 import hashlib
@@ -11,13 +11,23 @@ from typing import Any
 from pm_agent.project_health.service import _connection, _json, _now
 
 
+DEFAULT_PARAMETERS = {
+    "critical_milestone_tolerance_days": 0,
+    "scope_completion_green_minimum": 100,
+}
+
+
 def _params(value: object) -> dict[str, int]:
-    if not isinstance(value, dict) or set(value) != {"critical_milestone_tolerance_days"}:
+    if not isinstance(value, dict) or set(value) - set(DEFAULT_PARAMETERS):
         raise ValueError("HEALTH_CONFIGURATION_INVALID")
-    days = value["critical_milestone_tolerance_days"]
+    normalized = {**DEFAULT_PARAMETERS, **value}
+    days = normalized["critical_milestone_tolerance_days"]
     if not isinstance(days, int) or not 0 <= days <= 90:
         raise ValueError("HEALTH_CONFIGURATION_INVALID")
-    return {"critical_milestone_tolerance_days": days}
+    completion = normalized["scope_completion_green_minimum"]
+    if not isinstance(completion, int) or not 0 <= completion <= 100:
+        raise ValueError("HEALTH_CONFIGURATION_INVALID")
+    return normalized
 
 
 def _current(conn, scope: str, project: str):
@@ -29,10 +39,23 @@ def _current(conn, scope: str, project: str):
         dict(row)
         if row
         else {
-            "parameters_json": _json({"critical_milestone_tolerance_days": 0}),
+            "parameters_json": _json(DEFAULT_PARAMETERS),
             "configuration_version_id": "catalog-default-v1",
         }
     )
+
+
+def effective_current(conn, project_id: str | None = None):
+    """Resolve the bounded default plus an existing-project replacement override."""
+    if project_id:
+        project = _current(conn, "project", project_id)
+        if project["configuration_version_id"] != "catalog-default-v1":
+            return project
+    return _current(conn, "default", "")
+
+
+def _fingerprint(scope: str, project: str, effective_parameters: dict[str, int]) -> str:
+    return hashlib.sha256(_json([scope, project, effective_parameters]).encode()).hexdigest()
 
 
 def preview(
@@ -51,11 +74,13 @@ def preview(
         ):
             raise ValueError("PROJECT_NOT_FOUND")
         prior = _current(conn, scope, project)
-        if json.loads(prior["parameters_json"]) == proposed:
+        prior_parameters = _params(json.loads(prior["parameters_json"]))
+        effective_prior = _params(json.loads(effective_current(conn, project if scope == "project" else None)["parameters_json"]))
+        if (scope == "default" and prior_parameters == proposed) or (
+            scope == "project" and effective_prior == proposed
+        ):
             return {"status": "no_op", "changes": []}
-        fingerprint = hashlib.sha256(
-            _json([scope, project, prior["parameters_json"]]).encode()
-        ).hexdigest()
+        fingerprint = _fingerprint(scope, project, effective_prior)
         token = secrets.token_urlsafe(32)
         oid = f"health-config-{uuid.uuid4().hex}"
         expires = datetime.now(timezone.utc) + timedelta(minutes=30)
@@ -78,9 +103,11 @@ def preview(
         "status": "proposed",
         "operation_id": oid,
         "confirmation_token": token,
-        "prior": json.loads(prior["parameters_json"]),
+        "prior": prior_parameters,
         "proposed": proposed,
         "effective": proposed,
+        "prior_configuration_version_id": prior["configuration_version_id"],
+        "effective_configuration_version_id": "pending_confirmation",
         "expires_at": expires.isoformat(timespec="seconds"),
     }
 
@@ -110,10 +137,15 @@ def confirm(
             )
             conn.commit()
             return {"status": "expired"}
-        prior = _current(conn, op["scope"], op["project_id"])
-        fp = hashlib.sha256(
-            _json([op["scope"], op["project_id"], prior["parameters_json"]]).encode()
-        ).hexdigest()
+        claimed = conn.execute(
+            "UPDATE project_health_configuration_changes SET status='claimed' WHERE operation_id=? AND status='proposed'",
+            [operation_id],
+        ).rowcount
+        if claimed != 1:
+            conn.rollback()
+            raise ValueError("HEALTH_CONFIGURATION_CONFIRMATION_INVALID")
+        effective_prior = _params(json.loads(effective_current(conn, op["project_id"] if op["scope"] == "project" else None)["parameters_json"]))
+        fp = _fingerprint(op["scope"], op["project_id"], effective_prior)
         if fp != op["fingerprint"]:
             conn.execute(
                 "UPDATE project_health_configuration_changes SET status='rejected' WHERE operation_id=?",
@@ -130,7 +162,13 @@ def confirm(
             "INSERT INTO project_health_configuration_versions VALUES (?,?,?,?,?,?)",
             [vid, op["project_id"], op["scope"], op["proposed_json"], 1, _now()],
         )
-        result = {"status": "confirmed", "configuration_version_id": vid}
+        result = {
+            "status": "confirmed",
+            "configuration_version_id": vid,
+            "scope": op["scope"],
+            "project_id": op["project_id"] or None,
+            "effective": _params(json.loads(op["proposed_json"])),
+        }
         conn.execute(
             "UPDATE project_health_configuration_changes SET status='confirmed',result_json=? WHERE operation_id=?",
             [_json(result), operation_id],

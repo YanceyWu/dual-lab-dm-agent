@@ -10,7 +10,7 @@ from pm_agent.project_health.service import catalog_projection, confirm_reimport
 
 
 def _package() -> dict[str, object]:
-    return {"package_id": "phase4-synthetic-package-001", "schema_version": "project-health-reimport-v1", "board_ids": [], "inputs": []}
+    return {"package_id": "project-health-synthetic-package-001", "schema_version": "project-health-reimport-v1", "board_ids": [], "inputs": []}
 
 
 def _seed_board(db_path: Path) -> None:
@@ -28,7 +28,11 @@ def test_clean_bootstrap_seeds_fixed_catalog_and_no_mutable_configuration(isolat
         "delivery", "delivery", "dependency", "governance", "quality", "resource", "schedule", "schedule", "scope",
     ]
     assert projection["override_state"] == "not_available"
-    assert projection["configuration_mutation"] == "not_available"
+    assert projection["configuration_mutation"] == "internal_controlled_preview_confirm"
+    assert projection["effective_configuration"] == {
+        "critical_milestone_tolerance_days": 0,
+        "scope_completion_green_minimum": 100,
+    }
     with sqlite3.connect(isolated_db) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert {"project_health_factor_catalog", "project_health_default_conditions", "project_health_input_observations", "project_health_reimport_sessions", "project_health_reimport_runs", "project_health_reimport_attempts", "project_health_configuration_operations", "project_health_assessment_runs", "project_health_dimension_results", "project_health_factor_results"} <= tables
