@@ -1,6 +1,6 @@
 # Phase 4 — Seven-Dimension Project Health Design
 
-Status: `BATCH C IMPLEMENTED — OWNER REVIEW REQUIRED`
+Status: `BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
 Date: 2026-07-30
 Baseline branch: `codex/phase-3-execution-signals`
 Baseline commit: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -193,7 +193,7 @@ authorizes no implementation batch.
 
 ## Exact next action
 
-The owner accepted Batch B and authorized the bounded Batch C read-only
-projection. Batch C is implemented and awaiting owner review. Do not begin
-Batch D, Attention integration, connector, real-data, push, merge, tag,
-release, or deployment work without a separate authorization.
+The owner accepted Batch B, authorized Batch C, and accepted the Batch D review.
+The completed local baseline now requires an explicit promotion decision. Do
+not begin Attention integration, connector, real-data, push, merge, tag,
+release, or deployment work without separate authorization.
