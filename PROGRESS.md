@@ -703,6 +703,15 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   changed. Exact next action: owner design review/approval or revision; Batch A
   remains unauthorized.
 
+### 2026-07-30 — Phase 4 production data policy clarified
+
+- The owner confirmed that production adoption will fully re-import data; Phase
+  4 need not migrate, backfill, or preserve current operational records or
+  historical health snapshots.
+- The Phase 4 design now requires clean bootstrap, authorized full re-import,
+  integrity checks, and software rollback rehearsal instead of populated-data
+  upgrade preservation. This changes no runtime, schema, connector, or gate.
+
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
 - The owner completed re-review, accepted corrected B1, and asked to enter the

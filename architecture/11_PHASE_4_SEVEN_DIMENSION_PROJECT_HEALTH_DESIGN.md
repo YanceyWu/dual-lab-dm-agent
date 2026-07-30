@@ -25,6 +25,17 @@ from healthy, and must never average away a critical missed Milestone.
 - No live connector, real data, forecast, source-field configuration, automatic
   business-object write, or Phase 5+ capability is in scope.
 
+## Deployment data policy
+
+Production adoption will use a clean local database followed by a full,
+authorized re-import. Phase 4 therefore does not require migration, backfill,
+or preservation of current operational records, legacy health snapshots, or
+historical configuration data. The legacy projection remains only a development
+and strangler-comparison compatibility boundary until the clean deployment.
+Schema changes must still bootstrap idempotently, and release rehearsal must
+verify clean initialization, full synthetic re-import, integrity, and software
+version rollback; it need not prove populated-data upgrade preservation.
+
 ## Decisions proposed for approval
 
 1. Phase 4 owns a new, versioned Project Health assessment; it does not
@@ -113,8 +124,8 @@ implications before any separately approved Attention integration.
 ### D — Regression and promotion decision
 
 Run combined focused regression, `make validate`, `make rehearse-release`,
-schema/migration/rollback/portable review, implementation report, and an
-explicit promotion decision.
+clean-bootstrap/full-reimport/integrity/software-rollback/portable review,
+implementation report, and an explicit promotion decision.
 
 Every batch requires independent review before the next gate. This design
 authorizes no implementation batch.

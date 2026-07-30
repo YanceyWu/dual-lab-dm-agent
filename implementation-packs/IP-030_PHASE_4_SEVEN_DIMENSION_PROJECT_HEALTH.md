@@ -28,6 +28,10 @@ Attention decision, and D regression/promotion.
   prompts, SQL, expressions, source paths, or factor definitions.
 - No automatic business-object write, Forecast, Phase 5+ work,
   `pending_decision_attention` activation, live connector, or real data.
+- Production adoption uses clean initialization plus full authorized re-import;
+  this pack does not require current operational-record migration or backfill.
+  It still requires idempotent bootstrap, synthetic re-import, integrity, and
+  software rollback rehearsal.
 - Each batch is independently reviewable/reversible and requires focused
   synthetic tests, full validation, and review before the next batch.
 
