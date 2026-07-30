@@ -5,7 +5,7 @@ Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH D REVIEW PASSED — PROMOTION DECISION REQUIRED`
+Gate status: `PHASE 3 PROMOTED LOCALLY — PHASE 4 DESIGN/GATE REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -121,8 +121,9 @@ belong in Git history and must not be interpreted as current instructions.
   next stage; the owner then authorized only B2 implementation. The owner
   completed B2 re-review and accepted the corrected result. The owner then
   authorized only C1 implementation. The owner completed C1 review and accepted
-  the result; C2 and D reviews have passed. Phase 3 promotion and all later
-  work remain separately unauthorized.
+  the result; C2 and D reviews have passed, and the owner promoted Phase 3 as
+  the local development baseline. Phase 4 and all external actions remain
+  separately unauthorized.
 
 ## Current validation evidence
 
@@ -673,6 +674,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   merge, tag, release, deployment, or active-database operation occurred.
 - Exact next action: explicit owner decision to promote, revise, or reject the
   completed local Phase 3 baseline. The branch remains local-only and unpushed.
+
+### 2026-07-30 — Phase 3 promoted locally
+
+- The owner accepted the completed Phase 3 Batch D review and promoted the
+  execution evidence, canonical commitment, read-only review, and automatic
+  derived Attention result as the local Phase 3 development baseline.
+- Promotion relies on the recorded 73-test combined regression, 219-test full
+  validation, and synthetic installed-package upgrade/rollback rehearsal.
+- This is not a push, tag, release, deployment, active-database migration,
+  real-data UAT, connector authorization, or Phase 4 authorization.
+- Exact next action: separately inspect and approve the bounded Phase 4 design
+  and its first implementation gate before any Phase 4 runtime work.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 

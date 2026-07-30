@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 3 BATCH D REVIEW PASSED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 3 PROMOTED LOCALLY — PHASE 4 DESIGN/GATE REQUIRED`
 Last updated: 2026-07-30
 
 ## Purpose
@@ -329,6 +329,11 @@ Promotion gate: sync is bounded, incremental, idempotent, observable, and
 partial-state aware; every new signal traces to source history; milestone and
 Release facts remain usable when Story Point evidence is unavailable.
 
+The owner accepted Batch D review and promoted the completed Phase 3 result as
+the local development baseline on 2026-07-30. This does not authorize Phase 4,
+connector access, real data, push, tag, release, deployment, or an active
+database migration.
+
 ### Phase 4 — Seven-dimension Project Health
 
 Goal: create explainable project health across Schedule, Delivery, Scope,
@@ -518,7 +523,7 @@ Non-goals:
 
 ## Immediate next action
 
-IP-029 Batch D review passed on `codex/phase-3-execution-signals`. Decide
-whether to promote, revise, or reject Phase 3. Do not use a live connector or
-real data, begin Phase 4, or publish the branch without the applicable separate
-authorization.
+Phase 3 is promoted locally on `codex/phase-3-execution-signals`. Inspect and
+approve the bounded Phase 4 design and first gate before implementation. Do not
+use a live connector or real data, begin Phase 4 runtime work, or publish the
+branch without the applicable separate authorization.

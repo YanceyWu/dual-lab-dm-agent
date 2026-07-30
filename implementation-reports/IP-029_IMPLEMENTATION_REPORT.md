@@ -1,6 +1,6 @@
 # IP-029 Implementation Report
 
-Status: `BATCH D REVIEW PASSED — PHASE 3 PROMOTION DECISION REQUIRED`
+Status: `PHASE 3 PROMOTED LOCALLY`
 Date: 2026-07-30
 Branch: `codex/phase-3-execution-signals`
 Approved design commit: `7dc51d8c0f0d0a0f7d6f5b3f6b51ff199fc62ca5`
@@ -85,14 +85,14 @@ commit is pushed.
 ## Promotion recommendation
 
 Batch D validation, package rehearsal, migration, compatibility, and portable
-scope checks are complete. The local Phase 3 implementation is ready for an
-explicit owner decision to promote, revise, or reject. This report does not
-itself promote Phase 3 or authorize any subsequent phase or external action.
+scope checks are complete. The owner promoted the local Phase 3 implementation
+as the development baseline on 2026-07-30. Promotion does not authorize any
+subsequent phase or external action.
 
 ## Independent review
 
 The post-implementation read-only review found no P0-P2 defect. It reconciled
 this report with the local commit history, 73-test focused regression, full
 219-test validation, installed-package rehearsal, portable boundary checks,
-and the approved no-live-data/no-Phase-4 scope. Promotion remains an explicit
-owner decision.
+and the approved no-live-data/no-Phase-4 scope. The owner subsequently
+promoted Phase 3 locally; Phase 4 remains separately gated.

@@ -133,12 +133,12 @@ configuration mutation helpers, and passed technical re-review. Owner
 accepted the correction. Batch D regression, schema/portable review, and
 synthetic release rehearsal passed. The owner accepted the Batch D Review and
 promoted the result as the local Phase 2 development baseline on 2026-07-29.
-The Phase 3 current-state review and proposed execution/milestone foundation
-are recorded in
+The Phase 3 current-state review and execution/milestone foundation are
+recorded in
 `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
-The owner approved all four design decisions and IP-029 is registered on the
-dedicated local Phase 3 branch. Batch B1 requires separate explicit
-authorization; Phase 3/4 runtime, connector and real-data work remain
-unauthorized. Deferred
+The owner approved all four design decisions, completed IP-029 on the
+dedicated local Phase 3 branch, and promoted Phase 3 locally on 2026-07-30.
+Phase 4 runtime, connector and real-data work remain separately unauthorized.
+Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.

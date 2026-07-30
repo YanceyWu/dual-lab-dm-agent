@@ -1,6 +1,6 @@
 # Phase 3 — Execution and Milestone Signal Foundation
 
-Status: `APPROVED — BATCH D REVIEW PASSED; PROMOTION DECISION REQUIRED`
+Status: `PHASE 3 PROMOTED LOCALLY`
 Date: 2026-07-29
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
@@ -598,6 +598,6 @@ exact promoted Phase 2 baseline
 `2185334c890e79480a39514cf1d1e45f74e062f1`.
 
 IP-029 B1/B2/C1/C2 and Batch D regression/reporting are implemented and
-independently reviewed locally. The exact next action is an explicit owner
-decision to promote, revise, or reject Phase 3. Live connector use, real-data
-access, Phase 4, push, merge, tag, release, and deployment remain unauthorized.
+independently reviewed locally. The owner promoted Phase 3 as the local
+development baseline on 2026-07-30. Live connector use, real-data access,
+Phase 4, push, merge, tag, release, and deployment remain unauthorized.
