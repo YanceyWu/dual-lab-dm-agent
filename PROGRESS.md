@@ -508,6 +508,17 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-07-30 — Copilot 5.4 continuation kit created
+
+- Added `docs/COPILOT_5_4_CONTINUATION_KIT.md` plus reusable design,
+  implementation, read-only review, and promotion task templates. The kit
+  freezes preflight, scope, validation, review, handoff, and stop rules for
+  future Copilot-led phases without granting any implementation authority.
+- It starts from the current Phase 5 design-review gate and directs future
+  sessions to existing repository contracts rather than chat history. No
+  runtime, schema, connector, real data, or Phase 5 implementation change was
+  made.
+
 ### 2026-07-30 — Phase 5 Resource Intelligence design and boundary review
 
 - Inspected the promoted capacity/allocation, plan-version, Staffing,
