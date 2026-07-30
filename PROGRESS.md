@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH B IMPLEMENTED — OWNER REVIEW REQUIRED`
+Gate status: `PHASE 4 BATCH C IMPLEMENTED — OWNER REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -508,6 +508,32 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 Batch C implemented and self-reviewed
+
+- Added `layered-project-health-review`, a separate read-only projection over
+  the latest persisted seven-dimension assessment per selected project. It
+  returns factors, dimensions, guards, configuration version, legacy comparison,
+  evidence, fail-closed freshness, and deterministic red/amber signals through
+  the shared CLI, Dashboard Tool Transport, and Delivery Manager agent route.
+- The legacy `project-health-review` contract remains unchanged. The projection
+  does not evaluate health, mutate configuration, reconcile or create Attention,
+  call a connector, or use real data. Batch D, Attention integration, and any
+  replacement of the legacy review remain outside scope.
+- Read-only review corrected assessment freshness so persisted limited evidence
+  is `unknown` and stale evidence remains `stale`, never `fresh`. Focused
+  regression passed 52/52; `make validate` passed 237 runtime tests and 21
+  repository-tool tests. The result is committed locally, unpushed, and awaits
+  owner review.
+
+### 2026-07-30 — Mandatory implementation completion report adopted
+
+- The owner required every completed implementation batch to undergo focused
+  validation and read-only self-review before any completion claim. The final
+  handoff must cover: changes and rationale; usable functionality and use;
+  module/data/compatibility impact; excluded scope and next gate; test/review
+  evidence; and commit/push status. This requirement is now binding in
+  `AGENTS.md`.
 
 ### 2026-07-30 — Project Health capability naming cleanup
 

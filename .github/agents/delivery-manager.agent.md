@@ -30,6 +30,7 @@ when the mapping and required parameters are already clear.
 | --- | --- |
 | Current workload, capacity, or who may have room | `pm tool query team-workload-overview [--team "<exact team>"]` |
 | Project status, health, or delivery warning signals | `pm tool query project-health-review [--project <exact-project-id>]` |
+| Seven-dimension layered Project Health assessment | `pm tool query layered-project-health-review [--project <exact-project-id>]` |
 | Highest-priority delivery concerns | `pm tool query management-attention [--limit <1-20>]` |
 | Persisted Delivery Attention Center | `pm tool query delivery-attention-center [--param attention_states='["open","acknowledged","snoozed"]'] [--param rule_key=<rule-key>] [--param subject_kind=<kind>] [--param subject_id=<stable-id>] [--param include_history=true] [--limit <1-50>] [--param history_limit=<0-20>]` |
 | Sprint execution or Release/Milestone facts | `pm tool query delivery-execution-review --project <exact-project-id> [--param layer=sprint|release_milestone|all] [--param subject_kind=<kind>] [--param subject_id=<stable-id>] [--param window_days=<1-365>] [--limit <1-200>]` |

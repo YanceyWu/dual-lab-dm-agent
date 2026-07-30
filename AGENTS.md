@@ -81,3 +81,15 @@ This repository governs a portable Delivery Management intelligence system.
 - Never put confidential values or company-derived details in the progress log.
 - Before ending a development turn, verify that `PROGRESS.md` reflects the actual
   working tree and whether changes were committed or pushed.
+
+## Mandatory implementation completion report
+
+- After every implementation batch is complete, do not report completion until
+  focused validation and a read-only self-review have both finished.
+- The final handoff must explicitly state, in this order: what changed and why;
+  usable functionality and how to use it; impact on existing modules, data, and
+  compatibility; intentionally unimplemented scope and the next gate; test and
+  review evidence; and commit/push status.
+- A concise status answer does not waive any part of this report. If validation,
+  review, commit, or push is incomplete, say so plainly and do not imply the
+  batch is complete.

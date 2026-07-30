@@ -16,6 +16,7 @@ from pm_agent.use_cases.execution import (
 )
 from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.management_attention import execute_management_attention
+from pm_agent.use_cases.layered_project_health import execute_layered_project_health_review
 from pm_agent.use_cases.project_health import execute_project_health_review
 from pm_agent.use_cases.project_snapshots import execute_project_snapshot_list
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
@@ -38,6 +39,17 @@ SERVICES = {
 }
 
 use_case_executor = UseCaseExecutor()
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="layered-project-health-review",
+        purpose="Return the latest persisted seven-dimension Project Health assessment without evaluating or changing it.",
+        parameter_schema={
+            "project_id": {"type": "string", "required": False, "maximum_length": 128, "description": "Optional exact stable anonymous project ID."},
+        },
+        intelligence_capabilities=IntelligenceCapabilities(facts=True, signals=True),
+    ),
+    execute_layered_project_health_review,
+)
 use_case_executor.register(
     UseCaseDescriptor(
         use_case_id="delivery-execution-review",
