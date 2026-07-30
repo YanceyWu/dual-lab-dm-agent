@@ -63,7 +63,23 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'jira_issue_event_stage',
                     'jira_issue_events',
                     'jira_issue_link_stage',
-                    'jira_issue_links'
+                    'jira_issue_links',
+                    'execution_work_items',
+                    'execution_source_identities',
+                    'execution_work_item_observations',
+                    'execution_sprints',
+                    'execution_release_commitments',
+                    'execution_release_observations',
+                    'execution_scope_memberships',
+                    'execution_milestones',
+                    'execution_milestone_observations',
+                    'execution_milestone_release_links',
+                    'execution_dependencies',
+                    'execution_dependency_observations',
+                    'execution_derivation_runs',
+                    'execution_derivation_inputs',
+                    'execution_facts',
+                    'milestone_import_operations'
                 )
                 """
             )
@@ -95,6 +111,22 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "jira_issue_events",
         "jira_issue_link_stage",
         "jira_issue_links",
+        "execution_work_items",
+        "execution_source_identities",
+        "execution_work_item_observations",
+        "execution_sprints",
+        "execution_release_commitments",
+        "execution_release_observations",
+        "execution_scope_memberships",
+        "execution_milestones",
+        "execution_milestone_observations",
+        "execution_milestone_release_links",
+        "execution_dependencies",
+        "execution_dependency_observations",
+        "execution_derivation_runs",
+        "execution_derivation_inputs",
+        "execution_facts",
+        "milestone_import_operations",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
     if token_columns != {"confirmation_token_hash"}:

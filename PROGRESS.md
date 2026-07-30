@@ -1,11 +1,11 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 Current branch: `codex/phase-3-execution-signals`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-029 — PHASE 3 EXECUTION AND MILESTONE SIGNAL FOUNDATION`
-Gate status: `PHASE 3 BATCH B1 ACCEPTED — BATCH B2 DESIGN REVIEW READY; IMPLEMENTATION AUTHORIZATION REQUIRED`
+Gate status: `PHASE 3 BATCH B2 IMPLEMENTED — REVIEW REQUIRED`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -19,7 +19,7 @@ tracking branch. The exact current commit is reported in the task handoff
 because a commit cannot embed its own final hash. Do not push it without a
 separate authorization. Do not merge or push to `main`.
 The dedicated Phase 3 branch is also local-only and has no remote tracking
-branch.
+branch. Batch B2 is committed locally for review and has not been pushed.
 
 ## Read this first
 
@@ -118,8 +118,8 @@ belong in Git history and must not be interpreted as current instructions.
   branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
   whose bounded incremental source-evidence implementation and two correction
   rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
-  next stage; the B2 implementation-level design is now ready for review, but
-  B2 coding and all later batches remain unauthorized.
+  next stage; the owner then authorized only B2 implementation. B2 is now
+  implemented and awaits explicit review; all later batches remain unauthorized.
 
 ## Current validation evidence
 
@@ -334,6 +334,19 @@ package build/inspection, and all eight release validation checks.
 legacy upgrade, complete and partial evidence behavior, integrity/count/view
 checks, and rollback.
 
+Phase 3 Batch B2 passed 8 focused synthetic canonicalization and Milestone
+operation tests. They cover additive storage, source-identity mapping,
+authoritative and non-authoritative derivation, idempotency, temporal scope
+closure only from an authoritative manifest, structured Milestone
+preview/confirm/no-op/stale rejection, first-observed target preservation, and
+explicit Milestone/Release links. The final `make validate` run passed
+repository-boundary and synthetic-sample checks, 211 runtime tests, 21
+repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+package build/inspection, and all eight release validation checks.
+`make rehearse-release` passed installed clean bootstrap, populated synthetic
+legacy upgrade, Phase 3 evidence behavior, B2 canonical schema presence,
+integrity/count/view checks, and rollback.
+
 ## Portability and data boundary
 
 - The currently tracked runtime, tests, generic configuration examples,
@@ -456,11 +469,40 @@ checks, and rollback.
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
 - IP-029 Batch B1 and its first- and second-review corrections are implemented,
-  locally validated, and accepted on `codex/phase-3-execution-signals`. The B2
-  implementation-level design is ready for review; B2 coding and all later
-  batches remain unauthorized.
+  locally validated, and accepted on `codex/phase-3-execution-signals`. The
+  owner authorized B2; its bounded canonical execution and Milestone foundation
+  is implemented, locally validated, and stopped for review. C1/C2/D and all
+  later batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 3 Batch B2 canonical execution and Milestone foundation implemented
+
+- Added only additive canonical current/observation storage for Work Items,
+  source identities, Sprints, Release commitments, temporal scope memberships,
+  Milestones, Milestone/Release links, Dependencies, derivation runs/inputs,
+  versioned facts, and structured Milestone import operations.
+- Added deterministic board derivation from published B1 evidence plus bounded
+  legacy snapshots. Complete authoritative manifests may close an open scope
+  membership; partial or non-authoritative evidence cannot do so and produces
+  unavailable scope facts with explicit warning state.
+- Added the non-public `ExecutionFoundationService` for focused derivation and
+  structured Milestone preview/confirm only. Imports validate existing projects
+  and explicit Release links, hash expiring one-time tokens, reject stale/no-op
+  work, preserve first-observed targets, and persist atomically.
+- Expanded the synthetic installed-package rehearsal to assert the new B2
+  storage is present on clean bootstrap and populated legacy upgrade.
+- Focused tests passed 8/8; `make validate` passed 211 runtime tests plus 21
+  repository-tool tests (19 subtests), Ruff, compilation, boundary/synthetic
+  checks, diff hygiene, and package build. `make rehearse-release` passed
+  wheel installation, isolated bootstrap/upgrade, integrity/count/view checks,
+  and rollback.
+- No public use-case/CLI/Dashboard/Copilot registration, automatic post-sync
+  trigger, Attention behavior, connector/live-data access, real data,
+  `pending_decision_attention` change, Phase 4 work, push, merge, tag, release,
+  or deployment was performed. Remaining risk: source evidence only supports
+  authoritative scope closure when a future adapter explicitly supplies a
+  complete manifest. The exact next action is explicit B2 review.
 
 ### 2026-07-29 — Phase 3 Batch B1 accepted; B2 design handoff prepared
 
