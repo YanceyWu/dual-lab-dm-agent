@@ -509,6 +509,17 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-07-30 — Project Health capability naming cleanup
+
+- Renamed the tracked local re-import entrypoint, synthetic re-import package,
+  and Project Health test artifacts to capability-based names. Runtime paths,
+  sample identifiers, and module documentation no longer encode delivery-phase
+  or batch labels; architecture and gate records retain those labels only where
+  they express approved delivery governance.
+- The synthetic-sample checker and 15 focused Project Health tests passed. No
+  assessment behavior, schema, public interface, Attention, connector, real
+  data, or later-gate behavior changed. The cleanup is local-only and unpushed.
+
 ### 2026-07-30 — Phase 4 Batch B implementation completed and self-reviewed
 
 - Completed controlled health configuration through the capability-owned

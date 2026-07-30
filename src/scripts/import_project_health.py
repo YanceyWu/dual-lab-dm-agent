@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ruff: noqa: E402
-"""Non-interactive synthetic Phase 4 Batch A re-import entrypoint."""
+"""Non-interactive synthetic Project Health re-import entrypoint."""
 
 from __future__ import annotations
 
