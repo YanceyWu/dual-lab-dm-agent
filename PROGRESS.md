@@ -5,7 +5,7 @@ Current branch: `codex/phase-4-project-health-design`
 Current cleanup commit: `c068beb`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-030 — PHASE 4 SEVEN-DIMENSION PROJECT HEALTH`
-Gate status: `PHASE 4 BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
+Gate status: `PHASE 4 PROMOTED — LOCAL DEVELOPMENT BASELINE`
 Git state: independent branch is based on exact validated commit `a272890`;
 the planning, Phase 1, and Phase 2 Batch A design commit chain through this
 continuity record is pushed to and tracks
@@ -445,11 +445,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Owner-review the completed IP-030 Batch B implementation and either accept
-   it or request bounded corrections. Batch C requires a separate authorization.
-2. Do not add a Phase 4 use-case projection, any new Attention producer, or a
-   legacy `project-health-review` replacement.
-3. Do not use connectors or real data, or push, merge, tag, release, or deploy.
+1. Preserve the promoted local IP-030 baseline. Any new Project Health
+   capability, Attention integration, or legacy replacement requires a new
+   approved design and implementation gate.
+2. Do not use connectors or real data, or push, merge, tag, release, or deploy.
 
 ## Decisions in force
 
@@ -508,6 +507,15 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-07-30 — Phase 4 promoted locally
+
+- The owner promoted the completed IP-030 implementation after accepting the
+  Batch D review. Promotion relies on the recorded 52/52 focused regression,
+  237-test full validation, and synthetic installed-package rehearsal.
+- This establishes only a local development baseline. It does not authorize a
+  push, merge, tag, release, deployment, active-database migration, live
+  connector, real-data action, Attention producer, or legacy replacement.
 
 ### 2026-07-30 — Phase 4 Batch D review accepted
 

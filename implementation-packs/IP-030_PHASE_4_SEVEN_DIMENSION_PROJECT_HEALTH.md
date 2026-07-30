@@ -1,6 +1,6 @@
 # IP-030 — Phase 4 Seven-Dimension Project Health
 
-Status: `BATCH D REVIEW ACCEPTED — PROMOTION DECISION REQUIRED`
+Status: `PROMOTED — LOCAL DEVELOPMENT BASELINE`
 Design: `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`
 Implementation branch: `codex/phase-4-project-health-design`
 Baseline: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`
@@ -39,6 +39,5 @@ review plus a later Attention decision, and D regression/promotion.
 
 ## Current gate
 
-The owner accepted Batch B, authorized Batch C, and accepted Batch D review.
-The completed local baseline requires a separate promotion decision; later work
-remains gated.
+The owner accepted Batch B, authorized Batch C, accepted Batch D review, and
+promoted the completed local baseline. Later work remains separately gated.
