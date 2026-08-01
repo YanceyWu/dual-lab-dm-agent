@@ -29,6 +29,7 @@ from pm_agent.dashboard.write_operations import (
 )
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
+from pm_agent.weekly_brief.operations import confirm_capture, preview_capture
 
 APP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = APP_DIR.parents[1]
@@ -586,6 +587,31 @@ def structured_use_case_query(use_case_id: str):
     response = jsonify(result.model_dump(mode="json"))
     response.headers["X-DM-Interface-Contract"] = "use-case-result-v1"
     return response, status_code
+
+
+@app.route("/api/weekly-brief/operations", methods=["POST"])
+def weekly_brief_operations():
+    """Dedicated preview/confirm endpoint; generic query routes remain read-only."""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"status": "failed", "warnings": ["WEEKLY_BRIEF_CAPTURE_CANDIDATE_INVALID"]}), 400
+    if payload.get("operation") == "preview":
+        allowed = {"operation", "candidate", "idempotency_key", "expires_in_seconds"}
+        if set(payload) - allowed or not isinstance(payload.get("candidate"), dict) or not isinstance(payload.get("idempotency_key"), str):
+            return jsonify({"status": "failed", "warnings": ["WEEKLY_BRIEF_CAPTURE_CANDIDATE_INVALID"]}), 400
+        result = preview_capture(candidate=payload["candidate"], actor_id=_dashboard_actor(), idempotency_key=payload["idempotency_key"], expires_in_seconds=payload.get("expires_in_seconds", 600), db_path=DB)
+    elif payload.get("operation") == "confirm":
+        allowed = {"operation", "operation_id", "confirmation_token"}
+        if set(payload) - allowed or not isinstance(payload.get("operation_id"), str) or not isinstance(payload.get("confirmation_token"), str):
+            return jsonify({"status": "failed", "warnings": ["WEEKLY_BRIEF_CAPTURE_TOKEN_INVALID"]}), 400
+        result = confirm_capture(operation_id=payload["operation_id"], confirmation_token=payload["confirmation_token"], db_path=DB)
+    else:
+        return jsonify({"status": "failed", "warnings": ["WEEKLY_BRIEF_CAPTURE_CANDIDATE_INVALID"]}), 400
+    response = jsonify(result)
+    if result.get("status") in {"previewed", "confirmed", "already_confirmed", "expired", "stale"}:
+        response.headers["X-DM-Interface-Contract"] = "weekly-brief-operation-v1"
+        return response, 200
+    return response, 400
 
 
 @app.route("/api/attention/operations", methods=["POST"])

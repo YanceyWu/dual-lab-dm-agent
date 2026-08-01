@@ -37,6 +37,7 @@ when the mapping and required parameters are already clear.
 | Sprint execution or Release/Milestone facts | `pm tool query delivery-execution-review --project <exact-project-id> [--param layer=sprint|release_milestone|all] [--param subject_kind=<kind>] [--param subject_id=<stable-id>] [--param window_days=<1-365>] [--limit <1-200>]` |
 | STFTE HIREF coverage, expiry, or continuity risk | `pm tool query contract-continuity-review [--days <1-365>]` |
 | Weekly management summary | `pm tool query weekly-dm-brief` |
+| Opt-in Weekly Brief v2 (`weekly-dm-brief-v2`) with snapshot comparison | `pm weekly-brief query [--project-ids <exact-ids>] [--plan-version-id <exact-id>] [--attention-limit <1-50>] [--baseline-snapshot-id <exact-id>]` |
 | Open actions requiring follow-up | `pm tool query action-followup` |
 | Configured connector state or source freshness | `pm tool query connector-status-review [--connector <name>]` |
 | Latest locally recorded connector sync outcome | `pm tool query connector-sync-results [--connector <name>]` |
@@ -105,6 +106,20 @@ item automatically with `rule_clear`; never ask the manager for a separate
 closure step. Never invent or reuse a token, enable a rule, call a connector,
 or turn an advisory Attention recommendation into an action, project,
 staffing, or decision write.
+
+## Weekly Brief v2 capture workflow
+
+Weekly Brief v2 is opt-in; the legacy `pm tool query weekly-dm-brief` and
+`pm report` behavior is unchanged. For a v2 snapshot capture, run
+`pm weekly-brief snapshot-preview --candidate-json '<exact snapshot>' --idempotency-key <key>`
+only when the user explicitly requests capture of that exact query result.
+Show the complete returned candidate, `confirmation_required`, and expiry
+before asking for confirmation. Run
+`pm weekly-brief snapshot-confirm --operation-id <id> --confirmation-token <token>`
+only after explicit approval of that exact preview. Never invent or reuse a
+token. Snapshot capture is not publication, email, or a business-object write;
+report its non-read-only operation status accurately and do not treat a
+confirmed snapshot as a project, staffing, decision, or release action.
 
 ## Result handling
 

@@ -2,11 +2,12 @@
 
 Last updated: 2026-08-01
 Current branch: `codex/phase-6-weekly-brief-design`
-Current HEAD before the IP-032 Batch B1 acceptance-record commit:
-`cce14e42c26c605bc76e895de8d611540eae06f8`
+Current HEAD: `b9c9141` (IP-032 Batch B3 acceptance record). The IP-032 Batch C
+shared-interface implementation has been reviewed, corrected, validated, and
+authorized by the owner; its acceptance record is committed separately.
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — BATCH B3 NINE-SECTION COMPOSITION`
-Gate status: `PHASE 6 BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
+Current implementation pack: `IP-032 — BATCH C SHARED-INTERFACE INTEGRATION`
+Gate status: `PHASE 6 BATCH C OWNER-AUTHORIZED — ACCEPTANCE RECORD PENDING`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -14,8 +15,9 @@ IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
   authorized B2 and accepted its validated, independently reviewed local result
 at `da093ba1b1f5dabc44053a2eb7edb4d237197768`. The owner then authorized only
 B3 deterministic nine-section composition and accepted its validated local
-result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. Batch C shared-interface
-integration and Batch D remain unauthorized. No push is authorized or required.
+result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. The owner authorized
+the corrected Batch C shared-interface implementation on 2026-08-01. Batch D
+and every external action remain unauthorized. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -531,6 +533,33 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-01 — IP-032 Batch C shared interface implemented, reviewed, corrected, and owner-authorized
+
+- Independently reviewed the uncommitted Batch C working tree: the opt-in
+  `weekly-dm-brief-v2` use-case registration, dedicated `pm weekly-brief`
+  query/preview/confirm CLI, the dedicated Dashboard
+  `/api/weekly-brief/operations` preview/confirm endpoint, and the controlled
+  capture facade.
+- Defects fixed: the Copilot contract
+  `.github/agents/delivery-manager.agent.md` did not register
+  `weekly-dm-brief-v2` and lacked the snapshot-capture explicit-approval
+  workflow, which failed `test_delivery_manager_agent`; the typed
+  intelligence projection mislabeled subject kinds and dropped known section
+  states; and the Dashboard operations endpoint omitted the interface-contract
+  header. Added a focused shared-interface suite covering the use case, CLI,
+  Dashboard, generic transport v1 boundary, legacy parity, and typed
+  projection.
+- Validation passed: 332 runtime tests, 21 repository-tool tests (19
+  subtests), Ruff, compilation, diff check, package build, and 8 release
+  validation checks via `make validate`.
+- The owner explicitly authorized Batch C implementation on 2026-08-01 after
+  the corrected, validated candidate review, and selected the existing opt-in
+  `weekly-dm-brief-v2` routing design without change. No push, merge, tag,
+  release, deployment, connector, real-data, producer, or external action was
+  performed.
+- Exact next action: record the owner acceptance of the validated Batch C
+  candidate; then Batch D requires a separate owner authorization.
 
 ### 2026-08-01 — IP-032 Batch B3 accepted
 

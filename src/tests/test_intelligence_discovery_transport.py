@@ -57,6 +57,7 @@ PRODUCTION_USE_CASE_IDS = {
     "resource-capacity-heatmap",
     "team-workload-overview",
     "weekly-dm-brief",
+    "weekly-dm-brief-v2",
 }
 
 
@@ -158,7 +159,7 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
             MANAGEMENT_ATTENTION_CAPABILITIES
             if item["use_case_id"] == "management-attention"
             else CENTER_CAPABILITIES
-            if item["use_case_id"] == "delivery-attention-center"
+            if item["use_case_id"] in {"delivery-attention-center", "weekly-dm-brief-v2"}
             else EXECUTION_REVIEW_CAPABILITIES
             if item["use_case_id"] in {"delivery-execution-review", "layered-project-health-review", "resource-capacity-heatmap"}
             else EMPTY_CAPABILITIES
@@ -173,7 +174,7 @@ def test_production_list_and_describe_advertise_only_implemented_capabilities() 
             MANAGEMENT_ATTENTION_CAPABILITIES
             if item["use_case_id"] == "management-attention"
             else CENTER_CAPABILITIES
-            if item["use_case_id"] == "delivery-attention-center"
+            if item["use_case_id"] in {"delivery-attention-center", "weekly-dm-brief-v2"}
             else EXECUTION_REVIEW_CAPABILITIES
             if item["use_case_id"] in {"delivery-execution-review", "layered-project-health-review", "resource-capacity-heatmap"}
             else EMPTY_CAPABILITIES

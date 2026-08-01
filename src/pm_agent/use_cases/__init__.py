@@ -24,6 +24,7 @@ from pm_agent.use_cases.resource_capacity_heatmap import execute_resource_capaci
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
 from pm_agent.use_cases.weekly_report import WeeklyReportService
 from pm_agent.use_cases.weekly_brief import execute_weekly_dm_brief
+from pm_agent.use_cases.weekly_brief_v2 import execute_weekly_dm_brief_v2
 
 resource_planning_service = ResourcePlanningService()
 team_workload_service = TeamWorkloadService()
@@ -182,6 +183,21 @@ use_case_executor.register(
     execute_contract_continuity_review,
 )
 use_case_executor.register(UseCaseDescriptor(use_case_id="weekly-dm-brief", purpose="Return a structured weekly Delivery Manager brief from local facts.", parameter_schema={}), execute_weekly_dm_brief)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="weekly-dm-brief-v2",
+        contract_version="2.0",
+        purpose="Return the opt-in, read-only Weekly Brief v2 from promoted public facts.",
+        parameter_schema={
+            "project_ids": {"type": "array", "required": False},
+            "plan_version_id": {"type": "string", "required": False, "maximum_length": 128},
+            "attention_limit": {"type": "integer", "required": False, "minimum": 1, "maximum": 50},
+            "baseline_snapshot_id": {"type": "string", "required": False, "maximum_length": 128},
+        },
+        intelligence_capabilities=IntelligenceCapabilities(facts=True, signals=True, recommendations=True),
+    ),
+    execute_weekly_dm_brief_v2,
+)
 use_case_executor.register(UseCaseDescriptor(use_case_id="action-followup", purpose="Return open actions requiring follow-up without changing them.", parameter_schema={}), execute_action_followup)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-status-review", purpose="Return offline connector source and sync freshness without runtime probing.", parameter_schema={"connector": {"type": "string", "required": False, "enum": ["jira", "confluence", "servicenow"], "description": "Optional connector name."}}), execute_connector_status_review)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-sync-results", purpose="Return normalized latest local connector sync outcomes without credentials or raw errors.", parameter_schema={"connector": {"type": "string", "required": False, "enum": ["jira", "confluence", "servicenow"], "description": "Optional connector name."}}), execute_connector_sync_results)
