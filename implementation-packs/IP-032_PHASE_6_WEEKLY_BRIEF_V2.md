@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH C OWNER-ACCEPTED — BATCH D AUTHORIZATION REQUIRED`
+Status: `BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -32,6 +32,11 @@ routing, dedicated `pm weekly-brief` CLI, dedicated Dashboard
 `/api/weekly-brief/operations` preview/confirm endpoint, the Copilot contract,
 and the focused shared-interface tests. Batch D promotion and every external
 action remain separately gated.
+
+Batch D combined focused regression, full validation, installed-package
+rehearsal, and the independent read-only review are complete. The owner now
+holds the promotion decision for the integrated Phase 6 Weekly Brief v2
+baseline: promote, revise, or reject.
 
 ## Batch B2 capability ownership and boundary
 
