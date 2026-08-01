@@ -263,8 +263,16 @@ def rehearse() -> None:
             capture_output=True,
             text=True,
         )
-        if json.loads(installed_weekly_capture.stdout) != {"preview": "previewed", "confirm": "confirmed", "replay": "already_confirmed", "stale": "stale", "concurrent": ["confirmed", "failed"]}:
-            raise RuntimeError("INSTALLED_WEEKLY_BRIEF_CAPTURE_INVALID")
+        weekly_capture_result = json.loads(installed_weekly_capture.stdout)
+        # Claim races have two valid externally observable outcomes: the losing
+        # caller can observe either the finalized idempotent confirmation or a
+        # failed claim.  In both cases exactly one write is confirmed.
+        if not (
+            {key: weekly_capture_result.get(key) for key in ("preview", "confirm", "replay", "stale")}
+            == {"preview": "previewed", "confirm": "confirmed", "replay": "already_confirmed", "stale": "stale"}
+            and weekly_capture_result.get("concurrent") in (["confirmed", "failed"], ["already_confirmed", "confirmed"])
+        ):
+            raise RuntimeError(f"INSTALLED_WEEKLY_BRIEF_CAPTURE_INVALID:{installed_weekly_capture.stdout}")
         prior_env = clean_env.copy()
         prior_env["PYTHONPATH"] = str(prior_runtime / "src")
         installed_weekly_rollback = subprocess.run(

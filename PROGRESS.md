@@ -5,16 +5,17 @@ Current branch: `codex/phase-6-weekly-brief-design`
 Current HEAD before the IP-032 Batch B1 acceptance-record commit:
 `cce14e42c26c605bc76e895de8d611540eae06f8`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — BATCH B2 SNAPSHOT/COMPARISON CORE`
-Gate status: `PHASE 6 BATCH B2 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
+Current implementation pack: `IP-032 — BATCH B3 NINE-SECTION COMPOSITION`
+Gate status: `PHASE 6 BATCH B3 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
 `cce14e42c26c605bc76e895de8d611540eae06f8`. The owner has now explicitly
-  authorized only B2: additive Weekly Brief snapshot/comparison core. B2 may add
-the dedicated schema, repository, controlled preview/confirm and synthetic
-tests, but not B3 composition, v2 routing, legacy replacement, producers,
-connectors, real-data work, or later slices. No push is authorized or required.
+  authorized B2 and accepted its validated, independently reviewed local result
+at `da093ba1b1f5dabc44053a2eb7edb4d237197768`. The owner then authorized only
+B3 deterministic nine-section composition. B3 excludes shared routing, legacy
+replacement, producers, connectors, real-data work, C/D, and every external
+action. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -462,10 +463,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review or accept the validated IP-032 Batch B2 snapshot/comparison core.
-   Do not enter B3 from this acceptance.
-2. Do not begin B3 composition or any route/interface from B2 authorization or
-   passing validation.
+1. Owner accept, revise, or reject the implemented IP-032 Batch B3 deterministic
+   nine-section composer. Do not enter C/D.
+2. Do not add a route/interface, legacy replacement, or capture command from B3
+   completion or passing validation.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
 4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
@@ -531,6 +532,21 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-01 — IP-032 Batch B3 implemented and independently reviewed
+
+- Added only `pm_agent.weekly_brief` B3 composition and focused synthetic tests:
+  fixed nine sections, public-reader-only aggregation, explicit partial or
+  unavailable evidence, typed facts/signals/recommendations, reference chains,
+  exact baseline selection, and the B2 injected lookup/recompose seam.
+- No route, CLI, Dashboard, Copilot registration, legacy replacement, producer,
+  connector, Staffing, Decision write, real data, or external action was added.
+- Final focused suite passed 28 tests; `make validate` passed 325 runtime tests,
+  21 repository-tool tests (19 subtests), Ruff, compilation, package build, and
+  release checks. `make rehearse-release` passed clean bootstrap, installed
+  capture stale/concurrency/idempotency behavior, and prior-runtime additive
+  rollback preservation. Independent read-only final review found no P0-P2.
+- Exact next action: owner accept, revise, or reject B3. Do not enter C/D.
+
 ### 2026-08-01 — Phase 6 design approved; IP-032 Batch B1 implemented
 
 - Recorded owner design approval and the separate authorization for only Batch
@@ -595,6 +611,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   found no P0-P2 findings.
 - Exact next action: owner acceptance, revision, or rejection of B2. B3 and all
   later slices remain unauthorized.
+
+### 2026-08-01 — IP-032 Batch B2 accepted; B3 authorized
+
+- The owner accepted the locally committed B2 snapshot/comparison core at
+  `da093ba1b1f5dabc44053a2eb7edb4d237197768` after its validation and repeated
+  independent review.
+- The owner explicitly authorized only B3 deterministic nine-section
+  composition. C shared-interface integration, D promotion, routes, legacy
+  replacement, producers, connectors, real data, and external actions remain
+  unauthorized.
+- Exact next action: implement, validate, and independently review B3; then
+  stop for owner acceptance or revision.
 
 ### 2026-08-01 — Phase 6 Weekly Brief v2 Batch A design completed
 

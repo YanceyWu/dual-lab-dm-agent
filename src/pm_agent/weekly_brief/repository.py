@@ -141,6 +141,16 @@ def latest_confirmed(scope_fingerprint: str, comparison_rule_version: str, contr
     return dict(row) if row else None
 
 
+def load_confirmed_snapshot(snapshot_id: str, *, db_path=None) -> dict[str, Any] | None:
+    """Load one explicitly selected confirmed snapshot without changing history."""
+    with connection(db_path) as database:
+        row = database.execute(
+            "SELECT * FROM weekly_brief_snapshot_operations WHERE snapshot_id=? AND status='confirmed' AND structural_status='complete'",
+            [snapshot_id],
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def baseline_is_eligible(snapshot_id: str, fingerprint: str, scope_fingerprint: str, rule_version: str, contract_version: str, *, db_path=None) -> bool:
     with connection(db_path) as database:
         return database.execute("SELECT 1 FROM weekly_brief_snapshot_operations WHERE snapshot_id=? AND result_fingerprint=? AND scope_fingerprint=? AND comparison_rule_version=? AND contract_version=? AND status='confirmed' AND structural_status='complete'", [snapshot_id, fingerprint, scope_fingerprint, rule_version, contract_version]).fetchone() is not None
@@ -163,11 +173,13 @@ def integrity_report(*, db_path=None) -> dict[str, Any]:
                 original_candidate = {key: candidate[key] for key in (
                     "execution_id", "contract_version", "comparison_rule_version", "generated_at", "week_key", "scope", "input", "baseline_snapshot_id", "baseline_fingerprint", "statement_manifest", "evidence_summary", "section_coverage", "limitation_codes"
                 )}
+                if "result_manifest" in candidate:
+                    original_candidate["result_manifest"] = candidate["result_manifest"]
                 if _normalized(original_candidate) != candidate:
                     malformed += 1
                 evidence_state = {"evidence_summary": candidate["evidence_summary"], "section_coverage": candidate["section_coverage"], "limitation_codes": candidate["limitation_codes"]}
                 result = {"scope_fingerprint": _digest(candidate["scope"]), "input_fingerprint": _digest(candidate["input"]), "baseline_snapshot_id": candidate["baseline_snapshot_id"], "baseline_fingerprint": candidate["baseline_fingerprint"], "statement_fingerprint": _digest(candidate["statement_manifest"]), "evidence_state_fingerprint": _digest(evidence_state), "contract_version": candidate["contract_version"], "comparison_rule_version": candidate["comparison_rule_version"]}
-                overall = _digest(result)
+                overall = _digest(result | ({"result_manifest": candidate["result_manifest"]} if "result_manifest" in candidate else {}))
                 if any(row[key] != value for key, value in result.items()) or row["result_fingerprint"] != overall:
                     malformed += 1
                 if json.loads(row["scope_json"]) != candidate["scope"] or json.loads(row["statement_manifest_json"]) != candidate["statement_manifest"] or json.loads(row["evidence_summary_json"]) != candidate["evidence_summary"] or json.loads(row["section_coverage_json"]) != candidate["section_coverage"] or json.loads(row["limitation_codes_json"]) != candidate["limitation_codes"]:

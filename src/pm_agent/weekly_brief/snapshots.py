@@ -26,6 +26,7 @@ _WARNING_CONFIRMED = "WEEKLY_BRIEF_CAPTURE_ALREADY_CONFIRMED"
 _WARNING_CONFLICT = "WEEKLY_BRIEF_CAPTURE_CONFLICT"
 _WARNING_ACCESS = "WEEKLY_BRIEF_CAPTURE_DATA_ACCESS_FAILED"
 _REQUIRED = {"execution_id", "contract_version", "comparison_rule_version", "generated_at", "week_key", "scope", "input", "baseline_snapshot_id", "baseline_fingerprint", "statement_manifest", "evidence_summary", "section_coverage", "limitation_codes"}
+_OPTIONAL = {"result_manifest"}
 _STATEMENT_KEYS = {"identity_key", "producer", "scope_fingerprint", "semantic_fingerprint", "evidence_state_fingerprint", "active_material", "transition_state", "coverage_complete", "usable_evidence", "limited_active_proven"}
 _PRODUCERS = {"attention", "project_health", "resource_intelligence", "action", "execution", "decision"}
 _TRANSITIONS = {"active", "clear", "resolved", "completed", "green"}
@@ -55,13 +56,15 @@ def _parse_time(value: str) -> datetime:
 
 
 def _normalized(candidate: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(candidate, dict) or set(candidate) != _REQUIRED:
+    if not isinstance(candidate, dict) or not _REQUIRED <= set(candidate) <= _REQUIRED | _OPTIONAL:
         raise ValueError(_WARNING_INVALID)
     if not isinstance(candidate["scope"], dict) or not isinstance(candidate["input"], dict):
         raise ValueError(_WARNING_INVALID)
     if not isinstance(candidate["statement_manifest"], list):
         raise ValueError(_WARNING_INVALID)
     if not isinstance(candidate["evidence_summary"], dict):
+        raise ValueError(_WARNING_INVALID)
+    if "result_manifest" in candidate and (not isinstance(candidate["result_manifest"], str) or not _HEX.fullmatch(candidate["result_manifest"])):
         raise ValueError(_WARNING_INVALID)
     if not isinstance(candidate["section_coverage"], dict) or not isinstance(candidate["limitation_codes"], list):
         raise ValueError(_WARNING_INVALID)
@@ -92,12 +95,12 @@ def _normalized(candidate: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(_WARNING_INVALID)
         if (statement["transition_state"] == "active") != statement["active_material"]:
             raise ValueError(_WARNING_INVALID)
-    normalized = {key: candidate[key] for key in _REQUIRED}
+    normalized = {key: candidate[key] for key in _REQUIRED | (set(candidate) & _OPTIONAL)}
     normalized["scope_fingerprint"] = _fingerprint(normalized["scope"])
     normalized["input_fingerprint"] = _fingerprint(normalized["input"])
     normalized["statement_fingerprint"] = _fingerprint(normalized["statement_manifest"])
     normalized["evidence_state_fingerprint"] = _fingerprint({"evidence_summary": normalized["evidence_summary"], "section_coverage": normalized["section_coverage"], "limitation_codes": normalized["limitation_codes"]})
-    normalized["result_fingerprint"] = _fingerprint({key: normalized[key] for key in ("scope_fingerprint", "input_fingerprint", "baseline_snapshot_id", "baseline_fingerprint", "statement_fingerprint", "evidence_state_fingerprint", "contract_version", "comparison_rule_version")})
+    normalized["result_fingerprint"] = _fingerprint({key: normalized[key] for key in ("scope_fingerprint", "input_fingerprint", "baseline_snapshot_id", "baseline_fingerprint", "statement_fingerprint", "evidence_state_fingerprint", "contract_version", "comparison_rule_version")} | ({"result_manifest": normalized["result_manifest"]} if "result_manifest" in normalized else {}))
     return normalized
 
 
@@ -109,7 +112,7 @@ def _safe(value: Any) -> bool:
         as_of = False
     projects = scope.get("project_ids", [])
     evidence_ids, freshness = evidence.get("evidence_ids", []), evidence.get("freshness_states", [])
-    return set(scope) <= {"project_ids"} and isinstance(projects, list) and 1 <= len(projects) <= 200 and projects == sorted(projects) and len(set(projects)) == len(projects) and all(isinstance(item, str) and _ANON_ID.fullmatch(item) for item in projects) and set(inputs) <= {"as_of", "plan_version_id", "limit"} and as_of and ("plan_version_id" not in inputs or isinstance(inputs["plan_version_id"], str) and _ANON_ID.fullmatch(inputs["plan_version_id"])) and ("limit" not in inputs or isinstance(inputs["limit"], int) and 1 <= inputs["limit"] <= 200) and set(evidence) <= {"producer", "evidence_ids", "freshness_states"} and isinstance(evidence.get("producer", ""), str) and _ANON_ID.fullmatch(evidence.get("producer", "")) and isinstance(evidence_ids, list) and isinstance(freshness, list) and all(isinstance(item, str) and _ANON_ID.fullmatch(item) for item in evidence_ids) and all(isinstance(item, str) and item in {"fresh", "stale", "partial", "unknown", "unavailable", "conflicting"} for item in freshness) and all(isinstance(key, str) and key in _PRODUCERS and isinstance(item, str) and item in {"complete", "partial", "not_available"} for key, item in coverage.items()) and all(isinstance(item, str) and _CODE.fullmatch(item) for item in limits)
+    return set(scope) <= {"kind", "project_ids"} and scope.get("kind", "projects") in {"global", "projects"} and isinstance(projects, list) and 1 <= len(projects) <= 200 and projects == sorted(projects) and len(set(projects)) == len(projects) and all(isinstance(item, str) and _ANON_ID.fullmatch(item) for item in projects) and set(inputs) <= {"as_of", "plan_version_id", "attention_limit", "limit"} and as_of and ("plan_version_id" not in inputs or isinstance(inputs["plan_version_id"], str) and _ANON_ID.fullmatch(inputs["plan_version_id"])) and ("attention_limit" not in inputs or isinstance(inputs["attention_limit"], int) and 1 <= inputs["attention_limit"] <= 50) and ("limit" not in inputs or isinstance(inputs["limit"], int) and 1 <= inputs["limit"] <= 200) and set(evidence) <= {"producer", "evidence_ids", "freshness_states"} and isinstance(evidence.get("producer", ""), str) and _ANON_ID.fullmatch(evidence.get("producer", "")) and isinstance(evidence_ids, list) and isinstance(freshness, list) and all(isinstance(item, str) and _ANON_ID.fullmatch(item) for item in evidence_ids) and all(isinstance(item, str) and item in {"fresh", "stale", "partial", "unknown", "unavailable", "conflicting"} for item in freshness) and all(isinstance(key, str) and key in _PRODUCERS and isinstance(item, str) and item in {"complete", "partial", "not_available"} for key, item in coverage.items()) and all(isinstance(item, str) and _CODE.fullmatch(item) for item in limits)
 
 
 class WeeklyBriefSnapshotService:

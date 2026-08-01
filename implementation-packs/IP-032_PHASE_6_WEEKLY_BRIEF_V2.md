@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH B2 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH B3 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -15,8 +15,14 @@ remain separately gated.
 
 The owner accepted the validated, independently reviewed Batch B1 candidate at
 `cce14e42c26c605bc76e895de8d611540eae06f8`. The owner subsequently explicitly
-authorized only Batch B2 snapshot/comparison core. B3, C, D, and every external
-action remain separately gated.
+authorized only Batch B2 snapshot/comparison core. The owner accepted B2 at
+`da093ba1b1f5dabc44053a2eb7edb4d237197768` and then authorized only B3
+nine-section composition. C, D, and every external action remain separately
+gated.
+
+Batch B3 is implemented in `pm_agent.weekly_brief.composer` without route
+registration. It composes the nine sections solely from promoted public
+read contracts and supplies the B2 lookup/recompose seam. C/D remain gated.
 
 ## Batch B2 capability ownership and boundary
 
