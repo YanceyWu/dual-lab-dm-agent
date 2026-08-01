@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Status: `PHASE 5 IMPORT PREREQUISITE AUTHORIZED — PACK REGISTRATION REQUIRED`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -20,7 +20,7 @@ recoverable from Git history.
 
 | Pack | Purpose | Current state | Specification | Report |
 | --- | --- | --- | --- | --- |
-| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; commits remain unpushed | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
+| IP-027 | Phase 1 typed intelligence result contract, validation, discovery, transport, and Management Attention reference mapping | Phase 1 promoted locally on 2026-07-28; retained in the current Phase 4 branch history | `implementation-packs/IP-027_PHASE_1_INTELLIGENCE_CONTRACT.md` | `implementation-reports/IP-027_IMPLEMENTATION_REPORT.md` |
 | IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29 | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
@@ -29,7 +29,7 @@ recoverable from Git history.
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
-| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Corrected design review required; no pack registered | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Design approved; pack registration and clean-import prerequisite only are authorized | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
 
 ## Current execution order
 
@@ -41,12 +41,12 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review the corrected Phase 5 Resource Intelligence design. It freezes the
-   capacity formula and fail-closed state contract, requires a clean-import
-   prerequisite and transactional Staffing revalidation, and defers skill
-   dependency until structured Demand and Skill Evidence are approved. Do not
-   register or implement a Phase 5 pack, use a live connector or real data,
-   release, push, merge, or tag without separate authorization.
+4. In a new session and dedicated capability-named branch, register the Phase 5
+   pack and implement only the authorized workforce/project/plan/allocation
+   clean-import prerequisite. Do not implement effective capacity, heatmap,
+   Staffing integration, Project Health capacity publication, Skill Dependency,
+   Attention, connector or real-data work, release, push, merge, or tag without
+   separate authorization.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

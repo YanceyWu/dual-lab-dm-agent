@@ -1,6 +1,6 @@
 # Phase 5 — Resource Intelligence Design
 
-Status: `REVISED DESIGN REVIEW REQUIRED`
+Status: `APPROVED — IMPORT PREREQUISITE AUTHORIZED`
 Date: 2026-08-01
 Baseline branch: `codex/phase-4-project-health-design`
 Baseline commit: `c2b51f2f8707eada9a4a774cd158df22740005ba`
@@ -337,9 +337,16 @@ explicit promotion decision.
 
 ## Exact next action
 
-Owner review and approval or revision of this corrected Phase 5 design. After
-approval, register a Phase 5 implementation pack that names the discovered
-module owners, reader contracts, focused capability tests, dependency-import
-remediation disposition, validation evidence, and transitional debt. Runtime
-work still requires separate authorization for the canonical
-effective-capacity core only.
+The owner approved this corrected design on 2026-08-01 and authorized a new
+session to create `codex/phase-5-resource-intelligence`, register the Phase 5
+implementation pack, inspect the workforce/project/plan/allocation clean-import
+path, and implement only the bounded remediation required to make that path
+versioned, previewable, auditable, atomic, idempotent, coverage-reporting, and
+rollback-tested. The pack must name the discovered module owners, reader
+contracts, focused capability tests, validation evidence, and transitional
+debt.
+
+This authorization does not include the effective-capacity core, heatmap,
+Staffing consumption, Project Health capacity publication, Skill Dependency,
+Attention integration, connector or real-data use, push, merge, tag, release,
+or deployment. Each later capability remains separately gated.

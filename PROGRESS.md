@@ -2,16 +2,16 @@
 
 Last updated: 2026-08-01
 Current branch: `codex/phase-4-project-health-design`
-Current HEAD before this design revision: `ba9ed75d3e5cbb3f026543277c76868efad21c06`
+Current HEAD before this approval record: `491818e3a15b728d541a9315af215a60834e5eaf`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 5 REVISED DESIGN REVIEW`
-Gate status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Current implementation pack: `NONE — PHASE 5 PACK REGISTRATION AUTHORIZED`
+Gate status: `PHASE 5 IMPORT PREREQUISITE AUTHORIZED`
 Git state: the current branch tracks
-`origin/codex/phase-4-project-health-design`; the exact pre-revision local and
-remote HEAD was `ba9ed75d3e5cbb3f026543277c76868efad21c06`. This design revision
-is local until its final commit state is reported. Do not push, merge, tag,
-release, deploy, access a connector, or use real data without separate
-authorization.
+`origin/codex/phase-4-project-health-design`. Before this approval record, local
+HEAD was `491818e3a15b728d541a9315af215a60834e5eaf` and remote HEAD was
+`ba9ed75d3e5cbb3f026543277c76868efad21c06`; the validated design revision was
+therefore local-only and ahead by one commit. Do not push, merge, tag, release,
+deploy, access a connector, or use real data without separate authorization.
 
 ## Read this first
 
@@ -409,10 +409,9 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 8. Phase 4 remains a strangler comparison. It has no new Attention producer,
    does not replace `project-health-review`, and keeps Resource, Quality, and
    Governance unavailable until approved structured facts exist.
-9. Phase 5 has no implementation pack or runtime authority. Its corrected
-   design records a blocking workforce/project/plan/allocation clean-import
-   prerequisite, defers skill dependency, and requires owner approval before
-   pack registration.
+9. Phase 5 design is approved. A new-session implementation pack registration
+   and only the workforce/project/plan/allocation clean-import prerequisite are
+   authorized. Effective capacity and every later integration remain blocked.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -420,11 +419,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Owner reviews and approves or revises the corrected Phase 5 Resource
-   Intelligence design.
-2. Only after design approval, register a Phase 5 implementation pack that
-   resolves the dependency-import prerequisite; runtime work still requires a
-   separate authorization for the canonical capacity core.
+1. Start a new session from the exact approval-record commit, create
+   `codex/phase-5-resource-intelligence`, and register the Phase 5 implementation
+   pack.
+2. Inspect and implement only the bounded workforce/project/plan/allocation
+   clean-import prerequisite. The effective-capacity core requires a separate
+   authorization.
 3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
    release, or deploy without separate authorization.
@@ -486,6 +486,25 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 5 corrected design approved
+
+- The owner approved the corrected Phase 5 Resource Intelligence design and
+  authorized a new session to create
+  `codex/phase-5-resource-intelligence`, register the implementation pack, and
+  inspect and implement only the bounded workforce/project/plan/allocation
+  versioned clean-import prerequisite.
+- Effective capacity, heatmap, Staffing integration, Project Health capacity
+  publication, Skill Dependency, Attention, connector/real-data use, push,
+  merge, tag, release, and deployment remain unauthorized.
+- This approval record changes no runtime, schema, tests, data, connector, or
+  implementation pack. Exact next action: validate and commit this continuity
+  record, then begin the authorized work in a new session from that commit.
+- `make validate` passed 237 runtime tests, 21 repository-tool tests with 19
+  subtests, Ruff, compilation, boundary and synthetic checks, package build,
+  and all eight release checks. Read-only authorization review found and
+  corrected stale local/remote HEAD wording and a stale Phase 1 publication
+  statement; repeated review found no remaining scope or gate defect.
 
 ### 2026-08-01 — Phase 5 design review corrections
 

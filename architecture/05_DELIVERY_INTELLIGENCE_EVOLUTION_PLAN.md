@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Status: `PHASE 5 IMPORT PREREQUISITE AUTHORIZED`
 Last updated: 2026-08-01
 
 ## Purpose
@@ -377,7 +377,7 @@ Release/Milestone risk, and seven-dimension Project Health remain distinct.
 ### Phase 5 — Resource Intelligence
 
 Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
-(`REVISED DESIGN REVIEW REQUIRED`; no implementation pack or runtime
+(`APPROVED — IMPORT PREREQUISITE AUTHORIZED`; no effective-capacity runtime
 authorization).
 
 Goal: evolve allocation views into effective-capacity and resource-risk views.
@@ -535,8 +535,10 @@ Non-goals:
 
 ## Immediate next action
 
-Phase 4 is promoted as the local development baseline. Review and approve or
-revise the corrected Phase 5 Resource Intelligence design. Do not register a
-Phase 5 implementation pack, begin runtime/schema work, use a connector or real
-data, or push, merge, tag, release, or deploy without the applicable separate
-authorization.
+Phase 4 is promoted as the local development baseline. In a new session, create
+`codex/phase-5-resource-intelligence`, register the Phase 5 implementation pack,
+and inspect and implement only the bounded workforce/project/plan/allocation
+clean-import prerequisite authorized on 2026-08-01. Do not begin the
+effective-capacity core, heatmap, Staffing integration, Project Health capacity
+publication, Skill Dependency, Attention, connector or real-data work, or
+push, merge, tag, release, or deploy without separate authorization.
