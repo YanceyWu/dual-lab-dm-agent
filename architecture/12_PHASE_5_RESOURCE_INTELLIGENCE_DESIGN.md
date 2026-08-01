@@ -1,6 +1,6 @@
 # Phase 5 — Resource Intelligence Design
 
-Status: `APPROVED — CAPACITY CORE IMPLEMENTED; OWNER ACCEPTANCE REQUIRED`
+Status: `APPROVED — CAPACITY CORE ACCEPTED; BATCH C NOT AUTHORIZED`
 Date: 2026-08-01
 Baseline branch: `codex/phase-4-project-health-design`
 Baseline commit: `c2b51f2f8707eada9a4a774cd158df22740005ba`
@@ -340,8 +340,9 @@ explicit promotion decision.
 The owner accepted the workforce/project/plan/allocation clean-import
 prerequisite at local commit `624ba356ff838a89baa39138e99aa73128957339` and
 authorized only the canonical effective-capacity core. That bounded core is now
-implemented, repeatedly validated, and independently reviewed; stop for owner
-acceptance or revision before any consumer or integration work.
+implemented, repeatedly validated, independently reviewed, locally committed at
+`1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and owner-accepted. Stop until a
+separate explicit Batch C authorization or revision.
 
 This authorization does not include a heatmap, Staffing consumption, Project
 Health capacity publication, Skill Dependency, Attention integration,

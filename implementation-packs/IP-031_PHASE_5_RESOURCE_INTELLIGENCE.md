@@ -1,6 +1,6 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `CAPACITY CORE IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Status: `CAPACITY CORE ACCEPTED — BATCH C NOT AUTHORIZED`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -171,6 +171,16 @@ prove clean bootstrap plus isolated rollback.
 - The public capacity reader is deliberately a single member/month lookup. A
   heatmap/query aggregation is a later consumer gate, not hidden in this core.
 
+## First-principles design guardrail
+
+Use the minimum structure that protects current invariants. Every persisted
+table, audit layer, field, and public contract must map to a present acceptance
+criterion; hypothetical future flexibility is not sufficient justification.
+When an invariant is removed, explicitly reconsider consolidation or deletion
+instead of preserving accidental complexity. The accepted capacity tables are
+not a template for later capabilities unless those capabilities independently
+demonstrate the same atomicity, evidence, replay, and audit requirements.
+
 ## Explicitly excluded
 
 No heatmap or public Resource Intelligence use case; Staffing
@@ -181,7 +191,7 @@ deployment.
 
 ## Current gate
 
-The clean-import prerequisite is accepted and the canonical effective-capacity
-core is implemented, repeatedly validated, and independently reviewed. Commit
-it locally and stop for owner acceptance or revision. Every consumer and later
-Phase 5 integration remains separately gated.
+The clean-import prerequisite and canonical effective-capacity core are
+owner-accepted. Stop. Batch C heatmap and Staffing consumption, Project Health
+capacity publication, and every other integration remain separately gated and
+unauthorized.

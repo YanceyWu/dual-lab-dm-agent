@@ -6,14 +6,15 @@ Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-031 — CANONICAL EFFECTIVE-CAPACITY CORE`
-Gate status: `IP-031 CAPACITY CORE IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Gate status: `IP-031 CAPACITY CORE ACCEPTED — BATCH C NOT AUTHORIZED`
 Git state: the dedicated local branch was created from exact approved HEAD
 `37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
 committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
 authorized only the next canonical effective-capacity-core slice. The capacity
 core candidate passed repeated focused/full/release validation and repeated
-read-only review and is part of the next local commit. No push is authorized or
-required. Do not push,
+read-only review, was committed locally at
+`1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and is now owner-accepted. Batch C
+is not authorized. No push is authorized or required. Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
 
@@ -419,10 +420,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
    does not replace `project-health-review`, and keeps Resource, Quality, and
    Governance unavailable until approved structured facts exist.
 9. Phase 5 design is approved and IP-031 is registered. The owner accepted the
-   workforce/project/plan/allocation clean-import prerequisite and authorized
-   only the canonical effective-capacity core. Heatmap, Staffing, Project
-   Health capacity publication, Skill Dependency, Attention, and later
-   integration remain blocked.
+   workforce/project/plan/allocation clean-import prerequisite and the
+   canonical effective-capacity core. Heatmap, Staffing, Project Health
+   capacity publication, Skill Dependency, Attention, and later integration
+   remain blocked pending separate authorization.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -430,8 +431,8 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Stop for owner acceptance or revision of the implemented, repeatedly
-   validated, and independently reviewed IP-031 canonical capacity core.
+1. Stop until the owner separately authorizes or revises the bounded Phase 5
+   Batch C plan. Acceptance of Batch B does not authorize Batch C.
 2. Do not start a heatmap, Staffing or Project Health integration, Skill
    Dependency, Attention, connector/live-data work, or another Phase 5 gate
    without separate explicit authorization.
@@ -496,6 +497,30 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 capacity core accepted; first-principles guardrail recorded
+
+- The owner accepted the explanation, audit, and locally committed canonical
+  effective-capacity core at
+  `1b33d0c9e012909e1ac3eae2b4842497aeb3448a`.
+- The governing principle is minimum sufficient design from first principles:
+  every table, module, audit layer, and persisted field must protect a current
+  invariant or acceptance criterion. Do not add structures for hypothetical
+  future flexibility, and prefer consolidation or deletion when the protected
+  invariant no longer exists.
+- The accepted seven-table core is retained because it currently separates
+  package/session audit, attempts, step runs, atomic current publication,
+  authoritative coverage, source observations, and deterministic derivations.
+  This acceptance is not a precedent for similarly granular schemas without
+  the same demonstrated requirements.
+- No runtime or schema behavior changed in this acceptance record. Phase 5
+  Batch C, including heatmap and Staffing consumption, remains unstarted and
+  requires separate explicit authorization. No push was performed.
+- Documentation-only acceptance validation passed `make validate`: 272 runtime
+  tests, 21 repository-tool tests and 19 subtests, Ruff, compile, diff check,
+  and package build. Read-only review found the gate, exclusions, commit, and
+  first-principles record consistent; release rehearsal was not repeated
+  because runtime, schema, installation, and rollback behavior did not change.
 
 ### 2026-08-01 — IP-031 canonical effective-capacity core implemented
 
