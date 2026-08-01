@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from pm_agent.config import settings
+from pm_agent.workforce_planning_import.read_model import project_allocation_snapshot
 
 
 def list_effective_capacity(
@@ -112,3 +113,111 @@ def get_effective_capacity_in_transaction(
         return result
     finally:
         database.row_factory = prior_factory
+
+
+def get_project_capacity_coverage(
+    project_id: str,
+    year: int,
+    month: int,
+    plan_version_id: str,
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Aggregate one authoritative project/month capacity-coverage fact."""
+    allocation = project_allocation_snapshot(
+        project_id, year, month, plan_version_id, db_path=db_path
+    )
+    base = {
+        "fact_key": "capacity_coverage",
+        "project_id": project_id,
+        "year": year,
+        "month": month,
+        "plan_version_id": plan_version_id,
+        "state": allocation["state"],
+        "state_reason": allocation["state_reason"],
+        "value": None,
+        "evidence": {"allocation": allocation},
+    }
+    if allocation["state"] != "known":
+        return base
+    assignments = allocation["assignments"]
+    if not assignments:
+        return {
+            **base,
+            "state": "known",
+            "state_reason": "authoritative_empty_assignment_set",
+            "value": {
+                "assignment_state": "empty",
+                "assigned_member_count": 0,
+                "overload_state": None,
+            },
+        }
+    member_ids = [item["member_id"] for item in assignments]
+    capacity_rows = list_effective_capacity(
+        year,
+        month,
+        plan_version_id,
+        member_ids=member_ids,
+        db_path=db_path,
+    )
+    by_member = {row["member_id"]: row for row in capacity_rows}
+    missing = sorted(set(member_ids) - set(by_member))
+    if missing:
+        return {
+            **base,
+            "state": "unknown",
+            "state_reason": "assigned_member_capacity_missing",
+            "evidence": {**base["evidence"], "missing_member_ids": missing},
+        }
+    if any(
+        row["workforce_publication_id"] != allocation["publication_id"]
+        for row in capacity_rows
+    ):
+        return {
+            **base,
+            "state": "unknown",
+            "state_reason": "capacity_allocation_publication_mismatch",
+            "evidence": {**base["evidence"], "capacity_derivations": capacity_rows},
+        }
+    states = {row["state"] for row in capacity_rows}
+    state = (
+        "conflicting" if "conflicting" in states
+        else "unknown" if "unknown" in states
+        else "stale" if "stale" in states
+        else "known"
+    )
+    evidence = {**base["evidence"], "capacity_derivations": capacity_rows}
+    if state != "known":
+        return {
+            **base,
+            "state": state,
+            "state_reason": f"assigned_member_capacity_{state}",
+            "evidence": evidence,
+        }
+    overload_states = [row["overload_state"] for row in capacity_rows]
+    if any(item not in {"clear", "amber", "red"} for item in overload_states):
+        return {
+            **base,
+            "state": "unknown",
+            "state_reason": "assigned_member_overload_state_invalid",
+            "evidence": evidence,
+        }
+    overload_state = (
+        "red" if "red" in overload_states
+        else "amber" if "amber" in overload_states
+        else "clear"
+    )
+    return {
+        **base,
+        "state": "known",
+        "state_reason": "assigned_member_capacity_complete",
+        "value": {
+            "assignment_state": "assigned",
+            "assigned_member_count": len(assignments),
+            "overload_state": overload_state,
+            "overloaded_member_count": sum(
+                row["overload_state"] in {"amber", "red"} for row in capacity_rows
+            ),
+        },
+        "evidence": evidence,
+    }

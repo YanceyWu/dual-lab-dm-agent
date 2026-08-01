@@ -1,6 +1,6 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `BATCH C IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Status: `PROJECT HEALTH CAPACITY SLICE VALIDATED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -215,17 +215,32 @@ enablement only; no active operational database is changed.
 
 ## Explicitly excluded
 
-No Project Health capacity publication; Skill Dependency; Attention; legacy
-replacement; connector or real data; active operational database; Batch D;
-push, merge, tag, release, or deployment.
+No Skill Dependency; Attention; legacy replacement; connector or real data;
+active operational database; Batch D; push, merge, tag, release, or deployment.
+
+## Project Health capacity-coverage slice
+
+The owner accepted Batch C at local commit
+`5773d6c7afd887892bbb295efb85ca737958ff8d` and authorized only this separate
+slice. Add a public workforce/planning project-month allocation-coverage reader
+and a Resource Intelligence aggregate capacity-coverage reader. Project Health
+may consume that reader only when the caller names an exact year, month, and
+plan version. It must preserve authoritative empty, absent manifest, unknown,
+stale, and conflicting states; cite the same published derivations used by the
+heatmap and Staffing; and create no Attention.
+
+The existing Project Health assessment/result tables are sufficient. This
+slice adds no table, import package, writer, capacity formula, configurable
+threshold, or generic repository behavior. Focused entry point:
+`src/tests/test_project_capacity_coverage.py`, plus existing Resource
+Intelligence and Project Health regressions. Rollback is software-only: the
+older runtime ignores the additional reader and continues to treat Resource as
+`not_available`; previously persisted assessment rows remain readable.
 
 ## Current gate
 
-The clean-import prerequisite and canonical effective-capacity core are
-owner-accepted. Batch C is authorized only as three independently reviewable
-boundaries: C1 read-only heatmap, C2 disabled Staffing compatibility marker,
-and C3 capacity-aware Staffing assessment/confirmation behind that marker. The
-candidate is repeatedly validated, independently reviewed, and committed
-together with this gate record as current local HEAD. Stop for owner
-acceptance. Project Health capacity publication and every later integration
-remain gated.
+The clean-import prerequisite, canonical effective-capacity core, and Batch C
+are owner-accepted. The separately named Project Health capacity-coverage slice
+above is implemented, repeatedly validated, and repeatedly reviewed. Commit it
+locally and stop for owner acceptance. Skill Dependency, Attention, Batch D,
+and every later integration remain gated.

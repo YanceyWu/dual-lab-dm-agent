@@ -11,6 +11,7 @@ from typing import Any
 
 from pm_agent.project_health.configuration import _params, effective_current
 from pm_agent.project_health.service import CATALOG_VERSION, _connection, _json, _now
+from pm_agent.resource_intelligence.read_model import get_project_capacity_coverage
 
 
 _FACTOR_DEFINITIONS = {
@@ -100,6 +101,21 @@ def _factor_state(
             return limited, ["DEPENDENCY_READINESS_" + limited.upper()], []
         # Phase 3 currently proves an active link, not whether its prerequisite is ready.
         return "unknown", ["DEPENDENCY_READINESS_SEMANTICS_NOT_AVAILABLE"], []
+    if factor_id == "resource_capacity_coverage":
+        limited = _limited_state(rows, "not_available")
+        if limited:
+            return limited, ["CAPACITY_COVERAGE_" + limited.upper()], []
+        value = json.loads(rows[0]["value_json"])
+        if value.get("assignment_state") == "empty":
+            return "unknown", ["CAPACITY_COVERAGE_AUTHORITATIVE_EMPTY"], []
+        overload = value.get("overload_state")
+        if overload == "red":
+            return "red", ["CAPACITY_OVERLOAD_RED"], []
+        if overload == "amber":
+            return "amber", ["CAPACITY_OVERLOAD_AMBER"], []
+        if overload == "clear":
+            return "green", ["CAPACITY_COVERAGE_COMPLETE"], []
+        return "unknown", ["CAPACITY_COVERAGE_VALUE_INVALID"], ["CAPACITY_COVERAGE_VALUE_INVALID"]
     return "not_available", ["APPROVED_SOURCE_FACT_NOT_AVAILABLE"], []
 
 
@@ -119,8 +135,40 @@ def _aggregate_dimension(factor_states: list[str], guards: list[dict[str, Any]])
     return "unknown"
 
 
-def evaluate(project_id: str, *, db_path: str | Path | None = None) -> dict[str, Any]:
+def evaluate(
+    project_id: str,
+    *,
+    capacity_year: int | None = None,
+    capacity_month: int | None = None,
+    capacity_plan_version_id: str | None = None,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
     """Persist a new assessment. It neither changes configuration nor legacy health."""
+    capacity_scope = (capacity_year, capacity_month, capacity_plan_version_id)
+    if any(value is not None for value in capacity_scope) and not all(
+        value is not None for value in capacity_scope
+    ):
+        raise ValueError("PROJECT_HEALTH_CAPACITY_SCOPE_INCOMPLETE")
+    capacity_fact = None
+    if all(value is not None for value in capacity_scope):
+        if (
+            not isinstance(capacity_year, int)
+            or isinstance(capacity_year, bool)
+            or not 2000 <= capacity_year <= 2100
+            or not isinstance(capacity_month, int)
+            or isinstance(capacity_month, bool)
+            or not 1 <= capacity_month <= 12
+            or not isinstance(capacity_plan_version_id, str)
+            or not capacity_plan_version_id.strip()
+        ):
+            raise ValueError("PROJECT_HEALTH_CAPACITY_SCOPE_INVALID")
+        capacity_fact = get_project_capacity_coverage(
+            project_id,
+            capacity_year,
+            capacity_month,
+            capacity_plan_version_id.strip(),
+            db_path=db_path,
+        )
     with _connection(db_path) as conn:
         if not conn.execute("SELECT 1 FROM projects WHERE id=?", [project_id]).fetchone():
             raise ValueError("PROJECT_NOT_FOUND")
@@ -146,7 +194,38 @@ def evaluate(project_id: str, *, db_path: str | Path | None = None) -> dict[str,
         ).fetchall()
         by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in latest_facts:
-            by_key[row["fact_key"]].append(dict(row))
+            # Capacity coverage is accepted only through the dedicated public
+            # reader below, never from the execution capability's fact store.
+            if row["fact_key"] != "capacity_coverage":
+                by_key[row["fact_key"]].append(dict(row))
+        if capacity_fact is not None:
+            state = capacity_fact["state"]
+            by_key["capacity_coverage"].append(
+                {
+                    "fact_id": "capacity-coverage:" + ":".join(
+                        [
+                            project_id,
+                            str(capacity_fact["year"]),
+                            str(capacity_fact["month"]),
+                            capacity_fact["plan_version_id"],
+                        ]
+                    ),
+                    "subject_kind": "project_month",
+                    "subject_id": project_id,
+                    "fact_key": "capacity_coverage",
+                    "value_json": _json(capacity_fact["value"]),
+                    "value_state": state,
+                    "freshness_state": (
+                        "fresh" if state == "known" else "stale" if state == "stale" else "partial"
+                    ),
+                    "evidence_json": _json(
+                        {
+                            "state_reason": capacity_fact["state_reason"],
+                            **capacity_fact["evidence"],
+                        }
+                    ),
+                }
+            )
         factor_results: dict[str, dict[str, Any]] = {}
         for factor_id, (dimension, allowed) in _FACTOR_DEFINITIONS.items():
             rows = [row for key in allowed for row in by_key[key]]

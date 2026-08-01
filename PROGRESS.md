@@ -5,8 +5,8 @@ Current branch: `codex/phase-5-resource-intelligence`
 Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — BATCH C RESOURCE HEATMAP AND STAFFING CONSUMPTION`
-Gate status: `IP-031 BATCH C IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Current implementation pack: `IP-031 — PROJECT HEALTH CAPACITY COVERAGE SLICE`
+Gate status: `IP-031 PROJECT HEALTH CAPACITY SLICE VALIDATED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Git state: the dedicated local branch was created from exact approved HEAD
 `37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
 committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
@@ -16,9 +16,14 @@ read-only review, was committed locally at
 `1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and is now owner-accepted. Batch C
 was explicitly authorized by the owner. The Batch C candidate passed repeated
 focused/full/release validation and repeated read-only review and is committed
-together with this continuity record as the current local HEAD; the exact hash
-is reported in the handoff. Project Health capacity publication remains a
-separate named slice and is not included. No push is authorized or required.
+together with its continuity record at
+`5773d6c7afd887892bbb295efb85ca737958ff8d`; the owner accepted its audit and
+authorized only the separate Project Health `capacity_coverage` publication
+slice. That slice has now passed repeated focused/full/release validation and
+repeated read-only review and is committed together with this continuity record
+as the current local HEAD; the exact hash is reported in the handoff.
+Batch D and every later integration remain blocked. No push is authorized or
+required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -56,9 +61,11 @@ belong in Git history and must not be interpreted as current instructions.
   additive rollback-compatible schema. That prerequisite itself adds no
   capacity derivation.
 - IP-031 now also owns the accepted canonical capacity core and the authorized
-  Batch C candidate: a generic read-only capacity heatmap plus capacity-aware
+  accepted Batch C: a generic read-only capacity heatmap plus capacity-aware
   Staffing assessment/confirmation behind a persisted marker that installs
-  disabled. Project Health and later consumers remain separate gates.
+  disabled. Only the separately named Project Health capacity-coverage reader
+  and factor publication slice is now implemented, validated, and reviewed;
+  later consumers remain separate gates.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -431,9 +438,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
    Governance unavailable until approved structured facts exist.
 9. Phase 5 design is approved and IP-031 is registered. The owner accepted the
    workforce/project/plan/allocation clean-import prerequisite and the
-   canonical effective-capacity core. Heatmap, Staffing, Project Health
-   capacity publication, Skill Dependency, Attention, and later integration
-   remain blocked pending separate authorization.
+   canonical effective-capacity core, then accepted Batch C heatmap and
+   Staffing consumption at `5773d6c7afd887892bbb295efb85ca737958ff8d`. Only
+   the separate Project Health capacity publication slice is now authorized;
+   Skill Dependency, Attention, Batch D, and later integration remain blocked.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -441,11 +449,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Stop for owner acceptance or revision of the committed, repeatedly
-   validated, and reviewed Batch C candidate.
-2. Do not publish Project Health capacity, activate Skill
-   Dependency or Attention, or begin Batch D without separate authorization.
-3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
+1. Stop for owner acceptance or revision of the locally committed Project
+   Health capacity-coverage slice.
+2. Do not begin Batch D automatically; it requires separate authorization.
+3. Do not activate Skill Dependency or Attention without separate authorization.
+4. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
    release, or deploy without separate authorization.
 
@@ -506,6 +514,58 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 Project Health capacity slice validated and reviewed
+
+- Added the public workforce/planning `project_allocation_snapshot` contract.
+  It proves one exact project/month/plan assignment set from the authoritative
+  manifest and coverage, preserves explicit zero as non-assignment evidence,
+  and returns `unknown` for absent or partial scope.
+- Added the Resource Intelligence `get_project_capacity_coverage` reader. It
+  aggregates only positively assigned human members, requires the same
+  workforce publication and exact plan/month, preserves conflicting, unknown,
+  and stale states, and reuses the published derivation/overload evidence rather
+  than recalculating capacity.
+- Extended the existing Project Health evaluator with an optional exact
+  year/month/plan scope. Without that complete scope, old calls retain Resource
+  `not_available`; with it, authoritative empty remains known evidence but the
+  health factor is `unknown`, complete clear coverage is green, and canonical
+  overload maps amber/red. Existing assessment tables persist the result; no
+  schema, generic repository, Attention producer, or configurable threshold was
+  added.
+- First read-only review corrected the legacy no-scope availability behavior,
+  removed contradictory gate wording, and expanded state-matrix tests for
+  missing, unknown, conflicting, stale, authoritative-empty, clear, and red
+  coverage. The independent whole-diff review then blocked an invalid known
+  overload state from becoming clear and prevented an execution-store fact with
+  the same key from bypassing the dedicated capacity reader. Corrected focused
+  evidence is 45 contract tests and 169 combined capability regressions.
+- The corrected `make validate` passed 297 runtime tests, 21 repository-tool
+  tests with 19 subtests, Ruff, compilation, diff checks, and package build.
+  The corrected `make rehearse-release` passed wheel installation, clean
+  bootstrap, isolated upgrade, and software rollback without active database
+  use.
+- Final repeated read-only review rechecked the complete diff, untracked-file
+  scope, dependency direction, execution-fact bypass protection, authoritative
+  zero/missing semantics, state precedence, evidence identity, old-call and
+  rollback compatibility, privacy, and prohibited scope. It found no remaining
+  P0-P2 or actionable issue. The result is committed together with this record
+  as current local HEAD. Exact next action: stop for owner acceptance; do not
+  begin Batch D.
+
+### 2026-08-01 — IP-031 Batch C accepted; Project Health capacity slice authorized
+
+- The owner accepted the completed Batch C audit at local commit
+  `5773d6c7afd887892bbb295efb85ca737958ff8d` and authorized the next separately
+  named Project Health `capacity_coverage` publication slice.
+- The slice is bounded to a public authoritative project/month allocation
+  reader, a Resource Intelligence capacity-coverage reader over canonical
+  effective-capacity facts, and consumption by the existing Project Health
+  assessment. First-principles scope requires reuse of existing assessment
+  storage and no new table unless a current invariant proves it necessary.
+- Skill Dependency, Attention, legacy replacement, Batch D promotion work,
+  connectors, real data, active operational databases, push, merge, tag,
+  release, and deployment remain unauthorized.
 
 ### 2026-08-01 — IP-031 Batch C implemented; revalidation/review in progress
 
