@@ -1,17 +1,18 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-01
-Current branch: `codex/phase-4-project-health-design`
-Current HEAD before this approval record: `491818e3a15b728d541a9315af215a60834e5eaf`
+Current branch: `codex/phase-5-resource-intelligence`
+Current HEAD before the IP-031 implementation commit:
+`37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 5 PACK REGISTRATION AUTHORIZED`
-Gate status: `PHASE 5 IMPORT PREREQUISITE AUTHORIZED`
-Git state: the current branch tracks
-`origin/codex/phase-4-project-health-design`. Before this approval record, local
-HEAD was `491818e3a15b728d541a9315af215a60834e5eaf` and remote HEAD was
-`ba9ed75d3e5cbb3f026543277c76868efad21c06`; the validated design revision was
-therefore local-only and ahead by one commit. Do not push, merge, tag, release,
-deploy, access a connector, or use real data without separate authorization.
+Current implementation pack: `IP-031 — CLEAN-IMPORT PREREQUISITE ONLY`
+Gate status: `IP-031 IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Git state: the dedicated local branch was created from exact approved HEAD
+`37d9ee704459591296acdb8024e1cb96eb9598e6`. The IP-031 candidate passed
+focused/full/release validation and repeated read-only review and will be
+committed locally by this task. No push is authorized or required. Do not push,
+merge, tag, release, deploy, access a connector, or use real data without
+separate authorization.
 
 ## Read this first
 
@@ -39,6 +40,11 @@ belong in Git history and must not be interpreted as current instructions.
 - Database bootstrap owns idempotent migrations, integrity constraints,
   concurrency protection, hashed confirmation tokens, and dependent-view
   preservation.
+- IP-031 adds a separate versioned clean-import prerequisite for workforce
+  members, projects, plan versions, and monthly project allocations. It uses
+  synthetic packages, authoritative coverage, preview/explicit confirmation,
+  atomic publication, replay protection, audit, integrity reporting, and an
+  additive rollback-compatible schema. It adds no capacity derivation.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -395,10 +401,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 through IP-030 are promoted as local development baselines. The
-   current Phase 4 branch and remote branch both pointed to `ba9ed75` before
-   this local design revision; remote CI status for that exact remote commit is
-   `UNKNOWN` in this session.
+5. IP-027 through IP-030 are promoted local development baselines. IP-031 is a
+   local clean-import prerequisite candidate only; it is not Phase 5 promotion.
+   Remote CI and remote branch state for IP-031 are `NOT_APPLICABLE` because no
+   push is authorized.
 6. Management Attention intentionally preserves its legacy `data` projection
    beside the typed intelligence projection. The rejected mapping-oriented
    configuration surface remains unavailable; retained additive storage is
@@ -409,9 +415,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 8. Phase 4 remains a strangler comparison. It has no new Attention producer,
    does not replace `project-health-review`, and keeps Resource, Quality, and
    Governance unavailable until approved structured facts exist.
-9. Phase 5 design is approved. A new-session implementation pack registration
-   and only the workforce/project/plan/allocation clean-import prerequisite are
-   authorized. Effective capacity and every later integration remain blocked.
+9. Phase 5 design is approved and IP-031 is registered. Only the
+   workforce/project/plan/allocation clean-import prerequisite is implemented,
+   validated, and reviewed; owner acceptance remains open. Effective capacity
+   and every later integration remain blocked.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -419,12 +426,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Start a new session from the exact approval-record commit, create
-   `codex/phase-5-resource-intelligence`, and register the Phase 5 implementation
-   pack.
-2. Inspect and implement only the bounded workforce/project/plan/allocation
-   clean-import prerequisite. The effective-capacity core requires a separate
-   authorization.
+1. Commit the reviewed IP-031 candidate locally and stop for owner acceptance
+   or revision.
+2. Do not begin the effective-capacity core; it requires a separate explicit
+   authorization after IP-031 acceptance.
 3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
    release, or deploy without separate authorization.
@@ -486,6 +491,48 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 workforce/planning clean-import prerequisite implemented
+
+- Verified the legacy Distribution Excel path is not a supported production
+  clean-import contract: it destructively clears data with multiple commits and
+  lacks package/schema version, authoritative coverage, explicit confirmation,
+  atomic publication, session/run/attempt audit, conflicting-replay protection,
+  integrity reporting, and software-rollback proof.
+- Registered IP-031 and added the dedicated
+  `pm_agent.workforce_planning_import` schema/repository/service boundary. A
+  `workforce-planning-import-v1` synthetic package previews exact deterministic
+  validation, requires explicit confirmation, then atomically publishes only
+  members, projects, plan versions, and monthly project allocations.
+- Added authoritative member/project/plan identity, member-month, and complete
+  member-month/project/plan allocation-key coverage. Explicit `0.0` rows remain
+  known zero; a missing row or manifest key fails closed. Identical replay is
+  idempotent; conflicting replay cannot replace the complete current view; a
+  failed publication rolls back all domain rows and retains attempt audit.
+- Added the local non-interactive script and stable-anonymous sample package,
+  capability-named focused tests, and installed-package rehearsal coverage.
+  Additive import audit/coverage tables are ignored by the Phase 4 read path;
+  existing canonical dependency tables remain its rollback-compatible read
+  target.
+- Final focused validation passed 16 capability tests and 22 combined
+  capability/bootstrap/import-contract tests. Final `make validate` passed 254
+  runtime tests, 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  boundary and synthetic checks, diff hygiene, package build, and all eight
+  release checks. `make rehearse-release` passed wheel installation, clean
+  bootstrap, installed-package structured import/audit/replay, isolated sample
+  upgrade, integrity checks, and rollback.
+- Independent read-only review found and corrected bootstrap-to-workflow import
+  coupling, boolean year/month acceptance, unconstrained member role/level, and
+  unhashable enum inputs that could escape stable validation errors. The full
+  focused/validation/rehearsal suite passed after correction. The final repeated
+  review checked the complete diff, import graph, schema ownership, atomicity,
+  coverage/zero semantics, replay/conflict protection, rollback, prohibited
+  scope, portable boundary, and gate wording and found no remaining P0-P2 issue.
+- No effective capacity, leave/BAU/non-project calculation, heatmap, Staffing,
+  Project Health capacity fact, Skill Dependency, Attention, legacy replacement,
+  connector/live-data, active database, push, merge, tag, release, or deployment
+  work was performed. Exact next action: commit locally, record the exact final
+  Git state, and stop for owner acceptance or revision.
 
 ### 2026-08-01 — Phase 5 corrected design approved
 

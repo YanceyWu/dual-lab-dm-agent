@@ -17,6 +17,7 @@ from pm_agent.database.project_health_schema import (
     PROJECT_HEALTH_DDL,
     ensure_project_health_reimport_columns,
 )
+from pm_agent.workforce_planning_import.schema import WORKFORCE_PLANNING_IMPORT_DDL
 from pm_agent.rules.identity import (
     build_default_resource_portal_id,
     build_placeholder_id,
@@ -3055,6 +3056,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PHASE3_EVIDENCE_DDL)
     conn.executescript(PHASE3_CANONICAL_DDL)
     conn.executescript(PROJECT_HEALTH_DDL)
+    conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
     ensure_project_health_reimport_columns(conn)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()

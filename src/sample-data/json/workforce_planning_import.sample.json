@@ -1,0 +1,89 @@
+{
+  "dataset_marker": "SYNTHETIC_DATASET_V1",
+  "package_id": "package-synthetic-workforce-planning-001",
+  "schema_version": "workforce-planning-import-v1",
+  "generated_at": "2026-08-01T00:00:00+00:00",
+  "source_id": "source-synthetic-workforce-planning",
+  "manifest": {
+    "member_ids": ["member-synthetic-001", "member-synthetic-002"],
+    "project_ids": ["project-synthetic-atlas"],
+    "plan_version_ids": ["plan-synthetic-baseline-001"],
+    "workforce_periods": [
+      {"member_id": "member-synthetic-001", "year": 2026, "month": 8},
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8}
+    ],
+    "allocation_keys": [
+      {
+        "member_id": "member-synthetic-001",
+        "project_id": "project-synthetic-atlas",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      },
+      {
+        "member_id": "member-synthetic-002",
+        "project_id": "project-synthetic-atlas",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      }
+    ]
+  },
+  "members": [
+    {
+      "member_id": "member-synthetic-001",
+      "display_name": "Synthetic Member 001",
+      "role": "delivery_manager",
+      "level": "senior",
+      "status": "active",
+      "effective_start": "2026-01-01",
+      "effective_end": null
+    },
+    {
+      "member_id": "member-synthetic-002",
+      "display_name": "Synthetic Member 002",
+      "role": "engineer",
+      "level": "mid",
+      "status": "active",
+      "effective_start": "2026-01-01",
+      "effective_end": null
+    }
+  ],
+  "projects": [
+    {
+      "project_id": "project-synthetic-atlas",
+      "display_name": "Synthetic Project Atlas",
+      "status": "active",
+      "priority": 2,
+      "start_date": "2026-01-01",
+      "target_end": "2026-12-31"
+    }
+  ],
+  "plan_versions": [
+    {
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "version_name": "Synthetic Baseline 001",
+      "scenario_type": "baseline",
+      "as_of_date": "2026-08-01",
+      "status": "active"
+    }
+  ],
+  "monthly_allocations": [
+    {
+      "member_id": "member-synthetic-001",
+      "project_id": "project-synthetic-atlas",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.5
+    },
+    {
+      "member_id": "member-synthetic-002",
+      "project_id": "project-synthetic-atlas",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.0
+    }
+  ]
+}

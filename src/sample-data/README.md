@@ -35,6 +35,11 @@ the checker and the characterization suite passes.
 clean re-import package. It intentionally contains no Quality, Resource, or
 Governance observations, so those dimensions remain `not_available`.
 
+`json/workforce_planning_import.sample.json` is the versioned, authoritative
+workforce/project/plan/monthly-allocation clean-import package. It uses only
+stable synthetic identifiers and includes an explicit zero allocation so that
+known zero remains distinguishable from a missing manifest record.
+
 ## Transfer status
 
 `APPROVED_FOR_PUBLIC_TRANSFER`.

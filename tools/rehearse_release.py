@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import shutil
 import sqlite3
@@ -79,7 +80,13 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'execution_derivation_runs',
                     'execution_derivation_inputs',
                     'execution_facts',
-                    'milestone_import_operations'
+                    'milestone_import_operations',
+                    'workforce_planning_import_sessions',
+                    'workforce_planning_import_attempts',
+                    'workforce_planning_import_runs',
+                    'workforce_planning_publications',
+                    'workforce_member_period_coverage',
+                    'monthly_project_allocation_coverage'
                 )
                 """
             )
@@ -127,6 +134,12 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "execution_derivation_inputs",
         "execution_facts",
         "milestone_import_operations",
+        "workforce_planning_import_sessions",
+        "workforce_planning_import_attempts",
+        "workforce_planning_import_runs",
+        "workforce_planning_publications",
+        "workforce_member_period_coverage",
+        "monthly_project_allocation_coverage",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
     if token_columns != {"confirmation_token_hash"}:
@@ -205,6 +218,66 @@ def rehearse() -> None:
             clean_db,
             {table: 0 for table in CORE_TABLES},
         )
+        installed_import = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json,sys;"
+                    "from pm_agent.workforce_planning_import.service import "
+                    "preview_import,confirm_import;"
+                    "p=json.load(open(sys.argv[1],encoding='utf-8'));"
+                    "v=preview_import(p);r=confirm_import(v['session_id']);"
+                    "i=preview_import(p);"
+                    "print(json.dumps({'result':r,'replay':i},sort_keys=True))"
+                ),
+                str(
+                    REPO_ROOT
+                    / "src/sample-data/json/workforce_planning_import.sample.json"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+        )
+        import_result = json.loads(installed_import.stdout)
+        if import_result["result"]["status"] != "completed":
+            raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_IMPORT_FAILED")
+        if import_result["replay"]["status"] != "already_completed":
+            raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_REPLAY_INVALID")
+        if import_result["result"]["report"]["software_rollback"]["state"] != "passed":
+            raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_ROLLBACK_INVALID")
+        verify_upgraded_database(
+            clean_db,
+            {
+                "employees": 2,
+                "projects": 1,
+                "assignments": 0,
+                "monthly_allocations": 2,
+                "decision_log": 0,
+            },
+        )
+        with sqlite3.connect(clean_db) as connection:
+            audit_counts = {
+                table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for table in (
+                    "workforce_planning_import_sessions",
+                    "workforce_planning_import_attempts",
+                    "workforce_planning_publications",
+                    "workforce_member_period_coverage",
+                    "monthly_project_allocation_coverage",
+                )
+            }
+        if audit_counts != {
+            "workforce_planning_import_sessions": 1,
+            "workforce_planning_import_attempts": 1,
+            "workforce_planning_publications": 1,
+            "workforce_member_period_coverage": 2,
+            "monthly_project_allocation_coverage": 2,
+        }:
+            raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_AUDIT_INVALID")
         subprocess.run(
             [
                 sys.executable,
