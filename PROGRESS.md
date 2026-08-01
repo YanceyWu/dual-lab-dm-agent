@@ -500,9 +500,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review and accept the validated IP-033 Phase 4 controlled assessment entry
-   on `codex/phase-4-assessment-entry`; the branch is stopped at that review
-   gate.
+1. Usability requirements R1–R7 and their acceptance criteria are recorded in
+   `docs/USABILITY_REQUIREMENTS_HANDOFF_2026-08-02.md`. The next session
+   executes them in order: R3 (IP-033 acceptance) first, then R1 demo data
+   rebuild, R2 synthetic integration runbook, R5 integration test, R4
+   entry-boundary decisions, R6 UAT runbook revision, R7 documentation
+   consistency scan. Every item stops for owner review.
 2. Phase 6 Weekly Brief v2 remains the promoted local baseline. The next
    program gate is Phase 7 Forecast v1: it requires a separately approved
    design and a named implementation authorization.
@@ -571,6 +574,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — Usability requirements handoff recorded
+
+- Recorded R1–R7 usability requirements with acceptance criteria in
+  `docs/USABILITY_REQUIREMENTS_HANDOFF_2026-08-02.md`, including the demo
+  data rebuild, synthetic integration runbook and test, IP-033 acceptance,
+  entry-boundary decisions, UAT runbook revision, and documentation
+  consistency scan.
+- The handoff includes a copy-ready session prompt; it changes no runtime,
+  schema, test, or data. `PROGRESS.md` remains the single source of truth.
 
 ### 2026-08-02 — IP-033 Phase 4 controlled assessment entry implemented and validated
 
