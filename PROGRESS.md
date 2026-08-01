@@ -6,16 +6,16 @@ Current HEAD before the IP-032 Batch B1 acceptance-record commit:
 `cce14e42c26c605bc76e895de8d611540eae06f8`
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-032 — BATCH B3 NINE-SECTION COMPOSITION`
-Gate status: `PHASE 6 BATCH B3 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
+Gate status: `PHASE 6 BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
 `cce14e42c26c605bc76e895de8d611540eae06f8`. The owner has now explicitly
   authorized B2 and accepted its validated, independently reviewed local result
 at `da093ba1b1f5dabc44053a2eb7edb4d237197768`. The owner then authorized only
-B3 deterministic nine-section composition. B3 excludes shared routing, legacy
-replacement, producers, connectors, real-data work, C/D, and every external
-action. No push is authorized or required.
+B3 deterministic nine-section composition and accepted its validated local
+result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. Batch C shared-interface
+integration and Batch D remain unauthorized. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -463,10 +463,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Owner accept, revise, or reject the implemented IP-032 Batch B3 deterministic
-   nine-section composer. Do not enter C/D.
-2. Do not add a route/interface, legacy replacement, or capture command from B3
-   completion or passing validation.
+1. Separately authorize, revise, or decline named IP-032 Batch C. Do not enter
+   C/D from B3 acceptance alone.
+2. Do not add a route/interface, legacy replacement, or capture command without
+   that named Batch C authorization.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
 4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
@@ -531,6 +531,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-01 — IP-032 Batch B3 accepted
+
+- The owner accepted the validated, independently reviewed B3 deterministic
+  nine-section composition at local commit
+  `ce726f6c9e7bd334a5af3847141d0b66258a47b3`.
+- Acceptance covers only the non-routed composer, public-contract composition,
+  B2 lookup/recompose seam, and related compatibility/rehearsal evidence.
+- Batch C shared-interface/legacy strangler integration and Batch D promotion
+  remain separately unauthorized. No push, merge, tag, release, deployment,
+  connector, real-data, producer, or external action is authorized.
+- Exact next action: explicitly authorize, revise, or decline named Batch C.
 
 ### 2026-08-01 — IP-032 Batch B3 implemented and independently reviewed
 

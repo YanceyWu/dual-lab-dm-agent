@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 6 IP-032 BATCH B3 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
+Status: `PHASE 6 IP-032 BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -25,7 +25,7 @@ recoverable from Git history.
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
-| IP-032 | Phase 6 Weekly Brief v2 | Design approved; B1/B2 accepted; B3 composition implemented, awaiting owner acceptance | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | Not yet created; implementation report is a later Batch D gate |
+| IP-032 | Phase 6 Weekly Brief v2 | Design approved; B1/B2/B3 accepted; Batch C requires separate authorization | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | Not yet created; implementation report is a later Batch D gate |
 
 ## Approved design
 

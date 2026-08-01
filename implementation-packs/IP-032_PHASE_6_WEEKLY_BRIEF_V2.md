@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH B3 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -22,7 +22,9 @@ gated.
 
 Batch B3 is implemented in `pm_agent.weekly_brief.composer` without route
 registration. It composes the nine sections solely from promoted public
-read contracts and supplies the B2 lookup/recompose seam. C/D remain gated.
+read contracts and supplies the B2 lookup/recompose seam. The owner accepted
+the validated B3 result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`.
+Batch C and D remain separately gated.
 
 ## Batch B2 capability ownership and boundary
 
