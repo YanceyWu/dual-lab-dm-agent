@@ -391,6 +391,43 @@ def rehearse() -> None:
             != "member-synthetic-002"
         ):
             raise RuntimeError("INSTALLED_STAFFING_CAPACITY_CONSUMPTION_INVALID")
+        installed_project_health_capacity = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json;"
+                    "from pm_agent.project_health.evaluation import evaluate;"
+                    "from pm_agent.project_health.read_model import latest_assessments;"
+                    "r=evaluate('project-synthetic-atlas',capacity_year=2026,"
+                    "capacity_month=8,capacity_plan_version_id="
+                    "'plan-synthetic-baseline-001');"
+                    "a=latest_assessments(project_id='project-synthetic-atlas')[0];"
+                    "f=next(x for x in a['factors'] if x['factor_id']=="
+                    "'resource_capacity_coverage');"
+                    "print(json.dumps({'result':r,'factor':f},sort_keys=True))"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+        )
+        project_health_capacity = json.loads(installed_project_health_capacity.stdout)
+        health_result = project_health_capacity["result"]
+        health_factor = project_health_capacity["factor"]
+        capacity_evidence = health_factor["detail"]["evidence_refs"][0]["evidence"]
+        if (
+            health_result["dimensions"]["resource"] != "green"
+            or health_factor["state"] != "green"
+            or capacity_evidence["capacity_derivations"][0]["derivation_rule_version"]
+            != "effective-capacity-v1"
+        ):
+            raise RuntimeError("INSTALLED_PROJECT_HEALTH_CAPACITY_INVALID")
+        with sqlite3.connect(clean_db) as connection:
+            if connection.execute("SELECT COUNT(*) FROM attention_signals").fetchone()[0]:
+                raise RuntimeError("INSTALLED_PROJECT_HEALTH_CAPACITY_ATTENTION_CREATED")
         subprocess.run(
             [
                 sys.executable,

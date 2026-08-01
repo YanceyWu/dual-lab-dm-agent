@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-031 BATCH C IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Status: `IP-031 BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -24,13 +24,13 @@ recoverable from Git history.
 | IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29 | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
-| IP-031 | Phase 5 Resource Intelligence | Clean-import prerequisite, capacity core, and Batch C accepted; Project Health capacity-coverage slice validated/reviewed and awaiting owner acceptance; Batch D and later integrations blocked | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | Not created; Phase 5 is not complete or promoted |
+| IP-031 | Phase 5 Resource Intelligence | Clean-import prerequisite, capacity core, Batch C, and Project Health capacity coverage accepted; Batch D validated/reviewed; explicit promotion decision required | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 
 ## Approved design
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
-| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Project Health capacity-coverage slice validated/reviewed; owner acceptance required; later gates blocked | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Batch D validated/reviewed; explicit promotion decision required; later gates blocked | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
 
 ## Current execution order
 

@@ -1,6 +1,6 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `PROJECT HEALTH CAPACITY SLICE VALIDATED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -241,6 +241,9 @@ older runtime ignores the additional reader and continues to treat Resource as
 
 The clean-import prerequisite, canonical effective-capacity core, and Batch C
 are owner-accepted. The separately named Project Health capacity-coverage slice
-above is implemented, repeatedly validated, and repeatedly reviewed. Commit it
-locally and stop for owner acceptance. Skill Dependency, Attention, Batch D,
-and every later integration remain gated.
+is owner-accepted at `e7e24b6049155f3a001dc80b95816ba59e8f8ed1`. Batch D is
+complete with combined regression, installed-package clean-import and rollback
+rehearsal, portable review, the IP-031 implementation report, and repeated
+whole-branch review. Stop after the local Batch D commit for an explicit owner
+promotion decision. Skill Dependency, Attention, promotion, and every later
+integration remain gated.

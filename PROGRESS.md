@@ -5,8 +5,8 @@ Current branch: `codex/phase-5-resource-intelligence`
 Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — PROJECT HEALTH CAPACITY COVERAGE SLICE`
-Gate status: `IP-031 PROJECT HEALTH CAPACITY SLICE VALIDATED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Current implementation pack: `IP-031 — BATCH D REGRESSION AND PROMOTION DECISION PREPARATION`
+Gate status: `IP-031 BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
 Git state: the dedicated local branch was created from exact approved HEAD
 `37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
 committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
@@ -22,7 +22,14 @@ authorized only the separate Project Health `capacity_coverage` publication
 slice. That slice has now passed repeated focused/full/release validation and
 repeated read-only review and is committed together with this continuity record
 as the current local HEAD; the exact hash is reported in the handoff.
-Batch D and every later integration remain blocked. No push is authorized or
+The owner accepted that slice at
+`e7e24b6049155f3a001dc80b95816ba59e8f8ed1` and authorized only Batch D
+regression, rehearsal, implementation-report, and promotion-decision
+preparation. Promotion itself and every later integration remain separately
+gated. The Batch D candidate passed combined regression, full validation,
+enhanced installed-package rehearsal, and repeated whole-branch review and is
+committed together with its report and this continuity record as current local
+HEAD; the exact hash is reported in the handoff. No push is authorized or
 required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
@@ -64,8 +71,9 @@ belong in Git history and must not be interpreted as current instructions.
   accepted Batch C: a generic read-only capacity heatmap plus capacity-aware
   Staffing assessment/confirmation behind a persisted marker that installs
   disabled. Only the separately named Project Health capacity-coverage reader
-  and factor publication slice is now implemented, validated, and reviewed;
-  later consumers remain separate gates.
+  and factor publication slice is now owner-accepted. Batch D validation,
+  rehearsal, reporting, and review are complete; explicit promotion and later
+  consumers remain separate gates.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -449,9 +457,9 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Stop for owner acceptance or revision of the locally committed Project
-   Health capacity-coverage slice.
-2. Do not begin Batch D automatically; it requires separate authorization.
+1. Stop for an explicit owner decision to promote, revise, or reject the local
+   IP-031 Resource Intelligence candidate.
+2. Do not infer promotion or begin Phase 6 from passing Batch D evidence.
 3. Do not activate Skill Dependency or Attention without separate authorization.
 4. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
@@ -514,6 +522,47 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 Batch D validated and repeatedly reviewed
+
+- Added `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md`, reconciling
+  the full Phase 5 scope, module ownership, public contracts, local commits,
+  compatibility, rollback, risks, deferred work, and promotion gate.
+- Combined focused capacity/Staffing/Project Health and shared-contract
+  regression passed 169 synthetic tests. `make validate` passed 297 runtime
+  tests, 21 repository-tool tests with 19 subtests, repository-boundary and
+  synthetic-sample checks, Ruff, compilation, diff hygiene, and package build.
+- Initial review found one accepted evidence gap: the installed-wheel rehearsal
+  reached workforce/planning import, capacity, and Staffing but did not execute
+  Project Health capacity. The rehearsal now evaluates the installed Project
+  Health Resource factor, verifies the same `effective-capacity-v1` derivation,
+  and proves no Attention creation.
+- Enhanced `make rehearse-release` passed wheel install, empty-database
+  bootstrap, idempotent dependency and capacity import/replay, capacity-aware
+  Staffing, Project Health capacity, isolated populated upgrade, integrity, and
+  software rollback. No active database or real data was used.
+- Repeated whole-branch read-only review checked all changes from baseline,
+  dedicated schema/module boundaries, exact formula and state precedence,
+  preview/confirm atomicity, replay/conflict behavior, Staffing transaction
+  ordering, Project Health reader isolation, portable privacy, rollback, report
+  accuracy, and prohibited scope. It found no remaining P0-P2 or actionable
+  issue. The final continuity pass then corrected one stale top-level
+  implementation-pack index status that still named Batch C. Passing evidence
+  does not promote Phase 5; explicit owner decision is next.
+
+### 2026-08-01 — IP-031 Project Health capacity slice accepted; Batch D authorized
+
+- The owner accepted the Project Health capacity-coverage slice at local commit
+  `e7e24b6049155f3a001dc80b95816ba59e8f8ed1` and authorized the next named
+  Batch D regression and promotion-decision preparation stage.
+- Batch D is limited to combined capacity/Staffing/Project Health regression,
+  focused capability tests, full validation, installed-package clean-import and
+  rollback rehearsal, portable review, the IP-031 implementation report, and
+  repeated independent read-only review. Passing evidence does not itself
+  promote Phase 5.
+- No Skill Dependency, Attention, legacy replacement, connector/real-data,
+  active operational database, push, merge, tag, release, deployment, or later
+  phase work is authorized.
 
 ### 2026-08-01 — IP-031 Project Health capacity slice validated and reviewed
 
