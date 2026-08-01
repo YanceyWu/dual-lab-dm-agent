@@ -34,15 +34,14 @@ over deterministic use cases; it does not become the system of record.
 | 3 | Execution and canonical milestone/commitment facts | Promoted locally. |
 | 4 | Seven-dimension Project Health | Promoted locally; legacy review remains in place. |
 | 5 | Effective capacity and Resource Intelligence | Promoted locally; Skill Dependency and new Attention producers remain excluded. |
-| 6 | Weekly Brief v2 from promoted facts | Batch A current-state inspection and design authorized; implementation is not yet authorized. |
+| 6 | Weekly Brief v2 from promoted facts | Promoted locally on 2026-08-01 as the Phase 6 development baseline. |
 | 7 | Forecast v1 using milestone and health history | Planned only. |
 | 8 | What-if Simulation v1 | Planned only. |
 | 9 | Integrated release candidate and deferred UAT | Planned only; requires separately approved release/UAT work. |
 
-Phase 6 is the current design task; Phases 7–9 remain roadmap intent only.
-Before Phase 6 runtime work, inspect the live repository, write and approve a
-bounded design, register its implementation pack, and receive authorization for
-exactly one implementation gate.
+Phase 6 is promoted as the local development baseline; Phases 7–9 remain
+roadmap intent only and each requires a separately approved design and a named
+implementation authorization.
 
 ## Reuse and ownership decisions already made
 

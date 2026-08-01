@@ -71,8 +71,12 @@ heatmap and Staffing consumption, Project Health capacity publication, Batch D
 regression, installed-package rehearsal, and repeated review. The owner
 promoted exact validated Batch D HEAD
 `c5ee57c49146eca179d0ccc2feaeeef0a7671d00` as the local Phase 5 development
-baseline on 2026-08-01. The next authorized gate is Phase 6 Batch A design in a
-new branch/session; Phase 6 runtime and later phases remain gated.
+baseline on 2026-08-01. Phase 6 IP-032 then completed its bounded B1 read
+contracts, B2 snapshot/comparison core, B3 nine-section composition, Batch C
+shared-interface integration, and Batch D validation and review, and was
+promoted as the local Phase 6 development baseline on 2026-08-01. The next
+program gate is Phase 7 Forecast v1 design; it and every later phase remain
+separately gated.
 
 ## Delivery loop
 
@@ -418,6 +422,8 @@ Staffing safety and concurrency tests remain green.
 
 ### Phase 6 — Weekly Brief v2
 
+Status: promoted as the local Phase 6 development baseline on 2026-08-01.
+
 Goal: produce a management-ready brief from verified facts and promoted
 intelligence capabilities.
 
@@ -443,6 +449,9 @@ issues are distinguished, and the model cannot add facts absent from tool
 results.
 
 ### Phase 7 — Forecast v1
+
+Status: planned only; requires a separately approved design and named
+implementation authorization.
 
 Goal: implement a transparent deterministic Sprint and Release forecast.
 

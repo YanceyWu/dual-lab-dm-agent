@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 6 PROMOTED LOCAL BASELINE`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -35,8 +35,9 @@ action remain separately gated.
 
 Batch D combined focused regression, full validation, installed-package
 rehearsal, and the independent read-only review are complete. The owner now
-holds the promotion decision for the integrated Phase 6 Weekly Brief v2
-baseline: promote, revise, or reject.
+promoted the integrated Phase 6 Weekly Brief v2 candidate as the local Phase 6
+development baseline on 2026-08-01. Promotion is local only; every external
+action remains separately gated.
 
 ## Batch B2 capability ownership and boundary
 

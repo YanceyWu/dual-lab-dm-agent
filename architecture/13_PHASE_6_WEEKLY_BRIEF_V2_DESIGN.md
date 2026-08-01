@@ -1,6 +1,6 @@
 # Phase 6 — Weekly Brief v2 Design
 
-Status: `DESIGN APPROVED — BATCH B1/B2/B3 OWNER-ACCEPTED — C AUTHORIZATION REQUIRED`
+Status: `PHASE 6 PROMOTED LOCALLY`
 Date: 2026-08-01
 Baseline branch: `codex/phase-6-weekly-brief-design`
 Baseline commit: `7442f52cb5fc015c4efdcf20941293314f71e9db`

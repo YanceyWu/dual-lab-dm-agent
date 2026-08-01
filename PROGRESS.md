@@ -3,10 +3,10 @@
 Last updated: 2026-08-01
 Current branch: `codex/phase-6-weekly-brief-design`
 Current HEAD: latest local commit on `codex/phase-6-weekly-brief-design`
-(IP-032 Batch D validated and reviewed)
+(Phase 6 Weekly Brief v2 promoted locally)
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — BATCH D VALIDATED AND REVIEWED`
-Gate status: `PHASE 6 BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Current implementation pack: `IP-032 — PHASE 6 PROMOTED LOCAL BASELINE`
+Gate status: `PHASE 6 PROMOTED LOCALLY — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -18,8 +18,10 @@ result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. The owner authorized
 the corrected Batch C shared-interface implementation on 2026-08-01 and
 accepted the validated, reviewed candidate at `3df79a1`. The owner authorized
 Batch D on 2026-08-01; its combined regression, full validation, installed
-rehearsal, and independent review passed. Promotion and every external action
-remain separate owner decisions. No push is authorized or required.
+rehearsal, and independent review passed. The owner promoted the validated,
+reviewed Phase 6 Weekly Brief v2 candidate as the local Phase 6 development
+baseline on 2026-08-01. Promotion is local only; every external action remains
+a separate owner decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -41,6 +43,9 @@ belong in Git history and must not be interpreted as current instructions.
 - Read-only management use cases cover workload, project health, management
   attention, contract continuity, weekly brief, actions, connector status,
   connector sync results, and project snapshots.
+- Phase 6 Weekly Brief v2 is promoted as the local baseline: opt-in structured
+  composition with explicit snapshot capture preview/confirm; legacy v1
+  weekly brief and `pm report` remain unchanged.
 - Staffing supports deterministic assessment and
   propose/preview/confirm/persist writes. Role is reference context rather than
   a hard eligibility constraint. HIREF number plus its project/date interval
@@ -467,14 +472,14 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Decide promotion, revision, or rejection of the validated, independently
-   reviewed IP-032 Batch D candidate (Phase 6 Weekly Brief v2 local baseline).
+1. Phase 6 Weekly Brief v2 is the promoted local baseline. The next program
+   gate is Phase 7 Forecast v1: it requires a separately approved design and a
+   named implementation authorization.
 2. Do not push, merge, tag, release, deploy, activate a connector, use real
-   data, or start a new phase without that explicit promotion decision.
+   data, or start Phase 7 runtime/schema/test work without that authorization.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
-4. Preserve the promoted Phase 1–5 baselines and the accepted IP-032 B1–C
-   records.
+4. Preserve the promoted Phase 1–6 baselines and the accepted IP-032 records.
 
 ## Decisions in force
 
@@ -534,6 +539,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 6 Weekly Brief v2 promoted locally
+
+- The owner promoted the validated, independently reviewed Phase 6 Weekly
+  Brief v2 candidate as the local Phase 6 development baseline on 2026-08-01.
+- Promotion covers the accepted B1 public read contracts, B2 snapshot and
+  comparison core, B3 nine-section composition, Batch C shared-interface
+  integration, and the Batch D regression/rehearsal/review record.
+- Promotion is local only. No push, merge, tag, release, deployment,
+  connector, real-data, producer, or external action was performed.
+- Exact next action: Phase 7 Forecast v1 requires a separately approved
+  design and named authorization.
 
 ### 2026-08-01 — IP-032 Batch D validated and reviewed
 

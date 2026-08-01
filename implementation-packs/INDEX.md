@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 6 IP-032 BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
+Status: `PHASE 6 IP-032 PROMOTED LOCAL BASELINE`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -25,14 +25,14 @@ recoverable from Git history.
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
-| IP-032 | Phase 6 Weekly Brief v2 | Design approved; B1/B2/B3 accepted; Batch C requires separate authorization | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | Not yet created; implementation report is a later Batch D gate |
+| IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
 
 ## Approved design
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
 | Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Promoted locally; Skill Dependency and new Attention producers remain excluded | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
-| Phase 6 | Weekly Brief v2 from promoted facts | Design approved; IP-032 Batch B1 accepted; B2 snapshot/comparison core in progress | `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md` |
+| Phase 6 | Weekly Brief v2 from promoted facts | Promoted as the local Phase 6 development baseline on 2026-08-01 | `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md` |
 
 ## Current execution order
 
@@ -44,8 +44,9 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Complete the explicitly authorized IP-032 Batch B2 snapshot/comparison core,
-   then stop for independent review and owner acceptance; do not enter B3.
+4. Phase 6 Weekly Brief v2 (IP-032) is the promoted local baseline. The next
+   planned gate is Phase 7 Forecast v1 design; it and every later phase require
+   separate owner authorization.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
