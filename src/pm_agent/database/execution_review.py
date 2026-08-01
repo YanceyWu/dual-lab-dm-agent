@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +67,37 @@ def list_latest_execution_facts(
             item["value"] = json.loads(item.pop("value_json"))
             item["evidence"] = json.loads(item.pop("evidence_json"))
             item["warning_codes"] = json.loads(item.pop("warning_codes_json"))
+            item["fact_observed_at"] = item["finished_at"] or item["started_at"]
+            is_achievement = (
+                item["subject_kind"] == "milestone"
+                and item["fact_key"] == "milestone_adherence"
+                and item["value_state"] == "known"
+                and item["value"] in {"achieved_on_time", "achieved_late"}
+            )
+            event_date = (
+                item["evidence"].get("actual_date")
+                if is_achievement and isinstance(item["evidence"], dict)
+                else ""
+            )
+            try:
+                item["event_occurred_at"] = (
+                    date.fromisoformat(event_date).isoformat()
+                    if isinstance(event_date, str) and event_date
+                    else ""
+                )
+            except ValueError:
+                item["event_occurred_at"] = ""
+            item["event_time_precision"] = (
+                "date" if item["event_occurred_at"] else "not_available"
+            )
+            item["event_time_state"] = (
+                "known" if item["event_occurred_at"] else "not_available"
+            )
+            item["event_time_basis"] = (
+                "fact_derivation_evidence" if item["event_occurred_at"] else ""
+            )
+            if is_achievement and not item["event_occurred_at"]:
+                item["warning_codes"].append("EXECUTION_EVENT_TIME_NOT_AVAILABLE")
             item["input_ids"] = [
                 dict(input_row)
                 for input_row in connection.execute(

@@ -2,19 +2,18 @@
 
 Last updated: 2026-08-01
 Current branch: `codex/phase-6-weekly-brief-design`
-Current HEAD before the Phase 6 Batch A design commit:
-`7442f52cb5fc015c4efdcf20941293314f71e9db`
+Current HEAD before the IP-032 Batch B1 implementation commit:
+`33fc6f100b36f6e54eec73e531590c186f4b0441`
 Package version: `0.2.0rc1`
-Current implementation pack: `NOT REGISTERED — PHASE 6 DESIGN ONLY`
-Gate status: `PHASE 6 BATCH A DESIGN COMPLETE — OWNER APPROVAL REQUIRED`
-Git state: the dedicated local branch was created from exact approved Phase 5
-promotion-record HEAD `7442f52cb5fc015c4efdcf20941293314f71e9db` with a clean
-worktree. Batch A adds only the bounded Phase 6 Weekly Brief v2 design and this
-continuity update. Runtime, schema, tests, implementation-pack registration,
-and implementation remain gated until the owner approves or revises the design
-and separately authorizes one named implementation slice. The final local
-design commit is reported in the handoff because a commit cannot contain its
-own hash. No push is authorized or required.
+Current implementation pack: `IP-032 — BATCH B1 COMPLETE FOR OWNER REVIEW`
+Gate status: `PHASE 6 BATCH B1 COMPLETE — OWNER ACCEPTANCE REQUIRED`
+Git state: the owner approved the design at local commit
+`33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
+IP-032 Batch B1. B1 adds capability-owned read contracts and focused tests but
+no schema, write path, Weekly v2 route, producer, connector, or real-data work.
+The final local B1 commit is reported in the handoff because a commit cannot
+contain its own hash. B2 and all later slices remain unauthorized. No push is
+authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -57,8 +56,9 @@ belong in Git history and must not be interpreted as current instructions.
   disabled. Only the separately named Project Health capacity-coverage reader
   and factor publication slice is now owner-accepted. Batch D validation,
   rehearsal, reporting, and review are complete, and IP-031 is now the promoted
-  local Phase 5 baseline. Phase 6 Weekly Brief v2 design is complete and awaits
-  owner review; no Phase 6 implementation slice is authorized.
+  local Phase 5 baseline. The Phase 6 Weekly Brief v2 design is owner-approved;
+  only IP-032 Batch B1 public read-contract prerequisites were subsequently
+  authorized and are now implemented for owner review.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -128,6 +128,23 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-032 Batch B1 final focused validation passed 35 synthetic tests covering the
+new prerequisites plus Attention Center, Execution Review, layered Project
+Health, project-capacity coverage, and connector read-boundary regression. The
+final post-correction `make validate` passed 301 runtime tests, 21
+repository-tool tests with 19 subtests, repository-boundary and synthetic-data
+checks, Ruff, compilation, diff hygiene, package build, and 8 release-validation
+checks. The first independent read-only implementation review found four P1 and
+three P2 issues covering fail-open empty filters, Action completion windows,
+Attention failed coverage, Execution evidence binding, Person-storage
+coupling, global Project bounds, and continuity evidence. The second review
+verified those corrections and found one P1 semantic-name issue plus one P2
+field-specific validation-code issue. All accepted findings were corrected.
+The third independent read-only review verified every correction and found no
+remaining P0-P2 or new actionable finding. Reviewers made no file changes. B1
+changes no schema, import, migration, packaging contract, or installed-data
+behavior, so `make rehearse-release` is not required for this slice.
 
 Phase 6 Weekly Brief v2 Batch A is documentation-only. Focused documentation
 validation (`git diff --check` plus scope/gate/reference scans) passed. The
@@ -432,12 +449,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
    consumes Phase 5 capacity coverage when that evidence is available; Quality
    and Governance remain unavailable until approved structured facts exist.
 9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
-   remain deliberately unimplemented. Phase 6 Batch A inspected the actual
-   Weekly Brief, snapshot/history, Attention, Project Health, Resource, Action,
-   Decision, and freshness paths and recorded the bounded design in
-   `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`. Owner design approval
-   or revision is the current gate; implementation remains a later explicit
-   gate.
+   remain deliberately unimplemented. The owner approved the bounded Phase 6
+   design and separately authorized only IP-032 Batch B1. Its additive Project,
+   Attention, Action, and Execution public read prerequisites are implemented
+   for review. No snapshot/schema, composer, interface, or later slice is
+   authorized.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -445,11 +461,9 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review, approve, or request revision of
-   `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`.
-2. Only after explicit design approval, decide whether to authorize the named
-   B1 public read-contract prerequisite and implementation-pack registration.
-   Do not begin B1 from general approval or passing validation.
+1. Review, accept, reject, or request revision of IP-032 Batch B1.
+2. Do not begin B2 snapshot/comparison schema from B1 acceptance or passing
+   validation. B2 requires a separate explicit named authorization.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
 4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
@@ -509,8 +523,33 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - IP-029 B1 through D are implemented, validated, reviewed, and promoted as the
   local Phase 3 baseline. Those historical gates are closed; they do not grant
   authority for Phase 6 implementation or any later-phase action.
+- The owner approved the Phase 6 design and separately authorized only IP-032
+  Batch B1 public read-contract prerequisites. That authorization excludes B2,
+  B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 6 design approved; IP-032 Batch B1 implemented
+
+- Recorded owner design approval and the separate authorization for only Batch
+  B1 public read-contract prerequisites.
+- Registered `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` and added
+  owner-local active Project manifest, Attention current/history, Action
+  current/completion, and Execution event-time contracts.
+- Kept Action and non-Project Attention project associations explicitly
+  unavailable rather than inferring from names, prose, sources, assignments, or
+  private tables. Milestone event precision remains an explicit date.
+- Reused the promoted Project Health, Resource, and source-state readers. No
+  schema, bootstrap, import, write, Weekly v2 interface, new producer, Staffing,
+  Decision, connector, or real-data behavior changed.
+- Final focused B1 plus related public-contract regression passed 35 synthetic
+  tests. The final `make validate` passed 301 runtime tests and the complete
+  repository/static/build suite. Three independent read-only reviews found and
+  corrected four P1/three P2, then one P1/one P2; the final review found no
+  remaining P0-P2 or actionable finding.
+- Exact next action: commit the completed B1 candidate locally and stop for
+  owner acceptance, revision, or rejection. Passing checks does not authorize
+  B2.
 
 ### 2026-08-01 — Phase 6 Weekly Brief v2 Batch A design completed
 

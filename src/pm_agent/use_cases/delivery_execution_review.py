@@ -87,10 +87,10 @@ def _result(request: UseCaseRequest, filters: dict[str, Any], rows: list[dict[st
             value=row["value"], value_state=row["value_state"], observed_at=row["finished_at"] or row["started_at"],
             freshness_refs=[freshness_id], evidence_refs=[evidence_id], rule_version=row["rule_version"],
         ))
-        evidence.append({"evidence_id": evidence_id, "source_kind": "local_sqlite", "entity_kind": "execution_derivation", "record_count": 1, "derivation_run_id": row["derivation_run_id"], "input_ids": row["input_ids"], "coverage": row["completeness_state"], "fact_evidence": row["evidence"]})
+        evidence.append({"evidence_id": evidence_id, "source_kind": "local_sqlite", "entity_kind": "execution_derivation", "record_count": 1, "derivation_run_id": row["derivation_run_id"], "input_ids": row["input_ids"], "coverage": row["completeness_state"], "fact_evidence": row["evidence"], "event_time": {"state": row["event_time_state"], "occurred_at": row["event_occurred_at"] or None, "precision": row["event_time_precision"], "basis": row["event_time_basis"] or None}})
         freshness.append({"source_id": freshness_id, "state": row["freshness_state"], "observed_at": row["finished_at"] or row["started_at"]})
         warnings.update(row["warning_codes"])
-        projection = {"subject": subject.model_dump(), "fact_key": row["fact_key"], "value": row["value"], "value_state": row["value_state"], "freshness_state": row["freshness_state"], "coverage": row["completeness_state"]}
+        projection = {"subject": subject.model_dump(), "fact_key": row["fact_key"], "value": row["value"], "value_state": row["value_state"], "freshness_state": row["freshness_state"], "coverage": row["completeness_state"], "fact_observed_at": row["fact_observed_at"], "event_occurred_at": row["event_occurred_at"] or None, "event_time_precision": row["event_time_precision"], "event_time_state": row["event_time_state"], "event_time_basis": row["event_time_basis"] or None}
         (sprint_execution if row["subject_kind"] == "sprint" else release_milestone).append(projection)
         signal = _signal(row, fact_id, evidence_id, subject)
         if signal:

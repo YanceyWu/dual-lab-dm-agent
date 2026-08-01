@@ -10,7 +10,13 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any
 
-from pm_agent.attention.rules import ACTIVE_RULE_KEYS, ALL_RULE_KEYS
+from pm_agent.attention.read_model import (
+    ATTENTION_STATES,
+    DEFAULT_ATTENTION_STATES,
+    SUBJECT_KIND_BY_RULE,
+    reconciliation_coverage,
+)
+from pm_agent.attention.rules import ALL_RULE_KEYS
 from pm_agent.database import attention as attention_repository
 from pm_agent.use_cases.service import (
     IntelligenceFact,
@@ -22,16 +28,7 @@ from pm_agent.use_cases.service import (
     new_execution_metadata,
 )
 
-DEFAULT_ATTENTION_STATES = ["open", "acknowledged", "snoozed"]
-ATTENTION_STATES = ("open", "acknowledged", "snoozed", "resolved")
 RULE_STATES = ("active", "clear", "unknown", "unavailable")
-SUBJECT_KIND_BY_RULE = {
-    "project_health_attention": "project",
-    "overdue_action_attention": "action",
-    "source_freshness_attention": "source",
-    "resource_overload_attention": "member",
-    "pending_decision_attention": "decision",
-}
 RECOMMENDATION_TYPE_BY_RULE = {
     "project_health_attention": "review_project_health",
     "overdue_action_attention": "follow_up_action",
@@ -61,7 +58,7 @@ def execute_delivery_attention_center(request: UseCaseRequest) -> UseCaseResult:
                 subject_kind=filters["subject_kind"],
                 subject_id=filters["subject_id"],
             )
-            coverage = _reconciliation_coverage(
+            coverage = reconciliation_coverage(
                 attention_repository.list_reconciliations(connection),
                 rule_key=filters["rule_key"],
                 subject_kind=filters["subject_kind"],
@@ -184,7 +181,7 @@ def _build_result(
         warning_codes.append("ATTENTION_NOT_RECONCILED")
     elif coverage["status"] == "out_of_scope":
         warning_codes.append("ATTENTION_SCOPE_NOT_RECONCILED")
-    elif coverage["status"] == "partial":
+    elif coverage["status"] in {"partial", "unavailable"}:
         warning_codes.extend(coverage.get("warning_codes", []))
 
     return UseCaseResult(
@@ -342,79 +339,6 @@ def _recommendation_state(
     if signal["evaluation_status"] != "complete" or freshness_state != "fresh":
         return "blocked", ["retained_evidence_unusable"]
     return "available", ["attention_review_advised"]
-
-
-def _reconciliation_coverage(
-    reconciliations: list[dict[str, Any]],
-    *,
-    rule_key: str | None,
-    subject_kind: str | None,
-    subject_id: str | None,
-) -> dict[str, Any]:
-    if not reconciliations:
-        return {"status": "absent"}
-    for reconciliation in reconciliations:
-        if _scope_covers(
-            reconciliation["scope"],
-            rule_key=rule_key,
-            subject_kind=subject_kind,
-            subject_id=subject_id,
-        ):
-            return {
-                "status": (
-                    "partial"
-                    if reconciliation["status"] == "partial"
-                    else "complete"
-                ),
-                "reconciliation_id": reconciliation["reconciliation_id"],
-                "finished_at": reconciliation["finished_at"],
-                "rule_set_version": reconciliation["rule_set_version"],
-                "warning_codes": reconciliation["warning_codes"],
-            }
-    return {"status": "out_of_scope"}
-
-
-def _scope_covers(
-    scope: dict[str, Any],
-    *,
-    rule_key: str | None,
-    subject_kind: str | None,
-    subject_id: str | None,
-) -> bool:
-    query_rules = (
-        {rule_key}
-        if rule_key
-        else {
-            key
-            for key, kind in SUBJECT_KIND_BY_RULE.items()
-            if kind == subject_kind
-        }
-        if subject_kind
-        else set(ACTIVE_RULE_KEYS)
-    )
-    scoped_rules = scope.get("rule_keys")
-    covered_rules = (
-        set(ACTIVE_RULE_KEYS)
-        if scoped_rules is None
-        else set(scoped_rules)
-    )
-    if not query_rules <= covered_rules:
-        return False
-
-    scoped_kind = scope.get("subject_kind")
-    if subject_kind:
-        if scoped_kind is not None and scoped_kind != subject_kind:
-            return False
-    elif scoped_kind is not None:
-        return False
-
-    scoped_id = scope.get("subject_id")
-    if subject_id:
-        if scoped_id is not None and scoped_id != subject_id:
-            return False
-    elif scoped_id is not None:
-        return False
-    return True
 
 
 def _summary(matched: list[dict[str, Any]], returned_count: int) -> dict[str, Any]:

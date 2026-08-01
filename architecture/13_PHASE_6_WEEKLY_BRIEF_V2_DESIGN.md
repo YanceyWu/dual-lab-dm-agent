@@ -1,6 +1,6 @@
 # Phase 6 — Weekly Brief v2 Design
 
-Status: `BATCH A DESIGN COMPLETE — OWNER APPROVAL REQUIRED`
+Status: `DESIGN APPROVED — BATCH B1 COMPLETE FOR OWNER REVIEW`
 Date: 2026-08-01
 Baseline branch: `codex/phase-6-weekly-brief-design`
 Baseline commit: `7442f52cb5fc015c4efdcf20941293314f71e9db`
@@ -30,6 +30,10 @@ their schemas, public projections, and focused synthetic tests.
 This document creates no implementation authority. A Phase 6 implementation
 pack, runtime/schema/test edit, implementation batch, or legacy replacement
 requires a later explicit owner decision.
+
+The owner approved this design after review and then separately authorized only
+Batch B1 public read-contract prerequisites. IP-032 records that bounded
+authorization. B2 and all later slices remain unauthorized.
 
 Four requested reading-list paths do not exist under those titles in this
 checkout. The numbered repository documents actually read were
@@ -682,7 +686,8 @@ scope/gate/reference scan over this design and `PROGRESS.md`, followed by
 
 ## Separately reviewable implementation slices after approval
 
-No slice below is authorized by this design.
+The design itself authorizes no slice. The owner subsequently authorized only
+B1 through the named IP-032 gate; B2 and later slices remain unauthorized.
 
 ### B1 — Public read-contract prerequisites
 
