@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH B1 OWNER-ACCEPTED — BATCH B2 AUTHORIZATION REQUIRED`
+Status: `BATCH B2 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -14,8 +14,31 @@ B3 composition, C interface integration, D promotion, and every external action
 remain separately gated.
 
 The owner accepted the validated, independently reviewed Batch B1 candidate at
-`cce14e42c26c605bc76e895de8d611540eae06f8`. This acceptance does not authorize
-B2 or any later slice.
+`cce14e42c26c605bc76e895de8d611540eae06f8`. The owner subsequently explicitly
+authorized only Batch B2 snapshot/comparison core. B3, C, D, and every external
+action remain separately gated.
+
+## Batch B2 capability ownership and boundary
+
+- `pm_agent.weekly_brief` owns the additive snapshot-operation/confirmed-history
+  table, its repository, and the non-routed preview/confirm service.
+- `pm_agent.database.bootstrap` composes only the dedicated schema constant; it
+  contains no Weekly Brief rules, queries, or transactions.
+- The B2 service accepts an injected B3-supplied public query lookup and
+  recomposer. It must not read Attention, Project Health, Resource, Action,
+  Decision, execution, or legacy-report storage internals.
+- The public controlled-operation contract is `weekly-brief-snapshot-preview`
+  and `weekly-brief-snapshot-confirm`; no generic query transport, use-case,
+  CLI, Dashboard, or Copilot route is registered in B2.
+
+Batch B2 implements only hashed one-time preview/confirm, immutable confirmed
+history, scope/input/baseline/statement/evidence/result fingerprints, expiry,
+idempotent confirmed replay, stale/concurrent rejection, and integrity checks.
+It must prove clean bootstrap and prior-runtime additive rollback preservation.
+It must not implement the v2 composer or nine sections; B2 may compare only
+already-normalized manifest records and must not assemble them from capabilities,
+select a baseline for a query, replace `weekly-dm-brief`, create a producer,
+change Staffing/confirmation, or activate a connector.
 
 ## Batch B1 capability ownership
 

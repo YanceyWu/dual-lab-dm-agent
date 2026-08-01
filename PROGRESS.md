@@ -5,16 +5,16 @@ Current branch: `codex/phase-6-weekly-brief-design`
 Current HEAD before the IP-032 Batch B1 acceptance-record commit:
 `cce14e42c26c605bc76e895de8d611540eae06f8`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — BATCH B1 OWNER-ACCEPTED`
-Gate status: `PHASE 6 BATCH B1 OWNER-ACCEPTED — BATCH B2 AUTHORIZATION REQUIRED`
+Current implementation pack: `IP-032 — BATCH B2 SNAPSHOT/COMPARISON CORE`
+Gate status: `PHASE 6 BATCH B2 IMPLEMENTED — OWNER ACCEPTANCE REQUIRED`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
-`cce14e42c26c605bc76e895de8d611540eae06f8`. B1 adds capability-owned read
-contracts and focused tests but no schema, write path, Weekly v2 route,
-producer, connector, or real-data work. The final local acceptance-record commit
-is reported in the handoff because a commit cannot contain its own hash. B2 and
-all later slices remain unauthorized. No push is authorized or required.
+`cce14e42c26c605bc76e895de8d611540eae06f8`. The owner has now explicitly
+  authorized only B2: additive Weekly Brief snapshot/comparison core. B2 may add
+the dedicated schema, repository, controlled preview/confirm and synthetic
+tests, but not B3 composition, v2 routing, legacy replacement, producers,
+connectors, real-data work, or later slices. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -462,10 +462,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Decide whether to authorize the named IP-032 Batch B2 snapshot/comparison
-   core. B1 acceptance does not authorize it.
-2. Do not begin B2 snapshot/comparison schema from general approval or passing
-   validation; require a separate explicit named authorization.
+1. Review or accept the validated IP-032 Batch B2 snapshot/comparison core.
+   Do not enter B3 from this acceptance.
+2. Do not begin B3 composition or any route/interface from B2 authorization or
+   passing validation.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
 4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
@@ -565,6 +565,36 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   authorized by this decision.
 - Exact next action: separately authorize or decline named Batch B2. B1
   acceptance and its passing evidence do not authorize B2.
+
+### 2026-08-01 — IP-032 Batch B2 authorized
+
+- The owner explicitly authorized only Batch B2 Weekly Brief snapshot/comparison
+  core after accepting B1. B2 is bounded to capability-owned additive snapshot
+  schema, controlled preview/confirm persistence, integrity, synthetic tests,
+  clean-bootstrap rehearsal, and rollback preservation.
+- B3 v2 composition, public route/CLI/Dashboard/Copilot integration, legacy
+  replacement, Attention producers, Staffing/confirmation changes, connectors,
+  real data, push, merge, tag, release, and deploy remain unauthorized.
+- Exact next action: implement and independently review B2, correct accepted
+  findings, then stop for owner acceptance or revision.
+
+### 2026-08-01 — IP-032 Batch B2 implemented and independently reviewed
+
+- Added only the capability-owned Weekly Brief v2 snapshot/history core:
+  additive schema composition, atomic preview/confirm capture, immutable
+  confirmed history, typed anonymous envelope validation, deterministic
+  comparison primitive, fingerprints, baseline integrity, and safe errors.
+- Installed release rehearsal proves clean bootstrap; preview/confirm, replay,
+  stale and concurrent confirmation; and prior-runtime legacy
+  `WeeklyReportService` from local baseline `8cb5f69` preserves two confirmed
+  snapshot rows. No B3 composer, public v2 route, legacy replacement, producer,
+  connector, real data, or external action was added.
+- Focused Weekly Brief tests passed 9; final `make validate` passed 310 runtime
+  tests and 21 repository-tool tests (19 subtests); final
+  `make rehearse-release` passed. A repeated independent read-only final review
+  found no P0-P2 findings.
+- Exact next action: owner acceptance, revision, or rejection of B2. B3 and all
+  later slices remain unauthorized.
 
 ### 2026-08-01 — Phase 6 Weekly Brief v2 Batch A design completed
 

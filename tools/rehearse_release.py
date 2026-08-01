@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -11,6 +12,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import tarfile
 from pathlib import Path
 
 from validate_release import REPO_ROOT, build_package, package_version
@@ -94,6 +96,7 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'resource_capacity_manifest_coverage',
                     'resource_capacity_observations',
                     'resource_capacity_derivations',
+                    'weekly_brief_snapshot_operations',
                     'staffing_capacity_policy'
                 )
                 """
@@ -155,6 +158,7 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "resource_capacity_manifest_coverage",
         "resource_capacity_observations",
         "resource_capacity_derivations",
+        "weekly_brief_snapshot_operations",
         "staffing_capacity_policy",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
@@ -167,6 +171,15 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
 def rehearse() -> None:
     with tempfile.TemporaryDirectory(prefix="dm-release-rehearsal-") as temp_dir:
         workspace = Path(temp_dir)
+        prior_runtime = workspace / "prior-runtime"
+        archive = subprocess.run(
+            ["git", "archive", "8cb5f69dadb9b6653d82d0ad6d3b7c3585ed24eb"],
+            check=True,
+            cwd=REPO_ROOT,
+            capture_output=True,
+        ).stdout
+        with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
+            contents.extractall(prior_runtime, filter="data")
         artifact_dir = workspace / "dist"
         artifact_dir.mkdir()
         wheel, _sdist = build_package(artifact_dir)
@@ -234,6 +247,49 @@ def rehearse() -> None:
             clean_db,
             {table: 0 for table in CORE_TABLES},
         )
+        installed_weekly_capture = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json,threading;from pm_agent.weekly_brief.snapshots import WeeklyBriefSnapshotService;"
+                    "c={'execution_id':'weekly-v2-execution-synthetic-001','contract_version':'weekly-brief-v2','comparison_rule_version':'weekly-brief-comparison-v2','generated_at':'2026-08-01T00:00:00Z','week_key':'2026-W31','scope':{'project_ids':['project-synthetic-001']},'input':{'as_of':'2026-08-01T00:00:00Z'},'baseline_snapshot_id':'','baseline_fingerprint':'','statement_manifest':[{'identity_key':'attention:synthetic-001','producer':'attention','scope_fingerprint':'6aea5364bcf8ff86511c5fe530ff5228ddc8da971564ab1732e34eaf9ba554eb','semantic_fingerprint':'a'*64,'evidence_state_fingerprint':'e'*64,'active_material':True,'transition_state':'active','coverage_complete':True,'usable_evidence':True,'limited_active_proven':True}],'evidence_summary':{'producer':'synthetic-public-contract'},'section_coverage':{'attention':'complete'},'limitation_codes':[]};"
+                    "s=WeeklyBriefSnapshotService(query_lookup=lambda x:c,recompose=lambda x:c);p=s.preview(candidate=c,actor_id='actor-synthetic-001',idempotency_key='capture-synthetic-001');r=s.confirm(operation_id=p['operation_id'],confirmation_token=p['confirmation_token']);q=s.confirm(operation_id=p['operation_id'],confirmation_token=p['confirmation_token']);z=WeeklyBriefSnapshotService(query_lookup=lambda x:c,recompose=lambda x:{**c,'input':{'as_of':'2026-08-02T00:00:00Z'}});sp=z.preview(candidate=c,actor_id='actor-synthetic-001',idempotency_key='stale-synthetic-001');sr=z.confirm(operation_id=sp['operation_id'],confirmation_token=sp['confirmation_token']);cp=s.preview(candidate=c,actor_id='actor-synthetic-001',idempotency_key='concurrent-synthetic-001');out=[];ts=[threading.Thread(target=lambda:out.append(s.confirm(operation_id=cp['operation_id'],confirmation_token=cp['confirmation_token'])['status'])) for _ in range(2)];[t.start() for t in ts];[t.join() for t in ts];print(json.dumps({'preview':p['status'],'confirm':r['status'],'replay':q['status'],'stale':sr['status'],'concurrent':sorted(out)}))"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+        )
+        if json.loads(installed_weekly_capture.stdout) != {"preview": "previewed", "confirm": "confirmed", "replay": "already_confirmed", "stale": "stale", "concurrent": ["confirmed", "failed"]}:
+            raise RuntimeError("INSTALLED_WEEKLY_BRIEF_CAPTURE_INVALID")
+        prior_env = clean_env.copy()
+        prior_env["PYTHONPATH"] = str(prior_runtime / "src")
+        installed_weekly_rollback = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json,sqlite3,os;"
+                    "from pm_agent.use_cases.weekly_report import WeeklyReportService;"
+                    "p=os.environ['DATABASE_PATH'];con=sqlite3.connect(p);"
+                    "before=con.execute(\"SELECT COUNT(*) FROM weekly_brief_snapshot_operations WHERE status='confirmed'\").fetchone()[0];"
+                    "report=WeeklyReportService().weekly();"
+                    "after=con.execute(\"SELECT COUNT(*) FROM weekly_brief_snapshot_operations WHERE status='confirmed'\").fetchone()[0];con.close();"
+                    "print(json.dumps({'before':before,'after':after,'week':report.data['week']}))"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=prior_env,
+            capture_output=True,
+            text=True,
+        )
+        rollback_result = json.loads(installed_weekly_rollback.stdout)
+        if rollback_result.get("before") != 2 or rollback_result.get("after") != 2 or not rollback_result.get("week"):
+            raise RuntimeError(f"INSTALLED_WEEKLY_BRIEF_ADDITIVE_ROLLBACK_INVALID:{installed_weekly_rollback.stdout}")
         installed_import = subprocess.run(
             [
                 sys.executable,
@@ -520,5 +576,5 @@ if __name__ == "__main__":
     try:
         rehearse()
     except (RuntimeError, subprocess.CalledProcessError) as exc:
-        print(f"Release rehearsal FAILED: {type(exc).__name__}", file=sys.stderr)
+        print(f"Release rehearsal FAILED: {type(exc).__name__}: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
