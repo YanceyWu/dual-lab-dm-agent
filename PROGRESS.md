@@ -2,12 +2,11 @@
 
 Last updated: 2026-08-01
 Current branch: `codex/phase-6-weekly-brief-design`
-Current HEAD: `b9c9141` (IP-032 Batch B3 acceptance record). The IP-032 Batch C
-shared-interface implementation has been reviewed, corrected, validated, and
-authorized by the owner; its acceptance record is committed separately.
+Current HEAD: latest local commit on `codex/phase-6-weekly-brief-design`
+(IP-032 Batch C accepted)
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-032 — BATCH C SHARED-INTERFACE INTEGRATION`
-Gate status: `PHASE 6 BATCH C OWNER-AUTHORIZED — ACCEPTANCE RECORD PENDING`
+Gate status: `PHASE 6 BATCH C OWNER-ACCEPTED — BATCH D AUTHORIZATION REQUIRED`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -16,8 +15,9 @@ IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
 at `da093ba1b1f5dabc44053a2eb7edb4d237197768`. The owner then authorized only
 B3 deterministic nine-section composition and accepted its validated local
 result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. The owner authorized
-the corrected Batch C shared-interface implementation on 2026-08-01. Batch D
-and every external action remain unauthorized. No push is authorized or required.
+the corrected Batch C shared-interface implementation on 2026-08-01 and
+accepted the validated, reviewed candidate at `3df79a1`. Batch D and every
+external action remain unauthorized. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -533,6 +533,21 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-01 — IP-032 Batch C accepted
+
+- The owner accepted the validated, independently reviewed Batch C
+  shared-interface implementation at local commit
+  `3df79a1` (opt-in `weekly-dm-brief-v2` use case, dedicated `pm weekly-brief`
+  CLI, dedicated Dashboard operations endpoint, Copilot contract, and the
+  focused shared-interface suite).
+- Acceptance covers the shared-interface/legacy-strangler integration only.
+  Batch D regression/promotion and every external action remain separately
+  unauthorized. No push, merge, tag, release, deployment, connector,
+  real-data, producer, or external action was performed.
+- Exact next action: explicitly authorize, revise, or decline named Batch D
+  (combined focused regression, `make validate`, `make rehearse-release`,
+  independent review, and promotion decision).
 
 ### 2026-08-01 — IP-032 Batch C shared interface implemented, reviewed, corrected, and owner-authorized
 

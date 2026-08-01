@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH B3 OWNER-ACCEPTED — BATCH C AUTHORIZATION REQUIRED`
+Status: `BATCH C OWNER-ACCEPTED — BATCH D AUTHORIZATION REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -24,7 +24,14 @@ Batch B3 is implemented in `pm_agent.weekly_brief.composer` without route
 registration. It composes the nine sections solely from promoted public
 read contracts and supplies the B2 lookup/recompose seam. The owner accepted
 the validated B3 result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`.
-Batch C and D remain separately gated.
+
+The owner authorized Batch C shared-interface integration on 2026-08-01 after
+the corrected, validated candidate review and accepted the implementation at
+local commit `3df79a1`. Batch C adds the opt-in `weekly-dm-brief-v2` use-case
+routing, dedicated `pm weekly-brief` CLI, dedicated Dashboard
+`/api/weekly-brief/operations` preview/confirm endpoint, the Copilot contract,
+and the focused shared-interface tests. Batch D promotion and every external
+action remain separately gated.
 
 ## Batch B2 capability ownership and boundary
 
