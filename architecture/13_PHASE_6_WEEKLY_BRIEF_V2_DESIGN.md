@@ -1,6 +1,6 @@
 # Phase 6 — Weekly Brief v2 Design
 
-Status: `DESIGN APPROVED — BATCH B1 COMPLETE FOR OWNER REVIEW`
+Status: `DESIGN APPROVED — BATCH B1 OWNER-ACCEPTED — B2 AUTHORIZATION REQUIRED`
 Date: 2026-08-01
 Baseline branch: `codex/phase-6-weekly-brief-design`
 Baseline commit: `7442f52cb5fc015c4efdcf20941293314f71e9db`
@@ -33,7 +33,9 @@ requires a later explicit owner decision.
 
 The owner approved this design after review and then separately authorized only
 Batch B1 public read-contract prerequisites. IP-032 records that bounded
-authorization. B2 and all later slices remain unauthorized.
+authorization. The owner accepted the B1 result at
+`cce14e42c26c605bc76e895de8d611540eae06f8`. B2 and all later slices remain
+unauthorized.
 
 Four requested reading-list paths do not exist under those titles in this
 checkout. The numbered repository documents actually read were

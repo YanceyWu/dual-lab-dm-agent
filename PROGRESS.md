@@ -2,18 +2,19 @@
 
 Last updated: 2026-08-01
 Current branch: `codex/phase-6-weekly-brief-design`
-Current HEAD before the IP-032 Batch B1 implementation commit:
-`33fc6f100b36f6e54eec73e531590c186f4b0441`
+Current HEAD before the IP-032 Batch B1 acceptance-record commit:
+`cce14e42c26c605bc76e895de8d611540eae06f8`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — BATCH B1 COMPLETE FOR OWNER REVIEW`
-Gate status: `PHASE 6 BATCH B1 COMPLETE — OWNER ACCEPTANCE REQUIRED`
+Current implementation pack: `IP-032 — BATCH B1 OWNER-ACCEPTED`
+Gate status: `PHASE 6 BATCH B1 OWNER-ACCEPTED — BATCH B2 AUTHORIZATION REQUIRED`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
-IP-032 Batch B1. B1 adds capability-owned read contracts and focused tests but
-no schema, write path, Weekly v2 route, producer, connector, or real-data work.
-The final local B1 commit is reported in the handoff because a commit cannot
-contain its own hash. B2 and all later slices remain unauthorized. No push is
-authorized or required.
+IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
+`cce14e42c26c605bc76e895de8d611540eae06f8`. B1 adds capability-owned read
+contracts and focused tests but no schema, write path, Weekly v2 route,
+producer, connector, or real-data work. The final local acceptance-record commit
+is reported in the handoff because a commit cannot contain its own hash. B2 and
+all later slices remain unauthorized. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -58,7 +59,8 @@ belong in Git history and must not be interpreted as current instructions.
   rehearsal, reporting, and review are complete, and IP-031 is now the promoted
   local Phase 5 baseline. The Phase 6 Weekly Brief v2 design is owner-approved;
   only IP-032 Batch B1 public read-contract prerequisites were subsequently
-  authorized and are now implemented for owner review.
+  authorized, implemented, validated, independently reviewed, and accepted.
+  B2 requires a separate named authorization.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -451,9 +453,8 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
    remain deliberately unimplemented. The owner approved the bounded Phase 6
    design and separately authorized only IP-032 Batch B1. Its additive Project,
-   Attention, Action, and Execution public read prerequisites are implemented
-   for review. No snapshot/schema, composer, interface, or later slice is
-   authorized.
+   Attention, Action, and Execution public read prerequisites are accepted. No
+   snapshot/schema, composer, interface, or later slice is authorized.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -461,9 +462,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review, accept, reject, or request revision of IP-032 Batch B1.
-2. Do not begin B2 snapshot/comparison schema from B1 acceptance or passing
-   validation. B2 requires a separate explicit named authorization.
+1. Decide whether to authorize the named IP-032 Batch B2 snapshot/comparison
+   core. B1 acceptance does not authorize it.
+2. Do not begin B2 snapshot/comparison schema from general approval or passing
+   validation; require a separate explicit named authorization.
 3. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
 4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
@@ -550,6 +552,19 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - Exact next action: commit the completed B1 candidate locally and stop for
   owner acceptance, revision, or rejection. Passing checks does not authorize
   B2.
+
+### 2026-08-01 — IP-032 Batch B1 accepted
+
+- The owner accepted the validated and independently reviewed Batch B1 candidate
+  at local commit `cce14e42c26c605bc76e895de8d611540eae06f8`.
+- Acceptance covers only the registered public read-contract prerequisites:
+  canonical Project manifest, Attention current/history and safe coverage,
+  Action current/completion, and evidence-bound Execution event time.
+- No schema, snapshot/history operation, Weekly v2 composition/interface,
+  producer, connector, real-data, release, or remote action is accepted or
+  authorized by this decision.
+- Exact next action: separately authorize or decline named Batch B2. B1
+  acceptance and its passing evidence do not authorize B2.
 
 ### 2026-08-01 — Phase 6 Weekly Brief v2 Batch A design completed
 

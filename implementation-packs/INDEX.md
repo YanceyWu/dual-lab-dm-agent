@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 6 IP-032 BATCH B1 COMPLETE — OWNER ACCEPTANCE REQUIRED`
+Status: `PHASE 6 IP-032 BATCH B1 OWNER-ACCEPTED — BATCH B2 AUTHORIZATION REQUIRED`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -25,14 +25,14 @@ recoverable from Git history.
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
-| IP-032 | Phase 6 Weekly Brief v2 | Design approved; Batch B1 public read-contract prerequisites implemented and awaiting owner review | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | Not yet created; implementation report is a later Batch D gate |
+| IP-032 | Phase 6 Weekly Brief v2 | Design approved; Batch B1 public read-contract prerequisites accepted; B2 requires separate authorization | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | Not yet created; implementation report is a later Batch D gate |
 
 ## Approved design
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
 | Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Promoted locally; Skill Dependency and new Attention producers remain excluded | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
-| Phase 6 | Weekly Brief v2 from promoted facts | Design approved; only IP-032 Batch B1 is authorized and implemented for review | `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md` |
+| Phase 6 | Weekly Brief v2 from promoted facts | Design approved; IP-032 Batch B1 accepted; B2 requires separate authorization | `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md` |
 
 ## Current execution order
 
@@ -44,9 +44,8 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review the bounded IP-032 Batch B1 public read-contract prerequisites. Do not
-   begin B2 snapshot/schema work from B1 acceptance or passing validation;
-   require a separate named authorization.
+4. Decide whether to authorize named IP-032 Batch B2. Do not begin B2
+   snapshot/schema work from B1 acceptance or passing validation.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

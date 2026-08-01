@@ -1,6 +1,6 @@
 # IP-032 — Phase 6 Weekly Brief v2
 
-Status: `BATCH B1 COMPLETE — OWNER ACCEPTANCE REQUIRED`
+Status: `BATCH B1 OWNER-ACCEPTED — BATCH B2 AUTHORIZATION REQUIRED`
 Design: `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`
 Implementation branch: `codex/phase-6-weekly-brief-design`
 Baseline: `33fc6f100b36f6e54eec73e531590c186f4b0441`
@@ -12,6 +12,10 @@ read-contract prerequisites. Register IP-032 and add the minimum owner-local
 read contracts needed by a later Weekly Brief v2 composer. B2 snapshot/schema,
 B3 composition, C interface integration, D promotion, and every external action
 remain separately gated.
+
+The owner accepted the validated, independently reviewed Batch B1 candidate at
+`cce14e42c26c605bc76e895de8d611540eae06f8`. This acceptance does not authorize
+B2 or any later slice.
 
 ## Batch B1 capability ownership
 
@@ -176,5 +180,5 @@ must run it if separately authorized because B2 proposes additive schema.
   and limitation semantics.
 - No Decision Required governance exists.
 
-The exact next gate is owner acceptance, revision, or rejection of Batch B1.
-Only a later explicit named authorization may begin B2.
+The exact next gate is a separate owner decision to authorize, revise, or defer
+named Batch B2. Only that explicit authorization may begin B2.
