@@ -3,12 +3,12 @@
 Last updated: 2026-08-02
 Current branch: `codex/phase-4-assessment-entry`
 Current HEAD: latest local commit on `codex/phase-4-assessment-entry`
-(IP-033 Phase 4 controlled assessment entry implemented, validated, and
-awaiting owner review; Phase 6 Weekly Brief v2 remains the promoted local
-baseline)
+(IP-033 Phase 4 controlled assessment entry implemented, validated,
+independently reviewed, and awaiting the owner acceptance decision; Phase 6
+Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation pack: `IP-033 — PHASE 4 CONTROLLED ASSESSMENT ENTRY`
-Gate status: `IP-033 VALIDATED — REVIEW REQUIRED — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
+Gate status: `IP-033 INDEPENDENT REVIEW PASSED — AWAITING OWNER ACCEPTANCE — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -25,9 +25,9 @@ reviewed Phase 6 Weekly Brief v2 candidate as the local Phase 6 development
 baseline on 2026-08-01. On 2026-08-02 the owner authorized the Phase 4
 controlled assessment entry slice (IP-033). It is implemented on
 `codex/phase-4-assessment-entry`, passed focused and full validation plus
-installed rehearsal, and is stopped for owner review. Promotion is local only;
-every external action remains a separate owner decision. No push is authorized
-or required.
+installed rehearsal, and after the R3 independent read-only review is stopped
+for the owner acceptance decision. Promotion is local only; every external
+action remains a separate owner decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -162,6 +162,18 @@ hygiene, package build, and 8 release-validation checks.
 `make rehearse-release` passed wheel installation, isolated clean bootstrap,
 synthetic upgrade, integrity, and rollback with the additive
 `project_health_reimport_assessments` table.
+
+R3 independent read-only review (2026-08-02) re-ran the recorded evidence on
+the exact implementation commit `1d73765` (branch
+`codex/phase-4-assessment-entry`): focused Project Health entry-point suites
+passed 25/25; `make validate` passed 335 runtime tests, 21 repository-tool
+tests with 19 subtests, repository-boundary and synthetic-sample checks, Ruff,
+compilation, diff hygiene, package build, and 8 release-validation checks; and
+`make rehearse-release` passed wheel installation, isolated clean bootstrap,
+synthetic upgrade, integrity, and rollback. Full diff review of
+`dd3d10f..1d73765` found no out-of-scope change and no P0–P2 finding; one P3
+recovery-boundary observation is recorded in the risks and change log.
+Acceptance remains an owner decision.
 
 IP-032 Batch B1 final focused validation passed 35 synthetic tests covering the
 new prerequisites plus Attention Center, Execution Review, layered Project
@@ -487,7 +499,13 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
    session is not a supported workflow and could leave an unlinked assessment
    row, and a crashed attempt's orphan from an earlier session is not
    auto-recovered by a later session. Both are auditable and recorded in
-   `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md`.
+   `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md`. Review
+   observation (P3, non-blocking): crash recovery reuses the newest
+   same-project assessment run created after the session began, so a retry of
+   an older session could in principle reuse an orphan left by a later
+   session's crashed attempt; assessments are deterministic under the fixed
+   catalog and the run remains auditable, and this boundary is accepted for
+   the current slice.
 9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
    remain deliberately unimplemented. The owner approved the bounded Phase 6
    design and separately authorized only IP-032 Batch B1. Its additive Project,
@@ -500,12 +518,13 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Usability requirements R1–R7 and their acceptance criteria are recorded in
-   `docs/USABILITY_REQUIREMENTS_HANDOFF_2026-08-02.md`. The next session
-   executes them in order: R3 (IP-033 acceptance) first, then R1 demo data
-   rebuild, R2 synthetic integration runbook, R5 integration test, R4
-   entry-boundary decisions, R6 UAT runbook revision, R7 documentation
-   consistency scan. Every item stops for owner review.
+1. R3 (IP-033 acceptance) is at its review gate: the independent read-only
+   review of `1d73765` passed with no P0–P2 finding, recorded in the change
+   log and validation evidence. The owner must accept the slice or request a
+   bounded correction. After acceptance, execute the remaining usability
+   items one at a time and stop at each gate: R1 demo data rebuild, R2
+   synthetic integration runbook, R5 integration test, R4 entry-boundary
+   decisions, R6 UAT runbook revision, R7 documentation consistency scan.
 2. Phase 6 Weekly Brief v2 remains the promoted local baseline. The next
    program gate is Phase 7 Forecast v1: it requires a separately approved
    design and a named implementation authorization.
@@ -574,6 +593,36 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — R3: IP-033 independent read-only review completed
+
+- Reviewed `dd3d10f..1d73765` against
+  `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` on branch
+  `codex/phase-4-assessment-entry`. Scope matches the pack: schema, service,
+  focused tests, and documentation only; no evaluation-engine, configuration,
+  Attention, connector, or real-data change.
+- Verified the flow in code: preview lists `health_assessment`; `confirm_reimport`
+  derives boards, runs one deterministic seven-dimension assessment per
+  covered project through `project_health.evaluation.evaluate`, links each run
+  in the additive `project_health_reimport_assessments` table, and reports
+  real dimension states, an `assessments` summary, and
+  `assessment_run_count`; `assessment_state` is `completed` for a non-empty
+  covered package and `not_available` for an empty package. Bootstrap composes
+  the DDL from the dedicated `project_health_schema` module; no table was
+  added to `database/bootstrap.py`.
+- Re-ran evidence on the exact commit: focused Project Health entry-point
+  suites passed 25/25; `make validate` passed 335 runtime tests, 21
+  repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build, and 8 release checks; `make rehearse-release` passed wheel
+  installation, isolated clean bootstrap, upgrade, integrity, and rollback.
+- Findings: no P0–P2. One P3 observation recorded: crash recovery reuses the
+  newest same-project assessment run created after the session began, which
+  could in principle reuse an orphan from a later session's crashed attempt;
+  results are deterministic and auditable, so this does not block review.
+- Conclusion: the reviewer recommends acceptance; the acceptance decision
+  remains with the owner. No promotion, push, merge, tag, or external action
+  was performed. `prompts/INTERNAL_FEATURE_EFFECTIVENESS_REVIEWER.md` remains
+  an untracked working-tree file and was not staged.
 
 ### 2026-08-02 — Usability requirements handoff recorded
 
