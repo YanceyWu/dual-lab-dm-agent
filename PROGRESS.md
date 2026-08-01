@@ -1,12 +1,14 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-01
-Current branch: `codex/phase-6-weekly-brief-design`
-Current HEAD: latest local commit on `codex/phase-6-weekly-brief-design`
-(Phase 6 Weekly Brief v2 promoted locally)
+Last updated: 2026-08-02
+Current branch: `codex/phase-4-assessment-entry`
+Current HEAD: latest local commit on `codex/phase-4-assessment-entry`
+(IP-033 Phase 4 controlled assessment entry implemented, validated, and
+awaiting owner review; Phase 6 Weekly Brief v2 remains the promoted local
+baseline)
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-032 — PHASE 6 PROMOTED LOCAL BASELINE`
-Gate status: `PHASE 6 PROMOTED LOCALLY — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
+Current implementation pack: `IP-033 — PHASE 4 CONTROLLED ASSESSMENT ENTRY`
+Gate status: `IP-033 VALIDATED — REVIEW REQUIRED — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -20,8 +22,12 @@ accepted the validated, reviewed candidate at `3df79a1`. The owner authorized
 Batch D on 2026-08-01; its combined regression, full validation, installed
 rehearsal, and independent review passed. The owner promoted the validated,
 reviewed Phase 6 Weekly Brief v2 candidate as the local Phase 6 development
-baseline on 2026-08-01. Promotion is local only; every external action remains
-a separate owner decision. No push is authorized or required.
+baseline on 2026-08-01. On 2026-08-02 the owner authorized the Phase 4
+controlled assessment entry slice (IP-033). It is implemented on
+`codex/phase-4-assessment-entry`, passed focused and full validation plus
+installed rehearsal, and is stopped for owner review. Promotion is local only;
+every external action remains a separate owner decision. No push is authorized
+or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -46,6 +52,10 @@ belong in Git history and must not be interpreted as current instructions.
 - Phase 6 Weekly Brief v2 is promoted as the local baseline: opt-in structured
   composition with explicit snapshot capture preview/confirm; legacy v1
   weekly brief and `pm report` remain unchanged.
+- Phase 4 clean re-import confirmation now runs the deterministic
+  seven-dimension assessment for every covered project and reports the real
+  dimension states; `layered-project-health-review` reads those persisted
+  assessments through the shared read-only contract.
 - Staffing supports deterministic assessment and
   propose/preview/confirm/persist writes. Role is reference context rather than
   a hard eligibility constraint. HIREF number plus its project/date interval
@@ -140,6 +150,18 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-033 (Phase 4 controlled assessment entry) focused Project Health
+re-import suite passed 10/10 synthetic tests, including idempotent replay,
+interrupted-attempt recovery, crashed-attempt reuse, and an end-to-end test
+that the import-produced assessment is readable through
+`layered-project-health-review`. The final post-review `make validate` passed
+335 runtime tests, 21 repository-tool tests with 19 subtests,
+repository-boundary and synthetic-sample checks, Ruff, compilation, diff
+hygiene, package build, and 8 release-validation checks.
+`make rehearse-release` passed wheel installation, isolated clean bootstrap,
+synthetic upgrade, integrity, and rollback with the additive
+`project_health_reimport_assessments` table.
 
 IP-032 Batch B1 final focused validation passed 35 synthetic tests covering the
 new prerequisites plus Attention Center, Execution Review, layered Project
@@ -460,6 +482,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
    does not replace `project-health-review`. Its promoted Resource factor now
    consumes Phase 5 capacity coverage when that evidence is available; Quality
    and Governance remain unavailable until approved structured facts exist.
+   The IP-033 slice makes the confirmed clean re-import the controlled
+   assessment entry; concurrent duplicate confirmation of the same import
+   session is not a supported workflow and could leave an unlinked assessment
+   row, and a crashed attempt's orphan from an earlier session is not
+   auto-recovered by a later session. Both are auditable and recorded in
+   `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md`.
 9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
    remain deliberately unimplemented. The owner approved the bounded Phase 6
    design and separately authorized only IP-032 Batch B1. Its additive Project,
@@ -472,14 +500,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Phase 6 Weekly Brief v2 is the promoted local baseline. The next program
-   gate is Phase 7 Forecast v1: it requires a separately approved design and a
-   named implementation authorization.
-2. Do not push, merge, tag, release, deploy, activate a connector, use real
+1. Review and accept the validated IP-033 Phase 4 controlled assessment entry
+   on `codex/phase-4-assessment-entry`; the branch is stopped at that review
+   gate.
+2. Phase 6 Weekly Brief v2 remains the promoted local baseline. The next
+   program gate is Phase 7 Forecast v1: it requires a separately approved
+   design and a named implementation authorization.
+3. Do not push, merge, tag, release, deploy, activate a connector, use real
    data, or start Phase 7 runtime/schema/test work without that authorization.
-3. Do not activate Skill Dependency, create a new Attention producer, or infer
+4. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
-4. Preserve the promoted Phase 1–6 baselines and the accepted IP-032 records.
+5. Preserve the promoted Phase 1–6 baselines and the accepted IP-032 records;
+   IP-033 changes no promoted baseline until the owner accepts it.
 
 ## Decisions in force
 
@@ -539,6 +571,28 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — IP-033 Phase 4 controlled assessment entry implemented and validated
+
+- The owner authorized the Phase 4 controlled assessment entry on
+  2026-08-02 after the Phase 1–6 feature-effectiveness review found that the
+  seven-dimension assessment engine had no production entry point.
+- `confirm_reimport` now runs `project_health.evaluation.evaluate` once per
+  covered project after canonical derivation, links each assessment run to the
+  import session in the new additive `project_health_reimport_assessments`
+  table, and reports real dimension states plus an `assessments` summary.
+- Sequential replay is idempotent: linked assessments are skipped, and an
+  assessment left by a crashed attempt is reused instead of re-evaluated.
+- No standalone CLI, Dashboard endpoint, Attention producer, connector, real
+  data, or Phase 7 work was added. The controlled write boundary remains the
+  import preview/confirm path.
+- Validation: 10/10 focused re-import tests, `make validate` with 335 runtime
+  tests and 21 repository-tool tests, and `make rehearse-release` passed with
+  clean bootstrap, upgrade, integrity, and rollback.
+- Recorded risks: concurrent duplicate confirmation of one session is not a
+  supported workflow; cross-session orphan recovery is limited to the same
+  session. Branch is stopped for owner review; no promotion, push, merge, tag,
+  or external action was performed.
 
 ### 2026-08-01 — Phase 6 Weekly Brief v2 promoted locally
 

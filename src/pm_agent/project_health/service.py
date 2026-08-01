@@ -150,18 +150,162 @@ def preview_reimport(payload: object, *, db_path: str | Path | None = None) -> d
             [session_id, package["package_id"], PACKAGE_VERSION, fingerprint, _json(package), _now()],
         )
         connection.commit()
-    return {"status": "previewed", "session_id": session_id, "package": package, "planned_steps": ["validate", "canonical_derivation", "health_coverage"]}
+    return {"status": "previewed", "session_id": session_id, "package": package, "planned_steps": ["validate", "canonical_derivation", "health_assessment", "health_coverage"]}
 
 
-def _coverage(connection: sqlite3.Connection, derivations: list[dict[str, Any]]) -> dict[str, Any]:
+_DEFAULT_DIMENSIONS = {
+    "schedule": "unknown",
+    "delivery": "not_available",
+    "scope": "unknown",
+    "quality": "not_available",
+    "resource": "not_available",
+    "dependency": "unknown",
+    "governance": "not_available",
+}
+
+
+def _coverage(
+    connection: sqlite3.Connection,
+    derivations: list[dict[str, Any]],
+    assessments: list[dict[str, Any]],
+) -> dict[str, Any]:
     projects = sorted({item["project_id"] for item in derivations})
-    dimensions: dict[str, dict[str, str]] = {}
-    for project_id in projects:
-        dimensions[project_id] = {
-            "schedule": "unknown", "delivery": "not_available", "scope": "unknown",
-            "quality": "not_available", "resource": "not_available", "dependency": "unknown", "governance": "not_available",
-        }
-    return {"project_count": len(projects), "dimensions": dimensions, "assessment_state": "not_available", "reason_codes": ["PROJECT_HEALTH_ASSESSMENT_NOT_RUN", "QUALITY_INPUT_NOT_AVAILABLE", "RESOURCE_INPUT_NOT_AVAILABLE", "GOVERNANCE_INPUT_NOT_AVAILABLE"], "canonical_derivations": derivations}
+    assessment_by_project = {item["project_id"]: item for item in assessments}
+    dimensions = {
+        project_id: (
+            dict(assessment_by_project[project_id]["dimensions"])
+            if project_id in assessment_by_project
+            else dict(_DEFAULT_DIMENSIONS)
+        )
+        for project_id in projects
+    }
+    reason_codes = [
+        "QUALITY_INPUT_NOT_AVAILABLE",
+        "RESOURCE_INPUT_NOT_AVAILABLE",
+        "GOVERNANCE_INPUT_NOT_AVAILABLE",
+    ]
+    if projects and not assessment_by_project:
+        assessment_state = "not_available"
+        reason_codes = ["PROJECT_HEALTH_ASSESSMENT_NOT_RUN", *reason_codes]
+    else:
+        assessment_state = "completed" if projects else "not_available"
+    return {
+        "project_count": len(projects),
+        "dimensions": dimensions,
+        "assessment_state": assessment_state,
+        "reason_codes": reason_codes,
+        "assessments": assessments,
+        "canonical_derivations": derivations,
+    }
+
+
+def _assessment_dimensions(
+    assessment_run_id: str,
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, str]:
+    with _connection(db_path) as connection:
+        rows = connection.execute(
+            """SELECT dimension,state FROM project_health_dimension_results
+               WHERE assessment_run_id=? ORDER BY dimension""",
+            [assessment_run_id],
+        ).fetchall()
+    return {row["dimension"]: row["state"] for row in rows}
+
+
+def _recover_unlinked_assessment(
+    session_id: str,
+    project_id: str,
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Reuse an assessment a crashed attempt already persisted for this session."""
+    with _connection(db_path) as connection:
+        row = connection.execute(
+            """SELECT r.assessment_run_id, r.state
+               FROM project_health_assessment_runs r
+               JOIN project_health_reimport_sessions s ON s.session_id = ?
+               WHERE r.project_id = ? AND r.created_at >= s.created_at
+               ORDER BY r.created_at DESC, r.assessment_run_id DESC LIMIT 1""",
+            [session_id, project_id],
+        ).fetchone()
+    if row is None:
+        return None
+    assessment_run_id = row["assessment_run_id"]
+    return {
+        "project_id": project_id,
+        "assessment_run_id": assessment_run_id,
+        "state": row["state"],
+        "dimensions": _assessment_dimensions(assessment_run_id, db_path=db_path),
+    }
+
+
+def _assess_projects(
+    session_id: str,
+    project_ids: list[str],
+    *,
+    db_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Run one deterministic seven-dimension assessment per covered project.
+
+    Each completed assessment is linked to the import session immediately so an
+    interrupted retry can replay safely without duplicating assessment runs.
+    """
+    # Local import avoids a service/evaluation module cycle: evaluation imports
+    # shared helpers from this module.
+    from pm_agent.project_health import evaluation
+
+    assessments: list[dict[str, Any]] = []
+    for project_id in sorted(set(project_ids)):
+        with _connection(db_path) as connection:
+            existing = connection.execute(
+                """SELECT assessment_run_id FROM project_health_reimport_assessments
+                   WHERE session_id=? AND project_id=?""",
+                [session_id, project_id],
+            ).fetchone()
+        if existing:
+            continue
+        recovered = _recover_unlinked_assessment(
+            session_id,
+            project_id,
+            db_path=db_path,
+        )
+        if recovered is not None:
+            assessment_run_id = recovered["assessment_run_id"]
+            state = recovered["state"]
+            dimensions = recovered["dimensions"]
+        else:
+            result = evaluation.evaluate(project_id, db_path=db_path)
+            assessment_run_id = result["assessment_run_id"]
+            state = result["overall_state"]
+            dimensions = _assessment_dimensions(
+                assessment_run_id,
+                db_path=db_path,
+            )
+        with _connection(db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """INSERT OR IGNORE INTO project_health_reimport_assessments
+                   (session_id,project_id,assessment_run_id,state,created_at)
+                   VALUES (?,?,?,?,?)""",
+                [
+                    session_id,
+                    project_id,
+                    assessment_run_id,
+                    state,
+                    _now(),
+                ],
+            )
+            connection.commit()
+        assessments.append(
+            {
+                "project_id": project_id,
+                "assessment_run_id": assessment_run_id,
+                "state": state,
+                "dimensions": dimensions,
+            }
+        )
+    return assessments
 
 
 def _integrity(connection: sqlite3.Connection) -> dict[str, Any]:
@@ -188,17 +332,23 @@ def confirm_reimport(session_id: str, *, db_path: str | Path | None = None) -> d
         try:
             package = json.loads(row["package_json"])
             derivation_results = [execution.derive_board(board_id, db_path=db_path) for board_id in package["board_ids"]]
-            connection.execute("BEGIN IMMEDIATE")
-            now = _now()
             derivations = []
             for result in derivation_results:
                 details = connection.execute("SELECT project_id,board_id,completeness_state,freshness_state,warning_codes_json FROM execution_derivation_runs WHERE derivation_run_id=?", [result["derivation_run_id"]]).fetchone()
                 derivations.append({"derivation_run_id": result["derivation_run_id"], "project_id": details["project_id"], "board_id": details["board_id"], "idempotent": result["idempotent"], "fact_count": result["fact_count"], "completeness_state": details["completeness_state"], "freshness_state": details["freshness_state"], "warning_codes": json.loads(details["warning_codes_json"])})
+            projects = sorted({item["project_id"] for item in derivations})
+            assessments = _assess_projects(
+                session_id,
+                projects,
+                db_path=db_path,
+            )
+            connection.execute("BEGIN IMMEDIATE")
+            now = _now()
             _record_step(connection, session_id, "validate", "completed", {"input_count": 0, "board_count": len(package["board_ids"])}, [])
             _record_step(connection, session_id, "canonical_derivation", "completed", {"derivation_run_count": len(derivations)}, [])
-            report = _coverage(connection, derivations)
+            report = _coverage(connection, derivations, assessments)
             integrity = _integrity(connection)
-            _record_step(connection, session_id, "health_coverage", "completed" if integrity["state"] == "passed" else "failed", {"project_count": report["project_count"]}, report["reason_codes"])
+            _record_step(connection, session_id, "health_coverage", "completed" if integrity["state"] == "passed" else "failed", {"project_count": report["project_count"], "assessment_run_count": len(assessments)}, report["reason_codes"])
             final_status = "completed" if integrity["state"] == "passed" else "failed"
             warnings = report["reason_codes"] + ([] if final_status == "completed" else ["HEALTH_REIMPORT_INTEGRITY_FAILED"])
             final_report = {**report, "integrity": integrity, "reconciliation_state": "not_available", "attempt_id": attempt_id}

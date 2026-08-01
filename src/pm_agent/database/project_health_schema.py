@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS project_health_reimport_attempts (
     warning_codes_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(warning_codes_json))
 );
 
+CREATE TABLE IF NOT EXISTS project_health_reimport_assessments (
+    session_id TEXT NOT NULL REFERENCES project_health_reimport_sessions(session_id),
+    project_id TEXT NOT NULL,
+    assessment_run_id TEXT NOT NULL REFERENCES project_health_assessment_runs(assessment_run_id),
+    state TEXT NOT NULL CHECK(state IN ('red','amber','green','unknown','stale','missing','conflicting','not_available','not_applicable')),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (session_id, project_id)
+);
+
 CREATE TABLE IF NOT EXISTS project_health_configuration_operations (
     operation_id TEXT PRIMARY KEY,
     status TEXT NOT NULL CHECK(status IN ('reserved')),

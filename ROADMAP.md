@@ -1,7 +1,7 @@
 # Delivery Manager Roadmap
 
-Status: `PHASE 3 DESIGN APPROVED — BATCH B1 AUTHORIZATION REQUIRED`
-Last updated: 2026-07-29
+Status: `PHASE 6 PROMOTED LOCALLY — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
+Last updated: 2026-08-02
 
 This roadmap begins from the current release candidate. Earlier IP migration
 sequences are historical evidence, not work still waiting to start.
@@ -138,10 +138,16 @@ recorded in
 `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md`.
 The owner approved all four design decisions, completed IP-029 on the
 dedicated local Phase 3 branch, and promoted Phase 3 locally on 2026-07-30.
-Phase 4 runtime, connector and real-data work remain separately unauthorized.
-The bounded Phase 4 design is proposed in
-`architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md` and awaits
-owner review; no Phase 4 implementation batch is authorized.
+Phase 4 (IP-030) is a promoted local baseline. On 2026-08-02 the owner
+authorized the IP-033 controlled assessment entry slice: the confirmed clean
+re-import now runs the deterministic seven-dimension assessment per covered
+project and links each run to the import audit. That slice is implemented and
+validated on `codex/phase-4-assessment-entry` and awaits owner review; it adds
+no standalone CLI, Attention producer, connector, or real-data path.
+Phase 5 (IP-031) was promoted locally on 2026-08-01; Skill Dependency and new
+Attention producers remain deliberately excluded. Phase 6 (IP-032 Weekly
+Brief v2) was promoted locally on 2026-08-01 as the current development
+baseline.
 Deferred
 migration rehearsal and real-environment
 UAT return as Phase 9 gates under a refreshed, approved runbook.

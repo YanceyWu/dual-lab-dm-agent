@@ -26,6 +26,7 @@ recoverable from Git history.
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 | IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
+| IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Implemented locally on `codex/phase-4-assessment-entry`; review/acceptance required | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
 
 ## Approved design
 
@@ -47,7 +48,9 @@ recoverable from Git history.
 4. Phase 6 Weekly Brief v2 (IP-032) is the promoted local baseline. The next
    planned gate is Phase 7 Forecast v1 design; it and every later phase require
    separate owner authorization.
-5. Return tagging, isolated operational-copy rehearsal, and refreshed
+5. IP-033 is implemented locally as the Phase 4 assessment entry slice; it
+   awaits owner review. It does not change the promoted baselines.
+6. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary
