@@ -117,16 +117,19 @@ def test_demo_identity_and_project_language_is_explicitly_synthetic(demo_db: Pat
 def test_demo_workload_and_monthly_capacity_semantics(demo_db: Path) -> None:
     response = TeamWorkloadService().overview()
     assert response.success is True
-    assert response.data["stats"] == {
-        "total": 4,
-        "available": 2,
-        "overloaded": 0,
-        "avg_load": 0.68,
-        "max_load": 0.8,
-    }
 
     connection = sqlite3.connect(demo_db)
     try:
+        current_month = connection.execute(
+            """
+            SELECT employee_id, SUM(allocation)
+            FROM monthly_allocations
+            WHERE year = 2026 AND month = ?
+            GROUP BY employee_id
+            ORDER BY employee_id
+            """,
+            [date.today().month],
+        ).fetchall()
         july = connection.execute(
             """
             SELECT employee_id, allocation
@@ -137,6 +140,19 @@ def test_demo_workload_and_monthly_capacity_semantics(demo_db: Path) -> None:
         ).fetchall()
     finally:
         connection.close()
+
+    expected_loads = [float(row[1]) for row in current_month]
+    assert {
+        member["id"]: member["current_load"]
+        for member in response.data["members"]
+    } == {row[0]: row[1] for row in current_month}
+    assert response.data["stats"] == {
+        "total": len(expected_loads),
+        "available": sum(load < 0.8 for load in expected_loads),
+        "overloaded": sum(load >= 1.0 for load in expected_loads),
+        "avg_load": round(sum(expected_loads) / len(expected_loads), 2),
+        "max_load": round(max(expected_loads), 2),
+    }
     assert july == [("990001", 0.8), ("990002", 0.5), ("990003", 0.8), ("990004", 0.6)]
 
 

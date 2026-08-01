@@ -25,8 +25,13 @@ def _seed_board(db_path: Path) -> None:
         )
         connection.execute(
             """
-            INSERT INTO jira_stream_versions(id, board_id, project_key, name, release_date, status)
-            VALUES ('release-1', 'board-synthetic', 'SYN', 'Synthetic Release', '2026-08-15', 'unreleased')
+            INSERT INTO jira_stream_versions(
+                id, board_id, project_key, name, release_date, status, synced_at
+            )
+            VALUES (
+                'release-1', 'board-synthetic', 'SYN', 'Synthetic Release',
+                '2026-08-15', 'unreleased', '2026-07-30T02:00:00+00:00'
+            )
             """
         )
         connection.executemany(

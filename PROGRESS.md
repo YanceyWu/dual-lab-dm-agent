@@ -1,25 +1,17 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 Current branch: `codex/phase-4-project-health-design`
-Current cleanup commit: `c068beb`
+Current HEAD before this design revision: `ba9ed75d3e5cbb3f026543277c76868efad21c06`
 Package version: `0.2.0rc1`
-Current implementation pack: `NONE — PHASE 5 DESIGN REVIEW`
-Gate status: `PHASE 5 DESIGN REVIEW REQUIRED`
-Git state: independent branch is based on exact validated commit `a272890`;
-the planning, Phase 1, and Phase 2 Batch A design commit chain through this
-continuity record is pushed to and tracks
-`origin/codex/phase-1-intelligence-contract`. The exact remote HEAD is
-verified in the task handoff because a commit cannot embed its own final hash.
-The approved Phase 2 implementation branch, including the accepted Batch B
-result, review corrections, Batch C design handoff, accepted Batch C1
-implementation and corrections, and technically validated but product-rejected
-Batch C2 mapping implementation at `71d90d3`, is local-only and has no remote
-tracking branch. The exact current commit is reported in the task handoff
-because a commit cannot embed its own final hash. Do not push it without a
-separate authorization. Do not merge or push to `main`.
-The dedicated Phase 3 branch is also local-only and has no remote tracking
-branch. Batch B2 is committed locally for review and has not been pushed.
+Current implementation pack: `NONE — PHASE 5 REVISED DESIGN REVIEW`
+Gate status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Git state: the current branch tracks
+`origin/codex/phase-4-project-health-design`; the exact pre-revision local and
+remote HEAD was `ba9ed75d3e5cbb3f026543277c76868efad21c06`. This design revision
+is local until its final commit state is reported. Do not push, merge, tag,
+release, deploy, access a connector, or use real data without separate
+authorization.
 
 ## Read this first
 
@@ -403,52 +395,39 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 Phase 1 is promoted locally on its dedicated branch. Management Attention
-   now intentionally duplicates existing returned-item meaning into the new
-   typed intelligence projection while preserving legacy `data`; later
-   maintenance must keep the single deterministic mapper and legacy projection
-   aligned. Consumers that assume an exact legacy JSON key set remain a
-   compatibility risk outside the repository.
-6. Phase 1 commits remain unpushed, so remote CI status for this implementation
-   is unknown. Local validation and synthetic release rehearsal are green.
-7. IP-028 Batch B and its review corrections are implemented, validated, and
-   accepted locally. Batch C1 and its bounded review corrections are
-   implemented and locally validated with reconciliation coverage, lifecycle
-   no-op protection, exact interface projections, bounded history, and
-   advisory recommendations. The owner accepted the corrected C1 result on
-   2026-07-29. The completed Phase 2 implementation is promoted locally.
-8. Batch C2's mapping-oriented product contract was not accepted. The bounded
-   correction removes its CLI, Dashboard, and Copilot preview paths, rejects
-   direct preview and legacy configuration confirmation with
-   `ATTENTION_RAG_CONFIGURATION_UNAVAILABLE`, and retains the additive
-   configuration-operation table and existing records. The review correction
-   also removes dormant configuration-operation and rule-version mutation
-   helpers. Technical re-review passed and the owner accepted the correction.
-9. The layered health architecture and bounded Phase 3
-   execution/milestone foundation design are approved. Phase 3 owns
-   canonical Milestone/Release commitment facts; Phase 4 owns bounded DM
-   conditions and Project Health; Phase 7 reuses promoted Milestone history.
-   IP-029 Batch B1 and its first- and second-review corrections are implemented,
-   locally validated, and accepted. The B2 implementation-level design is ready
-   for review; B2 coding is not yet authorized.
-10. Phase 2 is promoted only as a local development baseline. Remote CI for
-    the local Phase 2 commits remains unknown. Connector work, real data,
-    visual Dashboard Center UI, push, and operational promotion remain blocked
-    pending their own gates.
-11. Batch B1 Jira acquisition is validated only with synthetic sessions.
-    Company-specific field IDs, supported link types, and live API behavior
-    remain `UNKNOWN`; the registered evidence source intentionally starts with
-    empty field mappings. Incremental acquisition never claims an
-    authoritative full manifest, so removal/tombstone transitions require a
-    separately complete authoritative manifest through the publication
-    contract.
+5. IP-027 through IP-030 are promoted as local development baselines. The
+   current Phase 4 branch and remote branch both pointed to `ba9ed75` before
+   this local design revision; remote CI status for that exact remote commit is
+   `UNKNOWN` in this session.
+6. Management Attention intentionally preserves its legacy `data` projection
+   beside the typed intelligence projection. The rejected mapping-oriented
+   configuration surface remains unavailable; retained additive storage is
+   compatibility debt, not an accepted public contract.
+7. Phase 3 execution and Milestone behavior is validated only with synthetic
+   sessions. Company-specific field IDs, supported link types, connector
+   behavior, and real-environment coverage remain `UNKNOWN`.
+8. Phase 4 remains a strangler comparison. It has no new Attention producer,
+   does not replace `project-health-review`, and keeps Resource, Quality, and
+   Governance unavailable until approved structured facts exist.
+9. Phase 5 has no implementation pack or runtime authority. Its corrected
+   design records a blocking workforce/project/plan/allocation clean-import
+   prerequisite, defers skill dependency, and requires owner approval before
+   pack registration.
+10. The existing synthetic import utility selects the execution month's
+    allocation for active assignments. Its characterization test now verifies
+    that temporal contract without hard-coding July; operational import
+    readiness is not inferred from this test.
 
 ## Exact next actions
 
-1. Preserve the promoted local IP-030 baseline. Any new Project Health
-   capability, Attention integration, or legacy replacement requires a new
-   approved design and implementation gate.
-2. Do not use connectors or real data, or push, merge, tag, release, or deploy.
+1. Owner reviews and approves or revises the corrected Phase 5 Resource
+   Intelligence design.
+2. Only after design approval, register a Phase 5 implementation pack that
+   resolves the dependency-import prerequisite; runtime work still requires a
+   separate authorization for the canonical capacity core.
+3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
+   legacy replacement, connector or real-data work, or push, merge, tag,
+   release, or deploy without separate authorization.
 
 ## Decisions in force
 
@@ -507,6 +486,55 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 5 design review corrections
+
+- Corrected the Phase 5 capacity formula so leave, BAU, and non-project
+  commitments are deducted exactly once, and fixed overload to compare planned
+  project allocation with effective capacity using explicit amber/red bands.
+- Defined authoritative member/month/kind coverage, explicit known-zero
+  observations, one versioned authoritative source per commitment kind, a
+  720-hour freshness rule, deterministic limited-state precedence,
+  effective-dated human-member-only capacity, and placeholder demand semantics.
+- Recorded the missing workforce/project/plan/allocation clean-import path as a
+  blocking prerequisite that must be proven or remediated in its owning
+  capability before the canonical capacity core proceeds.
+- Defined Resource Intelligence repository/service/read-contract ownership,
+  capability-named synthetic test boundaries, atomic import publication,
+  replay/conflict behavior, software rollback write-stop behavior, and exact
+  Staffing confirmation revalidation inside the domain-write transaction.
+- Kept `resource_skill_dependency` explicitly `not_available` until a separate
+  structured Demand and Skill Evidence contract is reviewed. No Attention
+  producer, public capacity editor, connector, real data, runtime, schema, or
+  implementation pack was added.
+- Corrected the stale evolution-plan next action and synchronized the Pack Index
+  and this continuity record. Exact next action: focused validation and
+  independent read-only review of the corrected design, followed by owner
+  approval or revision. No Phase 5 implementation is authorized.
+- The first full validation run exposed two existing calendar-sensitive
+  synthetic tests after the date advanced to August: demo workload expected a
+  hard-coded July active load even though the importer intentionally selects
+  the current month, and a Release-history fixture let its initial observation
+  default to the execution date after its explicit July change. Stabilized only
+  those test fixtures/assertions against their intended temporal contracts; no
+  runtime, schema, sample, or business behavior changed.
+- The two corrected temporal tests passed 2/2. Final `make validate` passed the
+  repository-boundary and synthetic-sample checks, 237 runtime tests, 21
+  repository-tool tests with 19 subtests, Ruff, compilation, diff hygiene,
+  package build/inspection, and all eight release validation checks.
+- Independent read-only review checked the complete diff, capacity arithmetic,
+  state precedence, source authority, effective-dated workforce requirement,
+  atomic publication and Staffing confirmation, rollback target, deferred
+  skill boundary, privacy limits, gate wording, and test assertion strength.
+  The review found and corrected ambiguity in observation supersession,
+  Project Health allocation coverage, stale-package handling, and safe
+  post-switch rollback. A repeated continuity review also removed stale open
+  gates that still described Phase 3 B2 and Phase 1 publication as current.
+  The final repeated review found no remaining P0-P2 defect.
+- The corrected design remains unapproved and creates no implementation
+  authority. Exact next action: owner approval or requested revision; only
+  after approval may an implementation pack be registered, and runtime work
+  still requires a separate authorization.
 
 ### 2026-07-30 — Copilot full-program context added
 

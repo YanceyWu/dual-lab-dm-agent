@@ -1,7 +1,7 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 5 DESIGN REVIEW REQUIRED`
-Last updated: 2026-07-30
+Status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
 useful as validated-baseline reference. Completed IP-000 through IP-023 and
@@ -29,7 +29,7 @@ recoverable from Git history.
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
-| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Design review required; no pack registered | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Corrected design review required; no pack registered | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
 
 ## Current execution order
 
@@ -41,9 +41,12 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Review the bounded Phase 5 Resource Intelligence design. Do not register or
-   implement a Phase 5 pack, use a live connector or real data, release, push,
-   merge, or tag without a separate authorization.
+4. Review the corrected Phase 5 Resource Intelligence design. It freezes the
+   capacity formula and fail-closed state contract, requires a clean-import
+   prerequisite and transactional Staffing revalidation, and defers skill
+   dependency until structured Demand and Skill Evidence are approved. Do not
+   register or implement a Phase 5 pack, use a live connector or real data,
+   release, push, merge, or tag without separate authorization.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

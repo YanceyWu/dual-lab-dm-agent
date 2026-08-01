@@ -1,7 +1,7 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 4 PROMOTED — LOCAL DEVELOPMENT BASELINE`
-Last updated: 2026-07-30
+Status: `PHASE 5 REVISED DESIGN REVIEW REQUIRED`
+Last updated: 2026-08-01
 
 ## Purpose
 
@@ -377,7 +377,8 @@ Release/Milestone risk, and seven-dimension Project Health remain distinct.
 ### Phase 5 — Resource Intelligence
 
 Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
-(`DESIGN REVIEW REQUIRED`; no implementation pack or runtime authorization).
+(`REVISED DESIGN REVIEW REQUIRED`; no implementation pack or runtime
+authorization).
 
 Goal: evolve allocation views into effective-capacity and resource-risk views.
 
@@ -391,7 +392,9 @@ Expected additions, subject to design approval:
 - capacity calendar;
 - explicit leave, BAU, and non-project commitments;
 - read-only resource heatmap;
-- resource-overload and skill-dependency signals;
+- resource-overload signal;
+- a separately gated structured Demand and Skill Evidence contract before any
+  skill-dependency signal can become available;
 - effective-capacity input to Staffing assessment.
 
 Non-goals:
@@ -402,7 +405,9 @@ Non-goals:
 - no change to confirmation authority.
 
 Promotion gate: Heatmap and Staffing use the same explainable capacity formula,
-and all existing Staffing safety and concurrency tests remain green.
+Staffing revalidates the same capacity and plan versions atomically during
+confirmation, missing commitment evidence never becomes zero, and all existing
+Staffing safety and concurrency tests remain green.
 
 ### Phase 6 — Weekly Brief v2
 
@@ -530,7 +535,8 @@ Non-goals:
 
 ## Immediate next action
 
-Phase 3 is promoted locally. The owner accepted IP-030 Batch A on
-`codex/phase-4-project-health-design`. Do not use a live connector or real
-data, begin Batch B+ or other Phase 4 runtime work, or publish the branch
-without the applicable separate authorization.
+Phase 4 is promoted as the local development baseline. Review and approve or
+revise the corrected Phase 5 Resource Intelligence design. Do not register a
+Phase 5 implementation pack, begin runtime/schema work, use a connector or real
+data, or push, merge, tag, release, or deploy without the applicable separate
+authorization.
