@@ -1,15 +1,70 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `IMPORT PREREQUISITE IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Status: `CAPACITY CORE IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
 
-## Authorized outcome
+## Accepted prerequisite
 
 Register Phase 5 and implement only the workforce/project/plan/monthly-
 allocation clean-import prerequisite. Effective capacity and every Resource
 Intelligence consumer remain separately gated.
+
+The owner accepted this prerequisite on 2026-08-01 at local commit
+`624ba356ff838a89baa39138e99aa73128957339`.
+
+## Authorized capacity-core outcome
+
+Add only dedicated additive capacity schema, versioned synthetic commitment
+package preview/confirmation and audit, deterministic effective-capacity and
+overload derivation, immutable member/month readers, coverage/freshness/conflict
+states, replay safety, and clean-bootstrap/integrity/rollback tests. Heatmap,
+Staffing, Project Health, Skill Dependency, Attention, connectors, and public
+capacity editing remain separately gated.
+
+## Capacity-core ownership and public contracts
+
+- Owning capability: `pm_agent.resource_intelligence`; it does not extend the
+  generic database repository or the workforce/planning importer.
+- Schema owner: `resource_intelligence.schema`; bootstrap only composes its
+  additive DDL.
+- Persistence owner: `resource_intelligence.repository`; it owns capacity
+  session/run/attempt audit, immutable publications, coverage, observations,
+  and derivations as one aggregate.
+- Service contract: `preview_import(payload, db_path=...)` followed by explicit
+  `confirm_import(session_id, db_path=...)`.
+- Immutable reader contract:
+  `get_effective_capacity(member_id, year, month, plan_version_id,
+  db_path=...)`; absence is `unknown`, never zero or healthy.
+- Workforce/planning dependency contract:
+  `workforce_planning_import.read_model.dependency_snapshot(...)`; Resource
+  Intelligence does not read that capability's coverage or audit tables.
+- Local command: `python scripts/import_resource_capacity.py --file PACKAGE
+  --dry-run`, then repeat with `--confirm` to persist.
+
+The package schema is `resource-capacity-import-v1`. Its authoritative manifest
+requires every covered member/month multiplied by exactly `leave`, `bau`, and
+`non_project`. Each known observation carries its fixed authoritative source,
+source reference, observed time, rule version, and monotonic source observation
+version. Explicit `0.0` is known zero; an absent logical key is invalid.
+
+## Capacity derivation and publication rules
+
+- Base capacity is `1.0` only for an active member with complete full-month
+  workforce and allocation evidence; otherwise the result is `unknown`.
+- Effective capacity is `max(0, 1 - leave - bau - non_project)` and available
+  capacity is `max(0, effective capacity - planned project allocation)`.
+- Overload is clear at zero, amber above zero through `0.10`, and red above
+  `0.10`. Observations older than 720 hours at assessment time publish `stale`.
+- `unknown`, `stale`, and `conflicting` never expose effective/available
+  capacity or an overload classification.
+- A complete higher-version package supersedes the current publication in one
+  transaction. Identical replay is idempotent; same-package conflicting replay,
+  incomplete replacement scope, and non-increasing observation versions cannot
+  replace the last complete current publication.
+- Session, preview run, confirmation attempt, publication, derivation,
+  integrity, coverage, and rollback-compatibility evidence are auditable.
 
 ## Verified gap
 
@@ -72,7 +127,8 @@ adapters, live data, or a generic repository write helper.
 ## Focused test entry point and evidence
 
 Focused capability tests:
-`src/tests/test_workforce_planning_import.py`.
+`src/tests/test_workforce_planning_import.py` and
+`src/tests/test_resource_capacity_import.py`.
 
 Required evidence before local commit:
 
@@ -109,17 +165,23 @@ prove clean bootstrap plus isolated rollback.
 - The first contract intentionally permits one clean publication into an empty
   target. Multi-version replacement is outside this prerequisite and must not
   be inferred from replay support.
+- Capacity source inputs remain synthetic structured packages only. A future
+  separately authorized connector/import adapter may implement the same public
+  contract; this core neither selects nor calls a live source.
+- The public capacity reader is deliberately a single member/month lookup. A
+  heatmap/query aggregation is a later consumer gate, not hidden in this core.
 
 ## Explicitly excluded
 
-No effective-capacity derivation; leave, BAU, or non-project calculation;
-heatmap; Staffing assessment/confirmation change; Project Health capacity
-publication; Skill Dependency; Attention; legacy replacement; connector or real
-data; active operational database; next Phase 5 gate; push, merge, tag, release,
-or deployment.
+No heatmap or public Resource Intelligence use case; Staffing
+assessment/confirmation change; Project Health capacity publication; Skill
+Dependency; Attention; legacy replacement; connector or real data; active
+operational database; next Phase 5 gate; push, merge, tag, release, or
+deployment.
 
 ## Current gate
 
-The clean-import prerequisite is implemented, validated, and independently
-reviewed. Commit it locally and stop for owner acceptance or revision. No
-effective-capacity work is authorized.
+The clean-import prerequisite is accepted and the canonical effective-capacity
+core is implemented, repeatedly validated, and independently reviewed. Commit
+it locally and stop for owner acceptance or revision. Every consumer and later
+Phase 5 integration remains separately gated.

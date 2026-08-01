@@ -5,12 +5,15 @@ Current branch: `codex/phase-5-resource-intelligence`
 Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — CLEAN-IMPORT PREREQUISITE ONLY`
-Gate status: `IP-031 IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
+Current implementation pack: `IP-031 — CANONICAL EFFECTIVE-CAPACITY CORE`
+Gate status: `IP-031 CAPACITY CORE IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Git state: the dedicated local branch was created from exact approved HEAD
-`37d9ee704459591296acdb8024e1cb96eb9598e6`. The IP-031 candidate passed
-focused/full/release validation and repeated read-only review and will be
-committed locally by this task. No push is authorized or required. Do not push,
+`37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
+committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
+authorized only the next canonical effective-capacity-core slice. The capacity
+core candidate passed repeated focused/full/release validation and repeated
+read-only review and is part of the next local commit. No push is authorized or
+required. Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
 
@@ -415,10 +418,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 8. Phase 4 remains a strangler comparison. It has no new Attention producer,
    does not replace `project-health-review`, and keeps Resource, Quality, and
    Governance unavailable until approved structured facts exist.
-9. Phase 5 design is approved and IP-031 is registered. Only the
-   workforce/project/plan/allocation clean-import prerequisite is implemented,
-   validated, and reviewed; owner acceptance remains open. Effective capacity
-   and every later integration remain blocked.
+9. Phase 5 design is approved and IP-031 is registered. The owner accepted the
+   workforce/project/plan/allocation clean-import prerequisite and authorized
+   only the canonical effective-capacity core. Heatmap, Staffing, Project
+   Health capacity publication, Skill Dependency, Attention, and later
+   integration remain blocked.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -426,10 +430,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Commit the reviewed IP-031 candidate locally and stop for owner acceptance
-   or revision.
-2. Do not begin the effective-capacity core; it requires a separate explicit
-   authorization after IP-031 acceptance.
+1. Stop for owner acceptance or revision of the implemented, repeatedly
+   validated, and independently reviewed IP-031 canonical capacity core.
+2. Do not start a heatmap, Staffing or Project Health integration, Skill
+   Dependency, Attention, connector/live-data work, or another Phase 5 gate
+   without separate explicit authorization.
 3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
    release, or deploy without separate authorization.
@@ -491,6 +496,58 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 canonical effective-capacity core implemented
+
+- Added the dedicated `pm_agent.resource_intelligence` schema, persistence,
+  service, and immutable read-model boundaries. Bootstrap only composes the
+  additive DDL; generic repositories and existing Staffing/Project Health
+  behavior are unchanged.
+- Added `resource-capacity-import-v1`: a stable anonymous synthetic package
+  with authoritative member/month/kind coverage, exact leave/BAU/non-project
+  observations, fixed source authority, explicit zero, monotonic observation
+  versions, preview, explicit confirmation, audit, atomic current publication,
+  deterministic derivation, coverage/integrity report, idempotent replay,
+  conflict rejection, and software-rollback evidence.
+- Added the workforce/planning public `dependency_snapshot` contract so the
+  capacity core does not read that capability's private coverage/audit storage.
+  Added the single member/month `get_effective_capacity` reader; missing current
+  evidence returns `unknown`, never zero or healthy.
+- Added `scripts/import_resource_capacity.py`, portable synthetic sample data,
+  capability-focused tests, and installed-wheel release rehearsal assertions.
+- First validation evidence: 33 focused workforce/capacity tests, 270 runtime
+  tests, 21 repository-tool tests and 19 subtests, full static/build validation,
+  and installed-wheel release rehearsal passed.
+- First independent read-only review accepted three findings: confirmation was
+  not bound to the exact preview dependency/derivation, idempotency-key reuse
+  lacked a conflict guard, and rollback evidence relied too heavily on a
+  declaration. Added deterministic preview fingerprints with confirm-time
+  revalidation, idempotency-key preview plus transaction guards, and core-table
+  before/after evidence.
+- After correction, 35 focused tests passed; `make validate` passed with 272
+  runtime tests, 21 repository-tool tests and 19 subtests, Ruff, compile, diff
+  check, and package build; `make rehearse-release` again passed installed-wheel
+  clean bootstrap/import/replay, isolated upgrade, integrity, derivation, audit,
+  and rollback.
+- Repeated independent read-only boundary, DDL, transaction, current-pointer,
+  privacy, and excluded-scope review found no remaining blocking or actionable
+  findings. The candidate is ready for a local commit and owner acceptance.
+  Nothing is pushed.
+
+### 2026-08-01 — IP-031 prerequisite accepted; capacity core authorized
+
+- The owner accepted the implemented, validated, and reviewed workforce,
+  project, plan-version, and monthly-allocation clean-import prerequisite at
+  local commit `624ba356ff838a89baa39138e99aa73128957339` and authorized the
+  next Phase 5 step.
+- The next step is bounded to dedicated additive capacity schema, versioned
+  synthetic leave/BAU/non-project commitment import and audit, deterministic
+  effective-capacity derivation, immutable readers, explicit completeness and
+  freshness states, replay/conflict protection, and rollback-compatible tests.
+- This does not authorize a heatmap or other public use case, Staffing
+  assessment/confirmation changes, Project Health capacity publication, Skill
+  Dependency, Attention, connector/live-data use, active database work, push,
+  merge, tag, release, or deployment.
 
 ### 2026-08-01 — IP-031 workforce/planning clean-import prerequisite implemented
 

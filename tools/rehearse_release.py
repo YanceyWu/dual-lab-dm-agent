@@ -86,7 +86,14 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'workforce_planning_import_runs',
                     'workforce_planning_publications',
                     'workforce_member_period_coverage',
-                    'monthly_project_allocation_coverage'
+                    'monthly_project_allocation_coverage',
+                    'resource_capacity_import_sessions',
+                    'resource_capacity_import_attempts',
+                    'resource_capacity_import_runs',
+                    'resource_capacity_publications',
+                    'resource_capacity_manifest_coverage',
+                    'resource_capacity_observations',
+                    'resource_capacity_derivations'
                 )
                 """
             )
@@ -140,6 +147,13 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "workforce_planning_publications",
         "workforce_member_period_coverage",
         "monthly_project_allocation_coverage",
+        "resource_capacity_import_sessions",
+        "resource_capacity_import_attempts",
+        "resource_capacity_import_runs",
+        "resource_capacity_publications",
+        "resource_capacity_manifest_coverage",
+        "resource_capacity_observations",
+        "resource_capacity_derivations",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
     if token_columns != {"confirmation_token_hash"}:
@@ -278,6 +292,66 @@ def rehearse() -> None:
             "monthly_project_allocation_coverage": 2,
         }:
             raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_AUDIT_INVALID")
+        installed_capacity = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json,sys;"
+                    "from pm_agent.resource_intelligence.service import "
+                    "preview_import,confirm_import;"
+                    "from pm_agent.resource_intelligence.read_model import "
+                    "get_effective_capacity;"
+                    "p=json.load(open(sys.argv[1],encoding='utf-8'));"
+                    "v=preview_import(p);r=confirm_import(v['session_id']);"
+                    "i=preview_import(p);"
+                    "c=get_effective_capacity('member-synthetic-001',2026,8,"
+                    "'plan-synthetic-baseline-001');"
+                    "print(json.dumps({'result':r,'replay':i,'capacity':c},sort_keys=True))"
+                ),
+                str(REPO_ROOT / "src/sample-data/json/resource_capacity_import.sample.json"),
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+        )
+        capacity_result = json.loads(installed_capacity.stdout)
+        if capacity_result["result"]["status"] != "completed":
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_IMPORT_FAILED")
+        if capacity_result["replay"]["status"] != "already_completed":
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_REPLAY_INVALID")
+        capacity = capacity_result["capacity"]
+        if (
+            capacity["state"] != "known"
+            or capacity["effective_capacity"] != 0.7
+            or capacity["available_capacity"] != 0.2
+        ):
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_DERIVATION_INVALID")
+        if capacity_result["result"]["report"]["software_rollback"]["state"] != "passed":
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_ROLLBACK_INVALID")
+        with sqlite3.connect(clean_db) as connection:
+            capacity_audit = {
+                table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for table in (
+                    "resource_capacity_import_sessions",
+                    "resource_capacity_import_attempts",
+                    "resource_capacity_publications",
+                    "resource_capacity_manifest_coverage",
+                    "resource_capacity_observations",
+                    "resource_capacity_derivations",
+                )
+            }
+        if capacity_audit != {
+            "resource_capacity_import_sessions": 1,
+            "resource_capacity_import_attempts": 1,
+            "resource_capacity_publications": 1,
+            "resource_capacity_manifest_coverage": 6,
+            "resource_capacity_observations": 6,
+            "resource_capacity_derivations": 2,
+        }:
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_AUDIT_INVALID")
         subprocess.run(
             [
                 sys.executable,

@@ -1,0 +1,33 @@
+{
+  "dataset_marker": "SYNTHETIC_DATASET_V1",
+  "package_id": "package-synthetic-resource-capacity-001",
+  "schema_version": "resource-capacity-import-v1",
+  "generated_at": "2026-08-01T00:00:00+00:00",
+  "source_id": "source-synthetic-resource-capacity",
+  "idempotency_key": "resource-capacity-synthetic-001",
+  "plan_version_id": "plan-synthetic-baseline-001",
+  "assessment_time": "2026-08-01T12:00:00+00:00",
+  "manifest": {
+    "member_periods": [
+      {"member_id": "member-synthetic-001", "year": 2026, "month": 8},
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8}
+    ],
+    "commitment_kinds": ["leave", "bau", "non_project"],
+    "coverage_keys": [
+      {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "leave"},
+      {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "bau"},
+      {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "non_project"},
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "leave"},
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "bau"},
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "non_project"}
+    ]
+  },
+  "observations": [
+    {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "leave", "fraction": 0.1, "value_state": "known", "authoritative_source_id": "source-synthetic-leave", "source_reference": "synthetic-leave-001", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1},
+    {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "bau", "fraction": 0.2, "value_state": "known", "authoritative_source_id": "source-synthetic-bau", "source_reference": "synthetic-bau-001", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1},
+    {"member_id": "member-synthetic-001", "year": 2026, "month": 8, "commitment_kind": "non_project", "fraction": 0.0, "value_state": "known", "authoritative_source_id": "source-synthetic-non-project", "source_reference": "synthetic-non-project-001", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1},
+    {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "leave", "fraction": 0.0, "value_state": "known", "authoritative_source_id": "source-synthetic-leave", "source_reference": "synthetic-leave-002", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1},
+    {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "bau", "fraction": 0.1, "value_state": "known", "authoritative_source_id": "source-synthetic-bau", "source_reference": "synthetic-bau-002", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1},
+    {"member_id": "member-synthetic-002", "year": 2026, "month": 8, "commitment_kind": "non_project", "fraction": 0.0, "value_state": "known", "authoritative_source_id": "source-synthetic-non-project", "source_reference": "synthetic-non-project-002", "observed_at": "2026-08-01T00:00:00+00:00", "rule_version": "resource-commitment-observation-v1", "source_observation_version": 1}
+  ]
+}

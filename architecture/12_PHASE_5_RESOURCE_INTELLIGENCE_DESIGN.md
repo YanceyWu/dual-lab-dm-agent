@@ -1,6 +1,6 @@
 # Phase 5 — Resource Intelligence Design
 
-Status: `APPROVED — IMPORT PREREQUISITE AUTHORIZED`
+Status: `APPROVED — CAPACITY CORE IMPLEMENTED; OWNER ACCEPTANCE REQUIRED`
 Date: 2026-08-01
 Baseline branch: `codex/phase-4-project-health-design`
 Baseline commit: `c2b51f2f8707eada9a4a774cd158df22740005ba`
@@ -337,16 +337,13 @@ explicit promotion decision.
 
 ## Exact next action
 
-The owner approved this corrected design on 2026-08-01 and authorized a new
-session to create `codex/phase-5-resource-intelligence`, register the Phase 5
-implementation pack, inspect the workforce/project/plan/allocation clean-import
-path, and implement only the bounded remediation required to make that path
-versioned, previewable, auditable, atomic, idempotent, coverage-reporting, and
-rollback-tested. The pack must name the discovered module owners, reader
-contracts, focused capability tests, validation evidence, and transitional
-debt.
+The owner accepted the workforce/project/plan/allocation clean-import
+prerequisite at local commit `624ba356ff838a89baa39138e99aa73128957339` and
+authorized only the canonical effective-capacity core. That bounded core is now
+implemented, repeatedly validated, and independently reviewed; stop for owner
+acceptance or revision before any consumer or integration work.
 
-This authorization does not include the effective-capacity core, heatmap,
-Staffing consumption, Project Health capacity publication, Skill Dependency,
-Attention integration, connector or real-data use, push, merge, tag, release,
-or deployment. Each later capability remains separately gated.
+This authorization does not include a heatmap, Staffing consumption, Project
+Health capacity publication, Skill Dependency, Attention integration,
+connector or real-data use, active-database operation, push, merge, tag,
+release, or deployment. Each later capability remains separately gated.
