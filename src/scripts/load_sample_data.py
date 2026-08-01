@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
-"""Load the committed sample source files into an isolated demo database."""
+"""Load the committed synthetic packages into an isolated demo database.
+
+The default build follows the versioned clean re-import path from an empty
+database: bootstrap, workforce planning import, resource capacity import,
+board registration (data prerequisite of the IP-033 entry), Project Health
+re-import (derivation + seven-dimension assessment), canonical Milestone
+import, one deterministic derivation replay so Milestone facts are readable,
+Delivery Attention reconciliation, and a confirmed Weekly Brief v2 snapshot.
+
+``--replay`` re-runs only the idempotent chain on an existing database and
+must not create duplicate assessments, attention items, or snapshots.
+"""
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -12,10 +24,157 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 SAMPLE_ROOT = ROOT / "sample-data"
 DEFAULT_DB = SAMPLE_ROOT / "demo" / "sample_pm.db"
+BRIEF_GENERATED_AT = "2026-08-02T08:00:00Z"
+BRIEF_IDEMPOTENCY_KEY = "demo-brief-2026-08-02"
+
+sys.path.insert(0, str(ROOT))
 
 
 def _run(command: list[str], env: dict[str, str]) -> None:
     subprocess.run(command, cwd=ROOT, env=env, check=True)
+
+
+def _chain_commands() -> list[list[str]]:
+    """Versioned structured imports plus the demo board prerequisite."""
+    return [
+        [
+            sys.executable,
+            "scripts/import_workforce_planning.py",
+            "--file",
+            str((SAMPLE_ROOT / "json" / "workforce_planning_import.sample.json").resolve()),
+            "--confirm",
+        ],
+        [
+            sys.executable,
+            "scripts/import_resource_capacity.py",
+            "--file",
+            str((SAMPLE_ROOT / "json" / "resource_capacity_import.sample.json").resolve()),
+            "--confirm",
+        ],
+        [
+            sys.executable,
+            "scripts/import_jira_boards.py",
+            "--file",
+            str((SAMPLE_ROOT / "csv" / "jira_board_configs.sample.csv").resolve()),
+        ],
+        [
+            sys.executable,
+            "scripts/import_project_health.py",
+            "--file",
+            str((SAMPLE_ROOT / "json" / "project_health_reimport.sample.json").resolve()),
+            "--confirm",
+        ],
+        [
+            sys.executable,
+            "scripts/import_milestones.py",
+            "--file",
+            str((SAMPLE_ROOT / "json" / "milestone_import.sample.json").resolve()),
+            "--confirm",
+        ],
+    ]
+
+
+def _package(name: str) -> dict:
+    return json.loads((SAMPLE_ROOT / "json" / name).read_text(encoding="utf-8"))
+
+
+def _derive_replay(db_path: Path) -> None:
+    """Replay the existing deterministic derivation after Milestone import.
+
+    The IP-033 assessment entry runs before Milestone import per the usability
+    handoff order.  This second derivation pass exposes Milestone facts to the
+    promoted execution reader and Attention rules without changing the
+    assessment entry; fingerprint idempotency keeps replay duplicate-free.
+    """
+    from pm_agent.database import execution
+
+    package = _package("project_health_reimport.sample.json")
+    for board_id in package["board_ids"]:
+        result = execution.derive_board(board_id, db_path=db_path)
+        print(
+            f"Derivation replay: {board_id} -> {result['status']} "
+            f"(run {result['derivation_run_id']}, facts {result['fact_count']})"
+        )
+
+
+def _reconcile_attention(db_path: Path) -> None:
+    from pm_agent.attention import AttentionService
+
+    service = AttentionService(db_path=db_path)
+    preview = service.preview_reconciliation(actor="copilot")
+    if preview["status"] != "proposed":
+        raise SystemExit(f"Attention reconciliation failed: {preview}")
+    changes = preview.get("proposed", {})
+    change_keys = (
+        "created_count",
+        "updated_count",
+        "cleared_count",
+        "reopened_count",
+        "lifecycle_count",
+        "disabled_count",
+        "limited_count",
+    )
+    if not any(changes.get(key, 0) for key in change_keys):
+        print("Attention reconciliation: no changes")
+        return
+    confirmed = service.confirm(
+        operation_id=preview["operation_id"],
+        confirmation_token=preview["confirmation_token"],
+    )
+    print(f"Attention reconciliation confirmed: {confirmed['status']}")
+
+
+def _capture_weekly_brief(db_path: Path) -> None:
+    import sqlite3
+
+    from pm_agent.weekly_brief.composer import compose_weekly_brief_v2
+    from pm_agent.weekly_brief.operations import confirm_capture, preview_capture
+
+    with sqlite3.connect(db_path) as connection:
+        existing = connection.execute(
+            """
+            SELECT 1 FROM weekly_brief_snapshot_operations
+            WHERE actor_id = ? AND idempotency_key = ? AND status = 'confirmed'
+            LIMIT 1
+            """,
+            ("copilot", BRIEF_IDEMPOTENCY_KEY),
+        ).fetchone()
+    if existing:
+        print("Weekly Brief v2 snapshot: already_confirmed")
+        return
+
+    composed = compose_weekly_brief_v2(
+        generated_at=BRIEF_GENERATED_AT,
+        db_path=db_path,
+    )
+    candidate = composed["snapshot"]["capture_candidate"]
+    preview = preview_capture(
+        candidate=candidate,
+        actor_id="copilot",
+        idempotency_key=BRIEF_IDEMPOTENCY_KEY,
+        db_path=db_path,
+    )
+    if preview["status"] == "previewed":
+        confirmed = confirm_capture(
+            operation_id=preview["operation_id"],
+            confirmation_token=preview["confirmation_token"],
+            db_path=db_path,
+        )
+        print(f"Weekly Brief v2 snapshot: {confirmed['status']}")
+    else:
+        print(f"Weekly Brief v2 snapshot: {preview['status']}")
+
+
+def _next_steps(db_path: Path) -> None:
+    print()
+    print(f"Demo DB ready: {db_path}")
+    print("Verification commands (all return non-empty, contract-compliant results):")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app tool query layered-project-health-review --project project-synthetic-atlas")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app tool query delivery-execution-review --project project-synthetic-atlas")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app tool query delivery-attention-center")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app tool query resource-capacity-heatmap --param year=2026 --param month=8 --param plan_version_id=plan-synthetic-baseline-001")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app weekly-brief query")
+    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.dashboard")
 
 
 def main() -> None:
@@ -31,85 +190,39 @@ def main() -> None:
         help="Overwrite the demo DB if it already exists",
     )
     parser.add_argument(
-        "--skip-project-profiles",
+        "--replay",
         action="store_true",
-        help="Skip importing the optional project_profiles sample workbook",
+        help="Idempotently re-run the structured chain on an existing demo DB",
     )
     args = parser.parse_args()
 
     db_path = Path(args.db).resolve()
     db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():
-        if not args.force:
+        if args.force:
+            db_path.unlink()
+        elif not args.replay:
             raise SystemExit(
                 f"Demo DB already exists: {db_path}\n"
-                "Re-run with --force to recreate it."
+                "Re-run with --force to recreate it or --replay for an "
+                "idempotent re-run."
             )
-        db_path.unlink()
 
     env = os.environ.copy()
     env["DATABASE_PATH"] = str(db_path)
 
-    commands = [
-        [
-            sys.executable,
-            "scripts/import_from_excel.py",
-            "--file",
-            str((SAMPLE_ROOT / "excel" / "resource_portal_team_sample.xlsx").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/import_skills.py",
-            "--team-data",
-            str((SAMPLE_ROOT / "json" / "team_data.sample.json").resolve()),
-            "--skill-data",
-            str((SAMPLE_ROOT / "json" / "skillset.sample.json").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/import_hiref.py",
-            "--file",
-            str((SAMPLE_ROOT / "excel" / "hiref_status_sample.xlsx").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/import_cr_csv.py",
-            "--file",
-            str((SAMPLE_ROOT / "csv" / "servicenow_change_requests.sample.csv").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/import_jira_boards.py",
-            "--file",
-            str((SAMPLE_ROOT / "csv" / "jira_board_configs.sample.csv").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/import_confluence_pages.py",
-            "--file",
-            str((SAMPLE_ROOT / "csv" / "confluence_pages.sample.csv").resolve()),
-        ],
-    ]
-    if not args.skip_project_profiles:
-        commands.append(
-            [
-                sys.executable,
-                "scripts/import_project_profiles.py",
-                "--file",
-                str((SAMPLE_ROOT / "excel" / "project_profiles_sample.xlsx").resolve()),
-            ]
-        )
+    if not db_path.exists():
+        print("Running: scripts/init_db.py")
+        _run([sys.executable, "scripts/init_db.py"], env)
 
-    for command in commands:
+    for command in _chain_commands():
         print(f"Running: {' '.join(command[1:])}")
         _run(command, env)
 
-    print()
-    print(f"Demo DB ready: {db_path}")
-    print("Next steps:")
-    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app workload")
-    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.cli.app report")
-    print(f"  DATABASE_PATH='{db_path}' python3 -m pm_agent.dashboard")
+    _derive_replay(db_path)
+    _reconcile_attention(db_path)
+    _capture_weekly_brief(db_path)
+    _next_steps(db_path)
 
 
 if __name__ == "__main__":

@@ -104,7 +104,7 @@ def _fact(item: dict[str, Any], statement: dict[str, Any] | None) -> Intelligenc
             kind=_subject_kind(statement, item["producer"], "execution"),
             id=item["subject_id"],
         ),
-        value=value,
+        value=value if value_state == "known" else None,
         value_state=value_state,
         evidence_refs=[ref["evidence_id"] for ref in item["evidence_refs"]],
         rule_version="weekly-brief-v2",

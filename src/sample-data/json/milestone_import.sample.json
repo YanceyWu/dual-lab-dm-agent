@@ -1,0 +1,69 @@
+{
+  "dataset_marker": "SYNTHETIC_DATASET_V1",
+  "milestones": [
+    {
+      "milestone_id": "milestone-atlas-001",
+      "project_id": "project-synthetic-atlas",
+      "milestone_type": "release",
+      "criticality": "critical",
+      "lifecycle_state": "in_progress",
+      "planned_date": "2026-07-15",
+      "source_target_date": "2026-07-15",
+      "forecast_date": "2026-08-05",
+      "actual_date": "",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
+    },
+    {
+      "milestone_id": "milestone-atlas-002",
+      "project_id": "project-synthetic-atlas",
+      "milestone_type": "phase",
+      "criticality": "high",
+      "lifecycle_state": "planned",
+      "planned_date": "2026-08-20",
+      "source_target_date": "2026-08-20",
+      "forecast_date": "",
+      "actual_date": "",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
+    },
+    {
+      "milestone_id": "milestone-atlas-003",
+      "project_id": "project-synthetic-atlas",
+      "milestone_type": "delivery",
+      "criticality": "critical",
+      "lifecycle_state": "achieved",
+      "planned_date": "2026-08-01",
+      "source_target_date": "2026-08-01",
+      "forecast_date": "",
+      "actual_date": "2026-07-31",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
+    },
+    {
+      "milestone_id": "milestone-atlas-004",
+      "project_id": "project-synthetic-atlas",
+      "milestone_type": "phase",
+      "criticality": "medium",
+      "lifecycle_state": "planned",
+      "planned_date": "2026-09-10",
+      "source_target_date": "2026-09-10",
+      "forecast_date": "",
+      "actual_date": "",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
+    }
+  ]
+}

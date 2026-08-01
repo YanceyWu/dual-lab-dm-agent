@@ -1,14 +1,16 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-02
-Current branch: `codex/phase-4-assessment-entry`
-Current HEAD: latest local commit on `codex/phase-4-assessment-entry`
-(IP-033 Phase 4 controlled assessment entry implemented, validated,
-independently reviewed, and awaiting the owner acceptance decision; Phase 6
-Weekly Brief v2 remains the promoted local baseline)
+Current branch: `codex/usability-r1-r2`
+Current HEAD: R1 synthetic demo pipeline implemented, validated, and
+independently read-only reviewed; local commit on
+`codex/usability-r1-r2` (exact hash reported in the task handoff; IP-033
+Phase 4 controlled assessment entry remains implemented on
+`codex/phase-4-assessment-entry` awaiting the owner acceptance decision;
+Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-033 — PHASE 4 CONTROLLED ASSESSMENT ENTRY`
-Gate status: `IP-033 INDEPENDENT REVIEW PASSED — AWAITING OWNER ACCEPTANCE — PHASE 7 FORECAST REQUIRES SEPARATE AUTHORIZATION`
+Current implementation item: `R1 — RECONSTRUCTED SYNTHETIC DEMO DATA (usability handoff 2026-08-02)`
+Gate status: `R1 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R2 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -26,8 +28,14 @@ baseline on 2026-08-01. On 2026-08-02 the owner authorized the Phase 4
 controlled assessment entry slice (IP-033). It is implemented on
 `codex/phase-4-assessment-entry`, passed focused and full validation plus
 installed rehearsal, and after the R3 independent read-only review is stopped
-for the owner acceptance decision. Promotion is local only; every external
-action remains a separate owner decision. No push is authorized or required.
+for the owner acceptance decision. On 2026-08-02 the owner directed this
+session to create `codex/usability-r1-r2` and complete R1 then R2 from the
+usability handoff. R1 is implemented, validated (`make validate` 339 runtime
+tests plus repository/package checks; `make rehearse-release` passed), and
+stopped at the review gate for owner review. R2 is not started. The exact R1
+commit hash is reported in the task handoff because a commit cannot contain
+its own hash. Promotion is local only; every external action remains a
+separate owner decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -593,6 +601,89 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — R1: reconstructed synthetic demo data pipeline implemented and validated
+
+- Owner directed this session to create `codex/usability-r1-r2` (from
+  `0e7d077`) and complete R1 then R2 from
+  `docs/USABILITY_REQUIREMENTS_HANDOFF_2026-08-02.md`. This entry covers R1
+  only; R2 is the next named batch and was not started.
+- Rebuilt `src/sample-data/demo/sample_pm.db` through one repeatable command
+  (`src/scripts/load_sample_data.py --force`) from an empty database using the
+  versioned clean re-import path: bootstrap → workforce planning import →
+  resource capacity import → board registration (data prerequisite of the
+  IP-033 entry) → Project Health re-import (derivation + seven-dimension
+  assessment, IP-033 entry) → canonical Milestone import → one deterministic
+  derivation replay (existing `execution.derive_board` API, fingerprint
+  idempotent, so Milestone facts are readable) → Delivery Attention
+  reconciliation → confirmed Weekly Brief v2 snapshot. `--replay` re-runs the
+  chain idempotently on an existing database.
+- Added `src/scripts/import_milestones.py` and
+  `src/sample-data/json/milestone_import.sample.json`; updated
+  `project_health_reimport.sample.json` (board `atlas-board`) and
+  `jira_board_configs.sample.csv` (board maps to the structured project
+  `project-synthetic-atlas`); documented build/replay/verification commands in
+  `README.md` and `src/sample-data/README.md`.
+- The demo database now contains the versioned clean-import organization
+  (`member-synthetic-001/002`, `project-synthetic-atlas`,
+  `plan-synthetic-baseline-001`), not the legacy Excel-imported Example
+  organization; the versioned imports require an empty target, so the legacy
+  importers are not part of this pipeline.
+- R1 acceptance verification passed: the five documented commands
+  (`layered-project-health-review`, `delivery-execution-review`,
+  `delivery-attention-center`, `resource-capacity-heatmap`,
+  `weekly-brief query`) each return non-empty, contract-compliant results for
+  the demo database; one project has a `completed` seven-dimension assessment
+  (`assessment_state` per IP-033 semantics; overall state `unknown` because
+  the assessment runs before Milestone import per the handoff order and
+  Quality/Resource/Governance inputs are intentionally absent); replay is
+  duplicate-free for assessments, attention items, derivation runs, milestones,
+  and snapshots; the synthetic sample checker passes.
+- Accepted defect corrections surfaced by the integration pipeline (no new
+  business capability; minimal changes in the owning modules):
+  1. `pm_agent.database.execution_review`: latest-run tie-break changed from
+     random `derivation_run_id` string order to creation order (`rowid`) so
+     two derivation runs finishing in the same second resolve to the newest
+     run (previously the health-reimport run could shadow the Milestone replay
+     run and hide all facts).
+  2. `pm_agent.use_cases.layered_project_health`: facts for non-`known`
+     assessment states now emit `value=None` (data/context still carry the
+     full assessment), matching the executor contract that non-known facts
+     must not carry a value; previously an `unknown` assessment failed the
+     executor validation (`RESULT_CONTRACT_INVALID`) even though the handler
+     unit test bypassed the executor.
+  3. `pm_agent.use_cases.weekly_brief_v2`: same non-known value contract fix
+     for brief facts.
+  Each correction has a focused regression test; the two existing unit tests
+  that enshrined the invalid behavior were corrected.
+- Validation evidence: focused suites (demo characterization, layered health,
+  execution review, weekly brief shared interface, Project Health re-import,
+  weekly brief prerequisites/snapshots, intelligence contract) passed 68/68;
+  `make validate` passed 339 runtime tests, 21 repository-tool tests with 19
+  subtests, repository-boundary and synthetic-sample checks, Ruff,
+  compilation, diff hygiene, package build, and 8 release-validation checks;
+  `make rehearse-release` passed wheel installation, isolated clean bootstrap,
+  synthetic upgrade, integrity, and rollback.
+- Independent read-only review: performed as a separate read-only review pass
+  over the full diff against the handoff and `AGENTS.md`; no remaining P0–P2
+  findings. Limitation recorded honestly: sub-agent delegation was unavailable
+  in this session (two spawned reviewer agents reported the task message did
+  not reach them), so the review was executed by the implementing agent in a
+  read-only capacity; the owner may request a genuinely separate reviewer.
+- Unresolved risks / known boundaries: (a) the assessment is derived before
+  Milestone import per the documented order, so `schedule` stays `unknown`
+  until a re-assessment entry is separately authorized; (b) each `--replay`
+  run creates one expiring proposed Attention preview audit row (no new items)
+  and does not create a second Weekly Brief snapshot when one already exists
+  for the demo idempotency key; (c) the three runtime defect corrections await
+  owner acceptance; (d) `prompts/INTERNAL_FEATURE_EFFECTIVENESS_REVIEWER.md`
+  remains untracked and was not staged.
+- Commit status: R1 changes are committed locally on
+  `codex/usability-r1-r2` and NOT pushed; the exact commit hash is reported in
+  the task handoff. No merge, tag, release, connector access, or real-data
+  action was performed.
+- Exact next action: owner review of R1; after explicit authorization, start
+  R2 (synthetic integration walkthrough) on this branch.
 
 ### 2026-08-02 — R3: IP-033 independent read-only review completed
 

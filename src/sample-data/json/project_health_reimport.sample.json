@@ -2,6 +2,8 @@
   "dataset_marker": "SYNTHETIC_DATASET_V1",
   "package_id": "project-health-synthetic-package-001",
   "schema_version": "project-health-reimport-v1",
-  "board_ids": [],
+  "board_ids": [
+    "atlas-board"
+  ],
   "inputs": []
 }

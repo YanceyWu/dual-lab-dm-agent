@@ -55,12 +55,17 @@ def _result(
             else "unknown" if assessment["state"] in {"unknown", "stale", "missing"}
             else "known"
         )
+        value = (
+            {"overall_state": assessment["state"], "dimensions": assessment["dimensions"]}
+            if value_state == "known"
+            else None
+        )
         facts.append(IntelligenceFact(
             fact_id=fact_id,
             fact_type="layered_project_health",
             fact_kind="derived",
             subject=subject,
-            value={"overall_state": assessment["state"], "dimensions": assessment["dimensions"]},
+            value=value,
             value_state=value_state,
             observed_at=assessment["created_at"],
             freshness_refs=[freshness_id],

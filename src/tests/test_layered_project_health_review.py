@@ -64,3 +64,19 @@ def test_layered_review_rejects_unknown_project(isolated_db) -> None:
     )
     assert result.status == "unavailable"
     assert result.warnings == [{"code": "PROJECT_NOT_FOUND"}]
+
+
+def test_layered_review_unknown_assessment_is_contract_compliant_through_executor(isolated_db) -> None:
+    """An unknown overall state must not carry an invented fact value."""
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("INSERT INTO projects(id,name,status) VALUES ('project-layered-2','Synthetic','active')")
+    evaluate("project-layered-2", db_path=isolated_db)
+    result = use_case_executor.execute(
+        UseCaseRequest(use_case_id="layered-project-health-review", parameters={"project_id": "project-layered-2"})
+    )
+    assert result.status == "success"
+    assert result.data["assessments"][0]["state"] == "unknown"
+    assert result.facts[0].value is None
+    assert result.facts[0].value_state == "unknown"
+    assert result.data["assessments"][0]["dimensions"]["schedule"] == "unknown"

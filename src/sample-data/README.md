@@ -22,11 +22,51 @@ From the repository root:
 python3 tools/check_synthetic_samples.py
 ```
 
-Build the demo database:
+## Demo database (R1 synthetic integration pipeline)
+
+Build the demo database from a clean database:
 
 ```bash
 PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
 ```
+
+An idempotent re-run on an existing demo database (no duplicate assessments,
+attention items, or snapshots):
+
+```bash
+PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay
+```
+
+The pipeline runs, in order: bootstrap, versioned workforce planning import,
+versioned resource capacity import, board registration, Project Health
+re-import (canonical derivation plus seven-dimension assessment through the
+IP-033 entry), canonical Milestone import, one deterministic derivation replay
+(so Milestone facts are readable), Delivery Attention reconciliation, and a
+confirmed Weekly Brief v2 snapshot.
+
+After a build, these commands return non-empty, contract-compliant results
+for the same synthetic demo database:
+
+```bash
+export DATABASE_PATH="$PWD/src/sample-data/demo/sample_pm.db"
+export PYTHONPATH="$PWD/src"
+python3 -m pm_agent.cli.app tool query layered-project-health-review --project project-synthetic-atlas
+python3 -m pm_agent.cli.app tool query delivery-execution-review --project project-synthetic-atlas
+python3 -m pm_agent.cli.app tool query delivery-attention-center
+python3 -m pm_agent.cli.app tool query resource-capacity-heatmap --param year=2026 --param month=8 --param plan_version_id=plan-synthetic-baseline-001
+python3 -m pm_agent.cli.app weekly-brief query
+```
+
+The demo database contains the versioned clean-import organization
+(`member-synthetic-001/002`, `project-synthetic-atlas`,
+`plan-synthetic-baseline-001`). It is not the legacy Excel-imported Example
+organization; the versioned imports require an empty target database.
+
+Known demo limitations: the IP-033 assessment runs before Milestone import per
+the usability handoff order, so the schedule dimension is `unknown` (Milestone
+facts are then exposed by the derivation replay); Quality, Resource, and
+Governance observations are intentionally absent, so those dimensions remain
+`not_available`.
 
 The generated database is classified as synthetic only while every input passes
 the checker and the characterization suite passes.

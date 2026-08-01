@@ -301,4 +301,4 @@ def test_typed_intelligence_projection_preserves_subject_kind_and_known_states()
         None,
     )
     assert unavailable_health.value_state == "unknown"
-    assert unavailable_health.value == {"statement_id": None}
+    assert unavailable_health.value is None

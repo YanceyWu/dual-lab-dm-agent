@@ -84,3 +84,41 @@ def test_execution_review_validates_scope_and_generic_interfaces(isolated_db) ->
     assert cli.exit_code == 0, cli.output
     assert dashboard.status_code == 200
     assert json.loads(cli.output)['data'] == dashboard.get_json()['data']
+
+
+def test_execution_review_picks_newest_run_by_creation_order_within_same_second(
+    isolated_db,
+) -> None:
+    """A later-created derivation run must win even when its UUID sorts first."""
+    init_db(quiet=True)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("INSERT INTO projects(id, name, status) VALUES ('project-review-2', 'Synthetic', 'active')")
+        for run_id in ("zzz-run-old", "aaa-run-new"):
+            connection.execute(
+                """
+                INSERT INTO execution_derivation_runs
+                    (derivation_run_id, project_id, board_id, rule_version, input_fingerprint,
+                     completeness_state, freshness_state, started_at, finished_at)
+                VALUES (?, 'project-review-2', 'board-review-2', 'execution-foundation-v1',
+                        ?, 'complete', 'fresh', ?, ?)
+                """,
+                [run_id, f"synthetic-{run_id}", now, now],
+            )
+        connection.execute(
+            """
+            INSERT INTO execution_facts
+                (fact_id, derivation_run_id, project_id, subject_kind, subject_id,
+                 fact_key, value_json, value_state, freshness_state, evidence_json)
+            VALUES ('fact-new', 'aaa-run-new', 'project-review-2', 'milestone', 'milestone-new',
+                    'milestone_adherence', '"overdue"', 'known', 'fresh', '{}')
+            """
+        )
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id='delivery-execution-review',
+            parameters={'project_id': 'project-review-2'},
+        )
+    )
+    assert result.status == 'success'
+    assert [item['subject']['id'] for item in result.data['release_milestone']] == ['milestone-new']

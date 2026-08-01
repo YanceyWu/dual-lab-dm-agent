@@ -38,7 +38,7 @@ def list_latest_execution_facts(
             "NOT EXISTS (SELECT 1 FROM execution_derivation_runs later "
             "WHERE later.project_id = dr.project_id AND later.board_id = dr.board_id "
             "AND (later.finished_at > dr.finished_at OR "
-            "(later.finished_at = dr.finished_at AND later.derivation_run_id > dr.derivation_run_id)))",
+            "(later.finished_at = dr.finished_at AND later.rowid > dr.rowid)))",
         ]
         values: list[Any] = [project_id, *kinds, since]
         if subject_kind:

@@ -117,6 +117,21 @@ boundary, synthetic-data, and package checks. The second installs the built
 wheel into a temporary target and rehearses database upgrade and rollback using
 synthetic data.
 
+## Demo data
+
+The committed `src/sample-data/demo/sample_pm.db` is rebuilt by one command from
+a clean database and exercises every promoted capability (Project Health
+seven-dimension assessment, Execution/Milestone review, Delivery Attention
+Center, Resource Capacity heatmap, Weekly Brief v2):
+
+```bash
+PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
+PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay  # idempotent re-run
+```
+
+See `src/sample-data/README.md` for the full command sequence and the five
+verification commands with expected non-empty results.
+
 Read:
 
 - `PROGRESS.md` for the exact current state and next action;
