@@ -1,6 +1,6 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `CAPACITY CORE ACCEPTED — BATCH C NOT AUTHORIZED`
+Status: `BATCH C IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -181,17 +181,51 @@ instead of preserving accidental complexity. The accepted capacity tables are
 not a template for later capabilities unless those capabilities independently
 demonstrate the same atomicity, evidence, replay, and audit requirements.
 
+## Batch C ownership and contracts
+
+- C1 owner: `use_cases.resource_capacity_heatmap`, using only
+  `resource_intelligence.read_model.list_effective_capacity`. Public ID:
+  `resource-capacity-heatmap`; transport remains generic and read-only.
+- C2 owner: `database.staffing_capacity`. Its sole table is the singleton
+  `staffing_capacity_policy`; bootstrap composes its DDL and installs
+  `capacity_required=0`. Missing policy state fails closed.
+- C3 assessment owner: the existing Staffing use-case service. With the marker
+  disabled it retains `staffing-feasibility-v2`; with the marker enabled it
+  consumes canonical effective capacity under `staffing-effective-capacity-v1`.
+- C3 transaction owner: the existing Staffing confirmation repository method.
+  It depends on the public transactional effective-capacity reader and checks
+  current allocation, exact derivation/publication/rule/plan evidence, and the
+  effective limit before the first domain write.
+
+No second capacity formula, heatmap storage, presentation adapter, generic
+repository query, public marker command, or capacity editor is added.
+
+Focused tests are `test_resource_capacity_heatmap.py` and
+`test_staffing_capacity_consumption.py`, plus the existing capacity import,
+Staffing pipeline, intelligence contract, discovery, and transport regressions.
+
+## Batch C rollback contract
+
+Installation alone leaves the marker disabled and is behavior-compatible with
+the accepted capacity-core build. Once enabled, missing marker state or missing,
+non-current, non-known, changed, or insufficient capacity blocks confirmation;
+rollback must never silently resume the legacy `1.0` write assumption. The
+installed-wheel rehearsal proves the disabled default and explicit synthetic
+enablement only; no active operational database is changed.
+
 ## Explicitly excluded
 
-No heatmap or public Resource Intelligence use case; Staffing
-assessment/confirmation change; Project Health capacity publication; Skill
-Dependency; Attention; legacy replacement; connector or real data; active
-operational database; next Phase 5 gate; push, merge, tag, release, or
-deployment.
+No Project Health capacity publication; Skill Dependency; Attention; legacy
+replacement; connector or real data; active operational database; Batch D;
+push, merge, tag, release, or deployment.
 
 ## Current gate
 
 The clean-import prerequisite and canonical effective-capacity core are
-owner-accepted. Stop. Batch C heatmap and Staffing consumption, Project Health
-capacity publication, and every other integration remain separately gated and
-unauthorized.
+owner-accepted. Batch C is authorized only as three independently reviewable
+boundaries: C1 read-only heatmap, C2 disabled Staffing compatibility marker,
+and C3 capacity-aware Staffing assessment/confirmation behind that marker. The
+candidate is repeatedly validated, independently reviewed, and committed
+together with this gate record as current local HEAD. Stop for owner
+acceptance. Project Health capacity publication and every later integration
+remain gated.

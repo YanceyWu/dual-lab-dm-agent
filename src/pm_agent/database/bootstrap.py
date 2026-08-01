@@ -17,6 +17,10 @@ from pm_agent.database.project_health_schema import (
     PROJECT_HEALTH_DDL,
     ensure_project_health_reimport_columns,
 )
+from pm_agent.database.staffing_capacity import (
+    STAFFING_CAPACITY_POLICY_DDL,
+    install_or_validate_policy,
+)
 from pm_agent.resource_intelligence.schema import RESOURCE_INTELLIGENCE_DDL
 from pm_agent.workforce_planning_import.schema import WORKFORCE_PLANNING_IMPORT_DDL
 from pm_agent.rules.identity import (
@@ -3051,6 +3055,9 @@ def main(quiet: bool = False) -> None:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    staffing_capacity_policy_preexisting = _table_exists(
+        conn, "staffing_capacity_policy"
+    )
     conn.executescript(DDL)
     conn.executescript(EXTRA_DDL)
     conn.executescript(ATTENTION_DDL)
@@ -3059,6 +3066,10 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PROJECT_HEALTH_DDL)
     conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
+    conn.executescript(STAFFING_CAPACITY_POLICY_DDL)
+    install_or_validate_policy(
+        conn, table_preexisting=staffing_capacity_policy_preexisting
+    )
     ensure_project_health_reimport_columns(conn)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()

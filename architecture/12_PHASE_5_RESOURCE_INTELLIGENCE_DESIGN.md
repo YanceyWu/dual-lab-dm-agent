@@ -1,6 +1,6 @@
 # Phase 5 — Resource Intelligence Design
 
-Status: `APPROVED — CAPACITY CORE ACCEPTED; BATCH C NOT AUTHORIZED`
+Status: `APPROVED — BATCH C IMPLEMENTED AND REVIEWED; OWNER ACCEPTANCE REQUIRED`
 Date: 2026-08-01
 Baseline branch: `codex/phase-4-project-health-design`
 Baseline commit: `c2b51f2f8707eada9a4a774cd158df22740005ba`
@@ -341,10 +341,13 @@ The owner accepted the workforce/project/plan/allocation clean-import
 prerequisite at local commit `624ba356ff838a89baa39138e99aa73128957339` and
 authorized only the canonical effective-capacity core. That bounded core is now
 implemented, repeatedly validated, independently reviewed, locally committed at
-`1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and owner-accepted. Stop until a
-separate explicit Batch C authorization or revision.
+`1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and owner-accepted. The owner then
+authorized Batch C read-only heatmap and Staffing consumption. Implement them
+as independently reviewable C1/C2/C3 boundaries. The resulting candidate is
+implemented, repeatedly validated, and independently reviewed; stop for owner
+acceptance or revision before Batch D.
 
-This authorization does not include a heatmap, Staffing consumption, Project
-Health capacity publication, Skill Dependency, Attention integration,
+This authorization does not include Project Health capacity publication, Skill
+Dependency, Attention integration,
 connector or real-data use, active-database operation, push, merge, tag,
 release, or deployment. Each later capability remains separately gated.

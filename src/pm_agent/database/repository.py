@@ -20,6 +20,10 @@ from pathlib import Path
 from typing import Any, Generator
 
 from pm_agent.config import settings
+from pm_agent.database import staffing_capacity
+from pm_agent.resource_intelligence.read_model import (
+    get_effective_capacity_in_transaction,
+)
 from pm_agent.rules.hiref import days_until, hiref_urgency, project_alignment_status
 from pm_agent.rules.identity import slugify_text
 
@@ -1568,6 +1572,17 @@ def confirm_staffing_proposal(
         if not project:
             raise ValueError("Target project no longer exists")
         selections = revalidated_proposal["selections"]
+        requires_capacity = staffing_capacity.capacity_required(connection=con)
+        if requires_capacity and not (
+            revalidated_proposal.get("capacity_policy") or {}
+        ).get("required"):
+            raise ValueError(
+                "Capacity-aware Staffing is required; create a new proposal"
+            )
+        candidates_by_member = {
+            item["member_id"]: item
+            for item in revalidated_proposal.get("candidates", [])
+        }
         for selection in selections:
             for period in revalidated_proposal["periods"]:
                 existing_load = con.execute(
@@ -1586,9 +1601,71 @@ def confirm_staffing_proposal(
                         revalidated_proposal.get("plan_version_id") or "",
                     ],
                 ).fetchone()[0]
-                if float(existing_load or 0.0) + float(selection["allocation"]) > 1.0 + 1e-9:
+                capacity_limit = 1.0
+                if requires_capacity:
+                    plan_version_id = revalidated_proposal.get("plan_version_id") or ""
+                    current_capacity = get_effective_capacity_in_transaction(
+                        con,
+                        selection["member_id"],
+                        period["year"],
+                        period["month"],
+                        plan_version_id,
+                    )
+                    period_key = f"{period['year']}-{period['month']:02d}"
+                    expected = next(
+                        (
+                            item
+                            for item in candidates_by_member.get(
+                                selection["member_id"], {}
+                            ).get("capacity_evidence", [])
+                            if item["period"] == period_key
+                        ),
+                        None,
+                    )
+                    if not current_capacity or current_capacity["state"] != "known":
+                        raise ValueError(
+                            "Effective capacity is not known for a selected member period"
+                        )
+                    if not expected or any(
+                        expected.get(field) != current_capacity.get(field)
+                        for field in (
+                            "derivation_id",
+                            "publication_id",
+                            "plan_version_id",
+                            "derivation_rule_version",
+                            "effective_capacity",
+                            "planned_project_allocation",
+                        )
+                    ):
+                        raise ValueError(
+                            "Effective capacity changed; create a new proposal"
+                        )
+                    expected_month = next(
+                        (
+                            item
+                            for item in candidates_by_member.get(
+                                selection["member_id"], {}
+                            ).get("monthly_context", [])
+                            if item["period"] == period_key
+                        ),
+                        None,
+                    )
+                    if not expected_month or abs(
+                        float(existing_load or 0.0)
+                        - float(expected_month["current_load"])
+                    ) > 1e-9:
+                        raise ValueError(
+                            "Planned allocation changed after proposal"
+                        )
+                    capacity_limit = float(current_capacity["effective_capacity"])
+                if (
+                    float(existing_load or 0.0) + float(selection["allocation"])
+                    > capacity_limit + 1e-9
+                ):
                     raise ValueError(
-                        "Confirmed allocation would exceed 1.0 for a member period"
+                        "Confirmed allocation would exceed effective capacity"
+                        if requires_capacity
+                        else "Confirmed allocation would exceed 1.0 for a member period"
                     )
             con.execute(
                 """
@@ -1644,6 +1721,20 @@ def confirm_staffing_proposal(
                                 )
                             ),
                             "role_policy": revalidated_proposal.get("role_policy"),
+                            "capacity_policy": revalidated_proposal.get(
+                                "capacity_policy"
+                            ),
+                            "capacity_evidence": [
+                                {
+                                    "member_id": member_id,
+                                    "periods": candidates_by_member.get(
+                                        member_id, {}
+                                    ).get("capacity_evidence", []),
+                                }
+                                for member_id in [
+                                    item["member_id"] for item in selections
+                                ]
+                            ],
                         },
                     },
                     ensure_ascii=False,

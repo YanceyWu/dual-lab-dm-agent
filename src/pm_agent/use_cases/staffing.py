@@ -12,10 +12,12 @@ import secrets
 
 from pydantic import BaseModel, Field
 
-from pm_agent.database import repository
+from pm_agent.database import repository, staffing_capacity
+from pm_agent.resource_intelligence.read_model import get_effective_capacity
 from pm_agent.rules.hiref import project_alignment_status
 
 RULE_VERSION = "staffing-feasibility-v2"
+CAPACITY_RULE_VERSION = "staffing-effective-capacity-v1"
 STAFFING_SOURCE_IDS = (
     "import-resource-portal",
     "import-skills-matrix",
@@ -110,6 +112,15 @@ def staffing_read_model(demand: StaffingDemand) -> dict[str, Any]:
     )
     if plan_version and plan_version.get("version_status") == "archived":
         plan_errors.append("plan_version_not_writable")
+    requires_capacity = staffing_capacity.capacity_required()
+    if requires_capacity and plan_version:
+        plan_id = str(plan_version["plan_version_id"])
+        for member in members.values():
+            for period_key, state in member["periods"].items():
+                year, month = map(int, period_key.split("-"))
+                state["capacity"] = get_effective_capacity(
+                    member["member_id"], year, month, plan_id
+                )
     return {
         "periods": periods,
         "target_project": target_project,
@@ -117,6 +128,7 @@ def staffing_read_model(demand: StaffingDemand) -> dict[str, Any]:
         "plan_errors": plan_errors,
         "members": list(members.values()),
         "missing_period_members": [member["member_id"] for member in members.values() if len(member["periods"]) != len(periods)],
+        "capacity_required": requires_capacity,
     }
 
 
@@ -136,22 +148,99 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
         missing_skills = [skill for skill in demand.required_skills if member["skills"].get(skill.lower(), 0) <= 0]
         if missing_skills:
             reasons.append("missing_required_skills")
-        available = round(
-            min(1.0 - float(state["load"]) for state in member["periods"].values()), 6
-        ) if member["periods"] else 0.0
-        if available < demand.minimum_allocation:
+        capacity_evidence = []
+        if model["capacity_required"]:
+            expected_periods = [
+                f"{period['year']}-{period['month']:02d}"
+                for period in model["periods"]
+            ]
+            for period in expected_periods:
+                state = member["periods"].get(period, {})
+                capacity = state.get("capacity") or {}
+                live_load = state.get("load")
+                effective = capacity.get("effective_capacity")
+                capacity_evidence.append({
+                    "period": period,
+                    "state": capacity.get("state", "unknown"),
+                    "state_reason": capacity.get(
+                        "state_reason", "current_capacity_derivation_not_found"
+                    ),
+                    "derivation_id": capacity.get("derivation_id"),
+                    "publication_id": capacity.get("publication_id"),
+                    "plan_version_id": capacity.get("plan_version_id"),
+                    "derivation_rule_version": capacity.get("derivation_rule_version"),
+                    "effective_capacity": capacity.get("effective_capacity"),
+                    "planned_project_allocation": capacity.get(
+                        "planned_project_allocation"
+                    ),
+                    "available_capacity": capacity.get("available_capacity"),
+                    "current_planned_allocation": live_load,
+                    "staffing_available_capacity": (
+                        round(max(0.0, float(effective) - float(live_load)), 6)
+                        if capacity.get("state") == "known" and live_load is not None
+                        else None
+                    ),
+                })
+            capacity_usable = True
+            if any(item["state"] != "known" for item in capacity_evidence):
+                reasons.append("effective_capacity_not_known")
+                capacity_usable = False
+            available = (
+                min(
+                    float(item["staffing_available_capacity"])
+                    for item in capacity_evidence
+                )
+                if capacity_evidence and capacity_usable
+                else 0.0
+            )
+        else:
+            available = round(
+                min(1.0 - float(state["load"]) for state in member["periods"].values()),
+                6,
+            ) if member["periods"] else 0.0
+        if available < demand.minimum_allocation and not any(
+            reason == "effective_capacity_not_known"
+            for reason in reasons
+        ):
             reasons.append("insufficient_capacity")
         candidates.append({
             **member,
             "available_allocation": round(max(0.0, available), 2),
             "reasons": reasons,
+            "capacity_evidence": capacity_evidence,
             "monthly_context": [
                 {
                     "period": period,
                     "current_load": state["load"],
                     "available_allocation": round(
-                        max(0.0, 1.0 - float(state["load"])),
+                        max(
+                            0.0,
+                            max(
+                                0.0,
+                                float((state.get("capacity") or {}).get("effective_capacity"))
+                                - float(state["load"]),
+                            )
+                            if model["capacity_required"]
+                            and (state.get("capacity") or {}).get("state") == "known"
+                            else 0.0
+                            if model["capacity_required"]
+                            else 1.0 - float(state["load"]),
+                        ),
                         2,
+                    ),
+                    **(
+                        {
+                            "capacity": next(
+                                (
+                                    item
+                                    for item in capacity_evidence
+                                    if item["period"] == period
+                                ),
+                                None,
+                            )
+                        }
+                        if model["capacity_required"]
+                        else {}
                     ),
                 }
                 for period, state in sorted(member["periods"].items())
@@ -234,6 +323,7 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
                     "hiref_context",
                     "monthly_context",
                     "available_allocation",
+                    "capacity_evidence",
                     "reasons",
                 )
             }
@@ -250,7 +340,13 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
                 "they do not exclude or rank candidates."
             ),
         },
-        "rule_version": demand.rule_version,
+        "capacity_policy": {
+            "required": model["capacity_required"],
+            "policy_version": "staffing-capacity-policy-v1",
+        },
+        "rule_version": (
+            CAPACITY_RULE_VERSION if model["capacity_required"] else demand.rule_version
+        ),
     }
     result["decision_fingerprint"] = _decision_fingerprint(result)
     return result
@@ -392,6 +488,7 @@ def _decision_fingerprint(result: dict[str, Any]) -> str:
         "source_states": result["source_states"],
         "decision_conditions": result["decision_conditions"],
         "role_policy": result["role_policy"],
+        "capacity_policy": result["capacity_policy"],
         "rule_version": result["rule_version"],
     }
     encoded = json.dumps(
@@ -524,6 +621,16 @@ class StaffingProposalService:
                 "source_states": feasibility["source_states"],
                 "role_policy": feasibility["role_policy"],
                 "decision_fingerprint": feasibility["decision_fingerprint"],
+                "capacity_policy": feasibility["capacity_policy"],
+                "capacity_evidence": [
+                    {
+                        "member_id": candidate["member_id"],
+                        "periods": candidate["capacity_evidence"],
+                    }
+                    for candidate in feasibility["candidates"]
+                    if candidate["member_id"]
+                    in {item["member_id"] for item in feasibility["selections"]}
+                ],
                 "freshness_override": freshness_override,
                 "hiref_action_acknowledgement": hiref_acknowledgement,
             },

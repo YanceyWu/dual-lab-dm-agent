@@ -29,6 +29,7 @@ when the mapping and required parameters are already clear.
 | User intent | Approved command |
 | --- | --- |
 | Current workload, capacity, or who may have room | `pm tool query team-workload-overview [--team "<exact team>"]` |
+| Published effective-capacity heatmap for one plan month | `pm tool query resource-capacity-heatmap --param year=<YYYY> --param month=<1-12> --param plan_version_id=<exact-plan-id> [--param member_ids='["<stable-member-id>"]'] [--param states='["known"]']` |
 | Project status, health, or delivery warning signals | `pm tool query project-health-review [--project <exact-project-id>]` |
 | Seven-dimension layered Project Health assessment | `pm tool query layered-project-health-review [--project <exact-project-id>]` |
 | Highest-priority delivery concerns | `pm tool query management-attention [--limit <1-20>]` |
@@ -60,9 +61,11 @@ pm staffing assess --project <id> --start <YYYY-MM> --end <YYYY-MM> --effort <0-
 ```
 
 Treat role as reference context, not a hard eligibility rule. Explain skill,
-monthly allocation, plan-version, freshness, and HIREF trade-offs from the
-returned result. A recorded HIREF number represents usable charge-code coverage
-only for its recorded project and date interval.
+monthly allocation, effective-capacity derivation, plan-version, freshness, and
+HIREF trade-offs from the returned result. When `capacity_policy.required` is
+true, never replace missing or stale effective capacity with the legacy `1.0`
+assumption. A recorded HIREF number represents usable charge-code coverage only
+for its recorded project and date interval.
 
 Run `pm staffing propose ...` only when the user explicitly asks to create a
 proposal. Then run `pm staffing preview <proposal-id>` and show the exact

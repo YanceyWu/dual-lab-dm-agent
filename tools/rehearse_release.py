@@ -93,7 +93,8 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'resource_capacity_publications',
                     'resource_capacity_manifest_coverage',
                     'resource_capacity_observations',
-                    'resource_capacity_derivations'
+                    'resource_capacity_derivations',
+                    'staffing_capacity_policy'
                 )
                 """
             )
@@ -154,6 +155,7 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "resource_capacity_manifest_coverage",
         "resource_capacity_observations",
         "resource_capacity_derivations",
+        "staffing_capacity_policy",
     }:
         raise RuntimeError("DATABASE_OBJECT_SET_INVALID")
     if token_columns != {"confirmation_token_hash"}:
@@ -352,6 +354,43 @@ def rehearse() -> None:
             "resource_capacity_derivations": 2,
         }:
             raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_AUDIT_INVALID")
+        installed_staffing_capacity = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json;"
+                    "from pm_agent.database.staffing_capacity import "
+                    "capacity_required,enable_capacity_requirement;"
+                    "from pm_agent.use_cases.staffing import StaffingDemand,assess_feasibility;"
+                    "before=capacity_required();enabled=enable_capacity_requirement();"
+                    "result=assess_feasibility(StaffingDemand("
+                    "project_id='project-synthetic-atlas',start_period='2026-08',"
+                    "end_period='2026-08',effort=0.2,minimum_allocation=0.1,"
+                    "maximum_people=1,plan_version_id='plan-synthetic-baseline-001'));"
+                    "print(json.dumps({'before':before,'enabled':enabled,'result':result},"
+                    "sort_keys=True))"
+                ),
+            ],
+            check=True,
+            cwd=workspace,
+            env=clean_env,
+            capture_output=True,
+            text=True,
+        )
+        staffing_capacity_result = json.loads(installed_staffing_capacity.stdout)
+        if staffing_capacity_result["before"] is not False:
+            raise RuntimeError("INSTALLED_STAFFING_CAPACITY_MARKER_DEFAULT_INVALID")
+        if staffing_capacity_result["enabled"]["capacity_required"] is not True:
+            raise RuntimeError("INSTALLED_STAFFING_CAPACITY_MARKER_ENABLE_INVALID")
+        staffing_result = staffing_capacity_result["result"]
+        if (
+            staffing_result["capacity_policy"]["required"] is not True
+            or staffing_result["rule_version"] != "staffing-effective-capacity-v1"
+            or staffing_result["selections"][0]["member_id"]
+            != "member-synthetic-002"
+        ):
+            raise RuntimeError("INSTALLED_STAFFING_CAPACITY_CONSUMPTION_INVALID")
         subprocess.run(
             [
                 sys.executable,

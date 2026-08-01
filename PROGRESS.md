@@ -5,8 +5,8 @@ Current branch: `codex/phase-5-resource-intelligence`
 Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — CANONICAL EFFECTIVE-CAPACITY CORE`
-Gate status: `IP-031 CAPACITY CORE ACCEPTED — BATCH C NOT AUTHORIZED`
+Current implementation pack: `IP-031 — BATCH C RESOURCE HEATMAP AND STAFFING CONSUMPTION`
+Gate status: `IP-031 BATCH C IMPLEMENTED AND REVIEWED — OWNER ACCEPTANCE REQUIRED`
 Git state: the dedicated local branch was created from exact approved HEAD
 `37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
 committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
@@ -14,7 +14,12 @@ authorized only the next canonical effective-capacity-core slice. The capacity
 core candidate passed repeated focused/full/release validation and repeated
 read-only review, was committed locally at
 `1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and is now owner-accepted. Batch C
-is not authorized. No push is authorized or required. Do not push,
+was explicitly authorized by the owner. The Batch C candidate passed repeated
+focused/full/release validation and repeated read-only review and is committed
+together with this continuity record as the current local HEAD; the exact hash
+is reported in the handoff. Project Health capacity publication remains a
+separate named slice and is not included. No push is authorized or required.
+Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
 
@@ -48,7 +53,12 @@ belong in Git history and must not be interpreted as current instructions.
   members, projects, plan versions, and monthly project allocations. It uses
   synthetic packages, authoritative coverage, preview/explicit confirmation,
   atomic publication, replay protection, audit, integrity reporting, and an
-  additive rollback-compatible schema. It adds no capacity derivation.
+  additive rollback-compatible schema. That prerequisite itself adds no
+  capacity derivation.
+- IP-031 now also owns the accepted canonical capacity core and the authorized
+  Batch C candidate: a generic read-only capacity heatmap plus capacity-aware
+  Staffing assessment/confirmation behind a persisted marker that installs
+  disabled. Project Health and later consumers remain separate gates.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -431,11 +441,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Stop until the owner separately authorizes or revises the bounded Phase 5
-   Batch C plan. Acceptance of Batch B does not authorize Batch C.
-2. Do not start a heatmap, Staffing or Project Health integration, Skill
-   Dependency, Attention, connector/live-data work, or another Phase 5 gate
-   without separate explicit authorization.
+1. Stop for owner acceptance or revision of the committed, repeatedly
+   validated, and reviewed Batch C candidate.
+2. Do not publish Project Health capacity, activate Skill
+   Dependency or Attention, or begin Batch D without separate authorization.
 3. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
    release, or deploy without separate authorization.
@@ -497,6 +506,72 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — IP-031 Batch C implemented; revalidation/review in progress
+
+- Added the `resource-capacity-heatmap` read-only `UseCaseResult 1.0` contract
+  through the existing `UseCaseExecutor` and `ToolTransport`. It projects only
+  persisted current derivations, exact evidence/freshness, and deterministic
+  overload signals; it creates no recommendations or writes.
+- Added one minimum persisted `staffing_capacity_policy` singleton. Bootstrap
+  installs it disabled. It can be enabled only when a complete current capacity
+  publication exists; a missing marker fails closed instead of restoring the
+  legacy `1.0` assumption.
+- When the marker is enabled, Staffing assessment consumes the canonical
+  effective-capacity derivation and combines it with current plan allocation.
+  Proposal evidence fixes the derivation/publication/rule/plan context.
+  Confirmation reloads the same current derivation and current allocations
+  inside the existing `BEGIN IMMEDIATE` write transaction before any assignment,
+  allocation, or decision record is written.
+- The marker-disabled path preserves the promoted Staffing behavior. Missing,
+  stale, superseded, multi-month partial, changed-plan, or over-limit capacity
+  evidence fails closed without a partial domain write. A completed Staffing
+  write does not require capacity re-import merely to assess the remaining
+  effective-capacity headroom.
+- Added capability-focused heatmap and Staffing-capacity tests and extended the
+  installed-wheel rehearsal for schema installation, disabled-default marker,
+  explicit synthetic enablement, and capacity-aware assessment.
+- First independent review accepted four corrections: fail closed on a missing
+  policy row, reject missing member/month capacity, bound heatmap array filters,
+  and remove the over-restrictive equality between live planned allocation and
+  the capacity publication's planned snapshot. The corrected confirmation
+  instead pins effective-capacity identity and compares transaction-current
+  allocation with proposal evidence and the effective limit.
+- A second review found that bootstrap could recreate a deleted existing marker
+  as disabled and silently restore legacy behavior. Installation now writes and
+  commits disabled only for a newly created table; a pre-existing table without
+  its marker fails closed. The final installation-transaction review also
+  confirmed that the initial row cannot be rolled back by a later bootstrap
+  failure.
+- Final focused evidence: 76 combined heatmap, discovery, capacity import,
+  Staffing compatibility, transaction, and Delivery Manager agent tests passed.
+- Final `make validate` passed 285 runtime tests, 21 repository-tool tests and
+  19 subtests, Ruff, compile, diff check, and package build. Final `make
+  rehearse-release` passed wheel installation, clean bootstrap, dependency and
+  capacity import/replay, disabled marker proof, explicit synthetic enablement,
+  capacity-aware assessment, isolated upgrade, integrity, and rollback.
+- Final repeated read-only review found no remaining blocking or actionable
+  findings across dependency direction, write ordering, fail-closed state,
+  generic transport, excluded scope, and privacy. The candidate is ready for
+  owner acceptance and is committed together with this continuity record as
+  current HEAD; the exact hash is reported in the task handoff. No push was
+  performed.
+
+### 2026-08-01 — IP-031 Batch C authorized
+
+- The owner explicitly authorized Phase 5 Batch C after accepting the
+  canonical capacity core.
+- Implementation is bounded to C1 read-only heatmap through generic transport,
+  C2 a persisted disabled capacity-required compatibility marker, and C3
+  Staffing assessment plus same-transaction confirmation consumption of the
+  immutable effective-capacity contract.
+- The marker must remain disabled when merely installed; synthetic tests may
+  activate it only after a complete capacity publication. No active operational
+  database operation is authorized.
+- Project Health capacity publication remains a separate named slice. Skill
+  Dependency, Attention, connectors, real data, automatic assignment, public
+  capacity editing, Batch D, push, merge, tag, release, and deployment remain
+  unauthorized.
 
 ### 2026-08-01 — IP-031 capacity core accepted; first-principles guardrail recorded
 

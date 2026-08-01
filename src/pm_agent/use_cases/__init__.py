@@ -20,6 +20,7 @@ from pm_agent.use_cases.layered_project_health import execute_layered_project_he
 from pm_agent.use_cases.project_health import execute_project_health_review
 from pm_agent.use_cases.project_snapshots import execute_project_snapshot_list
 from pm_agent.use_cases.resource_planning import ResourcePlanningService
+from pm_agent.use_cases.resource_capacity_heatmap import execute_resource_capacity_heatmap
 from pm_agent.use_cases.team_workload import TeamWorkloadService, execute_team_workload_overview
 from pm_agent.use_cases.weekly_report import WeeklyReportService
 from pm_agent.use_cases.weekly_brief import execute_weekly_dm_brief
@@ -39,6 +40,21 @@ SERVICES = {
 }
 
 use_case_executor = UseCaseExecutor()
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="resource-capacity-heatmap",
+        purpose="Return current published member/month effective capacity and overload facts without recalculating or writing them.",
+        parameter_schema={
+            "year": {"type": "integer", "required": True, "minimum": 2000, "maximum": 2100},
+            "month": {"type": "integer", "required": True, "minimum": 1, "maximum": 12},
+            "plan_version_id": {"type": "string", "required": True, "maximum_length": 128},
+            "member_ids": {"type": "array", "required": False},
+            "states": {"type": "array", "required": False},
+        },
+        intelligence_capabilities=IntelligenceCapabilities(facts=True, signals=True),
+    ),
+    execute_resource_capacity_heatmap,
+)
 use_case_executor.register(
     UseCaseDescriptor(
         use_case_id="layered-project-health-review",
