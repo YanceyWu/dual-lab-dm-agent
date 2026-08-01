@@ -1,6 +1,6 @@
 # IP-031 — Phase 5 Resource Intelligence
 
-Status: `BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 5 PROMOTED LOCALLY`
 Design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
 Implementation branch: `codex/phase-5-resource-intelligence`
 Baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -244,6 +244,7 @@ are owner-accepted. The separately named Project Health capacity-coverage slice
 is owner-accepted at `e7e24b6049155f3a001dc80b95816ba59e8f8ed1`. Batch D is
 complete with combined regression, installed-package clean-import and rollback
 rehearsal, portable review, the IP-031 implementation report, and repeated
-whole-branch review. Stop after the local Batch D commit for an explicit owner
-promotion decision. Skill Dependency, Attention, promotion, and every later
-integration remain gated.
+whole-branch review. The owner subsequently promoted the validated IP-031
+candidate at `c5ee57c49146eca179d0ccc2feaeeef0a7671d00` as the local Phase 5
+development baseline. Skill Dependency, new Attention producers, external
+actions, and Phase 6 implementation remain separately gated.

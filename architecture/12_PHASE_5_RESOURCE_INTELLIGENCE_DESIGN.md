@@ -1,6 +1,6 @@
 # Phase 5 — Resource Intelligence Design
 
-Status: `APPROVED — BATCH D VALIDATED/REVIEWED; PROMOTION DECISION REQUIRED`
+Status: `PHASE 5 PROMOTED LOCALLY`
 Date: 2026-08-01
 Baseline branch: `codex/phase-4-project-health-design`
 Baseline commit: `c2b51f2f8707eada9a4a774cd158df22740005ba`

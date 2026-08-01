@@ -1,6 +1,6 @@
 # Current Implementation Pack Index
 
-Status: `IP-031 BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 5 PROMOTED LOCALLY — PHASE 6 DESIGN IS CURRENT`
 Last updated: 2026-08-01
 
 This checkout intentionally contains only implementation material that remains
@@ -24,13 +24,14 @@ recoverable from Git history.
 | IP-028 | Phase 2 Delivery Attention Center: deterministic Attention storage, reconciliation, lifecycle, and controlled Center integration | Phase 2 promoted as the local development baseline on 2026-07-29 | `implementation-packs/IP-028_PHASE_2_DELIVERY_ATTENTION_CENTER.md` | `implementation-reports/IP-028_IMPLEMENTATION_REPORT.md` |
 | IP-029 | Phase 3 incremental execution evidence, canonical Release/Milestone/Dependency facts, read-only review, and automatic derived Attention | Phase 3 promoted locally on 2026-07-30 | `implementation-packs/IP-029_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION.md` | `implementation-reports/IP-029_IMPLEMENTATION_REPORT.md` |
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
-| IP-031 | Phase 5 Resource Intelligence | Clean-import prerequisite, capacity core, Batch C, and Project Health capacity coverage accepted; Batch D validated/reviewed; explicit promotion decision required | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
+| IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 
 ## Approved design
 
 | Phase | Purpose | Current state | Design |
 | --- | --- | --- | --- |
-| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Batch D validated/reviewed; explicit promotion decision required; later gates blocked | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+| Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Promoted locally; Skill Dependency and new Attention producers remain excluded | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
+| Phase 6 | Weekly Brief v2 from promoted facts | Batch A current-state inspection and design authorized; implementation not yet authorized | Not yet created |
 
 ## Current execution order
 
@@ -42,12 +43,11 @@ recoverable from Git history.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. In a new session and dedicated capability-named branch, register the Phase 5
-   pack and implement only the authorized workforce/project/plan/allocation
-   clean-import prerequisite. Do not implement effective capacity, heatmap,
-   Staffing integration, Project Health capacity publication, Skill Dependency,
-   Attention, connector or real-data work, release, push, merge, or tag without
-   separate authorization.
+4. In a new session on `codex/phase-6-weekly-brief-design`, inspect the current
+   Weekly Brief, history/snapshot, Attention, Project Health, Resource, action,
+   decision, and freshness paths and produce only the bounded Phase 6 Batch A
+   design. Do not register a pack or edit runtime/schema/tests before explicit
+   design approval.
 5. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 

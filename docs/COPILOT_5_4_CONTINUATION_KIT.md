@@ -9,13 +9,16 @@ conflict with this document.
 
 - Trusted current state: read `PROGRESS.md`, then verify branch, exact HEAD,
   and a clean worktree yourself.
-- Current next gate: Phase 5 Resource Intelligence design review.
-- Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`.
+- Current next gate: Phase 6 Weekly Brief v2 Batch A current-state inspection
+  and design on `codex/phase-6-weekly-brief-design`.
+- Promoted prerequisite: Phase 5 Resource Intelligence at the exact local
+  promotion-record commit reported by `PROGRESS.md` and the task handoff.
 - Whole-program context: `docs/COPILOT_5_4_PROGRAM_CONTEXT.md`. It supplies
   the Phase 0–9 map and durable architecture decisions; `PROGRESS.md` still
   determines the current gate.
-- Do not implement Phase 5 or register an implementation pack until the owner
-  explicitly approves that design and authorizes one named batch.
+- Do not register a Phase 6 implementation pack or edit runtime/schema/tests
+  until the owner explicitly approves the Phase 6 design and authorizes one
+  named implementation batch.
 - For a brand-new Copilot Chat, copy
   `prompts/COPILOT_5_4_FIRST_SESSION_PROMPT.md` verbatim before using any other
   task template.

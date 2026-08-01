@@ -5,8 +5,8 @@ Current branch: `codex/phase-5-resource-intelligence`
 Current HEAD before the IP-031 implementation commit:
 `37d9ee704459591296acdb8024e1cb96eb9598e6`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — BATCH D REGRESSION AND PROMOTION DECISION PREPARATION`
-Gate status: `IP-031 BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Current implementation pack: `IP-031 — PHASE 5 PROMOTED LOCAL BASELINE`
+Gate status: `PHASE 5 PROMOTED LOCALLY — PHASE 6 BATCH A DESIGN AUTHORIZED`
 Git state: the dedicated local branch was created from exact approved HEAD
 `37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
 committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
@@ -29,8 +29,14 @@ preparation. Promotion itself and every later integration remain separately
 gated. The Batch D candidate passed combined regression, full validation,
 enhanced installed-package rehearsal, and repeated whole-branch review and is
 committed together with its report and this continuity record as current local
-HEAD; the exact hash is reported in the handoff. No push is authorized or
-required.
+HEAD at `c5ee57c49146eca179d0ccc2feaeeef0a7671d00`. The owner explicitly
+promoted IP-031 as the local Phase 5 development baseline and requested a new
+branch and new session for Phase 6. This promotion record is committed as the
+Phase 5 branch HEAD; its exact hash is reported in the handoff. Only Phase 6
+Batch A current-state inspection and design are authorized initially. Runtime,
+schema, tests, implementation-pack registration, and implementation remain
+gated until the Phase 6 design is reviewed and approved. No push is authorized
+or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -72,8 +78,8 @@ belong in Git history and must not be interpreted as current instructions.
   Staffing assessment/confirmation behind a persisted marker that installs
   disabled. Only the separately named Project Health capacity-coverage reader
   and factor publication slice is now owner-accepted. Batch D validation,
-  rehearsal, reporting, and review are complete; explicit promotion and later
-  consumers remain separate gates.
+  rehearsal, reporting, and review are complete, and IP-031 is now the promoted
+  local Phase 5 baseline. Phase 6 Weekly Brief v2 design is the current gate.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -430,10 +436,10 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 3. `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` is retained as safety reference but
    must be revised and approved against the integrated candidate before use.
 4. No branch may be merged or pushed to `main` under the current authorization.
-5. IP-027 through IP-030 are promoted local development baselines. IP-031 is a
-   local clean-import prerequisite candidate only; it is not Phase 5 promotion.
-   Remote CI and remote branch state for IP-031 are `NOT_APPLICABLE` because no
-   push is authorized.
+5. IP-027 through IP-031 are promoted local development baselines. IP-031 was
+   promoted on 2026-08-01 from validated Batch D HEAD
+   `c5ee57c49146eca179d0ccc2feaeeef0a7671d00`. Remote CI and remote branch state
+   for IP-031 are `NOT_APPLICABLE` because no push is authorized.
 6. Management Attention intentionally preserves its legacy `data` projection
    beside the typed intelligence projection. The rejected mapping-oriented
    configuration surface remains unavailable; retained additive storage is
@@ -444,12 +450,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 8. Phase 4 remains a strangler comparison. It has no new Attention producer,
    does not replace `project-health-review`, and keeps Resource, Quality, and
    Governance unavailable until approved structured facts exist.
-9. Phase 5 design is approved and IP-031 is registered. The owner accepted the
-   workforce/project/plan/allocation clean-import prerequisite and the
-   canonical effective-capacity core, then accepted Batch C heatmap and
-   Staffing consumption at `5773d6c7afd887892bbb295efb85ca737958ff8d`. Only
-   the separate Project Health capacity publication slice is now authorized;
-   Skill Dependency, Attention, Batch D, and later integration remain blocked.
+9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
+   remain deliberately unimplemented. Phase 6 Batch A must first inspect the
+   actual Weekly Brief, snapshot/history, Attention, Project Health, Resource,
+   action, and decision paths and produce a bounded design; implementation is a
+   later explicit gate.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -457,9 +462,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Stop for an explicit owner decision to promote, revise, or reject the local
-   IP-031 Resource Intelligence candidate.
-2. Do not infer promotion or begin Phase 6 from passing Batch D evidence.
+1. From the exact Phase 5 promotion-record commit, create and use
+   `codex/phase-6-weekly-brief-design` in a new session.
+2. Implement only Phase 6 Batch A current-state inspection, gap analysis, and
+   bounded Weekly Brief v2 design. Stop for owner design approval before
+   registering a pack or editing runtime/schema/tests.
 3. Do not activate Skill Dependency or Attention without separate authorization.
 4. Preserve the promoted IP-030 baseline. Do not start Attention integration,
    legacy replacement, connector or real-data work, or push, merge, tag,
@@ -522,6 +529,29 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   batches remain unauthorized.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 5 promoted locally; Phase 6 design session authorized
+
+- The owner explicitly promoted the validated and reviewed IP-031 candidate at
+  `c5ee57c49146eca179d0ccc2feaeeef0a7671d00` as the local Phase 5 development
+  baseline. This does not authorize push, merge, tag, release, deployment,
+  connector/real-data access, or active-database work.
+- The owner requested a new dedicated branch and new session for Phase 6 Weekly
+  Brief v2 design and later implementation. The initial new-session gate is
+  Batch A only: inspect current code/schema/call paths/tests, produce a gap
+  analysis and bounded design, and stop for explicit design approval. General
+  intent to continue does not bypass that design-review gate.
+- Phase 6 must compose promoted public facts, distinguish new/continuing/
+  resolved and unavailable evidence, make every material statement traceable,
+  preserve legacy Weekly Brief compatibility, and create no automatic
+  publication, email, action, decision, Attention producer, or Phase 7 work.
+- Promotion/handoff documentation passed `make validate`: 297 runtime tests,
+  21 repository-tool tests with 19 subtests, repository-boundary and synthetic
+  checks, Ruff, compilation, diff hygiene, and package build. Independent
+  read-only continuity review reconciled `PROGRESS.md`, the evolution plan,
+  Phase 5 design/pack/report, implementation-pack index, program context,
+  continuation kit, and first-session prompt and found no remaining stale
+  current gate or actionable finding.
 
 ### 2026-08-01 — IP-031 Batch D validated and repeatedly reviewed
 

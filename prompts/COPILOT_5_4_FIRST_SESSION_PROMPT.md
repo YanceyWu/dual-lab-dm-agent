@@ -7,7 +7,8 @@ at this repository root.
 You are continuing the complete Delivery Intelligence program in the Delivery
 Manager repository as a disciplined engineering agent. Do not rely on prior
 chat history. Build a whole-program mental model first, but do not start
-implementation yet.
+implementation yet. Phase 5 is the promoted local prerequisite. Your current
+task is Phase 6 Weekly Brief v2 Batch A design only.
 
 First read, in full:
 1. AGENTS.md
@@ -27,22 +28,27 @@ Then run only read-only checks:
 - git branch --show-current
 - git rev-parse HEAD
 - git status --short
-- rg --files src/pm_agent src/tests | rg 'staffing|capacity|allocation|hiref|workload|project_health'
+- rg --files src/pm_agent src/tests | rg 'weekly|brief|snapshot|attention|project_health|capacity|action|decision|freshness'
 
 Report, in Chinese and without editing files:
 1. current branch, exact HEAD, and whether the worktree is clean;
 2. current approved gate and the exact next action;
 3. a concise Phase 0–9 map: completed/promoted, current, and planned-only
    phases, plus their key dependency relationships;
-4. verified existing Resource Intelligence inputs and missing capabilities;
-5. the Phase 5 design's owner module, allowed dependencies, fixed formula,
-   required synthetic scenarios, and non-goals;
+4. the actual `weekly-dm-brief`, `WeeklyReportService`, snapshot/history,
+   Attention, Project Health, Resource, action, decision, and freshness call
+   paths, including which are public contracts versus storage internals;
+5. the verified gaps against the nine required Weekly Brief v2 sections,
+   traceability, new/continuing/resolved semantics, and legacy compatibility;
 6. every action that remains unapproved;
-7. a concise Phase 5 design-review verdict: PASS, PASS_WITH_ACTIONS, or FAIL.
+7. a first-principles Phase 6 Batch A design proposal naming the owning module,
+   public inputs/output, evidence/freshness contract, deterministic rules,
+   snapshot strategy, tests, rollback, non-goals, and separately reviewable
+   implementation slices.
 
 Hard boundaries:
-- Do not implement Phase 5 Batch B or register an implementation pack unless I
-  explicitly approve the Phase 5 design and authorize Batch B.
+- Do not register a Phase 6 implementation pack or edit runtime/schema/tests
+  until I explicitly approve the Phase 6 design and authorize one named batch.
 - Do not edit runtime/schema/tests, access a connector or real data, create an
   Attention producer, replace legacy behavior, push, merge, tag, release, or
   deploy.
@@ -50,14 +56,17 @@ Hard boundaries:
   never infer zero, green, healthy, available, or safe.
 - Use only stable anonymous synthetic IDs in any example.
 
-After I review your report, wait for my explicit next instruction.
+Write the bounded Phase 6 design and update `PROGRESS.md` only after completing
+the read-only inspection and gap analysis. Validate documentation, perform an
+independent read-only review, commit locally, and stop for my explicit design
+approval. Do not begin implementation automatically.
 ```
 
 ## After the first report
 
 - If design corrections are needed, use
   `templates/COPILOT_DESIGN_TASK_TEMPLATE.md` in a new task.
-- If the owner approves the design and authorizes Batch B, use
+- If the owner approves the Phase 6 design and authorizes Batch B, use
   `templates/COPILOT_IMPLEMENTATION_TASK_TEMPLATE.md`; fill every bracketed
   field before sending.
 - Use a separate Chat with

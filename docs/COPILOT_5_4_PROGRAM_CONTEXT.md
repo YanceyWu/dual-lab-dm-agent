@@ -33,15 +33,16 @@ over deterministic use cases; it does not become the system of record.
 | 2 | Delivery Attention Center foundation | Promoted locally; unaccepted legacy mapping configuration remains unavailable. |
 | 3 | Execution and canonical milestone/commitment facts | Promoted locally. |
 | 4 | Seven-dimension Project Health | Promoted locally; legacy review remains in place. |
-| 5 | Effective capacity and Resource Intelligence | Design review required; no implementation pack or implementation authority. |
-| 6 | Weekly Brief v2 from promoted facts | Planned only. |
+| 5 | Effective capacity and Resource Intelligence | Promoted locally; Skill Dependency and new Attention producers remain excluded. |
+| 6 | Weekly Brief v2 from promoted facts | Batch A current-state inspection and design authorized; implementation is not yet authorized. |
 | 7 | Forecast v1 using milestone and health history | Planned only. |
 | 8 | What-if Simulation v1 | Planned only. |
 | 9 | Integrated release candidate and deferred UAT | Planned only; requires separately approved release/UAT work. |
 
-Phases 6–9 are roadmap intent, not frozen implementation designs. Before work
-on any of them, inspect the live repository, write and approve a bounded design
-and implementation pack, then receive authorization for exactly one gate.
+Phase 6 is the current design task; Phases 7–9 remain roadmap intent only.
+Before Phase 6 runtime work, inspect the live repository, write and approve a
+bounded design, register its implementation pack, and receive authorization for
+exactly one implementation gate.
 
 ## Reuse and ownership decisions already made
 
@@ -53,9 +54,9 @@ and implementation pack, then receive authorization for exactly one gate.
 - Project Health dimensions are Schedule, Delivery, Scope, Quality, Resource,
   Dependency, and Governance. A missing factor is `not_available`/unknown, not
   neutral or green.
-- Phase 5 may introduce structured effective-capacity facts. It must not
-  manufacture Resource health from narrative or planned allocation alone;
-  placeholders express demand, not human capacity.
+- Phase 5 owns promoted structured effective-capacity facts. Resource health is
+  never manufactured from narrative or planned allocation alone; placeholders
+  express demand, not human capacity.
 - Manager Attention is automatic only where a separately approved deterministic
   producer exists. Do not create a producer, enable
   `pending_decision_attention`, or alter Attention/legacy behavior without its
@@ -72,8 +73,9 @@ and implementation pack, then receive authorization for exactly one gate.
    `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` for enduring
    architecture and the Phase 0–9 roadmap.
 3. `architecture/06_PHASE_1_INTELLIGENCE_OUTPUT_CONTRACT_DESIGN.md` through
-   `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` for completed
-   decisions and the current proposed design.
+   `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` for promoted
+   decisions, then the current Weekly Brief code/schema/tests for Phase 6 Batch
+   A design discovery.
 4. `implementation-packs/INDEX.md`, then a cited pack only when its phase is
    active or needed for compatibility analysis.
 5. Relevant current code, schema, call paths, and tests before any proposal or

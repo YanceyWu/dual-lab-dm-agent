@@ -1,6 +1,6 @@
 # IP-031 Implementation Report — Resource Intelligence
 
-Status: `BATCH D VALIDATED AND REVIEWED — PROMOTION DECISION REQUIRED`
+Status: `PHASE 5 PROMOTED LOCALLY`
 Date: 2026-08-01
 Branch: `codex/phase-5-resource-intelligence`
 Approved baseline: `37d9ee704459591296acdb8024e1cb96eb9598e6`
@@ -123,9 +123,10 @@ merge, tag, release, deployment, or Phase 6 work was performed.
 
 ## Promotion recommendation
 
-The local IP-031 candidate has satisfied its technical Batch D gate and is ready
-for the owner's explicit promote, revise, or reject decision. This is not an
-automatic promotion and authorizes no later phase or external action.
+The owner promoted the validated and repeatedly reviewed IP-031 candidate as
+the local Phase 5 development baseline on 2026-08-01. Promotion authorizes no
+external action and no Phase 6 implementation; the next approved gate is a new
+branch/session for Phase 6 Batch A design.
 
 ## Independent review
 

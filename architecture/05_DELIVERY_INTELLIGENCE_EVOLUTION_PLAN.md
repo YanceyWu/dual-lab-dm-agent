@@ -1,6 +1,6 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 5 IMPORT PREREQUISITE AUTHORIZED`
+Status: `PHASE 5 PROMOTED LOCALLY — PHASE 6 BATCH A DESIGN AUTHORIZED`
 Last updated: 2026-08-01
 
 ## Purpose
@@ -64,6 +64,15 @@ implementation. B2 is implemented, locally validated, corrected, reviewed, and
 accepted; C1 and later batches remain separately gated.
 Live connector use, real data, Phase 4, and publication remain separately
 gated.
+
+The owner subsequently promoted Phases 3 and 4 as local development baselines.
+Phase 5 IP-031 completed its clean-import prerequisite, canonical capacity core,
+heatmap and Staffing consumption, Project Health capacity publication, Batch D
+regression, installed-package rehearsal, and repeated review. The owner
+promoted exact validated Batch D HEAD
+`c5ee57c49146eca179d0ccc2feaeeef0a7671d00` as the local Phase 5 development
+baseline on 2026-08-01. The next authorized gate is Phase 6 Batch A design in a
+new branch/session; Phase 6 runtime and later phases remain gated.
 
 ## Delivery loop
 
@@ -376,9 +385,7 @@ Release/Milestone risk, and seven-dimension Project Health remain distinct.
 
 ### Phase 5 — Resource Intelligence
 
-Current design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`
-(`APPROVED — IMPORT PREREQUISITE AUTHORIZED`; no effective-capacity runtime
-authorization).
+Promoted design: `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`.
 
 Goal: evolve allocation views into effective-capacity and resource-risk views.
 
