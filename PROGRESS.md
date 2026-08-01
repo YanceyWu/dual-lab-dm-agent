@@ -1,42 +1,20 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-01
-Current branch: `codex/phase-5-resource-intelligence`
-Current HEAD before the IP-031 implementation commit:
-`37d9ee704459591296acdb8024e1cb96eb9598e6`
+Current branch: `codex/phase-6-weekly-brief-design`
+Current HEAD before the Phase 6 Batch A design commit:
+`7442f52cb5fc015c4efdcf20941293314f71e9db`
 Package version: `0.2.0rc1`
-Current implementation pack: `IP-031 — PHASE 5 PROMOTED LOCAL BASELINE`
-Gate status: `PHASE 5 PROMOTED LOCALLY — PHASE 6 BATCH A DESIGN AUTHORIZED`
-Git state: the dedicated local branch was created from exact approved HEAD
-`37d9ee704459591296acdb8024e1cb96eb9598e6`. The accepted prerequisite is
-committed locally at `624ba356ff838a89baa39138e99aa73128957339`; the owner
-authorized only the next canonical effective-capacity-core slice. The capacity
-core candidate passed repeated focused/full/release validation and repeated
-read-only review, was committed locally at
-`1b33d0c9e012909e1ac3eae2b4842497aeb3448a`, and is now owner-accepted. Batch C
-was explicitly authorized by the owner. The Batch C candidate passed repeated
-focused/full/release validation and repeated read-only review and is committed
-together with its continuity record at
-`5773d6c7afd887892bbb295efb85ca737958ff8d`; the owner accepted its audit and
-authorized only the separate Project Health `capacity_coverage` publication
-slice. That slice has now passed repeated focused/full/release validation and
-repeated read-only review and is committed together with this continuity record
-as the current local HEAD; the exact hash is reported in the handoff.
-The owner accepted that slice at
-`e7e24b6049155f3a001dc80b95816ba59e8f8ed1` and authorized only Batch D
-regression, rehearsal, implementation-report, and promotion-decision
-preparation. Promotion itself and every later integration remain separately
-gated. The Batch D candidate passed combined regression, full validation,
-enhanced installed-package rehearsal, and repeated whole-branch review and is
-committed together with its report and this continuity record as current local
-HEAD at `c5ee57c49146eca179d0ccc2feaeeef0a7671d00`. The owner explicitly
-promoted IP-031 as the local Phase 5 development baseline and requested a new
-branch and new session for Phase 6. This promotion record is committed as the
-Phase 5 branch HEAD; its exact hash is reported in the handoff. Only Phase 6
-Batch A current-state inspection and design are authorized initially. Runtime,
-schema, tests, implementation-pack registration, and implementation remain
-gated until the Phase 6 design is reviewed and approved. No push is authorized
-or required.
+Current implementation pack: `NOT REGISTERED — PHASE 6 DESIGN ONLY`
+Gate status: `PHASE 6 BATCH A DESIGN COMPLETE — OWNER APPROVAL REQUIRED`
+Git state: the dedicated local branch was created from exact approved Phase 5
+promotion-record HEAD `7442f52cb5fc015c4efdcf20941293314f71e9db` with a clean
+worktree. Batch A adds only the bounded Phase 6 Weekly Brief v2 design and this
+continuity update. Runtime, schema, tests, implementation-pack registration,
+and implementation remain gated until the owner approves or revises the design
+and separately authorizes one named implementation slice. The final local
+design commit is reported in the handoff because a commit cannot contain its
+own hash. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -79,7 +57,8 @@ belong in Git history and must not be interpreted as current instructions.
   disabled. Only the separately named Project Health capacity-coverage reader
   and factor publication slice is now owner-accepted. Batch D validation,
   rehearsal, reporting, and review are complete, and IP-031 is now the promoted
-  local Phase 5 baseline. Phase 6 Weekly Brief v2 design is the current gate.
+  local Phase 5 baseline. Phase 6 Weekly Brief v2 design is complete and awaits
+  owner review; no Phase 6 implementation slice is authorized.
 - The recorded post-candidate evolution sequence is Phase 0 baseline proof,
   Intelligence contract, Attention, execution signals, Project Health,
   Resource Intelligence, Weekly Brief, Forecast, Simulation, and integrated
@@ -141,26 +120,27 @@ belong in Git history and must not be interpreted as current instructions.
   reconciliation: Attention is decision support, not manager supervision.
   No manager resolve command is exposed; acknowledgement and snooze remain
   optional assistance rather than mandatory closure work.
-- Phase 3 current-state review confirmed that the current Jira path stores
-  mutable Release Version, Issue, and Sprint snapshots plus legacy health
-  scores, but no Issue changelog, Issue Link, temporal scope membership,
-  canonical Release commitment, canonical Milestone, or canonical Dependency.
-  The Phase 3 design is recorded in
-  `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` and
-  was approved by the owner on 2026-07-29. IP-029 is registered on dedicated
-  branch `codex/phase-3-execution-signals`. The owner authorized only Batch B1,
-  whose bounded incremental source-evidence implementation and two correction
-  rounds were accepted by the owner on 2026-07-29. The owner asked to enter the
-  next stage; the owner then authorized only B2 implementation. The owner
-  completed B2 re-review and accepted the corrected result. The owner then
-  authorized only C1 implementation. The owner completed C1 review and accepted
-  the result; C2 and D reviews have passed, and the owner promoted Phase 3 as
-  the local development baseline. Phase 4 and all external actions remain
-  separately unauthorized. The owner then requested the Phase 4 design only;
-  IP-030 is drafted on its dedicated local branch. No Phase 4 implementation is
-  authorized.
+- Phase 3 canonical execution/Milestone/Dependency facts and Phase 4
+  seven-dimension Project Health are promoted local baselines. Phase 4 remains
+  a strangler comparison and creates no new Attention producer or legacy
+  replacement. Their historical implementation gates remain in the change log;
+  they are not current authorization. Phase 6 may consume only their promoted
+  public read contracts.
 
 ## Current validation evidence
+
+Phase 6 Weekly Brief v2 Batch A is documentation-only. Focused documentation
+validation (`git diff --check` plus scope/gate/reference scans) passed. The
+final post-correction `make validate` passed 297 runtime tests, 21
+repository-tool tests with 19 subtests, repository-boundary and synthetic-data
+checks, Ruff, compilation, diff hygiene, package build, and 8 release-validation
+checks. The first independent read-only review found five P1 and one P2 design
+or continuity issues; the second verified those core corrections and found one
+P1 plus three P2 contract/continuity issues. All accepted findings were
+corrected. The third independent read-only review verified every correction and
+found no remaining P0-P2 or other actionable finding. Reviewers made no file
+changes. Batch A changed no runtime, schema, tests, package, or installed
+behavior, so `make rehearse-release` is not required at this design-only gate.
 
 The pre-cleanup `c2c0b16` candidate passed:
 
@@ -447,14 +427,17 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 7. Phase 3 execution and Milestone behavior is validated only with synthetic
    sessions. Company-specific field IDs, supported link types, connector
    behavior, and real-environment coverage remain `UNKNOWN`.
-8. Phase 4 remains a strangler comparison. It has no new Attention producer,
-   does not replace `project-health-review`, and keeps Resource, Quality, and
-   Governance unavailable until approved structured facts exist.
+8. Phase 4 remains a strangler comparison. It has no new Attention producer and
+   does not replace `project-health-review`. Its promoted Resource factor now
+   consumes Phase 5 capacity coverage when that evidence is available; Quality
+   and Governance remain unavailable until approved structured facts exist.
 9. Phase 5 is promoted locally. Skill Dependency and new Attention producers
-   remain deliberately unimplemented. Phase 6 Batch A must first inspect the
-   actual Weekly Brief, snapshot/history, Attention, Project Health, Resource,
-   action, and decision paths and produce a bounded design; implementation is a
-   later explicit gate.
+   remain deliberately unimplemented. Phase 6 Batch A inspected the actual
+   Weekly Brief, snapshot/history, Attention, Project Health, Resource, Action,
+   Decision, and freshness paths and recorded the bounded design in
+   `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`. Owner design approval
+   or revision is the current gate; implementation remains a later explicit
+   gate.
 10. The existing synthetic import utility selects the execution month's
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
@@ -462,15 +445,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. From the exact Phase 5 promotion-record commit, create and use
-   `codex/phase-6-weekly-brief-design` in a new session.
-2. Implement only Phase 6 Batch A current-state inspection, gap analysis, and
-   bounded Weekly Brief v2 design. Stop for owner design approval before
-   registering a pack or editing runtime/schema/tests.
-3. Do not activate Skill Dependency or Attention without separate authorization.
-4. Preserve the promoted IP-030 baseline. Do not start Attention integration,
-   legacy replacement, connector or real-data work, or push, merge, tag,
-   release, or deploy without separate authorization.
+1. Review, approve, or request revision of
+   `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`.
+2. Only after explicit design approval, decide whether to authorize the named
+   B1 public read-contract prerequisite and implementation-pack registration.
+   Do not begin B1 from general approval or passing validation.
+3. Do not activate Skill Dependency, create a new Attention producer, or infer
+   a required Decision without separate authorization.
+4. Preserve the promoted Phase 1–5 baselines. Do not start runtime/schema/test
+   work, legacy replacement, Staffing change, connector or real-data work, or
+   push, merge, tag, release, or deploy without separate authorization.
 
 ## Decisions in force
 
@@ -522,13 +506,38 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   commitments, refuses narrative-derived Milestones, separates execution facts
   from health RAG, and recommends automatic post-sync derived reconciliation
   without an extra manager confirmation.
-- IP-029 Batch B1 and its first- and second-review corrections are implemented,
-  locally validated, and accepted on `codex/phase-3-execution-signals`. The
-  owner authorized B2; its bounded canonical execution and Milestone foundation
-  is implemented, corrected, reviewed, and accepted. C1/C2/D and all later
-  batches remain unauthorized.
+- IP-029 B1 through D are implemented, validated, reviewed, and promoted as the
+  local Phase 3 baseline. Those historical gates are closed; they do not grant
+  authority for Phase 6 implementation or any later-phase action.
 
 ## Recent change log
+
+### 2026-08-01 — Phase 6 Weekly Brief v2 Batch A design completed
+
+- Confirmed the exact required workspace, branch
+  `codex/phase-6-weekly-brief-design`, baseline HEAD
+  `7442f52cb5fc015c4efdcf20941293314f71e9db`, and clean worktree before
+  discovery. No reset, stash, cleanup, or user-change mutation occurred.
+- Inspected the actual legacy and structured Weekly Brief paths,
+  `WeeklyReportService`, project snapshot/history schema, Attention Center,
+  layered Project Health, execution review, Resource Intelligence, Action,
+  Decision, source freshness, shared executor/transport, and focused tests.
+- Added `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md`. It defines an
+  explicit opt-in v2 strangler contract, nine fixed sections, statement-level
+  evidence/freshness, fail-closed new/continuing/resolved semantics, one minimal
+  capability-owned derived snapshot table, clean-bootstrap/rollback behavior,
+  deterministic/model boundaries, synthetic scenarios, and separately gated
+  B1/B2/B3/C/D slices.
+- The design preserves empty-parameter `weekly-dm-brief`, `pm report`, project
+  snapshots, and all Phase 1–5 storage. It does not register an implementation
+  pack or change runtime, schema, tests, connectors, real data, Attention,
+  Staffing, Action, Decision, release, or remote state.
+- Focused documentation validation and the final post-correction
+  `make validate` passed. Three independent read-only review rounds corrected
+  all accepted contract and continuity findings; the final round found no
+  remaining P0-P2 or other actionable finding.
+- Exact next action: commit this design and continuity record locally, then stop
+  for owner design approval or revision. Passing checks does not authorize B1.
 
 ### 2026-08-01 — Phase 5 promoted locally; Phase 6 design session authorized
 
