@@ -189,7 +189,7 @@ def evaluate(
                WHERE f.project_id=? AND r.completeness_state='complete'
                  AND NOT EXISTS (SELECT 1 FROM execution_derivation_runs later
                      WHERE later.project_id=r.project_id AND later.board_id=r.board_id
-                       AND (later.finished_at>r.finished_at OR (later.finished_at=r.finished_at AND later.derivation_run_id>r.derivation_run_id)))""",
+                       AND (later.finished_at>r.finished_at OR (later.finished_at=r.finished_at AND later.rowid>r.rowid)))""",
             [project_id],
         ).fetchall()
         by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)

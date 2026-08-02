@@ -122,3 +122,45 @@ def test_execution_review_picks_newest_run_by_creation_order_within_same_second(
     )
     assert result.status == 'success'
     assert [item['subject']['id'] for item in result.data['release_milestone']] == ['milestone-new']
+
+
+def test_execution_review_non_known_value_is_contract_compliant(isolated_db) -> None:
+    """A non-known fact value must be None in typed output while data keeps it."""
+    init_db(quiet=True)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute("INSERT INTO projects(id, name, status) VALUES ('project-review-3', 'Synthetic', 'active')")
+        connection.execute(
+            """
+            INSERT INTO execution_derivation_runs
+                (derivation_run_id, project_id, board_id, rule_version, input_fingerprint,
+                 completeness_state, freshness_state, started_at, finished_at)
+            VALUES ('review-run-3', 'project-review-3', 'board-review-3', 'execution-foundation-v1',
+                    'synthetic-review-fingerprint-3', 'complete', 'fresh', ?, ?)
+            """,
+            [now, now],
+        )
+        connection.execute(
+            """
+            INSERT INTO execution_facts
+                (fact_id, derivation_run_id, project_id, subject_kind, subject_id,
+                 fact_key, value_json, value_state, freshness_state, evidence_json)
+            VALUES ('fact-target', 'review-run-3', 'project-review-3', 'release', 'release-review-3',
+                    'release_target_date_change',
+                    '{"first": "2026-08-01", "latest": "2026-08-01"}', 'unknown', 'fresh', '{}')
+            """
+        )
+    result = use_case_executor.execute(
+        UseCaseRequest(
+            use_case_id='delivery-execution-review',
+            parameters={'project_id': 'project-review-3'},
+        )
+    )
+    assert result.status == 'success'
+    unknown = [fact for fact in result.facts if fact.value_state == 'unknown']
+    assert unknown
+    assert all(fact.value is None for fact in unknown)
+    assert result.data['release_milestone'][0]['value'] == {
+        'first': '2026-08-01',
+        'latest': '2026-08-01',
+    }

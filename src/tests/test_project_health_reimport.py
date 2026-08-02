@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.project_health import service
+from pm_agent.project_health.evaluation import evaluate
 from pm_agent.project_health.service import catalog_projection, confirm_reimport, preview_reimport
 from pm_agent.use_cases.layered_project_health import execute_layered_project_health_review
 from pm_agent.use_cases.service import UseCaseRequest
@@ -209,3 +211,37 @@ def test_integrity_failure_is_not_published_as_completed(isolated_db: Path, monk
     result = confirm_reimport(preview["session_id"], db_path=isolated_db)
     assert result["status"] == "failed"
     assert result["report"]["integrity"]["state"] == "failed"
+
+
+def test_assessment_reads_newest_derivation_when_runs_finish_same_second(
+    isolated_db: Path,
+) -> None:
+    """A later-created derivation run must win even when its UUID sorts first."""
+    init_db(quiet=True)
+    _seed_board(isolated_db)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with sqlite3.connect(isolated_db) as connection:
+        for run_id in ("zzz-run-old", "aaa-run-new"):
+            connection.execute(
+                """
+                INSERT INTO execution_derivation_runs
+                    (derivation_run_id, project_id, board_id, rule_version,
+                     input_fingerprint, completeness_state, freshness_state,
+                     started_at, finished_at)
+                VALUES (?, 'project-synthetic-001', 'board-synthetic',
+                        'execution-foundation-v1', ?, 'complete', 'fresh', ?, ?)
+                """,
+                [run_id, f"synthetic-{run_id}", now, now],
+            )
+        connection.execute(
+            """
+            INSERT INTO execution_facts
+                (fact_id, derivation_run_id, project_id, subject_kind, subject_id,
+                 fact_key, value_json, value_state, freshness_state, evidence_json)
+            VALUES ('fact-scope-new', 'aaa-run-new', 'project-synthetic-001',
+                    'release', 'release-new', 'release_scope_count',
+                    '{"total": 1, "done": 1}', 'known', 'fresh', '{}')
+            """
+        )
+    result = evaluate("project-synthetic-001", db_path=isolated_db)
+    assert result["dimensions"]["scope"] == "green"

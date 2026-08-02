@@ -84,7 +84,8 @@ def _result(request: UseCaseRequest, filters: dict[str, Any], rows: list[dict[st
         subject = IntelligenceSubject(kind=row["subject_kind"], id=row["subject_id"])
         facts.append(IntelligenceFact(
             fact_id=fact_id, fact_type=row["fact_key"], fact_kind="derived", subject=subject,
-            value=row["value"], value_state=row["value_state"], observed_at=row["finished_at"] or row["started_at"],
+            value=row["value"] if row["value_state"] == "known" else None,
+            value_state=row["value_state"], observed_at=row["finished_at"] or row["started_at"],
             freshness_refs=[freshness_id], evidence_refs=[evidence_id], rule_version=row["rule_version"],
         ))
         evidence.append({"evidence_id": evidence_id, "source_kind": "local_sqlite", "entity_kind": "execution_derivation", "record_count": 1, "derivation_run_id": row["derivation_run_id"], "input_ids": row["input_ids"], "coverage": row["completeness_state"], "fact_evidence": row["evidence"], "event_time": {"state": row["event_time_state"], "occurred_at": row["event_occurred_at"] or None, "precision": row["event_time_precision"], "basis": row["event_time_basis"] or None}})

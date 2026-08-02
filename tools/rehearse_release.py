@@ -228,6 +228,10 @@ def rehearse() -> None:
         shutil.copy2(backup_db, upgrade_db)
         original_hash = sha256(backup_db)
         before_counts = counts(backup_db)
+        with sqlite3.connect(backup_db) as connection:
+            before_events = connection.execute(
+                "SELECT COUNT(*) FROM jira_issue_events"
+            ).fetchone()[0]
 
         upgrade_env = installed_env.copy()
         upgrade_env["DATABASE_PATH"] = str(upgrade_db)
@@ -538,10 +542,18 @@ def rehearse() -> None:
         )
         verify_upgraded_database(upgrade_db, before_counts)
         with sqlite3.connect(upgrade_db) as connection:
-            if connection.execute("SELECT COUNT(*) FROM jira_issue_events").fetchone()[0] != 1:
+            if (
+                connection.execute("SELECT COUNT(*) FROM jira_issue_events").fetchone()[0]
+                != before_events + 1
+            ):
                 raise RuntimeError("INSTALLED_PHASE3_EVIDENCE_BEHAVIOR_INVALID")
             if connection.execute(
-                "SELECT published_run_id FROM source_evidence_cursors"
+                """
+                SELECT published_run_id FROM source_evidence_cursors
+                WHERE source_id = 'jira-evidence-synthetic'
+                  AND board_id = 'board-synthetic'
+                  AND dataset = 'jira_issue_history'
+                """
             ).fetchone()[0] != "installed-run":
                 raise RuntimeError("INSTALLED_PHASE3_CURSOR_BEHAVIOR_INVALID")
             partial_state = connection.execute(

@@ -3,10 +3,12 @@
 
 The default build follows the versioned clean re-import path from an empty
 database: bootstrap, workforce planning import, resource capacity import,
-board registration (data prerequisite of the IP-033 entry), Project Health
-re-import (derivation + seven-dimension assessment), canonical Milestone
-import, one deterministic derivation replay so Milestone facts are readable,
-Delivery Attention reconciliation, and a confirmed Weekly Brief v2 snapshot.
+board registration (data prerequisite of the IP-033 entry), deterministic
+synthetic evidence seeding, canonical Milestone import, Project Health
+re-import (derivation + seven-dimension assessment), Delivery Attention
+reconciliation, and a confirmed Weekly Brief v2 snapshot.  Milestone and
+evidence data precede the assessment so the demo shows real dimension states
+instead of an all-`unknown`/`not_available` database.
 
 ``--replay`` re-runs only the idempotent chain on an existing database and
 must not create duplicate assessments, attention items, or snapshots.
@@ -15,7 +17,6 @@ must not create duplicate assessments, attention items, or snapshots.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import subprocess
 import sys
@@ -59,10 +60,7 @@ def _chain_commands() -> list[list[str]]:
         ],
         [
             sys.executable,
-            "scripts/import_project_health.py",
-            "--file",
-            str((SAMPLE_ROOT / "json" / "project_health_reimport.sample.json").resolve()),
-            "--confirm",
+            "scripts/seed_demo_evidence.py",
         ],
         [
             sys.executable,
@@ -71,30 +69,14 @@ def _chain_commands() -> list[list[str]]:
             str((SAMPLE_ROOT / "json" / "milestone_import.sample.json").resolve()),
             "--confirm",
         ],
+        [
+            sys.executable,
+            "scripts/import_project_health.py",
+            "--file",
+            str((SAMPLE_ROOT / "json" / "project_health_reimport.sample.json").resolve()),
+            "--confirm",
+        ],
     ]
-
-
-def _package(name: str) -> dict:
-    return json.loads((SAMPLE_ROOT / "json" / name).read_text(encoding="utf-8"))
-
-
-def _derive_replay(db_path: Path) -> None:
-    """Replay the existing deterministic derivation after Milestone import.
-
-    The IP-033 assessment entry runs before Milestone import per the usability
-    handoff order.  This second derivation pass exposes Milestone facts to the
-    promoted execution reader and Attention rules without changing the
-    assessment entry; fingerprint idempotency keeps replay duplicate-free.
-    """
-    from pm_agent.database import execution
-
-    package = _package("project_health_reimport.sample.json")
-    for board_id in package["board_ids"]:
-        result = execution.derive_board(board_id, db_path=db_path)
-        print(
-            f"Derivation replay: {board_id} -> {result['status']} "
-            f"(run {result['derivation_run_id']}, facts {result['fact_count']})"
-        )
 
 
 def _reconcile_attention(db_path: Path) -> None:
@@ -219,7 +201,6 @@ def main() -> None:
         print(f"Running: {' '.join(command[1:])}")
         _run(command, env)
 
-    _derive_replay(db_path)
     _reconcile_attention(db_path)
     _capture_weekly_brief(db_path)
     _next_steps(db_path)

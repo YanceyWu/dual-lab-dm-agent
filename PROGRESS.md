@@ -2,15 +2,16 @@
 
 Last updated: 2026-08-02
 Current branch: `codex/usability-r1-r2`
-Current HEAD: R1 synthetic demo pipeline and R2 synthetic walkthrough
-implemented, validated, and read-only reviewed; local commits on
+Current HEAD: R1 synthetic demo pipeline (revised with multi-state sample
+data), R2 synthetic walkthrough, implemented, validated, and read-only
+reviewed; local commits on
 `codex/usability-r1-r2` (exact hashes reported in the task handoff; IP-033
 Phase 4 controlled assessment entry remains implemented on
 `codex/phase-4-assessment-entry` awaiting the owner acceptance decision;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `R1 + R2 — SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R1 + R2 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Current implementation item: `R1 (REVISED) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
+Gate status: `R1 REVISION + R2 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -601,6 +602,66 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — R1 revision: multi-state synthetic demo data (owner request)
+
+- Owner requested demo data that shows both usable and unusable states
+  instead of an all-`unknown`/`not_available` database.  This revision is
+  sample-data and test tooling plus two minimal contract fixes; no new
+  business capability was added.
+- Added `src/scripts/seed_demo_evidence.py`: deterministic, idempotent
+  synthetic seeding into existing tables (authoritative `source_evidence_runs`
+  + cursors + published items, `jira_issue_events`, `jira_issues`,
+  `jira_stream_versions`, `jira_sprints`, `jira_health_snapshots`,
+  `confluence_status_snapshots`, one overdue `action_items` row, two active
+  `assignments` for an overloaded member, and one inactive second project
+  that exists only so the legacy load view can exceed 100% without widening
+  the active-project manifest).  All rows are `SYNTHETIC_DATASET_V1`-marked
+  and the script deletes its own prior rows, so `--replay` is duplicate-free.
+- Reordered the pipeline: bootstrap → workforce → capacity → board
+  registration → evidence seeding → Milestone import → Project Health
+  re-import → Attention reconciliation → Weekly Brief v2 snapshot.  Milestone
+  and evidence data now precede the IP-033 assessment, and the separate
+  derivation replay step was removed (the single in-entry derivation sees all
+  inputs).  This supersedes the previous "assessment runs before Milestone
+  import / schedule stays unknown" limitation recorded in the R1 entry.
+- Demo states now verified: Project Health `overall red` with
+  `schedule=red` (critical milestone overdue guard), `scope=amber`
+  (release completion below green minimum), `dependency=unknown`,
+  `delivery/quality/resource/governance=not_available` (no approved
+  producer, reserved structured input family, and the IP-033 entry does not
+  pass a capacity scope, respectively); Delivery Attention Center shows 6
+  items across 5 rules (project health red, critical milestone overdue,
+  resource overload, overdue action, two source-freshness items); execution
+  review shows sprint + release + milestone layers; Weekly Brief v2 overall
+  `red` with 8 statements and non-empty next-actions; achievements stay empty
+  on snapshot day per the event-window contract.
+- Minimal contract fixes surfaced by the richer data (same defect class as
+  the R1 fixes): `delivery_execution_review` now emits `value=None` for
+  non-`known` facts (the `release_target_date_change` fact is `unknown` with
+  a value, which failed executor validation), and `project_health/evaluation`
+  latest-run tie-break now uses creation order (`rowid`) instead of random
+  `derivation_run_id` ordering.  Both have focused regression tests.
+- `tools/rehearse_release.py` assertions became demo-content-relative:
+  `jira_issue_events` upgrade count is `before + 1` and the installed-run
+  cursor check is scoped to the rehearsal's own source/board/dataset, so the
+  richer demo database no longer breaks the release rehearsal.
+- Validation: focused suites passed 23/23 (demo characterization, Project
+  Health re-import, execution review, layered health, weekly brief shared
+  interface); `make validate` passed 341 runtime tests, 21 repository-tool
+  tests with 19 subtests, synthetic-sample and repository-boundary checks,
+  Ruff, compilation, diff hygiene, package build, and 8 release checks;
+  `make rehearse-release` passed wheel install, isolated upgrade, integrity,
+  and rollback.
+- Read-only review: separate read-only pass over the revision diff against
+  the owner request and `AGENTS.md`; no remaining P0–P2 findings.  Same
+  documented limitation as before: sub-agent delegation was unavailable, so
+  the review was executed by the implementing agent read-only.
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner review of the revised demo; after authorization,
+  start R5 on this branch.
 
 ### 2026-08-02 — R2: synthetic integration walkthrough documented and reviewed
 

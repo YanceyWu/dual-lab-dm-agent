@@ -38,11 +38,12 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay
 ```
 
 The pipeline runs, in order: bootstrap, versioned workforce planning import,
-versioned resource capacity import, board registration, Project Health
+versioned resource capacity import, board registration, deterministic
+synthetic evidence seeding, canonical Milestone import, Project Health
 re-import (canonical derivation plus seven-dimension assessment through the
-IP-033 entry), canonical Milestone import, one deterministic derivation replay
-(so Milestone facts are readable), Delivery Attention reconciliation, and a
-confirmed Weekly Brief v2 snapshot.
+IP-033 entry), Delivery Attention reconciliation, and a confirmed Weekly
+Brief v2 snapshot.  Milestone and evidence data precede the assessment so the
+demo shows real dimension states.
 
 After a build, these commands return non-empty, contract-compliant results
 for the same synthetic demo database:
@@ -62,11 +63,24 @@ The demo database contains the versioned clean-import organization
 `plan-synthetic-baseline-001`). It is not the legacy Excel-imported Example
 organization; the versioned imports require an empty target database.
 
-Known demo limitations: the IP-033 assessment runs before Milestone import per
-the usability handoff order, so the schedule dimension is `unknown` (Milestone
-facts are then exposed by the derivation replay); Quality, Resource, and
-Governance observations are intentionally absent, so those dimensions remain
-`not_available`.
+Known demo states (deliberate mix, all honest):
+
+- `schedule` is `red` (one critical Milestone is overdue);
+- `scope` is `amber` (release scope completion is below the green minimum);
+- `delivery`, `quality`, and `governance` are `not_available`: the current
+  derivation has no approved producer for sprint-completion facts and the
+  structured quality/governance input family is reserved;
+- `resource` is `not_available`: the IP-033 assessment entry does not pass a
+  capacity scope (the dedicated reader supports it; wiring is a separately
+  reviewable change);
+- `dependency` is `unknown`: Phase 3 proves an active link only, without
+  readiness semantics.
+
+The Delivery Attention Center demonstrates five rules (project health red,
+critical milestone overdue, resource overload, overdue action, source
+freshness), and the Weekly Brief v2 overall state is `red` with non-empty
+attention and next-action sections.  Achievements appear only in queries made
+after the snapshot date, per the event-window contract.
 
 The generated database is classified as synthetic only while every input passes
 the checker and the characterization suite passes.

@@ -38,15 +38,15 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
    `"derivations": 2, "observations": 6`，`derivation_states.known: 2`；
 4. board 注册（`scripts/import_jira_boards.py`）——`Loaded 1 JIRA board rows`，
    board `atlas-board` 映射到 `project-synthetic-atlas`（IP-033 入口的数据前提）；
-5. Project Health re-import（`scripts/import_project_health.py --confirm`，
-   IP-033 入口）——预期 `"assessment_state": "completed"`，
-   `assessments[0].project_id == "project-synthetic-atlas"`；
+5. 合成证据种子（`scripts/seed_demo_evidence.py`）——写入权威 source-evidence
+   runs、JIRA 风格问题/发布/Sprint、健康快照、一条逾期行动项与一个超载成员，
+   全部为 `SYNTHETIC_DATASET_V1` 合成行；
 6. Milestone 版本化导入（`scripts/import_milestones.py --confirm`）——预期
    `"milestone_count": 4`；
-7. 派生重放（既有 `execution.derive_board` API，指纹幂等）——预期
-   `Derivation replay: atlas-board -> derived ... facts 4`，把 Milestone 事实
-   暴露给执行评审与 Attention 规则（IP-033 评估本身按交接顺序在 Milestone 之前，
-   因此 schedule 维度为 `unknown`，见"已知限制"）；
+7. Project Health re-import（`scripts/import_project_health.py --confirm`，
+   IP-033 入口）——预期 `"assessment_state": "completed"`，
+   `dimensions.schedule == "red"`、`dimensions.scope == "amber"`、
+   `overall_state == "red"`；
 8. Attention 对账（preview → confirm）——预期
    `Attention reconciliation confirmed: success`；
 9. Weekly Brief v2 快照（compose → preview → confirm）——预期
@@ -79,11 +79,12 @@ PY=src/.venv/bin/python
 $PY -m pm_agent.cli.app tool query layered-project-health-review --project project-synthetic-atlas
 ```
 
-预期：`status: success`；`data.assessments` 非空，且
-`assessments[0]` 含 7 个维度
-（schedule/delivery/scope/quality/resource/dependency/governance；
-本演示中 schedule/dependency/scope 为 `unknown`，其余为 `not_available`）。
-整体 `state: unknown` 是诚实的不确定状态，不是缺失数据。
+预期：`status: success`；`assessments[0]` 为多状态混合：
+`schedule: red`（关键里程碑逾期）、`scope: amber`（发布范围未达绿色线）、
+`dependency: unknown`、`delivery/quality/resource/governance: not_available`
+（当前派生无对应生产者或结构化输入保留；`resource` 因 IP-033 入口不传容量
+scope）。整体 `state: red`，signals 含 active/high 的
+`layered_project_health_state`。
 
 ### 2.2 执行评审（Milestone）
 
@@ -91,10 +92,12 @@ $PY -m pm_agent.cli.app tool query layered-project-health-review --project proje
 $PY -m pm_agent.cli.app tool query delivery-execution-review --project project-synthetic-atlas
 ```
 
-预期：`status: success`；`data.release_milestone` 有 4 条 Milestone 事实
+预期：`status: success`；`data.sprint_execution` 有 1 条 Sprint 事实
+（`sprint_scope_change` 为 `unavailable`，诚实表示无承诺边界）；
+`data.release_milestone` 有 7 条事实
 （`milestone-atlas-001` 为 `overdue`，`milestone-atlas-002/004` 为
 `on_track`，`milestone-atlas-003` 为 `achieved_on_time`）；`signals` 含
-`milestone_schedule_exception`。
+`milestone_schedule_exception`（active/high）。
 
 ### 2.3 Delivery Attention Center
 
@@ -102,11 +105,12 @@ $PY -m pm_agent.cli.app tool query delivery-execution-review --project project-s
 $PY -m pm_agent.cli.app tool query delivery-attention-center
 ```
 
-预期：`status: success`；`data.items` 非空（2 条
-`source_freshness_attention`：`confluence-status-batch` 与
-`jira-health-atlas-board` 因无同步记录而 `unknown`）；
-`data.reconciliation_coverage.status` 为 `partial`（演示数据没有权威来源，
-`partial` 不代表健康）。
+预期：`status: success`；`data.items` 有 6 条、覆盖 5 条规则：
+`critical_milestone_overdue_attention`（critical）、
+`project_health_attention`（critical）、`resource_overload_attention`（high）、
+`overdue_action_attention`（high）、两条 `source_freshness_attention`
+（medium）；`data.reconciliation_coverage.status` 为 `partial`
+（权威来源存在但同步记录不全，`partial` 不代表健康）。
 
 ### 2.4 Resource Capacity 热图
 
@@ -126,10 +130,11 @@ $PY -m pm_agent.cli.app tool query resource-capacity-heatmap \
 $PY -m pm_agent.cli.app weekly-brief query
 ```
 
-预期：`status: success`；`data.summary.project_count == 1`；
-`data.sections.overall_health.availability` 为 `partial`；
-`highest_attention_signals.items` 非空；输出含
-`snapshot.capture_candidate`（下一步快照用）。
+预期：`status: success`；`summary == {"overall_state": "red",
+"project_count": 1, "statement_count": 8}`；`overall_health` 为 `partial` 且
+state red；`highest_attention_signals.items` 6 条；`next_actions.items` 1 条；
+`achievements` 为 `partial` 且 items=0（事件窗口契约：快照当日不产生成就，
+次日及以后查询可见）；输出含 `snapshot.capture_candidate`（下一步快照用）。
 
 ## 3. Weekly Brief v2 快照 preview/confirm（手动演示）
 
@@ -212,8 +217,9 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay
 ```
 
 预期输出依次为：workforce/capacity/health 的 `already_completed`、
+证据种子的 `Seeded deterministic synthetic evidence ...`、
 Milestone 的 `{"changes": [], "status": "no_op"}`、
-`Derivation replay ... idempotent`、`Attention reconciliation: no changes`、
+`Attention reconciliation: no changes`、
 `Weekly Brief v2 snapshot: already_confirmed`。评估、Attention 项、派生 run、
 Milestone、快照的行数均不增加；每次重放只新增一条会过期的 Attention preview
 审计行（产品 preview/confirm 审计设计，非新业务对象）。
@@ -231,8 +237,8 @@ Milestone、快照的行数均不增加；每次重放只新增一条会过期�
 - Phase 7 Forecast、Phase 4 配置 preview/confirm 的命令行入口（R4 决策未定）、
   Phase 5 capacity-aware Staffing 开关的公开命令（R4 决策未定）；
 - IP-033 的 owner 验收决策（R3 仍在 `codex/phase-4-assessment-entry` 等待）；
-- 评估重算入口：本演示中 Milestone 在评估之后导入，schedule 维度保持
-  `unknown`；需要一个被单独授权的重评估入口才会刷新；
+- 评估重算入口：本演示中 Milestone 与证据在评估之前导入，评估为真实状态；
+  如需在导入后重算评估，需要一个被单独授权的重评估入口；
 - 传统 `workload`/`report` 视图对结构化组织的语义（保留的旧视图，未升级）。
 
 ## 7. 与 R1 的关系
