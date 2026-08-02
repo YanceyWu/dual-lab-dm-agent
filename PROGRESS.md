@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `OWNER APPROVED R1 COHERENCE GATE ON 2026-08-02; HIREF DEMO DATA ADDED AND VALIDATED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `R5 IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R4/R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -602,6 +602,51 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — R5: cross-capability integration test implemented and validated
+
+- Owner explicitly authorized R5 after approving the R1 coherence gate and
+  the HIREF demo addition.  Added
+  `src/tests/test_usability_integration_chain.py`: one automated integration
+  suite that builds the complete R2 chain on an empty temporary database via
+  the documented commands (bootstrap → workforce import → resource capacity
+  import → board registration → synthetic evidence seeding → Milestone import
+  → Project Health re-import → Attention preview/confirm via CLI token flow →
+  Weekly Brief v2 query and snapshot preview/confirm), then asserts the
+  integrated results through the product interfaces.
+- Acceptance assertions (all verified): the import-produced assessment is
+  readable through `layered-project-health-review` (Atlas red) and
+  `delivery-execution-review` is non-empty; after reconciliation the
+  `delivery-attention-center` returns a coverage status plus ≥5 items across
+  ≥4 rules and a repeat reconcile preview proposes zero changes;
+  `weekly-dm-brief-v2` succeeds with an `overall_health` section that is
+  `partial` (not `not_available`) and non-empty attention items; the snapshot
+  preview/confirm flow works, reusing the pre-snapshot candidate is rejected
+  as stale by design (the composer then includes the new baseline), a fresh
+  composition carries `baseline_snapshot_id`, a second capture confirms, and
+  the brief then exposes `changes_since_previous_snapshot: available`;
+  re-running the structured imports is duplicate-free (`already_completed` /
+  `no_op`) with unchanged row counts.
+- During development the test surfaced the real snapshot-contract nuance:
+  re-previewing the same candidate after the first snapshot is confirmed is
+  rejected (`WEEKLY_BRIEF_CAPTURE_CANDIDATE_INVALID`) because recomposition
+  then includes the baseline; this is the documented stale-candidate
+  behavior, and the test now asserts it explicitly instead of expecting a
+  misleading `already_confirmed`.
+- Validation: R5 suite 4/4; `make validate` passed 346 runtime tests (up from
+  342, recorded), 21 repository-tool tests with 19 subtests, synthetic-sample
+  and repository-boundary checks, Ruff, compilation, diff hygiene, package
+  build, and 8 release checks.  Test-only batch: no runtime, schema, import,
+  packaging, or sample-data change, so `make rehearse-release` is not required
+  for this batch.  Read-only review pass found no remaining P0–P2 (same
+  documented limitation: no sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner review of R5; the remaining usability items are
+  R4 (entry-boundary decisions, owner decision required), R6 (UAT runbook
+  revision, documentation), and R7 (documentation consistency scan), which
+  may be authorized independently.
 
 ### 2026-08-02 — Owner approved R1 coherence gate; HIREF/contract-continuity demo data added
 
