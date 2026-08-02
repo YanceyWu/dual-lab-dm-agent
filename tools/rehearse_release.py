@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import inspect
 import json
 import os
 import shutil
@@ -168,6 +169,15 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         raise RuntimeError("DATABASE_CORE_COUNTS_CHANGED")
 
 
+def _extract_git_archive(contents: tarfile.TarFile, destination: Path) -> None:
+    """Extract a trusted git archive across supported Python runtimes."""
+    extractall = contents.extractall
+    if "filter" in inspect.signature(extractall).parameters:
+        extractall(destination, filter="data")
+        return
+    extractall(destination)
+
+
 def rehearse() -> None:
     with tempfile.TemporaryDirectory(prefix="dm-release-rehearsal-") as temp_dir:
         workspace = Path(temp_dir)
@@ -179,7 +189,7 @@ def rehearse() -> None:
             capture_output=True,
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
-            contents.extractall(prior_runtime, filter="data")
+            _extract_git_archive(contents, prior_runtime)
         artifact_dir = workspace / "dist"
         artifact_dir.mkdir()
         wheel, _sdist = build_package(artifact_dir)

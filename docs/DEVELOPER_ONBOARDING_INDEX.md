@@ -24,7 +24,7 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 
 ## Current state snapshot (always re-verify from PROGRESS.md)
 
-- Branch `codex/usability-r1-r2`; local HEAD `717addd`.
+- Branch `codex/usability-r1-r2`; local HEAD `d854e98`.
 - `origin/codex/usability-r1-r2` remains at `998ed37`; later local commits and
   working-tree records are not pushed.
 - Usability R1–R7: implemented, validated, owner-confirmed, and pushed.
@@ -39,10 +39,13 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
   is treated as owner-accepted.
 - Batch 2 slice 2 (**`database/execution.py` owner split**) is also now treated
   as owner-accepted.
-- The next authorized follow-on is **`make rehearse-release` blocker
-  remediation**. The remaining recommended `dashboard/server.py` split, Batch 3
+- Active follow-on: **`make rehearse-release` blocker remediation** —
+  implemented locally, passed focused repo-tool coverage plus `make validate`,
+  and restored the default `make rehearse-release` path on this workstation.
+- The next gate is owner review / acceptance of this blocker remediation. The
+  remaining recommended `dashboard/server.py` split, Batch 3
   (promoted-capability closure), and Phase 7 still need separate authorization
-  after that follow-on.
+  after that gate.
 
 ## Repository map (module ownership)
 

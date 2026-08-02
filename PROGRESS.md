@@ -9,8 +9,8 @@ implemented, validated, and read-only reviewed; local commits on
 Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `BATCH 2 IMPLEMENTATION SLICES 1–2 — PHASE 3 STORAGE OWNER HARDENING`
-Gate status: `BATCH 2 SLICES 1–2 OWNER-ACCEPTED; NEXT: SEPARATE AUTHORIZED REHEARSE-RELEASE BLOCKER REMEDIATION OR dashboard/server.py SPLIT`
+Current implementation item: `REHEARSE-RELEASE BLOCKER REMEDIATION`
+Gate status: `REHEARSE-RELEASE BLOCKER REMEDIATION IMPLEMENTED LOCALLY, VALIDATED, AND REVIEWED — NEXT: OWNER REVIEW / ACCEPTANCE`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -158,6 +158,20 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+The separately authorized `make rehearse-release` blocker remediation restored
+the default release-rehearsal path on this workstation. `tools/rehearse_release.py`
+now extracts the trusted git archive through a runtime-compatible helper that
+uses `filter="data"` when the interpreter supports it and falls back cleanly on
+older supported Pythons. Repo-tool coverage was added in
+`tools/tests/test_rehearse_release.py`; focused repository-tool validation
+passed (`5 passed`). Final validation evidence: `make validate` passed with 365
+runtime tests, 27 repository-tool tests with 19 subtests, repository-boundary,
+synthetic-sample, and documented-use-case checks, Ruff, compilation, diff
+hygiene, and package build (`9` release validation checks total); and the
+default `make rehearse-release` now passed wheel install, isolated clean
+bootstrap, synthetic upgrade, integrity, and rollback under the repository's
+default local Python environment.
 
 Batch 2 implementation slice 2 split the former mixed
 `src/pm_agent/database/execution.py` owner into dedicated modules for
@@ -578,19 +592,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Batch 2 slice 1 (Phase 3 schema extraction from `database/bootstrap.py`) and
-   slice 2 (`database/execution.py` owner split) are now treated as
-   owner-accepted. Together they complete the mandatory Phase 3 storage-owner
-   hardening identified by the Batch 2 design.
-2. The next separately authorized follow-on is either the recommended
-   `dashboard/server.py` presentation split or the bounded
-   `make rehearse-release` blocker remediation. The owner has directed the
-   next phase toward the rehearsal blocker path.
-3. `make rehearse-release` remains blocked by a pre-existing repo-tool/runtime
-   issue recorded during slice 1. It is not caused by the execution split and
-   does not block behavioral review of this slice, but it still needs separate
-   authorization before installed-release rehearsal can serve as acceptance
-   evidence again on this workstation.
+1. Batch 2 slices 1 and 2 are treated as owner-accepted, and the separately
+   authorized `make rehearse-release` blocker remediation is now implemented
+   locally, validated, and independently reviewed.
+2. The next gate is owner review / acceptance of this blocker-remediation
+   follow-on. If accepted, the remaining architecture follow-on choices are the
+   recommended `dashboard/server.py` presentation split or Batch 3
+   (promoted-capability closure), each under a separate authorization.
+3. `make rehearse-release` is no longer blocked on this workstation under the
+   repository's default Python environment. The repo-tool test coverage now
+   pins the runtime-compatible archive extraction path.
 4. Do not push, merge, tag, release, deploy, activate a connector, use real
    data, or start Phase 7 runtime/schema/test work without separate explicit
    authorization.
@@ -678,6 +689,9 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   transition.
 - The owner completed review of Batch 2 slice 2 and accepted the execution
   module split as the second mandatory Phase 3 storage-owner hardening slice.
+- The owner then authorized a separate bounded remediation to restore the
+  default `make rehearse-release` path on this workstation before any further
+  release-gate reliance or later repository-boundary work.
 - The owner approved the revised UAT runbook on 2026-08-02 (`UAT RUNBOOK
   APPROVED`). The runbook is the valid process basis; executing real-
   environment UAT still requires a separate explicit authorization for an
@@ -687,6 +701,40 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — Default make rehearse-release blocker remediated
+
+- After accepting the Batch 2 storage-owner slices, the owner authorized a
+  separate bounded remediation for the local `make rehearse-release` blocker.
+  The underlying failure was not product behavior drift; it was repo-tool
+  runtime incompatibility in `tools/rehearse_release.py` when running under the
+  repository's default local Python 3.10 environment.
+- Implemented `_extract_git_archive()` in `tools/rehearse_release.py` so the
+  rehearsal uses `TarFile.extractall(..., filter=\"data\")` when the current
+  interpreter supports that argument and otherwise falls back to standard
+  extraction for the trusted `git archive` input. This keeps the intended
+  rehearsal semantics while restoring compatibility across the repository's
+  supported local Python runtimes.
+- Added `tools/tests/test_rehearse_release.py` to pin both branches of the
+  helper: the `filter=\"data\"` call path and the fallback path used by older
+  Python runtimes. The repository-tool suite grew from 25 to 27 tests.
+- Validation evidence: focused repository-tool coverage passed (`5 passed`);
+  final `make validate` passed with 365 runtime tests, 27 repository-tool tests
+  with 19 subtests, repository-boundary, synthetic-sample, and documented-use-
+  case checks, Ruff, compilation, diff hygiene, and package build (`9` release
+  validation checks total); and the default `make rehearse-release` passed
+  wheel install, isolated clean bootstrap, synthetic upgrade, integrity, and
+  rollback for `ai-pm-agent 0.2.0rc1`.
+- Transitional debt intentionally not expanded: the remediation does not change
+  package metadata, runtime dependency declarations, bootstrap behavior, or any
+  business capability. The separate `dashboard/server.py` split remains the
+  recommended architecture follow-on; Batch 3 and Phase 7 remain separately
+  gated.
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review / acceptance of this blocker-remediation
+  follow-on, then choose the next separately authorized bounded slice.
 
 ### 2026-08-02 — Owner accepted Batch 2 slice 2 execution-module split
 
