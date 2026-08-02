@@ -3,15 +3,15 @@
 Last updated: 2026-08-02
 Current branch: `codex/usability-r1-r2`
 Current HEAD: R1 synthetic demo pipeline (revised with multi-state sample
-data), R2 synthetic walkthrough, implemented, validated, and read-only
-reviewed; local commits on
+data plus HIREF/contract-continuity demo), R2 synthetic walkthrough,
+implemented, validated, and read-only reviewed; local commits on
 `codex/usability-r1-r2` (exact hashes reported in the task handoff; IP-033
 Phase 4 controlled assessment entry remains implemented on
 `codex/phase-4-assessment-entry` awaiting the owner acceptance decision;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `R1 (REVISED) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R1 REVISION + R2 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
+Gate status: `OWNER APPROVED R1 COHERENCE GATE ON 2026-08-02; HIREF DEMO DATA ADDED AND VALIDATED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -602,6 +602,40 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — Owner approved R1 coherence gate; HIREF/contract-continuity demo data added
+
+- Owner approved the current gate (`01c8d42`, R1 coherence correction) and
+  requested that sample data demonstrate HIREF/contract-renewal capabilities,
+  which the clean-import demo previously lacked.
+- Extended `src/scripts/seed_demo_evidence.py` (idempotent, synthetic-only):
+  member 001 is STFTE with a current HIREF and a registered renewal
+  (`expiring_with_next`); member 002 is STFTE expiring 2026-09-30 without a
+  renewal (`critical`, `requires_action`); member 003 is STFTE with no current
+  contract (`missing_current_hiref`); one free HIREF slot and one open
+  staffing placeholder demonstrate the slots/placeholders views.  `_clear`
+  resets the demo members' legacy columns and deletes the seeded rows, so
+  `--replay` remains duplicate-free (verified: hiref=4, placeholders=1,
+  stfte=3, attention=8, assessments=2, snapshots=1 before and after replay).
+- Verified demo outputs: `pm hiref summary` shows STFTE 3 / missing 1 /
+  expiring-without-next 1 / expiring-with-next 1 / free slots 1 / open
+  placeholders 1; `pm hiref review` lists member-003 (missing, critical),
+  member-002 (59 days, critical), member-001 (ok); `pm hiref slots` shows one
+  free and one reserved-for-next slot; `contract-continuity-review` returns
+  success with 2 contracts, `attention_count: 2`, `reviewed_count: 3`.
+- Added a focused demo test for the HIREF states; updated the demo counts
+  test (hiref=4, staffing_placeholders=1) and the walkthrough/README.
+- Validation: focused demo + HIREF suites 13/13; `make validate` passed 342
+  runtime tests, 21 repository-tool tests with 19 subtests, synthetic-sample
+  and repository-boundary checks, Ruff, compilation, diff hygiene, package
+  build, and 8 release checks; `make rehearse-release` passed.  Read-only
+  review pass found no remaining P0–P2 (same documented limitation: no
+  sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner review of the HIREF demo addition; after explicit
+  authorization, start R5 (cross-capability integration test) on this branch.
 
 ### 2026-08-02 — R1 coherence correction: member load and monthly allocation now agree
 

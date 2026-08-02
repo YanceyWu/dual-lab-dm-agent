@@ -34,6 +34,11 @@ VERSION_REF = "version-demo-001"
 SPRINT_REF = "sprint-demo-001"
 ISSUE_REFS = ("ATLAS-1", "ATLAS-2", "ATLAS-3")
 MARKER = "SYNTHETIC_DATASET_V1"
+HIREF_MEMBERS = (
+    "member-synthetic-001",
+    "member-synthetic-002",
+    "member-synthetic-003",
+)
 
 
 def _now() -> str:
@@ -242,6 +247,70 @@ def _seed(connection: sqlite3.Connection) -> None:
         [f"{MARKER} overdue follow-up", observed_at],
     )
 
+    # HIREF / contract-continuity demo states: member 001 has a current
+    # contract plus a registered renewal, member 002 is expiring without a
+    # renewal, member 003 has no current contract, and one HIREF slot is
+    # free with an open staffing placeholder.
+    connection.execute(
+        """
+        UPDATE employees
+        SET resource_type = 'STFTE', billing_end_date = ?, wd_id = id
+        WHERE id = 'member-synthetic-001'
+        """,
+        ["2026-12-31"],
+    )
+    connection.execute(
+        """
+        UPDATE employees
+        SET resource_type = 'STFTE', billing_end_date = ?, wd_id = id
+        WHERE id = 'member-synthetic-002'
+        """,
+        ["2026-09-30"],
+    )
+    connection.execute(
+        """
+        UPDATE employees
+        SET resource_type = 'STFTE', billing_end_date = '2026-08-31', wd_id = id
+        WHERE id = 'member-synthetic-003'
+        """
+    )
+    connection.executemany(
+        """
+        INSERT INTO hiref
+            (id, project, request_type, start_date, end_date, notes, created_at)
+        VALUES (?, ?, 'STFTE', ?, ?, ?, ?)
+        """,
+        [
+            ("hiref-synthetic-001", "project-synthetic-atlas", "2026-01-01", "2026-12-31", f"{MARKER} current contract member 001", observed_at),
+            ("hiref-synthetic-002", "project-synthetic-beacon", "2027-01-01", "2027-12-31", f"{MARKER} registered renewal member 001", observed_at),
+            ("hiref-synthetic-003", "project-synthetic-atlas", "2025-01-01", "2026-09-30", f"{MARKER} expiring contract member 002", observed_at),
+            ("hiref-synthetic-004", "project-synthetic-beacon", "2026-08-01", "2026-11-30", f"{MARKER} free slot", observed_at),
+        ],
+    )
+    connection.execute(
+        """
+        UPDATE employees
+        SET current_hiref = 'hiref-synthetic-001', next_hiref = 'hiref-synthetic-002'
+        WHERE id = 'member-synthetic-001'
+        """
+    )
+    connection.execute(
+        """
+        UPDATE employees
+        SET current_hiref = 'hiref-synthetic-003', next_hiref = ''
+        WHERE id = 'member-synthetic-002'
+        """
+    )
+    connection.execute(
+        """
+        INSERT INTO staffing_placeholders
+            (placeholder_id, display_name, source_system, hiref_id,
+             linked_employee_id, resource_type, status, notes, created_at)
+        VALUES (?, ?, 'resource_portal', '', NULL, 'STFTE', 'planned', ?, ?)
+        """,
+        ["placeholder-synthetic-001", "Synthetic Backfill", f"{MARKER} open placeholder", observed_at],
+    )
+
     # Legacy assignments mirror the versioned monthly allocations exactly:
     # member 001 = 0.5, member 002 = 0.0 (no row), member 003 = 0.6 + 0.6.
     # The legacy load view therefore agrees with the canonical capacity data.
@@ -260,6 +329,18 @@ def _seed(connection: sqlite3.Connection) -> None:
 
 
 def _clear(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        UPDATE employees
+        SET resource_type = '', billing_end_date = '', current_hiref = '',
+            next_hiref = '', wd_id = ''
+        WHERE id IN ('member-synthetic-001', 'member-synthetic-002', 'member-synthetic-003')
+        """
+    )
+    connection.execute("DELETE FROM hiref WHERE id LIKE 'hiref-synthetic-%'")
+    connection.execute(
+        "DELETE FROM staffing_placeholders WHERE placeholder_id = 'placeholder-synthetic-001'"
+    )
     connection.execute("DELETE FROM jira_issue_events WHERE board_id = ? AND source_id = ?", [BOARD_ID, SOURCE_ID])
     connection.execute(
         "DELETE FROM source_evidence_published_items WHERE first_published_run_id IN (?, ?)",

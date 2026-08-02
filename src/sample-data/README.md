@@ -88,6 +88,13 @@ Weekly Brief v2 overall state is `red` with non-empty attention and
 next-action sections.  Achievements appear only in queries made after the
 snapshot date, per the event-window contract.
 
+HIREF / contract-continuity demo states: member 001 has a current contract
+plus a registered renewal, member 002 is expiring within 60 days without a
+renewal (critical), member 003 has no current contract (missing), and one
+HIREF slot is free with an open staffing placeholder.  `pm hiref summary`,
+`pm hiref review`, `pm hiref slots`, `pm hiref placeholders`, and
+`contract-continuity-review` all return non-empty, contract-compliant results.
+
 The generated database is classified as synthetic only while every input passes
 the checker and the characterization suite passes.
 

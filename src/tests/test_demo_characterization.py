@@ -13,6 +13,7 @@ from pm_agent.config import settings
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
 from pm_agent.use_cases import use_case_executor
+from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.service import UseCaseRequest
 from tools.check_synthetic_samples import validate_text
 
@@ -91,7 +92,7 @@ def test_clean_demo_build_has_expected_clean_import_counts(demo_db: Path) -> Non
         "assignments": 3,
         "monthly_allocations": 6,
         "plan_versions": 2,
-        "hiref": 0,
+        "hiref": 4,
         "jira_board_configs": 2,
         "confluence_pages": 0,
     }
@@ -102,6 +103,8 @@ def test_clean_demo_build_has_expected_clean_import_counts(demo_db: Path) -> Non
     assert _count(demo_db, "jira_sprints") == 1
     assert _count(demo_db, "jira_health_snapshots") == 2
     assert _count(demo_db, "confluence_status_snapshots") == 2
+    assert _count(demo_db, "hiref") == 4
+    assert _count(demo_db, "staffing_placeholders") == 1
 
 
 def test_demo_identity_is_explicitly_synthetic(demo_db: Path) -> None:
@@ -354,3 +357,36 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
         "atlas-board",
         "beacon-board",
     }
+
+
+def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) -> None:
+    summary = HirefManagementService().summary(days=180)
+    assert summary.success is True
+    stats = summary.data["summary"]
+    assert stats["active_stfte"] == 3
+    assert stats["missing_current_hiref"] == 1
+    assert stats["expiring_without_next"] >= 1
+    assert stats["expiring_with_next"] >= 1
+    assert stats["free_slots"] >= 1
+    assert stats["open_placeholders"] >= 1
+
+    review = HirefManagementService().review(days=180)
+    assert review.success is True
+    assert review.data["rows"]
+    assert any(row["requires_action"] for row in review.data["rows"])
+
+    slots = HirefManagementService().slots()
+    assert slots.success is True
+    assert any(row["is_free"] for row in slots.data["rows"])
+
+    placeholders = HirefManagementService().placeholders()
+    assert placeholders.success is True
+    assert placeholders.data["rows"]
+
+    continuity = use_case_executor.execute(
+        UseCaseRequest(use_case_id="contract-continuity-review")
+    )
+    assert continuity.status == "success"
+    assert continuity.data["contracts"]
+    assert continuity.data["summary"]["attention_count"] >= 1
+    assert continuity.data["summary"]["reviewed_count"] >= 3

@@ -139,6 +139,26 @@ state red；`highest_attention_signals.items` 8 条；`next_actions.items` 1 条
 `achievements` 为 `partial` 且 items=0（事件窗口契约：快照当日不产生成就，
 次日及以后查询可见）；输出含 `snapshot.capture_candidate`（下一步快照用）。
 
+### 2.6 HIREF / 合同连续性（附加演示）
+
+```bash
+$PY -m pm_agent.cli.app hiref summary
+$PY -m pm_agent.cli.app hiref review
+$PY -m pm_agent.cli.app hiref slots
+$PY -m pm_agent.cli.app hiref placeholders
+$PY -m pm_agent.cli.app tool query contract-continuity-review
+```
+
+预期：summary 显示 `STFTE: 3`、`缺少当前HIREF: 1`、`180天内到期(无next): 1`、
+`180天内已预留next: 1`、`空闲slots: 1`、`open placeholders: 1`；review 列出
+member-003（缺当前合同，critical）、member-002（59 天到期无续期，critical）、
+member-001（已登记续期，ok）；slots 含 1 个 free 槽位与 1 个
+`reserved_for_next`；contract-continuity-review 返回 2 条需关注合同、
+`attention_count: 2`、`reviewed_count: 3`。
+
+这是合同续期能力的多状态展示：健康（有 next）、风险（临期无 next）、
+缺失（无当前合同）、空闲资源（free slot）四种状态并存。
+
 ## 3. Weekly Brief v2 快照 preview/confirm（手动演示）
 
 流水线已在构建时自动确认一张快照。下面用手动流程演示同一受控写入边界：
