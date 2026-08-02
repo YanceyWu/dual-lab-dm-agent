@@ -8,6 +8,7 @@ from pm_agent import __version__
 from pm_agent.cli.commands import attention as attention_commands
 from pm_agent.cli.commands import dashboard as dashboard_commands
 from pm_agent.cli.commands import governance, integrations, operations, planning, setup, staffing, tool_transport, weekly_brief
+from pm_agent.cli.commands import project_health_config
 
 app = typer.Typer(help="PM Toolkit — 项目管理工作台", no_args_is_help=True)
 
@@ -30,6 +31,7 @@ app.add_typer(tool_transport.tool_app, name="tool")
 app.add_typer(staffing.staffing_app, name="staffing")
 app.add_typer(attention_commands.attention_app, name="attention")
 app.add_typer(weekly_brief.weekly_brief_app, name="weekly-brief")
+app.add_typer(project_health_config.project_health_app, name="project-health")
 
 
 @app.command("version")

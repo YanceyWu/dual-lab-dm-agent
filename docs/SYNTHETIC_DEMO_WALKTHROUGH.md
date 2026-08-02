@@ -159,6 +159,33 @@ member-001（已登记续期，ok）；slots 含 1 个 free 槽位与 1 个
 这是合同续期能力的多状态展示：健康（有 next）、风险（临期无 next）、
 缺失（无当前合同）、空闲资源（free slot）四种状态并存。
 
+### 2.7 健康条件配置（R4 (a) 受控命令）
+
+```bash
+$PY -m pm_agent.cli.app project-health config show
+$PY -m pm_agent.cli.app project-health config show --project project-synthetic-atlas
+```
+
+预期：`status: success`；`effective_configuration` 为默认值
+（`critical_milestone_tolerance_days: 0`、`scope_completion_green_minimum: 100`）、
+`configuration_version_id: catalog-default-v1`、`override_state: not_available`。
+
+受控修改（preview → confirm，改动只影响后续评估，已落库评估不变）：
+
+```bash
+PREVIEW=$($PY -m pm_agent.cli.app project-health config preview \
+  --tolerance-days 3 --scope-green-minimum 95)
+$PY -m pm_agent.cli.app project-health config confirm \
+  --operation-id "$(echo "$PREVIEW" | python3 -c 'import json,sys;print(json.load(sys.stdin)["operation_id"])')" \
+  --token "$(echo "$PREVIEW" | python3 -c 'import json,sys;print(json.load(sys.stdin)["confirmation_token"])')"
+```
+
+预期：preview 返回 `status: proposed` 与 prior/proposed/effective；
+confirm 返回 `status: confirmed` 与新 `configuration_version_id`；再次
+`config show` 可见新生效阈值。`--project` 可做单项目覆盖
+（show 该项目的 `override_state` 变为 `available`）；参数与默认值相同时
+preview 返回 `no_op`。
+
 ## 3. Weekly Brief v2 快照 preview/confirm（手动演示）
 
 流水线已在构建时自动确认一张快照。下面用手动流程演示同一受控写入边界：

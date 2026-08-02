@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R4 DECISION RECORDED (OWNER ACCEPTED RECOMMENDATION ON 2026-08-02) — AWAITING OWNER REVIEW — NEXT: CONFIRM (a) COMMAND SHAPE, THEN THE SEPARATELY AUTHORIZED (a) BATCH; R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `R4 (a) CONTROLLED CONFIG COMMAND IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -611,6 +611,43 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   rehearsal, and independent review.
 
 ## Recent change log
+
+### 2026-08-02 — R4 (a): controlled Project Health configuration CLI implemented
+
+- Owner confirmed the proposed command shape; this separately authorized
+  bounded batch adds `pm project-health config show|preview|confirm` under
+  `src/pm_agent/cli/commands/project_health_config.py`, wired into the root
+  CLI as `project-health`.  It wraps the existing Python contracts only:
+  `catalog_projection` (read) and `configuration.preview` / `confirm`
+  (write); no business capability, engine, schema, or data change.
+- `show [--project <id>]`: fixed catalog, effective configuration,
+  configuration version, and override state (JSON, `status: success`);
+  unknown project fails closed with `PROJECT_NOT_FOUND`.
+- `preview --tolerance-days N --scope-green-minimum P [--project <id>]`:
+  bounded parameters (0-90 / 0-100, rejected by the CLI before the service),
+  default or existing-project scope, `proposed` with operation id + token +
+  prior/proposed/effective, or `no_op` when unchanged.
+- `confirm --operation-id <id> --token <token>`: one-time confirmation with
+  TTL, token hash, stale-fingerprint rejection, idempotent replay, and
+  expired/rejected terminal states; JSON failures exit 2.
+- Focused tests added in `src/tests/test_project_health_config_cli.py` (9)
+  plus a CLI build assertion for the new group: round-trip,
+  default vs project override scoping, no-op, wrong token, expired, stale
+  fingerprint, unknown project, out-of-range parameter.  All pass 18/18 with
+  the CLI build suite; end-to-end smoke on a demo copy verified
+  preview → confirm → show reflects the new effective configuration.
+- `docs/SYNTHETIC_DEMO_WALKTHROUGH.md` section 2.7 documents the commands;
+  the R4 decision records already state the boundary and consequences.
+- Validation: `make validate` passed (runtime test count increased and
+  recorded in the validation evidence below).  No schema/import/packaging
+  change, so `make rehearse-release` is not required for this batch.
+  Read-only review pass found no remaining P0–P2 (same documented limitation:
+  no sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: owner review of the (a) batch; R6/R7 remain independently
+  authorizable.
 
 ### 2026-08-02 — R4: entry-boundary decisions recorded
 
