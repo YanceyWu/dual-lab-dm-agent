@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,12 +12,36 @@ from pm_agent.database.bootstrap import main as init_db
 from pm_agent.project_health import service
 from pm_agent.project_health.evaluation import evaluate
 from pm_agent.project_health.service import catalog_projection, confirm_reimport, preview_reimport
+from pm_agent.resource_intelligence.service import (
+    confirm_import as confirm_capacity,
+    preview_import as preview_capacity,
+)
 from pm_agent.use_cases.layered_project_health import execute_layered_project_health_review
 from pm_agent.use_cases.service import UseCaseRequest
+from pm_agent.workforce_planning_import.service import (
+    confirm_import as confirm_workforce,
+    preview_import as preview_workforce,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+CAPACITY_PROJECT_ID = "project-synthetic-atlas"
+CAPACITY_PLAN_ID = "plan-synthetic-baseline-001"
 
 
-def _package() -> dict[str, object]:
-    return {"package_id": "project-health-synthetic-package-001", "schema_version": "project-health-reimport-v1", "board_ids": [], "inputs": []}
+def _sample(name: str) -> dict[str, object]:
+    return json.loads((ROOT / "sample-data/json" / name).read_text(encoding="utf-8"))
+
+
+def _package(*, capacity_scope: dict[str, object] | None = None) -> dict[str, object]:
+    package: dict[str, object] = {
+        "package_id": "project-health-synthetic-package-001",
+        "schema_version": "project-health-reimport-v1",
+        "board_ids": [],
+        "inputs": [],
+    }
+    if capacity_scope is not None:
+        package["capacity_scope"] = capacity_scope
+    return package
 
 
 def _seed_board(db_path: Path) -> None:
@@ -25,6 +50,23 @@ def _seed_board(db_path: Path) -> None:
         connection.execute("""INSERT INTO jira_board_configs
             (id,name,project_key,base_jql,pm_project_id,active)
             VALUES ('board-synthetic','Synthetic Board','SYN','project = SYN','project-synthetic-001',1)""")
+
+
+def _seed_capacity_board(db_path: Path) -> None:
+    workforce = deepcopy(_sample("workforce_planning_import.sample.json"))
+    confirmed_workforce = preview_workforce(workforce, db_path=db_path)
+    confirm_workforce(confirmed_workforce["session_id"], db_path=db_path)
+    capacity = deepcopy(_sample("resource_capacity_import.sample.json"))
+    confirmed_capacity = preview_capacity(capacity, db_path=db_path)
+    confirm_capacity(confirmed_capacity["session_id"], db_path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """INSERT INTO jira_board_configs
+               (id,name,project_key,base_jql,pm_project_id,active)
+               VALUES ('board-capacity-synthetic','Capacity Board','CAP',
+                       'project = CAP',?,1)""",
+            [CAPACITY_PROJECT_ID],
+        )
 
 
 def test_clean_bootstrap_seeds_fixed_catalog_and_no_mutable_configuration(isolated_db: Path) -> None:
@@ -81,8 +123,46 @@ def test_invalid_or_unapproved_structured_input_creates_no_session(isolated_db: 
         preview_reimport({**_package(), "inputs": [{"input_kind": "quality_gate"}]}, db_path=isolated_db)
     with pytest.raises(ValueError, match="HEALTH_REIMPORT_PACKAGE_VERSION_INVALID"):
         preview_reimport({**_package(), "schema_version": "unknown"}, db_path=isolated_db)
+    with pytest.raises(ValueError, match="HEALTH_REIMPORT_CAPACITY_SCOPE_INVALID"):
+        preview_reimport(
+            _package(capacity_scope={"year": 2026, "month": 8}),
+            db_path=isolated_db,
+        )
     with sqlite3.connect(isolated_db) as connection:
         assert connection.execute("SELECT COUNT(*) FROM project_health_reimport_sessions").fetchone()[0] == 0
+
+
+def test_reimport_wires_explicit_capacity_scope_into_resource_dimension(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    _seed_capacity_board(isolated_db)
+    preview = preview_reimport(
+        {
+            **_package(
+                capacity_scope={
+                    "year": 2026,
+                    "month": 8,
+                    "plan_version_id": CAPACITY_PLAN_ID,
+                }
+            ),
+            "board_ids": ["board-capacity-synthetic"],
+        },
+        db_path=isolated_db,
+    )
+
+    confirmed = confirm_reimport(preview["session_id"], db_path=isolated_db)
+
+    assert confirmed["status"] == "completed"
+    assert confirmed["report"]["capacity_scope"] == {
+        "year": 2026,
+        "month": 8,
+        "plan_version_id": CAPACITY_PLAN_ID,
+    }
+    assert "RESOURCE_INPUT_NOT_AVAILABLE" not in confirmed["report"]["reason_codes"]
+    assert confirmed["report"]["dimensions"][CAPACITY_PROJECT_ID]["resource"] == "red"
+    assert confirmed["report"]["assessments"][0]["project_id"] == CAPACITY_PROJECT_ID
+    assert confirmed["report"]["assessments"][0]["dimensions"]["resource"] == "red"
 
 
 def test_catalog_project_scope_requires_existing_stable_project(isolated_db: Path) -> None:
@@ -96,7 +176,12 @@ def test_reimport_failure_is_audited_without_a_partial_coverage_view(
 ) -> None:
     init_db(quiet=True)
     preview = preview_reimport(_package(), db_path=isolated_db)
-    monkeypatch.setattr("pm_agent.project_health.service._coverage", lambda *_args: (_ for _ in ()).throw(RuntimeError("synthetic failure")))
+    monkeypatch.setattr(
+        "pm_agent.project_health.service._coverage",
+        lambda *_args, **_kwargs: (
+            _ for _ in ()
+        ).throw(RuntimeError("synthetic failure")),
+    )
     with pytest.raises(RuntimeError, match="synthetic failure"):
         confirm_reimport(preview["session_id"], db_path=isolated_db)
     with sqlite3.connect(isolated_db) as connection:
@@ -142,7 +227,9 @@ def test_interrupted_reimport_replays_assessments_without_duplicates(
     real_coverage = service._coverage
     monkeypatch.setattr(
         "pm_agent.project_health.service._coverage",
-        lambda *_args: (_ for _ in ()).throw(RuntimeError("synthetic interruption after assessment")),
+        lambda *_args, **_kwargs: (
+            _ for _ in ()
+        ).throw(RuntimeError("synthetic interruption after assessment")),
     )
     with pytest.raises(RuntimeError, match="synthetic interruption"):
         confirm_reimport(preview["session_id"], db_path=isolated_db)

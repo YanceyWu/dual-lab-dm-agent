@@ -101,8 +101,46 @@ def catalog_projection(*, project_id: str | None = None, db_path: str | Path | N
     }
 
 
+def _validate_capacity_scope(payload: object) -> dict[str, Any] | None:
+    if payload is None:
+        return None
+    if not isinstance(payload, dict) or set(payload) != {
+        "year",
+        "month",
+        "plan_version_id",
+    }:
+        raise ValueError("HEALTH_REIMPORT_CAPACITY_SCOPE_INVALID")
+    year = payload["year"]
+    month = payload["month"]
+    plan_version_id = payload["plan_version_id"]
+    if (
+        not isinstance(year, int)
+        or isinstance(year, bool)
+        or not 2000 <= year <= 2100
+        or not isinstance(month, int)
+        or isinstance(month, bool)
+        or not 1 <= month <= 12
+        or not isinstance(plan_version_id, str)
+        or not plan_version_id.strip()
+        or len(plan_version_id.strip()) > 128
+    ):
+        raise ValueError("HEALTH_REIMPORT_CAPACITY_SCOPE_INVALID")
+    return {
+        "year": year,
+        "month": month,
+        "plan_version_id": plan_version_id.strip(),
+    }
+
+
 def _validate_package(payload: object) -> dict[str, Any]:
-    allowed = {"dataset_marker", "package_id", "schema_version", "board_ids", "inputs"}
+    allowed = {
+        "dataset_marker",
+        "package_id",
+        "schema_version",
+        "board_ids",
+        "inputs",
+        "capacity_scope",
+    }
     required = {"package_id", "schema_version", "board_ids", "inputs"}
     if not isinstance(payload, dict) or not required <= set(payload) or set(payload) - allowed:
         raise ValueError("HEALTH_REIMPORT_PACKAGE_INVALID")
@@ -119,7 +157,16 @@ def _validate_package(payload: object) -> dict[str, Any]:
     # The structured-input family is reserved until an approved producer exists.
     if payload["inputs"]:
         raise ValueError("HEALTH_INPUT_PRODUCER_NOT_AVAILABLE")
-    return {"package_id": package_id.strip(), "schema_version": PACKAGE_VERSION, "board_ids": sorted(set(item.strip() for item in board_ids)), "inputs": []}
+    package = {
+        "package_id": package_id.strip(),
+        "schema_version": PACKAGE_VERSION,
+        "board_ids": sorted(set(item.strip() for item in board_ids)),
+        "inputs": [],
+    }
+    capacity_scope = _validate_capacity_scope(payload.get("capacity_scope"))
+    if capacity_scope is not None:
+        package["capacity_scope"] = capacity_scope
+    return package
 
 
 def _validate_boards(connection: sqlite3.Connection, board_ids: list[str]) -> None:
@@ -168,6 +215,8 @@ def _coverage(
     connection: sqlite3.Connection,
     derivations: list[dict[str, Any]],
     assessments: list[dict[str, Any]],
+    *,
+    capacity_scope: dict[str, Any] | None,
 ) -> dict[str, Any]:
     projects = sorted({item["project_id"] for item in derivations})
     assessment_by_project = {item["project_id"]: item for item in assessments}
@@ -179,11 +228,9 @@ def _coverage(
         )
         for project_id in projects
     }
-    reason_codes = [
-        "QUALITY_INPUT_NOT_AVAILABLE",
-        "RESOURCE_INPUT_NOT_AVAILABLE",
-        "GOVERNANCE_INPUT_NOT_AVAILABLE",
-    ]
+    reason_codes = ["QUALITY_INPUT_NOT_AVAILABLE", "GOVERNANCE_INPUT_NOT_AVAILABLE"]
+    if capacity_scope is None:
+        reason_codes.insert(1, "RESOURCE_INPUT_NOT_AVAILABLE")
     if projects and not assessment_by_project:
         assessment_state = "not_available"
         reason_codes = ["PROJECT_HEALTH_ASSESSMENT_NOT_RUN", *reason_codes]
@@ -194,6 +241,7 @@ def _coverage(
         "dimensions": dimensions,
         "assessment_state": assessment_state,
         "reason_codes": reason_codes,
+        "capacity_scope": capacity_scope,
         "assessments": assessments,
         "canonical_derivations": derivations,
     }
@@ -244,6 +292,7 @@ def _assess_projects(
     session_id: str,
     project_ids: list[str],
     *,
+    capacity_scope: dict[str, Any] | None = None,
     db_path: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Run one deterministic seven-dimension assessment per covered project.
@@ -275,7 +324,14 @@ def _assess_projects(
             state = recovered["state"]
             dimensions = recovered["dimensions"]
         else:
-            result = evaluation.evaluate(project_id, db_path=db_path)
+            evaluate_kwargs: dict[str, Any] = {"db_path": db_path}
+            if capacity_scope is not None:
+                evaluate_kwargs.update(
+                    capacity_year=capacity_scope["year"],
+                    capacity_month=capacity_scope["month"],
+                    capacity_plan_version_id=capacity_scope["plan_version_id"],
+                )
+            result = evaluation.evaluate(project_id, **evaluate_kwargs)
             assessment_run_id = result["assessment_run_id"]
             state = result["overall_state"]
             dimensions = _assessment_dimensions(
@@ -331,6 +387,7 @@ def confirm_reimport(session_id: str, *, db_path: str | Path | None = None) -> d
         connection.commit()
         try:
             package = json.loads(row["package_json"])
+            capacity_scope = package.get("capacity_scope")
             derivation_results = [execution.derive_board(board_id, db_path=db_path) for board_id in package["board_ids"]]
             derivations = []
             for result in derivation_results:
@@ -340,13 +397,19 @@ def confirm_reimport(session_id: str, *, db_path: str | Path | None = None) -> d
             assessments = _assess_projects(
                 session_id,
                 projects,
+                capacity_scope=capacity_scope,
                 db_path=db_path,
             )
             connection.execute("BEGIN IMMEDIATE")
             now = _now()
             _record_step(connection, session_id, "validate", "completed", {"input_count": 0, "board_count": len(package["board_ids"])}, [])
             _record_step(connection, session_id, "canonical_derivation", "completed", {"derivation_run_count": len(derivations)}, [])
-            report = _coverage(connection, derivations, assessments)
+            report = _coverage(
+                connection,
+                derivations,
+                assessments,
+                capacity_scope=capacity_scope,
+            )
             integrity = _integrity(connection)
             _record_step(connection, session_id, "health_coverage", "completed" if integrity["state"] == "passed" else "failed", {"project_count": report["project_count"], "assessment_run_count": len(assessments)}, report["reason_codes"])
             final_status = "completed" if integrity["state"] == "passed" else "failed"

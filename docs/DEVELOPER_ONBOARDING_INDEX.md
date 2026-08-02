@@ -24,7 +24,9 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 
 ## Current state snapshot (always re-verify from PROGRESS.md)
 
-- Branch `codex/usability-r1-r2`; local HEAD `d854e98`.
+- Branch `codex/usability-r1-r2`; local HEAD includes the accepted
+  rehearse-release remediation commit `3cb4d33` plus the current unpushed Batch
+  3 slice (exact new hash is reported in the task handoff after commit).
 - `origin/codex/usability-r1-r2` remains at `998ed37`; later local commits and
   working-tree records are not pushed.
 - Usability R1–R7: implemented, validated, owner-confirmed, and pushed.
@@ -39,13 +41,15 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
   is treated as owner-accepted.
 - Batch 2 slice 2 (**`database/execution.py` owner split**) is also now treated
   as owner-accepted.
-- Active follow-on: **`make rehearse-release` blocker remediation** —
-  implemented locally, passed focused repo-tool coverage plus `make validate`,
-  and restored the default `make rehearse-release` path on this workstation.
-- The next gate is owner review / acceptance of this blocker remediation. The
-  remaining recommended `dashboard/server.py` split, Batch 3
-  (promoted-capability closure), and Phase 7 still need separate authorization
-  after that gate.
+- `make rehearse-release` blocker remediation is owner-accepted and committed
+  locally as `3cb4d33` (`Restore release rehearsal flow`).
+- Active follow-on: **Batch 3 — promoted-capability closure**. Slice 1 wires
+  explicit Project Health `capacity_scope` through the promoted IP-033 re-
+  import entry so the resource dimension can use the promoted capacity-coverage
+  reader instead of always publishing `not_available`.
+- The next gate is owner review / acceptance of this Batch 3 slice. The
+  remaining recommended `dashboard/server.py` split and Phase 7 still need
+  separate authorization after that gate.
 
 ## Repository map (module ownership)
 
@@ -150,8 +154,9 @@ canonical capacity agree. HIREF demo states live in `employees`
   stay `not_available`.
 - Delivery dimension: no `sprint_completion`/`sprint_carry_over` producer →
   `not_available`.
-- Resource dimension via the IP-033 entry: always `not_available` (capacity
-  scope is not wired into the assessment entry; the engine supports it).
+- Resource dimension via the IP-033 entry is only available when the re-import
+  package carries an explicit `capacity_scope`; otherwise it intentionally
+  remains `not_available`.
 - Dependency factor: proves an active link only → `unknown` semantics.
 - `schedule_target_change` can be `unknown` or `amber`, never `green`.
 - Weekly Brief achievements appear only for events after the baseline

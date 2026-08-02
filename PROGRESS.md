@@ -9,8 +9,8 @@ implemented, validated, and read-only reviewed; local commits on
 Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `REHEARSE-RELEASE BLOCKER REMEDIATION`
-Gate status: `REHEARSE-RELEASE BLOCKER REMEDIATION IMPLEMENTED LOCALLY, VALIDATED, AND REVIEWED — NEXT: OWNER REVIEW / ACCEPTANCE`
+Current implementation item: `BATCH 3 PROMOTED-CAPABILITY CLOSURE`
+Gate status: `BATCH 3 SLICE 1 (PROJECT HEALTH RESOURCE-CAPACITY SCOPE WIRING) IMPLEMENTED LOCALLY, VALIDATED, AND REVIEWED — NEXT: OWNER REVIEW / ACCEPTANCE`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -593,19 +593,23 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 ## Exact next actions
 
 1. Batch 2 slices 1 and 2 are treated as owner-accepted, and the separately
-   authorized `make rehearse-release` blocker remediation is now implemented
-   locally, validated, and independently reviewed.
-2. The next gate is owner review / acceptance of this blocker-remediation
-   follow-on. If accepted, the remaining architecture follow-on choices are the
-   recommended `dashboard/server.py` presentation split or Batch 3
-   (promoted-capability closure), each under a separate authorization.
-3. `make rehearse-release` is no longer blocked on this workstation under the
+   authorized `make rehearse-release` blocker remediation is now owner-accepted
+   and committed locally on `codex/usability-r1-r2`.
+2. The owner then authorized Batch 3 (promoted-capability closure). Its first
+   bounded slice wires explicit Project Health `capacity_scope` input through
+   the promoted IP-033 re-import entry so the resource dimension can use the
+   already promoted capacity-coverage reader instead of always publishing
+   `not_available`.
+3. The next gate is owner review / acceptance of this Batch 3 slice. The
+   explicit-capacity-scope contract is intentional: do not infer a latest month
+   or plan version automatically.
+4. `make rehearse-release` is no longer blocked on this workstation under the
    repository's default Python environment. The repo-tool test coverage now
    pins the runtime-compatible archive extraction path.
-4. Do not push, merge, tag, release, deploy, activate a connector, use real
+5. Do not push, merge, tag, release, deploy, activate a connector, use real
    data, or start Phase 7 runtime/schema/test work without separate explicit
    authorization.
-5. Do not activate Skill Dependency, create a new Attention producer, or infer
+6. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization. Preserve the promoted
    Phase 1–6 baselines and the accepted IP-033 local baseline fix.
 
@@ -692,6 +696,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - The owner then authorized a separate bounded remediation to restore the
   default `make rehearse-release` path on this workstation before any further
   release-gate reliance or later repository-boundary work.
+- The owner accepted that rehearse-release remediation and then authorized
+  Batch 3 (promoted-capability closure) as the next bounded repository-
+  convergence batch.
+- Batch 3 slice 1 may wire the promoted Project Health re-import entry to the
+  promoted capacity-coverage reader only through an explicit `capacity_scope`
+  contract. Do not infer a latest/current month or plan version automatically.
 - The owner approved the revised UAT runbook on 2026-08-02 (`UAT RUNBOOK
   APPROVED`). The runbook is the valid process basis; executing real-
   environment UAT still requires a separate explicit authorization for an
@@ -701,6 +711,53 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — Batch 3 slice 1 wired Project Health re-import to explicit capacity scope
+
+- After accepting the rehearse-release remediation, the owner authorized Batch 3
+  (promoted-capability closure). The first bounded slice closes the explicit
+  gap documented in the onboarding index: the promoted IP-033 assessment entry
+  always published `resource=not_available` even though the promoted Project
+  Health engine already supported capacity-scope-backed coverage.
+- `src/pm_agent/project_health/service.py` now accepts an optional
+  `capacity_scope` object in the structured re-import package
+  (`year` / `month` / `plan_version_id`), validates it strictly, includes it in
+  the persisted package/report contract, and passes it into the existing
+  Project Health assessment engine during confirmation. The legacy no-scope path
+  is preserved intentionally and still reports `RESOURCE_INPUT_NOT_AVAILABLE`.
+- `src/tests/test_project_health_reimport.py` now covers three cases:
+  legacy no-scope behavior remains `resource=not_available`; invalid
+  `capacity_scope` is rejected without creating a session; and a valid explicit
+  capacity scope drives the IP-033 entry to publish the real resource state
+  (`red` in the synthetic sample because the promoted capacity evidence shows an
+  overload).
+- Validation evidence: focused Project Health/capacity suites passed
+  (`24 passed` across `test_project_health_reimport.py` and
+  `test_project_capacity_coverage.py`); adjacent characterization coverage
+  passed (`24 passed` across `test_demo_characterization.py` and
+  `test_weekly_brief_composer.py`); Project Health read/integration coverage
+  passed (`8 passed` across `test_layered_project_health_review.py` and
+  `test_usability_integration_chain.py`); final `make validate` passed with
+  366 runtime tests, 27 repository-tool tests with 19 subtests, repository-
+  boundary, synthetic-sample, and documented-use-case checks, Ruff,
+  compilation, diff hygiene, and package build (`9` release validation checks
+  total); `make rehearse-release` passed wheel install, isolated clean
+  bootstrap, synthetic upgrade, integrity, and rollback for `ai-pm-agent
+  0.2.0rc1`.
+- Read-only review: separate post-validation read-only review over the Batch 3
+  slice diff found no remaining P0–P2 issues. The no-inference rule is
+  preserved: resource evidence is still unavailable unless an explicit
+  `capacity_scope` is provided.
+- Transitional debt intentionally retained: quality/governance structured
+  inputs remain unavailable, delivery still lacks an approved sprint producer,
+  dependency semantics remain `unknown`, and the new resource path refuses to
+  guess a latest plan scope.
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff. No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: owner review / acceptance of this Batch 3 slice, then
+  choose the next separately authorized closure slice or the recommended
+  `dashboard/server.py` split.
 
 ### 2026-08-02 — Default make rehearse-release blocker remediated
 
@@ -730,11 +787,11 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   business capability. The separate `dashboard/server.py` split remains the
   recommended architecture follow-on; Batch 3 and Phase 7 remain separately
   gated.
-- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
-  no push instruction received. No merge, tag, release, connector access, or
-  real-data action.
-- Exact next action: owner review / acceptance of this blocker-remediation
-  follow-on, then choose the next separately authorized bounded slice.
+- Commit status: committed locally as `3cb4d33` (`Restore release rehearsal
+  flow`), not pushed. No merge, tag, release, connector access, or real-data
+  action.
+- Exact next action: execute the separately authorized Batch 3 promoted-
+  capability closure slice.
 
 ### 2026-08-02 — Owner accepted Batch 2 slice 2 execution-module split
 
