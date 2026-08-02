@@ -14,10 +14,15 @@ work computer.
 
 - team workload and capacity review;
 - staffing assessment and controlled staffing proposals;
-- project health and management-attention review;
+- legacy project health, layered seven-dimension Project Health, delivery
+  execution, and management-attention review;
+- persisted Delivery Attention Center review;
+- resource-capacity heatmap and project-capacity evidence publication;
 - STFTE HIREF/charge-code continuity review;
-- weekly Delivery Manager briefs and action follow-up;
+- weekly Delivery Manager briefs (legacy v1 and opt-in v2) and action follow-up;
 - connector status, sync-result, and project-snapshot review;
+- controlled Project Health configuration preview/confirm and capacity-policy
+  marker state/enable entry;
 - a local Dashboard and structured CLI;
 - evidence, freshness, warnings, execution traces, and deterministic validation.
 
@@ -88,13 +93,20 @@ pm tool list
 pm tool describe team-workload-overview
 pm tool query team-workload-overview
 pm tool query project-health-review
+pm tool query layered-project-health-review
+pm tool query delivery-execution-review --project <exact-project-id>
 pm tool query management-attention --limit 10
+pm tool query delivery-attention-center
+pm tool query resource-capacity-heatmap --param year=<YYYY> --param month=<1-12> --param plan_version_id=<exact-plan-id>
 pm tool query contract-continuity-review --days 180
 pm tool query weekly-dm-brief
+pm weekly-brief query
 pm tool query action-followup
 pm tool query connector-status-review
 pm tool query connector-sync-results
 pm tool query project-snapshot-list
+pm project-health config show
+pm staffing capacity-policy show
 ```
 
 Run `pm staffing assess --help` before a staffing assessment. Use
@@ -152,7 +164,8 @@ Read:
 - `architecture/09_PHASE_3_EXECUTION_AND_MILESTONE_FOUNDATION_DESIGN.md` for
   the approved Phase 3 current-state findings and implementation boundary.
 - `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md` for the
-  proposed Phase 4 bounded Project Health design and review gate.
+  approved Phase 4 bounded Project Health design and later decision records
+  (current state still lives in `PROGRESS.md`).
 
 ## Safety boundary
 

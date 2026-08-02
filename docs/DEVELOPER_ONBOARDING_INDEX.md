@@ -24,16 +24,19 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 
 ## Current state snapshot (always re-verify from PROGRESS.md)
 
-- Branch `codex/usability-r1-r2`; local HEAD `cef54f6` (decision records).
-  Remote `origin/codex/usability-r1-r2` was pushed at `714c0b4`; a later local
-  record commit may be un-pushed.
-- Usability R1–R7: implemented, validated, owner-confirmed, pushed.
-- IP-033 (Phase 4 assessment entry): owner-accepted 2026-08-02.
-- UAT runbook: owner-approved 2026-08-02 as process basis only; execution
-  requires a future separate authorization.
-- Next batch: owner-directed (candidates: Phase 7 Forecast design; engine
-  completion items; onboarding follow-ups). Do not start one without a named
-  authorization.
+- Branch `codex/usability-r1-r2`; local HEAD `998ed37`.
+- `origin/codex/usability-r1-r2` currently matches local HEAD at `998ed37`.
+- Usability R1–R7: implemented, validated, owner-confirmed, and pushed.
+- IP-033 (Phase 4 assessment entry): owner-accepted 2026-08-02 as a local
+  development-baseline fix.
+- UAT runbook: owner-approved 2026-08-02 as process basis only; execution still
+  requires a separate explicit authorization for an integrated release
+  candidate.
+- Latest owner-approved repository-convergence batch: **Batch 1 — authority
+  document and capability inventory alignment**.
+- The next recommended bounded batch is **Batch 2 (module boundary hardening
+  design)** or **Batch 3 (promoted-capability closure)**. Do not start either
+  without a named authorization.
 
 ## Repository map (module ownership)
 
@@ -50,7 +53,7 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 | Weekly Brief v2 | `src/pm_agent/weekly_brief/` | composer, snapshots, operations |
 | Staffing + capacity marker | `src/pm_agent/use_cases/staffing.py`, `database/staffing_capacity.py` | feasibility/proposals; one-way enable policy |
 | Import/demo scripts | `src/scripts/` | `load_sample_data.py` (orchestrator), `seed_demo_evidence.py`, `import_*.py` |
-| Validation tooling | `tools/` | `validate_release.py`, `rehearse_release.py`, `check_synthetic_samples.py` |
+| Validation tooling | `tools/` | `validate_release.py`, `rehearse_release.py`, `check_synthetic_samples.py`, `check_documented_use_cases.py` |
 | Tests | `src/tests/` | focused suites per capability; `conftest.py` isolates DB/network |
 
 Dependency rule: a module may depend inward on a capability contract, never

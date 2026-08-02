@@ -60,15 +60,26 @@ pm tool query <use-case-id>
 
 Registered use cases cover:
 
+- `resource-capacity-heatmap`
+- `layered-project-health-review`
+- `delivery-execution-review`
 - `team-workload-overview`
 - `project-health-review`
 - `management-attention`
+- `delivery-attention-center`
 - `contract-continuity-review`
 - `weekly-dm-brief`
+- `weekly-dm-brief-v2`
 - `action-followup`
 - `connector-status-review`
 - `connector-sync-results`
 - `project-snapshot-list`
+
+This list mirrors the shared use-case registry in
+`src/pm_agent/use_cases/__init__.py`. `weekly-dm-brief-v2` remains available
+through that registry, but operators normally access it through
+`pm weekly-brief query` so the snapshot preview/confirm flow stays in one
+command family.
 
 `pm tool query` returns structured JSON with evidence, freshness, warnings,
 assumptions, execution metadata, and stable error codes. Missing or stale data
@@ -101,6 +112,23 @@ assess → propose → preview → explicit manager confirmation → persist
 Never confirm without reviewing the exact proposal and runtime-issued one-time
 token. Do not invent freshness overrides or HIREF acknowledgements. `cancel` and
 `reject` close unconfirmed proposals without changing assignments.
+
+## Controlled configuration and marker entry
+
+```bash
+pm project-health config show
+pm project-health config preview --tolerance-days <0-90> --scope-green-minimum <0-100>
+pm project-health config confirm --operation-id <id> --token <token>
+
+pm staffing capacity-policy show
+pm staffing capacity-policy enable-preview
+pm staffing capacity-policy enable-confirm --operation-id <id> --token <token>
+```
+
+Project Health configuration and the capacity-policy marker use explicit
+preview/confirm flows with one-time tokens and audit records. The staffing
+capacity-policy entry is intentionally one-way in this candidate: it installs
+disabled and exposes no product disable command.
 
 ## Connector boundary
 

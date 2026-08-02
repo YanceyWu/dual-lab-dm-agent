@@ -26,6 +26,7 @@ EXPECTED_TOOL_VERSIONS = {
 VALIDATION_STEPS = (
     "repository-boundary",
     "synthetic-samples",
+    "documented-use-cases",
     "runtime-tests",
     "repository-tool-tests",
     "ruff",
@@ -149,6 +150,11 @@ def validate() -> None:
         (
             "synthetic-samples",
             [python, "tools/check_synthetic_samples.py"],
+            None,
+        ),
+        (
+            "documented-use-cases",
+            [python, "tools/check_documented_use_cases.py"],
             None,
         ),
         (

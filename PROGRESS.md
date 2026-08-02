@@ -9,8 +9,8 @@ implemented, validated, and read-only reviewed; local commits on
 Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `USABILITY R1–R7 IMPLEMENTED AND OWNER-CONFIRMED; IP-033 ACCEPTED AND UAT RUNBOOK APPROVED ON 2026-08-02 — NEXT: OWNER DIRECTS THE NEXT BATCH (e.g., PHASE 7 DESIGN OR ENGINE COMPLETION ITEMS)`
+Current implementation item: `BATCH 1 — AUTHORITY DOCUMENT AND CAPABILITY INVENTORY ALIGNMENT (OWNER-APPROVED)`
+Gate status: `BATCH 1 DOCUMENT/INVENTORY ALIGNMENT IMPLEMENTED, VALIDATED, AND OWNER-APPROVED — NEXT: EXPLICITLY AUTHORIZE BATCH 2 (MODULE BOUNDARY HARDENING DESIGN) OR BATCH 3 (PROMOTED-CAPABILITY CLOSURE)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -158,6 +158,16 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+Batch 1 authority-document alignment added a deterministic
+`documented-use-cases` repository validation step so the public registry list in
+`src/README.md` must match `src/pm_agent/use_cases/__init__.py`. The final
+post-batch `make validate` passed 364 runtime tests, 25 repository-tool tests
+with 19 subtests, repository-boundary, synthetic-sample, and documented-use-case
+checks, Ruff, compilation, diff hygiene, and package build (`9` release
+validation checks total). This batch changes no schema, import contract,
+packaging metadata, or installed-data behavior, so `make rehearse-release` is
+not required.
 
 IP-033 (Phase 4 controlled assessment entry) focused Project Health
 re-import suite passed 10/10 synthetic tests, including idempotent replay,
@@ -526,22 +536,21 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. R3 (IP-033 acceptance) is at its review gate: the independent read-only
-   review of `1d73765` passed with no P0–P2 finding, recorded in the change
-   log and validation evidence. The owner must accept the slice or request a
-   bounded correction. After acceptance, execute the remaining usability
-   items one at a time and stop at each gate: R1 demo data rebuild, R2
-   synthetic integration runbook, R5 integration test, R4 entry-boundary
-   decisions, R6 UAT runbook revision, R7 documentation consistency scan.
-2. Phase 6 Weekly Brief v2 remains the promoted local baseline. The next
-   program gate is Phase 7 Forecast v1: it requires a separately approved
-   design and a named implementation authorization.
+1. Batch 1 is implemented, validated, and owner-approved. It aligned the
+   authority documents plus shared use-case inventory and added deterministic
+   validation so the package README inventory cannot drift away from the
+   registry silently.
+2. The next recommended bounded batch is either Batch 2 (core module boundary
+   hardening design) or Batch 3 (promoted-capability closure). Phase 7
+   Forecast v1 remains separately gated and must not start until the owner
+   explicitly authorizes it.
 3. Do not push, merge, tag, release, deploy, activate a connector, use real
    data, or start Phase 7 runtime/schema/test work without that authorization.
 4. Do not activate Skill Dependency, create a new Attention producer, or infer
    a required Decision without separate authorization.
-5. Preserve the promoted Phase 1–6 baselines and the accepted IP-032 records;
-   IP-033 changes no promoted baseline until the owner accepts it.
+5. Preserve the promoted Phase 1–6 baselines and the accepted IP-033 local
+   baseline fix; Batch 1 changes authority/readability, not the promoted
+   runtime capability boundary.
 
 ## Decisions in force
 
@@ -622,6 +631,63 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — Owner approved Batch 1 authority alignment
+
+- The owner approved Batch 1 (`authority document and capability inventory
+  alignment`). The batch is now the latest accepted repository-convergence
+  correction: it aligned `PROGRESS.md`, `README.md`, `src/README.md`, and the
+  onboarding snapshot, and added deterministic README-vs-registry validation
+  through `tools/check_documented_use_cases.py`.
+- Status files updated to reflect approval: `PROGRESS.md` header/gate and exact
+  next actions now move from review to explicit next-batch authorization;
+  `docs/DEVELOPER_ONBOARDING_INDEX.md` now records Batch 1 as the latest
+  owner-approved convergence batch; the session `plan.md` records Batch 1
+  complete and approved.
+- Documentation-only approval record: no runtime, schema, data-path, or package
+  change beyond the already-validated Batch 1 working tree. `git diff --check`
+  passes.
+- Commit status: approval record remains uncommitted and unpushed; no push
+  instruction received. No merge, tag, release, connector access, or real-data
+  action.
+- Exact next action: explicitly authorize either Batch 2 (module boundary
+  hardening design) or Batch 3 (promoted-capability closure). Phase 7 remains
+  separately gated.
+
+### 2026-08-02 — Batch 1: authority-document and capability inventory aligned
+
+- The owner selected Batch 1 as the next bounded repository-convergence batch.
+  Implemented the alignment scope across `PROGRESS.md`, `README.md`,
+  `src/README.md`, and `docs/DEVELOPER_ONBOARDING_INDEX.md` so the active
+  batch, next recommended bounded batches, promoted/local-baseline wording, and
+  operator-facing command inventory now agree with the current repository state.
+- `README.md` now names the promoted layered health, execution review, Delivery
+  Attention Center, resource-capacity, Weekly Brief v2, and controlled
+  configuration/marker entry surfaces in both the product-capability summary and
+  the direct CLI examples. `src/README.md` now carries the full shared
+  use-case registry list in registry order and documents the controlled Project
+  Health configuration and staffing capacity-policy command groups.
+- Added `tools/check_documented_use_cases.py` plus
+  `tools/tests/test_documented_use_cases.py`, and wired the new
+  `documented-use-cases` step into `tools/validate_release.py`. This closes the
+  most drift-prone gap from the assessment: `make validate` now fails if the
+  public shared use-case inventory in `src/README.md` diverges from
+  `src/pm_agent/use_cases/__init__.py`.
+- Validation: `make validate` passed with 364 runtime tests, 25 repository-tool
+  tests with 19 subtests, repository-boundary, synthetic-sample, and
+  documented-use-case checks, Ruff, compilation, diff hygiene, and package
+  build (`9` release validation checks total). No schema/import/packaging or
+  installed-data behavior changed, so `make rehearse-release` is not required
+  for this batch.
+- Read-only diff review over the touched Batch 1 files found no out-of-scope
+  change and no P0–P2 issue (same limitation as prior batches in this session:
+  no sub-agent delegation was available for an external reviewer).
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review of Batch 1, then explicitly authorize either
+  Batch 2 (module boundary hardening design) or Batch 3 (promoted-capability
+  closure).
 
 ### 2026-08-02 — Developer onboarding index added
 

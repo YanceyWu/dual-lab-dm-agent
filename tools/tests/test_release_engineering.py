@@ -37,6 +37,7 @@ def test_unified_validation_and_ci_contract_are_present() -> None:
     for required_step in (
         "repository-boundary",
         "synthetic-samples",
+        "documented-use-cases",
         "runtime-tests",
         "repository-tool-tests",
         "ruff",
