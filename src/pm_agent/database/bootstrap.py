@@ -18,6 +18,7 @@ from pm_agent.database.project_health_schema import (
     ensure_project_health_reimport_columns,
 )
 from pm_agent.database.staffing_capacity import (
+    STAFFING_CAPACITY_OPERATIONS_DDL,
     STAFFING_CAPACITY_POLICY_DDL,
     install_or_validate_policy,
 )
@@ -3069,6 +3070,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)
     conn.executescript(STAFFING_CAPACITY_POLICY_DDL)
+    conn.executescript(STAFFING_CAPACITY_OPERATIONS_DDL)
     install_or_validate_policy(
         conn, table_preexisting=staffing_capacity_policy_preexisting
     )

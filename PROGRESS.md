@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R4 (a) CONTROLLED CONFIG COMMAND IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `R4 (a) + (b) CONTROLLED COMMANDS IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -609,8 +609,57 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   Python-session enable). Any future product entry needs a separate authorized
   batch with preview/confirm, audit, enable/disable semantics, release
   rehearsal, and independent review.
+- R4 (b) addendum (2026-08-02): the owner authorized the enable entry;
+  `pm staffing capacity-policy show|enable-preview|enable-confirm` is
+  implemented with an additive audited operations table. Disable/revert is
+  not provided (one-way engine); the marker still installs disabled.
 
 ## Recent change log
+
+### 2026-08-02 — R4 (b): controlled capacity-policy commands implemented
+
+- The owner authorized the controlled product entry for the capacity-aware
+  Staffing marker (overriding the earlier Python-only record for the enable
+  direction).  Added `pm staffing capacity-policy show|enable-preview|
+  enable-confirm` in `src/pm_agent/cli/commands/staffing_policy.py`, wrapping
+  new public contracts in `database/staffing_capacity.py`:
+  `policy_state`, `preview_enable_capacity_requirement(actor=...)`, and
+  `confirm_enable_capacity_requirement`.
+- Additive schema: `staffing_capacity_operations` (operation id, action,
+  actor, status, token hash, fingerprint, preconditions, created/expires/
+  confirmed timestamps, result) owned by the staffing-capacity module and
+  composed by bootstrap — no table was added to `bootstrap.py` itself.  The
+  enable applies the existing single-transaction guard (current publication
+  required); confirm revalidates the fingerprint over the publication and
+  policy state, so a replaced publication rejects with `STALE_FINGERPRINT`.
+- Behavior: installation still leaves the marker disabled; preview is a
+  no-op when already enabled; confirmation records actor `copilot` and the
+  confirmed result in the audit table; the legacy Python API
+  `enable_capacity_requirement` is unchanged and its implementation was
+  refactored into a shared `_enable_in_transaction` helper without behavior
+  change.  **Disable/revert is intentionally not provided** (one-way engine;
+  recorded as a separate-extension boundary).
+- Focused tests added in `src/tests/test_staffing_capacity_policy_cli.py`
+  (7) plus a CLI build assertion: disabled default, publication-required
+  fail-closed preview, round trip with audit, no-op when already enabled,
+  wrong token, expired, stale fingerprint on publication replacement, and
+  policy remains disabled after a stale rejection.  Existing Staffing
+  capacity-consumption suite still passes (26/26 combined).  End-to-end smoke
+  on an upgraded demo copy: bootstrap upgrade adds the table, show →
+  preview → confirm → show (enabled) → repeat no-op.
+- `docs/SYNTHETIC_DEMO_WALKTHROUGH.md` section 2.8 documents the commands;
+  the Phase 5 design and IP-031 records carry the addendum.
+- Validation: `make validate` passed 364 runtime tests (up from 356,
+  recorded), 21 repository-tool tests with 19 subtests, Ruff, compilation,
+  diff hygiene, package build, and 8 release checks; `make rehearse-release`
+  passed (wheel install, isolated upgrade with the additive table, integrity,
+  rollback).  Read-only review pass found no remaining P0–P2 (same documented
+  limitation: no sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: owner review of the (b) batch; R6/R7 remain independently
+  authorizable.
 
 ### 2026-08-02 — R4 (a): controlled Project Health configuration CLI implemented
 

@@ -207,6 +207,13 @@ through the CLI, Dashboard, or Copilot interface. Opening a product entry is a
 separately authorized batch with preview/confirm, audit, enable/disable
 semantics, release rehearsal, and independent review.
 
+Addendum (2026-08-02): the owner authorized that product entry. `pm staffing
+capacity-policy show|enable-preview|enable-confirm` is implemented with an
+additive `staffing_capacity_operations` audit table; enable is previewed and
+confirmed with token/TTL/stale-fingerprint guards. Disable/revert is not
+provided (the engine is one-way); installation still leaves the marker
+disabled.
+
 Focused tests are `test_resource_capacity_heatmap.py` and
 `test_staffing_capacity_consumption.py`, plus the existing capacity import,
 Staffing pipeline, intelligence contract, discovery, and transport regressions.

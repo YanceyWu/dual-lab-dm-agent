@@ -7,6 +7,7 @@ from pm_agent import __version__
 from pm_agent.cli import app as app_module
 from pm_agent.cli.commands import governance, integrations, operations
 from pm_agent.cli.commands import project_health_config
+from pm_agent.cli.commands import staffing_policy
 from pm_agent.database.bootstrap import main as init_db
 
 
@@ -37,6 +38,11 @@ def test_project_health_config_group_builds() -> None:
     project_health = get_command(project_health_config.project_health_app)
     config = project_health.commands["config"]
     assert set(config.commands) == {"show", "preview", "confirm"}
+
+
+def test_capacity_policy_group_builds() -> None:
+    policy = get_command(staffing_policy.capacity_policy_app)
+    assert set(policy.commands) == {"show", "enable-preview", "enable-confirm"}
 
 
 def test_core_option_params_are_not_flags() -> None:

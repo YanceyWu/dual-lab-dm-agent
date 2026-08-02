@@ -186,6 +186,32 @@ confirm 返回 `status: confirmed` 与新 `configuration_version_id`；再次
 （show 该项目的 `override_state` 变为 `available`）；参数与默认值相同时
 preview 返回 `no_op`。
 
+### 2.8 capacity-aware Staffing 开关（R4 (b) 受控命令）
+
+```bash
+$PY -m pm_agent.cli.app staffing capacity-policy show
+```
+
+预期：`status: success`、`capacity_required: false`、
+`policy_version: staffing-capacity-policy-v1`（安装默认关闭）。
+
+启用（preview → confirm，需要已发布容量；开启后 staffing 提案/确认为
+容量 fail-closed）：
+
+```bash
+PREVIEW=$($PY -m pm_agent.cli.app staffing capacity-policy enable-preview)
+$PY -m pm_agent.cli.app staffing capacity-policy enable-confirm \
+  --operation-id "$(echo "$PREVIEW" | python3 -c 'import json,sys;print(json.load(sys.stdin)["operation_id"])')" \
+  --token "$(echo "$PREVIEW" | python3 -c 'import json,sys;print(json.load(sys.stdin)["confirmation_token"])')"
+```
+
+预期：preview 返回 `status: proposed`（含当前发布 ID；无发布则失败
+`STAFFING_CAPACITY_PUBLICATION_REQUIRED`）；confirm 返回
+`status: confirmed`；再次 `show` 的 `capacity_required` 为 `true`；
+重复 enable-preview 返回 `no_op`。预览与确认之间若容量发布被替换，
+confirm 返回 `rejected: STALE_FINGERPRINT`。**注意：开关是单向启用，
+当前无 disable 命令（引擎设计如此，需单独授权才会扩展）。**
+
 ## 3. Weekly Brief v2 快照 preview/confirm（手动演示）
 
 流水线已在构建时自动确认一张快照。下面用手动流程演示同一受控写入边界：

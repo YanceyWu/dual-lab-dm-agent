@@ -256,6 +256,20 @@ authorized batch that adds preview/confirm plus audit, decides enable/disable
 rehearsal, and independent review, and still does not constitute a new
 business capability.
 
+### R4 (b) addendum (2026-08-02) — controlled enable entry implemented
+
+The owner later authorized the controlled product entry. `pm staffing
+capacity-policy show|enable-preview|enable-confirm` now wraps
+`policy_state` / `preview_enable_capacity_requirement` /
+`confirm_enable_capacity_requirement` with an additive
+`staffing_capacity_operations` audit table (actor, token hash, fingerprint
+over publication + policy state, TTL, confirmed result). The enable applies
+the same single-transaction guard as the Python API; a changed current
+publication between preview and confirm rejects with `STALE_FINGERPRINT`.
+**Disable/revert remains unprovided** because the engine is one-way by design;
+adding disable is a separate, explicitly authorized engine extension.
+Installation still leaves the marker disabled.
+
 Capacity-package import confirmation is a controlled ingestion operation, not
 a DM commitment editor. Any future public commitment write uses
 propose/preview/confirm/persist and requires a separate gate.
