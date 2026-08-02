@@ -2,15 +2,15 @@
 
 Last updated: 2026-08-02
 Current branch: `codex/usability-r1-r2`
-Current HEAD: R1 synthetic demo pipeline implemented, validated, and
-independently read-only reviewed; local commit on
-`codex/usability-r1-r2` (exact hash reported in the task handoff; IP-033
+Current HEAD: R1 synthetic demo pipeline and R2 synthetic walkthrough
+implemented, validated, and read-only reviewed; local commits on
+`codex/usability-r1-r2` (exact hashes reported in the task handoff; IP-033
 Phase 4 controlled assessment entry remains implemented on
 `codex/phase-4-assessment-entry` awaiting the owner acceptance decision;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `R1 — RECONSTRUCTED SYNTHETIC DEMO DATA (usability handoff 2026-08-02)`
-Gate status: `R1 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R2 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Current implementation item: `R1 + R2 — SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
+Gate status: `R1 + R2 VALIDATED AND READ-ONLY REVIEWED — AWAITING OWNER REVIEW — R5 REQUIRES THE NEXT NAMED AUTHORIZATION (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -30,12 +30,12 @@ controlled assessment entry slice (IP-033). It is implemented on
 installed rehearsal, and after the R3 independent read-only review is stopped
 for the owner acceptance decision. On 2026-08-02 the owner directed this
 session to create `codex/usability-r1-r2` and complete R1 then R2 from the
-usability handoff. R1 is implemented, validated (`make validate` 339 runtime
-tests plus repository/package checks; `make rehearse-release` passed), and
-stopped at the review gate for owner review. R2 is not started. The exact R1
-commit hash is reported in the task handoff because a commit cannot contain
-its own hash. Promotion is local only; every external action remains a
-separate owner decision. No push is authorized or required.
+usability handoff. R1 and R2 are implemented, validated (`make validate` 339
+runtime tests plus repository/package checks; `make rehearse-release` passed),
+and stopped at the review gate for owner review. The exact commit hashes are
+reported in the task handoff because a commit cannot contain its own hash.
+Promotion is local only; every external action remains a separate owner
+decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -601,6 +601,43 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   B3, C, D, and all external actions.
 
 ## Recent change log
+
+### 2026-08-02 — R2: synthetic integration walkthrough documented and reviewed
+
+- Added `docs/SYNTHETIC_DEMO_WALKTHROUGH.md` per R2 of
+  `docs/USABILITY_REQUIREMENTS_HANDOFF_2026-08-02.md`: from-clean-database
+  walkthrough of the full DM weekly workflow with commands, expected-output
+  points, and troubleshooting for every step.
+- Coverage verified against the acceptance criteria: clean DB → all structured
+  imports → derivation → seven-dimension assessment → Attention
+  reconciliation → Weekly Brief v2 composition including snapshot
+  preview/confirm → Dashboard/CLI reads; idempotent `--replay` section;
+  explicit UNKNOWN section (real connectors, real data, UAT, external branch
+  actions, R3/R4 gates, Phase 7, legacy-view semantics, missing re-assessment
+  entry).
+- Live verification of the documented commands: one-command build,
+  the five R1 verification commands, the manual snapshot preview/confirm flow
+  (`previewed` → `confirmed` → `already_confirmed` with the same idempotency
+  key), `--replay` output, and heatmap values quoted in the document
+  (0.7/0.9 effective capacity). One document defect was found and corrected
+  during verification: the capture candidate lives under
+  `data.snapshot.capture_candidate` in the CLI query output, not
+  `snapshot.capture_candidate`.
+- Read-only review: separate read-only pass over the document against the R2
+  acceptance list and `AGENTS.md`; no remaining P0–P2 findings. As recorded in
+  the R1 entry, sub-agent delegation was unavailable in this session, so the
+  review was executed by the implementing agent in a read-only capacity.
+- `git diff --check` passes. R2 is documentation-only: no runtime, schema,
+  test, sample-data, or package change; `make rehearse-release` is not
+  required for this batch. Full `make validate` evidence for the combined
+  R1+R2 working tree is recorded in the R1 entry (339 runtime tests,
+  repository/package checks) and was re-run after R1's final commit; the R2
+  document adds no runtime surface.
+- Commit status: R2 is committed locally on `codex/usability-r1-r2` and NOT
+  pushed; the exact hash is reported in the task handoff. No merge, tag,
+  release, connector access, or real-data action was performed.
+- Exact next action: owner review of R1+R2; after explicit authorization,
+  start R5 (cross-capability integration test) on this branch.
 
 ### 2026-08-02 — R1: reconstructed synthetic demo data pipeline implemented and validated
 
