@@ -133,11 +133,8 @@ configuration only; evaluation is a distinct, auditable operation.
 ## R4 decision record (2026-08-02) — configuration entry
 
 The owner accepted the R4 recommendation: a controlled CLI entry for
-configuration preview/confirm **will be added as a separately authorized,
-bounded batch**. Until that batch is implemented, configuration remains
-Python-only and the known boundary is explicit: operators cannot read or
-modify health configuration through the CLI, Dashboard, or Copilot interface
-(there is currently no read use case either).
+configuration preview/confirm would be added as a separately authorized,
+bounded batch instead of leaving the capability Python-only.
 
 Rationale: the preview/confirm engine (bounded parameters, default/project
 scope, 30-minute TTL, one-time token, stale-fingerprint rejection, no-op
@@ -147,12 +144,13 @@ business capability, and gives the DM the core responsibility of defining
 health thresholds with propose → preview → confirm → persist.
 
 Consequences: confirmed configuration affects only subsequent assessments;
-already-persisted assessments are unchanged. The future batch must also expose
-the read projection (`catalog_projection`), keep the unaccepted Attention RAG
-configuration surface strictly separate, and, if actor attribution is wanted,
-add one audit column (additive schema in the Project Health schema module,
-requiring release rehearsal). The capacity-aware Staffing switch decision is
-recorded in the Phase 5 design.
+already-persisted assessments are unchanged. The authorized follow-up batch did
+expose the read projection (`catalog_projection`) and the controlled CLI entry
+`pm project-health config show|preview|confirm`; the unaccepted Attention RAG
+configuration surface remains strictly separate. If actor attribution is wanted
+later, that is still an additive audit-column question in the Project Health
+schema module and would require release rehearsal. The capacity-aware Staffing
+switch decision is recorded in the Phase 5 design.
 
 ## Aggregation
 

@@ -236,11 +236,10 @@ the confirmation write stop.
 
 ## R4 decision record (2026-08-02) — capacity-required marker entry
 
-The owner accepted the R4 recommendation: the capacity-aware Staffing switch
-**remains Python-only** (`enable_capacity_requirement` /
-`capacity_required`). The known boundary is explicit: operators cannot enable
-capacity constraints through the CLI, Dashboard, or Copilot interface, and
-installation always leaves the marker disabled.
+The owner accepted the initial R4 recommendation: the capacity-aware Staffing
+switch would remain Python-only until a separately authorized controlled
+product entry existed. Installation still leaves the marker disabled by
+default.
 
 Rationale: the marker is one-way (no disable API), has no preview/confirm or
 audit contract, and enabling changes Staffing proposals/confirmation to a
@@ -248,14 +247,12 @@ fail-closed capacity check with a material behavioral effect. Opening a
 product entry before those controls exist would be an asymmetric operational
 risk; the disabled default is the correct safe default.
 
-Consequences: through the product interface, Staffing assessment and
-confirmation never enforce effective capacity; the capacity-aware
-`staffing-effective-capacity-v1` behavior applies only after a Python-session
-enable. If the owner later wants a product entry, it must be a separately
-authorized batch that adds preview/confirm plus audit, decides enable/disable
-(including revert) semantics, runs focused tests, full validation, release
-rehearsal, and independent review, and still does not constitute a new
-business capability.
+Consequences: the historical Python-only boundary was later superseded by the
+separately authorized controlled entry below. The product interface now exposes
+only `pm staffing capacity-policy show|enable-preview|enable-confirm`; it does
+not provide disable/revert, and the capacity-aware
+`staffing-effective-capacity-v1` behavior still applies only after explicit
+preview/confirm enablement.
 
 ### R4 (b) addendum (2026-08-02) — controlled enable entry implemented
 

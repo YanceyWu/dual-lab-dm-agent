@@ -200,12 +200,11 @@ demonstrate the same atomicity, evidence, replay, and audit requirements.
 No second capacity formula, heatmap storage, presentation adapter, generic
 repository query, public marker command, or capacity editor is added.
 
-R4 decision record (2026-08-02): the `staffing_capacity_policy` marker remains
-Python-only (`enable_capacity_requirement` / `capacity_required`); this pack
-adds no public marker command. Operators cannot enable capacity constraints
-through the CLI, Dashboard, or Copilot interface. Opening a product entry is a
-separately authorized batch with preview/confirm, audit, enable/disable
-semantics, release rehearsal, and independent review.
+R4 decision record (2026-08-02): the initial accepted boundary kept the
+`staffing_capacity_policy` marker Python-only
+(`enable_capacity_requirement` / `capacity_required`) until a separately
+authorized product entry existed. The addendum below supersedes that public
+entry status.
 
 Addendum (2026-08-02): the owner authorized that product entry. `pm staffing
 capacity-policy show|enable-preview|enable-confirm` is implemented with an

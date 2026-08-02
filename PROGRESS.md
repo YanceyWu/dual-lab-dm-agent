@@ -609,19 +609,18 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - The owner approved the Phase 6 design and separately authorized only IP-032
   Batch B1 public read-contract prerequisites. That authorization excludes B2,
   B3, C, D, and all external actions.
-- R4 decision (2026-08-02): Phase 4 health configuration preview/confirm gets
-  a controlled CLI as a separately authorized bounded batch; until then the
-  product interface has no read or write configuration entry.
-- R4 decision (2026-08-02): the Phase 5 capacity-aware Staffing marker stays
-  Python-only and installs disabled; the product interface cannot enable
-  capacity constraints (`staffing-effective-capacity-v1` applies only after a
-  Python-session enable). Any future product entry needs a separate authorized
-  batch with preview/confirm, audit, enable/disable semantics, release
-  rehearsal, and independent review.
-- R4 (b) addendum (2026-08-02): the owner authorized the enable entry;
-  `pm staffing capacity-policy show|enable-preview|enable-confirm` is
-  implemented with an additive audited operations table. Disable/revert is
-  not provided (one-way engine); the marker still installs disabled.
+- R4 outcome (2026-08-02): Phase 4 health configuration preview/confirm is no
+  longer Python-only. `pm project-health config show|preview|confirm` is
+  implemented as the controlled product entry over the existing bounded engine;
+  the unaccepted Attention RAG configuration surface remains unavailable.
+- R4 outcome (2026-08-02): the Phase 5 capacity-aware Staffing marker is no
+  longer Python-only for enable. `pm staffing capacity-policy
+  show|enable-preview|enable-confirm` is implemented with an additive audited
+  operations table. Disable/revert is not provided (one-way engine), and
+  installation still leaves the marker disabled until explicit confirmation.
+- The owner selected Batch 1 (authority document and capability inventory
+  alignment) as the next bounded repository-convergence batch before any
+  separately authorized Phase 7 design work.
 - The owner approved the revised UAT runbook on 2026-08-02 (`UAT RUNBOOK
   APPROVED`). The runbook is the valid process basis; executing real-
   environment UAT still requires a separate explicit authorization for an
@@ -631,6 +630,30 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — High-confidence stale documentation corrected
+
+- A post-Batch-1 drift scan identified a small set of **current-state**
+  mismatches that could still mislead later judgments even after the broader
+  authority-document alignment. Corrected the high-confidence set only:
+  `PROGRESS.md` `Decisions in force`; `architecture/11_PHASE_4_...` (Project
+  Health configuration entry); `architecture/12_PHASE_5_...` (capacity-policy
+  entry); `architecture/13_PHASE_6_...` (Phase 6 authorization history); and
+  `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md`.
+- The corrections preserve historical decision context but remove stale present-
+  tense claims that no longer match the promoted code or current public product
+  entries. In particular, the docs no longer claim that Project Health config
+  or capacity-policy enable remain Python-only, and the Phase 6 design no
+  longer reads as if B2/B3/C/D were still unauthorized today.
+- Documentation-only correction batch: no runtime, schema, test, sample-data,
+  or package change. `git diff --check` passes, and the targeted stale-phrase
+  rescan of the corrected files found no remaining match from the original
+  high-confidence drift set.
+- Commit status: committed locally on `codex/usability-r1-r2`; no push
+  instruction received. No merge, tag, release, connector access, or real-data
+  action.
+- Exact next action: explicitly authorize either Batch 2 (module boundary
+  hardening design) or Batch 3 (promoted-capability closure).
 
 ### 2026-08-02 — Owner approved Batch 1 authority alignment
 

@@ -32,11 +32,12 @@ This document creates no implementation authority. A Phase 6 implementation
 pack, runtime/schema/test edit, implementation batch, or legacy replacement
 requires a later explicit owner decision.
 
-The owner approved this design after review and then separately authorized only
-Batch B1 public read-contract prerequisites. IP-032 records that bounded
-authorization. The owner accepted the B1 result at
-`cce14e42c26c605bc76e895de8d611540eae06f8`. The owner subsequently authorized
-only B2 implementation; B3 and all later slices remain unauthorized.
+The owner approved this design after review and then advanced through the
+bounded IP-032 sequence: B1 public read-contract prerequisites, B2
+snapshot/comparison core, B3 nine-section composition, C shared-interface
+integration, and D validation/review. Phase 6 Weekly Brief v2 was later
+promoted locally; `PROGRESS.md` and `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md`
+carry the current authoritative gate history.
 
 Four requested reading-list paths do not exist under those titles in this
 checkout. The numbered repository documents actually read were
@@ -689,8 +690,11 @@ scope/gate/reference scan over this design and `PROGRESS.md`, followed by
 
 ## Separately reviewable implementation slices after approval
 
-The design itself authorizes no slice. The owner subsequently authorized only
-B1 through the named IP-032 gate; B2 and later slices remain unauthorized.
+The design itself authorizes no slice. The later IP-032 implementation sequence
+started with B1 and was then advanced through separately approved slices to the
+promoted local Phase 6 baseline; see `PROGRESS.md` or
+`implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` for the authoritative
+current state.
 
 ### B1 — Public read-contract prerequisites
 
