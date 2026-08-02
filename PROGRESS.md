@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R4 (a) + (b) CONTROLLED COMMANDS IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `R6 UAT RUNBOOK REVISED — PENDING OWNER APPROVAL (DO NOT EXECUTE); R7 DOCUMENTATION SCAN IN PROGRESS — IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -615,6 +615,37 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   not provided (one-way engine); the marker still installs disabled.
 
 ## Recent change log
+
+### 2026-08-02 — R6: real-environment UAT runbook revised (documentation only)
+
+- Owner authorized R6.  `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` was revised
+  against the current integration candidate; status is now
+  `REVISED 2026-08-02 — PENDING OWNER APPROVAL — DO NOT EXECUTE`, and the
+  runbook states that it becomes effective only after explicit owner approval
+  recorded in `PROGRESS.md` as `UAT RUNBOOK APPROVED`.
+- Alignment verified against the current candidate: setup/boundary on
+  `codex/ip-000-baseline-safety` or an approved immutable tag; clean re-import
+  rehearsal (empty DB + versioned workforce/capacity/health/milestone imports
+  with dry-run → confirm and `already_completed`/`no_op` replay) plus
+  upgrade-compatibility checks on isolated copies; pre-connector validation
+  (`pm config validate`, `pm connector validate --portable`, `pm tool list`,
+  `pm sync status`, explicit `pm connector probe`); the 14 current read-only
+  use cases with the invalid-parameter fail-closed check; controlled
+  configuration UAT (`pm project-health config show|preview|confirm`,
+  R4 (a)); connector probe/sync one-at-a-time; staffing UAT including the
+  capacity-policy marker (`pm staffing capacity-policy show|
+  enable-preview|enable-confirm`, one-way enable, R4 (b)); Dashboard UAT with
+  `/api/attention/operations`, `/api/weekly-brief/operations`, and
+  `/api/project-health/sync` preview/confirm/replay checks and loopback
+  binding; stop conditions; sanitized feedback; approval gate.
+- Documentation-only batch: no runtime, schema, test, or sample-data change;
+  `git diff --check` passes; `make validate` runs as part of the R6/R7
+  combined validation evidence.
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No real-environment action,
+  connector access, or real-data use occurred.
+- Exact next action: R7 documentation consistency scan; then owner review of
+  R6 (and approval decision for the runbook).
 
 ### 2026-08-02 — R4 (b): controlled capacity-policy commands implemented
 

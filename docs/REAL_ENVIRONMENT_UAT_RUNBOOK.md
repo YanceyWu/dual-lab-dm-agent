@@ -1,21 +1,21 @@
 # Real-Environment UAT Runbook
 
-Status: `DEFERRED — REVISE BEFORE INTEGRATED RELEASE UAT`
+Status: `REVISED 2026-08-02 — PENDING OWNER APPROVAL — DO NOT EXECUTE`
 
-This runbook describes the deferred `0.2.0rc1` candidate flow. It is retained as
-safety reference but is not a current gate for Delivery Intelligence feature
-iteration. Do not execute it as the final integrated UAT procedure.
-
-After the approved capability phases are complete, revise its installation,
-schema, use-case, connector, write-safety, Dashboard, rollback, and sanitized
-feedback coverage against the integrated candidate. Obtain explicit owner
-approval before real-environment use.
+This revision (usability R6) aligns the deferred real-environment UAT flow
+with the current integrated Delivery Intelligence candidate. It is **not** a
+current gate: the owner must approve this revised runbook explicitly before
+any real-environment action, and the approval must be recorded in
+`PROGRESS.md`. Until then, no connector access, real-data operation, live
+migration, or external action is authorized.
 
 ## Boundary
 
-Use `codex/ip-000-baseline-safety` only. Do not merge or rebase it into `main`.
-All credentials, endpoints, databases, exports, logs, screenshots, raw payloads,
-and real records remain in the approved local environment.
+Use `codex/ip-000-baseline-safety` or an explicitly approved immutable
+release-candidate tag only. Do not merge or rebase it into `main`. All
+credentials, endpoints, databases, exports, logs, screenshots, raw payloads,
+and real records remain in the approved local environment. Never copy
+operational data into the repository or portable artifacts.
 
 ## Setup
 
@@ -28,8 +28,8 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-For the `0.2.0rc1` candidate, first verify that the checked-out commit matches
-the approved `v0.2.0-rc.1` tag and record only the commit hash plus version:
+For the approved candidate, verify the checked-out commit and version and
+record only the commit hash plus version:
 
 ```bash
 git rev-parse HEAD
@@ -37,17 +37,15 @@ pm version
 ```
 
 Do not begin real-environment UAT from an uncommitted working tree or a commit
-whose GitHub Actions validation has not passed.
+whose `make validate` and `make rehearse-release` have not passed. Create a
+local `.env` from `.env.example` with approved database and connector values
+locally only, then run `pm init`.
 
-Create a local `.env` from `.env.example`; set approved database and connector
-values locally only. Run `pm init` to initialize the local product database.
-
-Open the repository root in VS Code, open Copilot Chat, and select the workspace
-`Delivery Manager` agent from the agent picker. Keep terminal approvals enabled;
-do not use global auto-approval or Autopilot for real-environment UAT. In Chat
-customization diagnostics, verify that
-`.github/agents/delivery-manager.agent.md` and
-`.github/copilot-instructions.md` are loaded.
+Open the repository root in VS Code, open Copilot Chat, and select the
+workspace `Delivery Manager` agent. Keep terminal approvals enabled; do not
+use global auto-approval or Autopilot for real-environment UAT. In
+customization diagnostics, verify that `.github/agents/delivery-manager.agent.md`
+and `.github/copilot-instructions.md` are loaded.
 
 ## Recovery point
 
@@ -58,47 +56,44 @@ pm backup create --label before-real-uat
 ```
 
 Keep the tag and manifest in approved local records. If validation fails, stop
-writes and follow `LOCAL_PRODUCT_UPGRADE_LIFECYCLE.md`.
+writes and follow `docs/LOCAL_PRODUCT_UPGRADE_LIFECYCLE.md`.
 
-## IP-024 isolated migration rehearsal
+## Clean re-import and upgrade rehearsal
 
-Do not first run the new bootstrap against the active operational database.
-Use the database snapshot path printed by `pm backup create`, copy that snapshot
-to an approved temporary location outside the repository, and point only the
-rehearsal process at the copy:
+The production data path is a **clean database followed by the versioned
+structured full re-import**; it must not depend on migration, backfill, or
+preservation of current records. Rehearse on isolated copies only:
 
 ```bash
-cp /approved/path/from-backup-manifest.db /approved/temp/dm-uat-upgrade.db
-DM_UAT_DATABASE_PATH=/approved/temp/dm-uat-upgrade.db
-DATABASE_PATH="$DM_UAT_DATABASE_PATH" pm init
+cp /approved/path/from-backup-manifest.db /approved/temp/dm-uat-rehearsal.db
+DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db pm init
+DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db \
+  python3 src/scripts/import_workforce_planning.py \
+  --file src/sample-data/json/workforce_planning_import.sample.json --dry-run
+DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db \
+  python3 src/scripts/import_workforce_planning.py \
+  --file src/sample-data/json/workforce_planning_import.sample.json --confirm
 ```
 
-Before and after `pm init`, record only aggregate counts for the required core
-tables. Do not export rows, names, identifiers, or database files. After the
-upgrade, verify the copied database:
+Repeat the same dry-run → confirm pattern for resource capacity, Project
+Health re-import (IP-033 entry), and canonical Milestone import, then verify:
 
 ```bash
 sqlite3 "$DM_UAT_DATABASE_PATH" "PRAGMA integrity_check;"
 sqlite3 "$DM_UAT_DATABASE_PATH" "PRAGMA foreign_key_check;"
-sqlite3 "$DM_UAT_DATABASE_PATH" \
-  "SELECT name, type FROM sqlite_master WHERE name IN ('v_member_load','v_project_team','staffing_proposals','dashboard_operations') ORDER BY name;"
-sqlite3 "$DM_UAT_DATABASE_PATH" "SELECT COUNT(*) FROM v_member_load;"
-sqlite3 "$DM_UAT_DATABASE_PATH" "SELECT COUNT(*) FROM v_project_team;"
-sqlite3 "$DM_UAT_DATABASE_PATH" \
-  "SELECT name FROM pragma_table_info('staffing_proposals') WHERE name LIKE 'confirmation_token%';"
 ```
 
-Expected results are `integrity_check=ok`, no rows from `foreign_key_check`,
-both views and both new operation tables present, both views queryable, and
-only `confirmation_token_hash` returned for the token-column check. Confirm
-that employee, project, assignment, monthly-allocation, and decision aggregate
-counts match their pre-upgrade values.
+Expected: `integrity_check=ok`, no `foreign_key_check` rows, every import
+reports `completed` with an authoritative complete manifest, and replay of the
+same package reports `already_completed`/`no_op`. Stop if any import reports
+`rejected`, a non-authoritative manifest, changed aggregate counts, or a
+failed integrity/foreign-key check. Keep the active database untouched until
+the rehearsal passes and the operator explicitly approves the live `pm init`.
 
-Stop if bootstrap reports invalid months, invalid allocation values, duplicate
-employee/project/month/plan-version rows, a failed view query, an integrity or
-foreign-key error, or a changed aggregate count. Keep the active database
-untouched until this rehearsal passes and the operator explicitly approves the
-live `pm init`.
+For upgrade-compatibility checks on the existing local database, follow the
+same isolated-copy rules (copy from the backup manifest, run `pm init` on the
+copy, check views `v_member_load`/`v_project_team`, operation tables, token
+columns, and aggregate counts before/after).
 
 ## Validate before connector access
 
@@ -117,20 +112,29 @@ be exported without manual sanitization.
 
 ## Read-only UAT
 
+The current structured read-only use cases (see `pm tool list` for the
+authoritative set):
+
 ```bash
+pm tool query team-workload-overview
 pm tool query project-health-review
 pm tool query management-attention
-pm tool query weekly-dm-brief
+pm tool query layered-project-health-review
+pm tool query delivery-execution-review --project <exact-project-id>
+pm tool query delivery-attention-center
+pm tool query resource-capacity-heatmap --param year=<YYYY> --param month=<1-12> --param plan_version_id=<exact-plan-id>
 pm tool query contract-continuity-review --days 180
 pm tool query action-followup
 pm tool query connector-status-review
 pm tool query connector-sync-results
 pm tool query project-snapshot-list --param health=amber --param artifact_kind=plan
+pm weekly-brief query
 ```
 
-For every response, verify evidence/freshness are present, non-fresh states are
-visible, and no credential, endpoint, raw error, or source payload appears.
-Also verify executor enforcement with a deliberately invalid read-only request:
+For every response, verify evidence/freshness are present, non-fresh and
+unavailable states are visible, and no credential, endpoint, raw error, or
+source payload appears. Also verify executor enforcement with a deliberately
+invalid read-only request:
 
 ```bash
 pm tool query contract-continuity-review --days 9999
@@ -138,6 +142,24 @@ pm tool query contract-continuity-review --days 9999
 
 It must exit non-zero with `PARAMETER_OUT_OF_RANGE`, without invoking a
 connector or returning a raw exception.
+
+## Controlled configuration UAT
+
+Health-condition configuration is a controlled preview/confirm write
+(R4 (a)); rehearsal on the isolated copy first:
+
+```bash
+pm project-health config show [--project <exact-project-id>]
+pm project-health config preview --tolerance-days <0-90> --scope-green-minimum <0-100> [--project <exact-project-id>]
+pm project-health config confirm --operation-id <id> --token <token>
+```
+
+Verify `show` returns the fixed catalog plus the effective configuration,
+`preview` returns prior/proposed/effective and a one-time token (or `no_op`
+when unchanged), and `confirm` changes only subsequent assessments and records
+the new configuration version. Stop if confirmation succeeds without a token,
+rejects a legitimate stale operation, or exposes an unaccepted Attention RAG
+configuration path.
 
 ## Controlled connector UAT
 
@@ -152,43 +174,64 @@ pm tool query connector-sync-results --connector <connector-name>
 ```
 
 Confirm source, target tables, rows observed/changed, freshness, and retry
-indication are expected. Stop on unexpected source, target table, or data volume.
+indication are expected. Stop on unexpected source, target table, or data
+volume.
 
 ## Staffing UAT
 
 Start with the reversible stages only:
 
 ```bash
-pm staffing assess ...
+pm staffing assess --project <id> --start <YYYY-MM> --end <YYYY-MM> --effort <0-1>
 pm staffing propose ...
 pm staffing preview <proposal-id>
 pm staffing cancel <proposal-id> --reason "UAT verification"
 ```
 
-Use `confirm` only after an authorized manager approves that exact proposal and
-local token. Verify cancellation/rejection/expiry/changed facts produce no
-assignment or allocation write.
+Use `pm staffing confirm` only after an authorized manager approves that exact
+proposal and the runtime token. Verify cancellation/rejection/expiry/changed
+facts produce no assignment or allocation write. If UAT must exercise
+capacity-aware behavior, check the marker first and enable it on the isolated
+copy only:
+
+```bash
+pm staffing capacity-policy show
+pm staffing capacity-policy enable-preview
+pm staffing capacity-policy enable-confirm --operation-id <id> --token <token>
+```
+
+The marker installs disabled and is a one-way enable; there is no product
+disable command in this candidate. After enabling, proposals/confirmation
+become fail-closed against effective capacity, and missing or stale capacity
+blocks confirmation. Record the enable decision and audit result.
 
 ## Dashboard UAT
 
-Run locally with `pm dashboard serve`. Confirm project-snapshot filtering works,
-generic `/api/tool/query/<use-case-id>` responses retain the full structured
-contract, and legacy endpoints carry their interface-classification headers.
+Run locally with `pm dashboard serve` (loopback default; non-loopback binding
+requires the explicit `--allow-remote` operator option for an approved network
+scope). Confirm generic `/api/tool/query/<use-case-id>` responses retain the
+full structured contract, and legacy endpoints carry their
+interface-classification headers.
 
-For project-health sync, verify preview performs no connector call and displays
-the exact board scope. Confirm only that preview, then verify a replay of its
-one-time token is rejected and browser output contains no raw connector error.
-Do not use a real sync target merely to test error handling.
+For controlled writes through the Dashboard, verify preview performs no
+connector call and displays the exact scope, then confirm and verify a replay
+of the one-time token is rejected:
 
-The Dashboard must bind to loopback by default. Non-loopback binding is allowed
-only for an approved network scope and requires the explicit `--allow-remote`
-operator option.
+- `/api/attention/operations` — attention preview/confirm;
+- `/api/weekly-brief/operations` — Weekly Brief v2 snapshot preview/confirm;
+- `/api/project-health/sync` — legacy Project Health sync preview/confirm.
+
+Do not use a real sync target merely to test error handling. Browser output
+must contain no raw connector error. Project Health configuration and the
+capacity-policy marker are CLI-only controlled writes in this candidate.
 
 ## Stop conditions
 
 Stop and do not write if data scope is unexpected; an output exposes a
 credential, URL, raw error, or payload; freshness is inadequate for a decision;
-proposal facts change before confirmation; or migration/config validation fails.
+proposal facts change before confirmation; a controlled preview/confirm token
+is reused or rejected unexpectedly; migration/config validation fails; or the
+clean re-import is not reproducible with `already_completed`/`no_op` replay.
 
 ## Sanitized feedback
 
@@ -196,3 +239,10 @@ Return only: candidate commit, test category, pass/fail/blocked/partial,
 generic error category or counts/ranges, impact level, and sanitized requested
 change. Never return real names, IDs, URLs, record content, credentials,
 screenshots, or raw logs.
+
+## Approval gate
+
+This revised runbook becomes effective only after the owner explicitly
+approves it and that approval is recorded in `PROGRESS.md` as
+`UAT RUNBOOK APPROVED`. Until then it remains `PENDING OWNER APPROVAL — DO NOT
+EXECUTE`.
