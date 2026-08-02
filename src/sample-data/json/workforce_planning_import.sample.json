@@ -5,12 +5,13 @@
   "generated_at": "2026-08-01T00:00:00+00:00",
   "source_id": "source-synthetic-workforce-planning",
   "manifest": {
-    "member_ids": ["member-synthetic-001", "member-synthetic-002"],
-    "project_ids": ["project-synthetic-atlas"],
+    "member_ids": ["member-synthetic-001", "member-synthetic-002", "member-synthetic-003"],
+    "project_ids": ["project-synthetic-atlas", "project-synthetic-beacon"],
     "plan_version_ids": ["plan-synthetic-baseline-001"],
     "workforce_periods": [
       {"member_id": "member-synthetic-001", "year": 2026, "month": 8},
-      {"member_id": "member-synthetic-002", "year": 2026, "month": 8}
+      {"member_id": "member-synthetic-002", "year": 2026, "month": 8},
+      {"member_id": "member-synthetic-003", "year": 2026, "month": 8}
     ],
     "allocation_keys": [
       {
@@ -23,6 +24,34 @@
       {
         "member_id": "member-synthetic-002",
         "project_id": "project-synthetic-atlas",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      },
+      {
+        "member_id": "member-synthetic-001",
+        "project_id": "project-synthetic-beacon",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      },
+      {
+        "member_id": "member-synthetic-002",
+        "project_id": "project-synthetic-beacon",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      },
+      {
+        "member_id": "member-synthetic-003",
+        "project_id": "project-synthetic-atlas",
+        "plan_version_id": "plan-synthetic-baseline-001",
+        "year": 2026,
+        "month": 8
+      },
+      {
+        "member_id": "member-synthetic-003",
+        "project_id": "project-synthetic-beacon",
         "plan_version_id": "plan-synthetic-baseline-001",
         "year": 2026,
         "month": 8
@@ -47,6 +76,15 @@
       "status": "active",
       "effective_start": "2026-01-01",
       "effective_end": null
+    },
+    {
+      "member_id": "member-synthetic-003",
+      "display_name": "Synthetic Member 003",
+      "role": "analyst",
+      "level": "mid",
+      "status": "active",
+      "effective_start": "2026-01-01",
+      "effective_end": null
     }
   ],
   "projects": [
@@ -55,6 +93,14 @@
       "display_name": "Synthetic Project Atlas",
       "status": "active",
       "priority": 2,
+      "start_date": "2026-01-01",
+      "target_end": "2026-12-31"
+    },
+    {
+      "project_id": "project-synthetic-beacon",
+      "display_name": "Synthetic Project Beacon",
+      "status": "active",
+      "priority": 3,
       "start_date": "2026-01-01",
       "target_end": "2026-12-31"
     }
@@ -84,6 +130,38 @@
       "year": 2026,
       "month": 8,
       "allocation": 0.0
+    },
+    {
+      "member_id": "member-synthetic-001",
+      "project_id": "project-synthetic-beacon",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.0
+    },
+    {
+      "member_id": "member-synthetic-002",
+      "project_id": "project-synthetic-beacon",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.0
+    },
+    {
+      "member_id": "member-synthetic-003",
+      "project_id": "project-synthetic-atlas",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.6
+    },
+    {
+      "member_id": "member-synthetic-003",
+      "project_id": "project-synthetic-beacon",
+      "plan_version_id": "plan-synthetic-baseline-001",
+      "year": 2026,
+      "month": 8,
+      "allocation": 0.6
     }
   ]
 }

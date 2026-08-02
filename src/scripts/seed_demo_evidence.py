@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 from pm_agent.config import settings
 
 BOARD_ID = "atlas-board"
+BEACON_BOARD_ID = "beacon-board"
 PROJECT_ID = "project-synthetic-atlas"
 BEACON_PROJECT_ID = "project-synthetic-beacon"
 SOURCE_ID = "source-synthetic-jira-evidence"
@@ -42,17 +43,6 @@ def _now() -> str:
 def _seed(connection: sqlite3.Connection) -> None:
     observed_at = "2026-08-01T11:00:00+00:00"
     finished_at = "2026-08-01T12:00:00+00:00"
-
-    # An inactive second project exists only so the legacy load view can
-    # demonstrate an overloaded member without widening the weekly-brief
-    # active-project manifest.
-    connection.execute(
-        """
-        INSERT OR REPLACE INTO projects (id, name, status, priority)
-        VALUES (?, ?, 'inactive', 9)
-        """,
-        [BEACON_PROJECT_ID, "Synthetic Project Beacon"],
-    )
 
     # Authoritative source-evidence runs make the derivation complete/fresh.
     connection.execute(
@@ -214,6 +204,31 @@ def _seed(connection: sqlite3.Connection) -> None:
         """,
         [BOARD_ID, observed_at],
     )
+    # Beacon has no source evidence (partial derivation by design) but keeps
+    # legacy snapshots so the project-health Attention rule covers both
+    # active projects with distinct states (Atlas red, Beacon amber).
+    connection.execute(
+        """
+        INSERT INTO jira_health_snapshots
+            (board_id, snapshot_date, overall_score, overall_grade,
+             summary_text, risks_json)
+        VALUES (?, '2026-08-01', 62.0, 'AMBER',
+                'SYNTHETIC_DATASET_V1 demo beacon snapshot', '[]')
+        """,
+        [BEACON_BOARD_ID],
+    )
+    connection.execute(
+        """
+        INSERT INTO confluence_status_snapshots
+            (board_id, page_id, page_title, snapshot_date, rag_status,
+             status_as_of, owner, summary_text, risks_text, impact_text,
+             sprint_iteration, milestones_text, raw_content, synced_at)
+        VALUES (?, 'demo-page-002', 'Beacon Demo Status', '2026-08-01', 'CLEAR',
+                '2026-08-01', 'Synthetic Member 003', 'Beacon summary',
+                '', '', '', '', 'Raw beacon content', ?)
+        """,
+        [BEACON_BOARD_ID, observed_at],
+    )
 
     # One overdue high-priority action drives the action Attention rule and
     # the weekly-brief next-actions section.
@@ -227,8 +242,9 @@ def _seed(connection: sqlite3.Connection) -> None:
         [f"{MARKER} overdue follow-up", observed_at],
     )
 
-    # Two active assignments (0.6 + 0.6) make the legacy load view show an
-    # overloaded member without changing the versioned clean-import packages.
+    # Legacy assignments mirror the versioned monthly allocations exactly:
+    # member 001 = 0.5, member 002 = 0.0 (no row), member 003 = 0.6 + 0.6.
+    # The legacy load view therefore agrees with the canonical capacity data.
     connection.executemany(
         """
         INSERT INTO assignments
@@ -236,8 +252,9 @@ def _seed(connection: sqlite3.Connection) -> None:
         VALUES (?, ?, ?, ?, '2026-01-01', NULL, 'active', ?)
         """,
         [
-            ("member-synthetic-001", PROJECT_ID, "delivery_manager", 0.6, observed_at),
-            ("member-synthetic-001", BEACON_PROJECT_ID, "tech_lead", 0.6, observed_at),
+            ("member-synthetic-001", PROJECT_ID, "delivery_manager", 0.5, observed_at),
+            ("member-synthetic-003", PROJECT_ID, "analyst", 0.6, observed_at),
+            ("member-synthetic-003", BEACON_PROJECT_ID, "analyst", 0.6, observed_at),
         ],
     )
 
@@ -260,15 +277,17 @@ def _clear(connection: sqlite3.Connection) -> None:
         "jira_stream_versions",
     ):
         connection.execute(f'DELETE FROM "{table}" WHERE board_id = ?', [BOARD_ID])
-    connection.execute("DELETE FROM confluence_status_snapshots WHERE board_id = ?", [BOARD_ID])
+        connection.execute(f'DELETE FROM "{table}" WHERE board_id = ?', [BEACON_BOARD_ID])
+    connection.execute(
+        "DELETE FROM confluence_status_snapshots WHERE board_id IN (?, ?)",
+        [BOARD_ID, BEACON_BOARD_ID],
+    )
     connection.execute(
         "DELETE FROM action_items WHERE id = 1 OR title LIKE 'SYNTHETIC_DATASET_V1%'"
     )
     connection.execute(
-        "DELETE FROM assignments WHERE employee_id = 'member-synthetic-001' AND project_id IN (?, ?)",
-        [PROJECT_ID, BEACON_PROJECT_ID],
+        "DELETE FROM assignments WHERE employee_id IN ('member-synthetic-001', 'member-synthetic-003')",
     )
-    connection.execute("DELETE FROM projects WHERE id = ?", [BEACON_PROJECT_ID])
 
 
 def main() -> None:

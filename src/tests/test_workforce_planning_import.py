@@ -52,13 +52,13 @@ def test_preview_confirm_publishes_complete_audited_package(isolated_db: Path) -
         "idempotent": False,
         "package_fingerprint": preview["package_fingerprint"],
         "counts": {
-            "members": 2,
-            "projects": 1,
+            "members": 3,
+            "projects": 2,
             "plan_versions": 1,
-            "monthly_allocations": 2,
-            "workforce_periods": 2,
-            "allocation_keys": 2,
-            "explicit_zero_allocations": 1,
+            "monthly_allocations": 6,
+            "workforce_periods": 3,
+            "allocation_keys": 6,
+            "explicit_zero_allocations": 3,
         },
         "coverage": {"authoritative_manifest": True, "missing_record_count": 0},
         "confirmation_required": True,
@@ -68,20 +68,20 @@ def test_preview_confirm_publishes_complete_audited_package(isolated_db: Path) -
     assert result["status"] == "completed"
     assert result["idempotent"] is False
     assert result["report"]["counts"] == {
-        "employees": 2,
-        "projects": 1,
+        "employees": 3,
+        "projects": 2,
         "plan_versions": 1,
-        "monthly_allocations": 2,
+        "monthly_allocations": 6,
     }
     assert result["report"]["coverage"] == {
         "state": "complete",
         "authoritative_manifest": True,
-        "member_count": 2,
-        "project_count": 1,
+        "member_count": 3,
+        "project_count": 2,
         "plan_version_count": 1,
-        "workforce_period_count": 2,
-        "allocation_key_count": 2,
-        "explicit_zero_count": 1,
+        "workforce_period_count": 3,
+        "allocation_key_count": 6,
+        "explicit_zero_count": 3,
         "missing_record_count": 0,
     }
     assert result["report"]["integrity"] == {
@@ -115,9 +115,13 @@ def test_preview_confirm_publishes_complete_audited_package(isolated_db: Path) -
         }
     assert [(row["employee_id"], row["allocation"]) for row in allocations] == [
         ("member-synthetic-001", 0.5),
+        ("member-synthetic-001", 0.0),
         ("member-synthetic-002", 0.0),
+        ("member-synthetic-002", 0.0),
+        ("member-synthetic-003", 0.6),
+        ("member-synthetic-003", 0.6),
     ]
-    assert audit == {"sessions": 1, "attempts": 1, "runs": 4, "coverage": 2}
+    assert audit == {"sessions": 1, "attempts": 1, "runs": 4, "coverage": 6}
 
 
 def test_identical_replay_is_idempotent_without_duplicate_audit_attempt(isolated_db: Path) -> None:
@@ -131,7 +135,7 @@ def test_identical_replay_is_idempotent_without_duplicate_audit_attempt(isolated
     confirmed = confirm_import(replay["session_id"], db_path=isolated_db)
     assert confirmed["idempotent"] is True
     with sqlite3.connect(isolated_db) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM monthly_allocations").fetchone()[0] == 2
+        assert connection.execute("SELECT COUNT(*) FROM monthly_allocations").fetchone()[0] == 6
         assert connection.execute(
             "SELECT COUNT(*) FROM workforce_planning_import_attempts"
         ).fetchone()[0] == 1
@@ -299,6 +303,7 @@ def test_phase4_read_contract_remains_usable_as_software_rollback_target(
     assert [(row["id"], row["month_load"]) for row in rows] == [
         ("member-synthetic-002", 0.0),
         ("member-synthetic-001", 0.5),
+        ("member-synthetic-003", 1.2),
     ]
 
 

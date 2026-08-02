@@ -2,7 +2,8 @@
 
 本文档是 R2 的交付物：用仓库内已提交的合成数据，从干净数据库完整走一遍
 Delivery Manager 典型周工作流。所有数据均为 `SYNTHETIC_DATASET_V1`
-标记的合成组织（`member-synthetic-001/002`、`project-synthetic-atlas`、
+标记的合成组织（`member-synthetic-001/002/003`、
+`project-synthetic-atlas`、`project-synthetic-beacon`、
 `plan-synthetic-baseline-001`）；不接触真实数据、凭据、connector 或任何外部环境。
 
 本手册与 `src/sample-data/README.md` 配套：前者讲"怎么做"，后者讲"数据是什么"。
@@ -32,21 +33,22 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
 1. `bootstrap`（`scripts/init_db.py`）——建全部表；
 2. workforce planning 版本化导入
    （`scripts/import_workforce_planning.py --confirm`）——预期输出
-   `"status": "completed"`，`employees: 2, projects: 1, monthly_allocations: 2`；
+   `"status": "completed"`，`employees: 3, projects: 2, monthly_allocations: 6`
+   （member-003 跨 Atlas/Beacon 合计 1.2，为一致性超载样例）；
 3. resource capacity 版本化导入
    （`scripts/import_resource_capacity.py --confirm`）——预期
-   `"derivations": 2, "observations": 6`，`derivation_states.known: 2`；
-4. board 注册（`scripts/import_jira_boards.py`）——`Loaded 1 JIRA board rows`，
-   board `atlas-board` 映射到 `project-synthetic-atlas`（IP-033 入口的数据前提）；
+   `"derivations": 3, "observations": 9`，`derivation_states.known: 3`；
+4. board 注册（`scripts/import_jira_boards.py`）——`Loaded 2 JIRA board rows`，
+   `atlas-board`/`beacon-board` 分别映射两个活动项目（IP-033 入口的数据前提）；
 5. 合成证据种子（`scripts/seed_demo_evidence.py`）——写入权威 source-evidence
    runs、JIRA 风格问题/发布/Sprint、健康快照、一条逾期行动项与一个超载成员，
    全部为 `SYNTHETIC_DATASET_V1` 合成行；
 6. Milestone 版本化导入（`scripts/import_milestones.py --confirm`）——预期
-   `"milestone_count": 4`；
+   `"milestone_count": 6`（Atlas 4 + Beacon 2）；
 7. Project Health re-import（`scripts/import_project_health.py --confirm`，
    IP-033 入口）——预期 `"assessment_state": "completed"`，
-   `dimensions.schedule == "red"`、`dimensions.scope == "amber"`、
-   `overall_state == "red"`；
+   两个项目各 1 条评估：Atlas `overall red`（schedule red、scope amber），
+   Beacon `overall unknown`（无权威证据，诚实 partial）；
 8. Attention 对账（preview → confirm）——预期
    `Attention reconciliation confirmed: success`；
 9. Weekly Brief v2 快照（compose → preview → confirm）——预期
@@ -79,12 +81,12 @@ PY=src/.venv/bin/python
 $PY -m pm_agent.cli.app tool query layered-project-health-review --project project-synthetic-atlas
 ```
 
-预期：`status: success`；`assessments[0]` 为多状态混合：
+预期：`status: success`；两条评估：Atlas 为多状态混合
 `schedule: red`（关键里程碑逾期）、`scope: amber`（发布范围未达绿色线）、
 `dependency: unknown`、`delivery/quality/resource/governance: not_available`
 （当前派生无对应生产者或结构化输入保留；`resource` 因 IP-033 入口不传容量
-scope）。整体 `state: red`，signals 含 active/high 的
-`layered_project_health_state`。
+scope）；Beacon 整体 `unknown`（未提供权威证据，属预期 partial）。
+Atlas 的 signals 含 active/high 的 `layered_project_health_state`。
 
 ### 2.2 执行评审（Milestone）
 
@@ -105,11 +107,12 @@ $PY -m pm_agent.cli.app tool query delivery-execution-review --project project-s
 $PY -m pm_agent.cli.app tool query delivery-attention-center
 ```
 
-预期：`status: success`；`data.items` 有 6 条、覆盖 5 条规则：
+预期：`status: success`；`data.items` 有 8 条、覆盖 5 条规则：
 `critical_milestone_overdue_attention`（critical）、
-`project_health_attention`（critical）、`resource_overload_attention`（high）、
+`project_health_attention`（Atlas critical、Beacon high）、
+`resource_overload_attention`（member-003 high）、
 `overdue_action_attention`（high）、两条 `source_freshness_attention`
-（medium）；`data.reconciliation_coverage.status` 为 `partial`
+（medium，jira-health 两个 board + confluence 共 3 条）；覆盖状态为 `partial`
 （权威来源存在但同步记录不全，`partial` 不代表健康）。
 
 ### 2.4 Resource Capacity 热图
@@ -120,9 +123,9 @@ $PY -m pm_agent.cli.app tool query resource-capacity-heatmap \
   --param plan_version_id=plan-synthetic-baseline-001
 ```
 
-预期：`status: success`；`data.rows` 有 2 行（member-synthetic-001/002），
-每行 `state: known`，`effective_capacity` 分别为 0.7 与 0.9
-（002 为显式零分配，仍产生已知事实）。
+预期：`status: success`；`data.rows` 有 3 行（member-synthetic-001/002/003），
+均 `state: known`：001 有效容量 0.7、002 有效容量 0.9（显式零分配）、
+003 计划分配 1.2 > 有效容量 1.0，`overload_state: red`。
 
 ### 2.5 Weekly Brief v2 查询
 
@@ -131,8 +134,8 @@ $PY -m pm_agent.cli.app weekly-brief query
 ```
 
 预期：`status: success`；`summary == {"overall_state": "red",
-"project_count": 1, "statement_count": 8}`；`overall_health` 为 `partial` 且
-state red；`highest_attention_signals.items` 6 条；`next_actions.items` 1 条；
+"project_count": 2, "statement_count": 10}`；`overall_health` 为 `partial` 且
+state red；`highest_attention_signals.items` 8 条；`next_actions.items` 1 条；
 `achievements` 为 `partial` 且 items=0（事件窗口契约：快照当日不产生成就，
 次日及以后查询可见）；输出含 `snapshot.capture_candidate`（下一步快照用）。
 
@@ -195,8 +198,8 @@ curl -s http://127.0.0.1:5001/api/summary
 curl -s http://127.0.0.1:5001/api/project-health
 ```
 
-预期：`/api/summary` 含 `total_staff: 2`、`active_projects: 1`；
-`/api/project-health` 为数组且含 `atlas-board` 的本地投影
+预期：`/api/summary` 含 `total_staff: 3`、`active_projects: 2`；
+`/api/project-health` 为数组且含 `atlas-board`、`beacon-board` 的本地投影
 （`confluence` 为空是预期，因为未配置真实连接器）。
 
 ### 4.2 传统视图的诚实预期
@@ -206,9 +209,9 @@ $PY -m pm_agent.cli.app workload
 $PY -m pm_agent.cli.app report
 ```
 
-预期：`workload` 显示 2 名成员、0% 负载（传统分配表在结构化组织下为空）；
-`report` 是未随结构化组织更新的传统周报，整体状态为空。这些是"保留的旧视图"，
-不代表结构化能力缺失；结构化能力请使用 2.1–2.5 的命令。
+预期：`workload` 显示 3 名成员，负载 0.5 / 0 / 1.2（legacy 分配镜像 canonical
+分配，003 超载）。`report` 是未随结构化组织更新的传统周报，整体状态为空。
+这些是"保留的旧视图"，不代表结构化能力缺失；结构化能力请使用 2.1–2.5 的命令。
 
 ## 5. 幂等重放
 

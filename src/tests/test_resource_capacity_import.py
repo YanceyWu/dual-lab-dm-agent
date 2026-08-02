@@ -67,12 +67,12 @@ def test_preview_confirm_derives_capacity_and_preserves_explicit_zero(isolated_d
     assert preview["status"] == "previewed"
     assert preview["confirmation_required"] is True
     assert preview["counts"] == {
-        "member_periods": 2, "coverage_keys": 6, "observations": 6,
-        "explicit_zero_observations": 3,
+        "member_periods": 3, "coverage_keys": 9, "observations": 9,
+        "explicit_zero_observations": 6,
     }
     result = confirm_import(preview["session_id"], db_path=isolated_db)
     assert result["report"]["coverage"]["state"] == "complete"
-    assert result["report"]["coverage"]["explicit_zero_count"] == 3
+    assert result["report"]["coverage"]["explicit_zero_count"] == 6
     capacity = get_effective_capacity(
         "member-synthetic-001", 2026, 8, "plan-synthetic-baseline-001",
         db_path=isolated_db,

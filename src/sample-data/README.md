@@ -59,9 +59,13 @@ python3 -m pm_agent.cli.app weekly-brief query
 ```
 
 The demo database contains the versioned clean-import organization
-(`member-synthetic-001/002`, `project-synthetic-atlas`,
-`plan-synthetic-baseline-001`). It is not the legacy Excel-imported Example
-organization; the versioned imports require an empty target database.
+(`member-synthetic-001/002/003`, `project-synthetic-atlas`,
+`project-synthetic-beacon`, `plan-synthetic-baseline-001`). It is not the
+legacy Excel-imported Example organization; the versioned imports require an
+empty target database.  Legacy `assignments` mirror the canonical monthly
+allocations exactly (member 001 = 0.5, member 002 = 0.0, member 003 = 1.2
+across both projects), so the legacy load view and the canonical capacity
+facts agree.
 
 Known demo states (deliberate mix, all honest):
 
@@ -78,9 +82,11 @@ Known demo states (deliberate mix, all honest):
 
 The Delivery Attention Center demonstrates five rules (project health red,
 critical milestone overdue, resource overload, overdue action, source
-freshness), and the Weekly Brief v2 overall state is `red` with non-empty
-attention and next-action sections.  Achievements appear only in queries made
-after the snapshot date, per the event-window contract.
+freshness) with eight items across both projects, the Resource Capacity
+heatmap returns three known rows (member 003 overloaded `red`), and the
+Weekly Brief v2 overall state is `red` with non-empty attention and
+next-action sections.  Achievements appear only in queries made after the
+snapshot date, per the event-window contract.
 
 The generated database is classified as synthetic only while every input passes
 the checker and the characterization suite passes.

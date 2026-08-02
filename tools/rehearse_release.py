@@ -336,10 +336,10 @@ def rehearse() -> None:
         verify_upgraded_database(
             clean_db,
             {
-                "employees": 2,
-                "projects": 1,
+                "employees": 3,
+                "projects": 2,
                 "assignments": 0,
-                "monthly_allocations": 2,
+                "monthly_allocations": 6,
                 "decision_log": 0,
             },
         )
@@ -358,8 +358,8 @@ def rehearse() -> None:
             "workforce_planning_import_sessions": 1,
             "workforce_planning_import_attempts": 1,
             "workforce_planning_publications": 1,
-            "workforce_member_period_coverage": 2,
-            "monthly_project_allocation_coverage": 2,
+            "workforce_member_period_coverage": 3,
+            "monthly_project_allocation_coverage": 6,
         }:
             raise RuntimeError("INSTALLED_WORKFORCE_PLANNING_AUDIT_INVALID")
         installed_capacity = subprocess.run(
@@ -377,7 +377,9 @@ def rehearse() -> None:
                     "i=preview_import(p);"
                     "c=get_effective_capacity('member-synthetic-001',2026,8,"
                     "'plan-synthetic-baseline-001');"
-                    "print(json.dumps({'result':r,'replay':i,'capacity':c},sort_keys=True))"
+                    "c3=get_effective_capacity('member-synthetic-003',2026,8,"
+                    "'plan-synthetic-baseline-001');"
+                    "print(json.dumps({'result':r,'replay':i,'capacity':c,'capacity003':c3},sort_keys=True))"
                 ),
                 str(REPO_ROOT / "src/sample-data/json/resource_capacity_import.sample.json"),
             ],
@@ -393,12 +395,20 @@ def rehearse() -> None:
         if capacity_result["replay"]["status"] != "already_completed":
             raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_REPLAY_INVALID")
         capacity = capacity_result["capacity"]
+        capacity_003 = capacity_result["capacity003"]
         if (
             capacity["state"] != "known"
             or capacity["effective_capacity"] != 0.7
             or capacity["available_capacity"] != 0.2
         ):
             raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_DERIVATION_INVALID")
+        if (
+            capacity_003["state"] != "known"
+            or capacity_003["effective_capacity"] != 1.0
+            or capacity_003["planned_project_allocation"] != 1.2
+            or capacity_003["overload_state"] != "red"
+        ):
+            raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_OVERLOAD_INVALID")
         if capacity_result["result"]["report"]["software_rollback"]["state"] != "passed":
             raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_ROLLBACK_INVALID")
         with sqlite3.connect(clean_db) as connection:
@@ -417,9 +427,9 @@ def rehearse() -> None:
             "resource_capacity_import_sessions": 1,
             "resource_capacity_import_attempts": 1,
             "resource_capacity_publications": 1,
-            "resource_capacity_manifest_coverage": 6,
-            "resource_capacity_observations": 6,
-            "resource_capacity_derivations": 2,
+            "resource_capacity_manifest_coverage": 9,
+            "resource_capacity_observations": 9,
+            "resource_capacity_derivations": 3,
         }:
             raise RuntimeError("INSTALLED_RESOURCE_CAPACITY_AUDIT_INVALID")
         installed_staffing_capacity = subprocess.run(
@@ -487,8 +497,9 @@ def rehearse() -> None:
         health_factor = project_health_capacity["factor"]
         capacity_evidence = health_factor["detail"]["evidence_refs"][0]["evidence"]
         if (
-            health_result["dimensions"]["resource"] != "green"
-            or health_factor["state"] != "green"
+            health_result["dimensions"]["resource"] != "red"
+            or health_factor["state"] != "red"
+            or "CAPACITY_OVERLOAD_RED" not in health_factor["detail"]["reason_codes"]
             or capacity_evidence["capacity_derivations"][0]["derivation_rule_version"]
             != "effective-capacity-v1"
         ):

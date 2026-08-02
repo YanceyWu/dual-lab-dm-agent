@@ -603,6 +603,53 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-02 — R1 coherence correction: member load and monthly allocation now agree
+
+- Owner correctly flagged that the multi-state demo was internally
+  inconsistent: `member-synthetic-001` showed 1.2 legacy load (fabricated to
+  trigger the overload Attention rule) against a 0.5 canonical monthly
+  allocation.  This entry records the correction; it supersedes the overload
+  hack described in the previous revision entry.
+- Corrected by making the two data worlds agree from the source: the versioned
+  `workforce_planning_import.sample.json` now includes
+  `member-synthetic-003` (analyst) and a second active project
+  `project-synthetic-beacon`, with a full 3×2 allocation matrix (member 001 =
+  0.5 Atlas / 0.0 Beacon, member 002 = 0.0/0.0 explicit zeros, member 003 =
+  0.6 Atlas + 0.6 Beacon = 1.2 genuinely overloaded).  The capacity sample
+  gained member 003 observations (3 derivations / 9 observations).  Legacy
+  `assignments` now mirror the canonical allocations exactly (001 = 0.5,
+  002 = 0.0/no row, 003 = 1.2), so the legacy load view, the capacity
+  heatmap, and the overload Attention rule all agree.
+- Demo topology updated for coherence: `jira_board_configs.sample.csv` gains
+  `beacon-board` (→ `project-synthetic-beacon`), the health re-import package
+  covers both boards, the Milestone sample gains two Beacon milestones, and
+  the seed script provides Beacon legacy snapshots (amber) without source
+  evidence, so Beacon shows an honest `unknown`/partial assessment contrast
+  to Atlas's red.
+- Verified per-member agreement on the committed demo database: load vs
+  allocation = 0.5/0.5 (001), 0.0/0.0 (002), 1.2/1.2 (003); heatmap rows
+  3 with member 003 `overload_state: red`; Attention Center 8 items across 5
+  rules (project health Atlas critical + Beacon high, critical milestone
+  overdue, resource overload 003, overdue action, 3 source-freshness items);
+  layered review 2 assessments (Atlas red, Beacon unknown); Weekly Brief v2
+  project_count 2, overall red, 10 statements.
+- Test and tooling updates: sample-derived assertions in workforce/capacity
+  import, heatmap, project capacity coverage, staffing consumption, demo
+  characterization, and `tools/rehearse_release.py` were updated to the
+  coherent 3-member/2-project sample (including installed-member-003 overload
+  and project-health capacity red assertions).  Focused suites passed 94/94;
+  `make validate` passed 341 runtime tests plus repository/package checks;
+  `make rehearse-release` passed wheel install, isolated upgrade, integrity,
+  and rollback.
+- Read-only review: separate read-only pass over the correction diff against
+  the owner's coherence requirement; no remaining P0–P2 findings (same
+  documented limitation: no sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner review; after authorization, start R5 on this
+  branch.
+
 ### 2026-08-02 — R1 revision: multi-state synthetic demo data (owner request)
 
 - Owner requested demo data that shows both usable and unusable states

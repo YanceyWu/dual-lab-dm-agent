@@ -55,11 +55,12 @@ def test_heatmap_projects_published_capacity_without_recalculation(isolated_db: 
     assert [row["member_id"] for row in result.data["rows"]] == [
         "member-synthetic-001",
         "member-synthetic-002",
+        "member-synthetic-003",
     ]
     first = result.data["rows"][0]
     assert first["effective_capacity"] == 0.7
     assert first["available_capacity"] == 0.2
-    assert len(result.facts) == len(result.signals) == 2
+    assert len(result.facts) == len(result.signals) == 3
     assert result.facts[0].value["derivation_id"] == first["derivation_id"]
     assert result.signals[0].signal_type == "resource_overload"
     assert result.recommendations == []
@@ -123,4 +124,4 @@ def test_generic_cli_exposes_same_read_only_heatmap_contract(isolated_db: Path) 
         "facts": True, "signals": True, "recommendations": False
     }
     assert result["status"] == "success"
-    assert len(result["data"]["rows"]) == 2
+    assert len(result["data"]["rows"]) == 3

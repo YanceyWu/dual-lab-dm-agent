@@ -1,2 +1,3 @@
 id,name,project_key,base_jql,version_name_pattern,board_id,board_url,pm_project_id,active,issues_use_base_jql,notes
 atlas-board,Project Atlas,ATL,project = ATL,ATL-*,9901001,https://jira.example.invalid/boards/9901001,project-synthetic-atlas,1,1,SYNTHETIC_DATASET_V1 fictional board
+beacon-board,Project Beacon,BCN,project = BCN,BCN-*,9901002,https://jira.example.invalid/boards/9901002,project-synthetic-beacon,1,1,SYNTHETIC_DATASET_V1 fictional board

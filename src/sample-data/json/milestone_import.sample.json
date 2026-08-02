@@ -64,6 +64,38 @@
       "observed_at": "2026-08-01T00:00:00+00:00",
       "schema_version": "milestone-import-v1",
       "release_ids": []
+    },
+    {
+      "milestone_id": "milestone-beacon-001",
+      "project_id": "project-synthetic-beacon",
+      "milestone_type": "release",
+      "criticality": "critical",
+      "lifecycle_state": "in_progress",
+      "planned_date": "2026-08-15",
+      "source_target_date": "2026-08-15",
+      "forecast_date": "",
+      "actual_date": "",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
+    },
+    {
+      "milestone_id": "milestone-beacon-002",
+      "project_id": "project-synthetic-beacon",
+      "milestone_type": "phase",
+      "criticality": "medium",
+      "lifecycle_state": "planned",
+      "planned_date": "2026-09-05",
+      "source_target_date": "2026-09-05",
+      "forecast_date": "",
+      "actual_date": "",
+      "authority": "synthetic",
+      "completeness_state": "known",
+      "observed_at": "2026-08-01T00:00:00+00:00",
+      "schema_version": "milestone-import-v1",
+      "release_ids": []
     }
   ]
 }

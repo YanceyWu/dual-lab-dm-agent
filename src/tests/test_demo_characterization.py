@@ -86,13 +86,13 @@ def test_clean_demo_build_has_expected_clean_import_counts(demo_db: Path) -> Non
         )
     }
     assert counts == {
-        "employees": 2,
+        "employees": 3,
         "projects": 2,
-        "assignments": 2,
-        "monthly_allocations": 2,
+        "assignments": 3,
+        "monthly_allocations": 6,
         "plan_versions": 2,
         "hiref": 0,
-        "jira_board_configs": 1,
+        "jira_board_configs": 2,
         "confluence_pages": 0,
     }
     assert _count(demo_db, "action_items") == 1
@@ -100,8 +100,8 @@ def test_clean_demo_build_has_expected_clean_import_counts(demo_db: Path) -> Non
     assert _count(demo_db, "jira_issues") == 3
     assert _count(demo_db, "jira_stream_versions") == 1
     assert _count(demo_db, "jira_sprints") == 1
-    assert _count(demo_db, "jira_health_snapshots") == 1
-    assert _count(demo_db, "confluence_status_snapshots") == 1
+    assert _count(demo_db, "jira_health_snapshots") == 2
+    assert _count(demo_db, "confluence_status_snapshots") == 2
 
 
 def test_demo_identity_is_explicitly_synthetic(demo_db: Path) -> None:
@@ -111,25 +111,45 @@ def test_demo_identity_is_explicitly_synthetic(demo_db: Path) -> None:
     assert people == [
         ("member-synthetic-001", "Synthetic Member 001"),
         ("member-synthetic-002", "Synthetic Member 002"),
+        ("member-synthetic-003", "Synthetic Member 003"),
     ]
     assert projects == [
         ("project-synthetic-atlas", "Synthetic Project Atlas", "active"),
-        ("project-synthetic-beacon", "Synthetic Project Beacon", "inactive"),
+        ("project-synthetic-beacon", "Synthetic Project Beacon", "active"),
     ]
     assert validate_text("SYNTHETIC_DATASET_V1 " + repr(people + projects), "demo") == []
 
 
 def test_demo_clean_import_capacity_semantics(demo_db: Path) -> None:
     with sqlite3.connect(demo_db) as connection:
-        rows = connection.execute(
+        allocations = connection.execute(
             """
-            SELECT employee_id, allocation
+            SELECT employee_id, project_id, allocation
             FROM monthly_allocations
             WHERE year = 2026 AND month = 8
-            ORDER BY employee_id
+            ORDER BY employee_id, project_id
             """
         ).fetchall()
-    assert rows == [("member-synthetic-001", 0.5), ("member-synthetic-002", 0.0)]
+    assert allocations == [
+        ("member-synthetic-001", "project-synthetic-atlas", 0.5),
+        ("member-synthetic-001", "project-synthetic-beacon", 0.0),
+        ("member-synthetic-002", "project-synthetic-atlas", 0.0),
+        ("member-synthetic-002", "project-synthetic-beacon", 0.0),
+        ("member-synthetic-003", "project-synthetic-atlas", 0.6),
+        ("member-synthetic-003", "project-synthetic-beacon", 0.6),
+    ]
+    with sqlite3.connect(demo_db) as connection:
+        loads = connection.execute(
+            """
+            SELECT employee_id, ROUND(SUM(allocation), 2)
+            FROM assignments WHERE status = 'active'
+            GROUP BY employee_id ORDER BY employee_id
+            """
+        ).fetchall()
+    assert loads == [
+        ("member-synthetic-001", 0.5),
+        ("member-synthetic-003", 1.2),
+    ]
 
     heatmap = use_case_executor.execute(
         UseCaseRequest(
@@ -141,8 +161,12 @@ def test_demo_clean_import_capacity_semantics(demo_db: Path) -> None:
     assert [row["member_id"] for row in heatmap.data["rows"]] == [
         "member-synthetic-001",
         "member-synthetic-002",
+        "member-synthetic-003",
     ]
     assert {row["state"] for row in heatmap.data["rows"]} == {"known"}
+    by_member = {row["member_id"]: row for row in heatmap.data["rows"]}
+    assert by_member["member-synthetic-003"]["overload_state"] == "red"
+    assert by_member["member-synthetic-001"]["overload_state"] == "clear"
 
 
 def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db: Path) -> None:
@@ -158,6 +182,13 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
     assert layered.data["assessments"][0]["state"] == "red"
     assert layered.signals
     assert layered.signals[0].signal_type == "layered_project_health_state"
+    all_assessments = use_case_executor.execute(
+        UseCaseRequest(use_case_id="layered-project-health-review")
+    )
+    assert {item["project_id"] for item in all_assessments.data["assessments"]} == {
+        "project-synthetic-atlas",
+        "project-synthetic-beacon",
+    }
 
     execution = use_case_executor.execute(
         UseCaseRequest(
@@ -178,7 +209,7 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
     assert attention.data["items"]
     assert attention.data["reconciliation_coverage"]["status"] in {"complete", "partial"}
     rule_keys = {item["rule_key"] for item in attention.data["items"]}
-    assert len(attention.data["items"]) >= 5
+    assert len(attention.data["items"]) >= 8
     assert {
         "project_health_attention",
         "critical_milestone_overdue_attention",
@@ -186,6 +217,11 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
         "overdue_action_attention",
         "source_freshness_attention",
     } <= rule_keys
+    assert {
+        item["subject"]["id"]
+        for item in attention.data["items"]
+        if item["rule_key"] == "project_health_attention"
+    } == {"project-synthetic-atlas", "project-synthetic-beacon"}
 
     heatmap = use_case_executor.execute(
         UseCaseRequest(
@@ -194,7 +230,7 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
         )
     )
     assert heatmap.status == "success"
-    assert len(heatmap.data["rows"]) == 2
+    assert len(heatmap.data["rows"]) == 3
 
     brief = use_case_executor.execute(
         UseCaseRequest(
@@ -205,24 +241,23 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
     )
     assert brief.status == "success"
     assert brief.contract_version == "2.0"
-    assert brief.data["summary"]["project_count"] == 1
+    assert brief.data["summary"]["project_count"] == 2
     assert brief.data["summary"]["overall_state"] == "red"
     assert brief.data["sections"]["highest_attention_signals"]["items"]
-    assert len(brief.data["sections"]["highest_attention_signals"]["items"]) >= 5
+    assert len(brief.data["sections"]["highest_attention_signals"]["items"]) >= 8
     assert brief.data["sections"]["next_actions"]["items"]
 
 
 def test_demo_reimport_produces_completed_assessment(demo_db: Path) -> None:
-    assert _count(demo_db, "project_health_reimport_assessments") == 1
-    assert _count(demo_db, "project_health_assessment_runs") == 1
+    assert _count(demo_db, "project_health_reimport_assessments") == 2
+    assert _count(demo_db, "project_health_assessment_runs") == 2
     layered = use_case_executor.execute(
-        UseCaseRequest(
-            use_case_id="layered-project-health-review",
-            parameters={"project_id": DEMO_PROJECT},
-        )
+        UseCaseRequest(use_case_id="layered-project-health-review")
     )
-    assert layered.data["assessments"][0]["state"] == "red"
-    assert layered.data["assessments"][0]["dimensions"] == {
+    atlas = next(item for item in layered.data["assessments"] if item["project_id"] == DEMO_PROJECT)
+    beacon = next(item for item in layered.data["assessments"] if item["project_id"] == "project-synthetic-beacon")
+    assert atlas["state"] == "red"
+    assert atlas["dimensions"] == {
         "schedule": "red",
         "delivery": "not_available",
         "scope": "amber",
@@ -231,6 +266,8 @@ def test_demo_reimport_produces_completed_assessment(demo_db: Path) -> None:
         "dependency": "unknown",
         "governance": "not_available",
     }
+    assert beacon["state"] == "unknown"
+    assert beacon["dimensions"]["schedule"] == "unknown"
 
 
 def test_demo_replay_is_idempotent(built_demo_db: Path, tmp_path: Path) -> None:
@@ -259,6 +296,8 @@ def test_demo_replay_is_idempotent(built_demo_db: Path, tmp_path: Path) -> None:
         "action_items",
         "assignments",
         "projects",
+        "jira_health_snapshots",
+        "confluence_status_snapshots",
     )
     before = {table: _count(replay_db, table) for table in tables}
     subprocess.run(
@@ -307,8 +346,11 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
     health = client.get("/api/project-health")
     assert summary.status_code == 200
     assert health.status_code == 200
-    assert summary.get_json()["total_staff"] == 2
+    assert summary.get_json()["total_staff"] == 3
     health_payload = health.get_json()
     assert isinstance(health_payload, list)
     assert health_payload
-    assert health_payload[0]["health"]["board_id"] == "atlas-board"
+    assert {item["health"]["board_id"] for item in health_payload} == {
+        "atlas-board",
+        "beacon-board",
+    }

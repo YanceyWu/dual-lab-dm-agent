@@ -32,7 +32,12 @@ def _publish(
 ) -> None:
     init_db(quiet=True)
     workforce = copy.deepcopy(_package("workforce_planning_import.sample.json"))
-    workforce["monthly_allocations"][0]["allocation"] = 0.0 if empty else allocation
+    for item in workforce["monthly_allocations"]:
+        if item["project_id"] == PROJECT_ID:
+            if empty:
+                item["allocation"] = 0.0
+            elif item["member_id"] == "member-synthetic-001":
+                item["allocation"] = allocation
     confirmed_workforce = preview_workforce(workforce, db_path=db_path)
     confirm_workforce(confirmed_workforce["session_id"], db_path=db_path)
     capacity = copy.deepcopy(_package("resource_capacity_import.sample.json"))
@@ -70,7 +75,8 @@ def test_project_allocation_snapshot_distinguishes_explicit_zero_from_missing(
     assert known["state"] == "known"
     assert known["assignment_state"] == "assigned"
     assert known["assignments"] == [
-        {"member_id": "member-synthetic-001", "allocation": 0.5}
+        {"member_id": "member-synthetic-001", "allocation": 0.5},
+        {"member_id": "member-synthetic-003", "allocation": 0.6},
     ]
     assert known["explicit_zero_member_ids"] == ["member-synthetic-002"]
     assert missing["state"] == "unknown"
@@ -87,9 +93,9 @@ def test_capacity_coverage_uses_the_published_member_derivation(isolated_db: Pat
     assert coverage["state"] == "known"
     assert coverage["value"] == {
         "assignment_state": "assigned",
-        "assigned_member_count": 1,
-        "overload_state": "clear",
-        "overloaded_member_count": 0,
+        "assigned_member_count": 2,
+        "overload_state": "red",
+        "overloaded_member_count": 1,
     }
     derivation = coverage["evidence"]["capacity_derivations"][0]
     assert derivation["derivation_rule_version"] == "effective-capacity-v1"
@@ -100,7 +106,42 @@ def test_capacity_coverage_uses_the_published_member_derivation(isolated_db: Pat
 def test_project_health_publishes_green_only_for_complete_clear_coverage(
     isolated_db: Path,
 ) -> None:
-    _publish(isolated_db)
+    init_db(quiet=True)
+    workforce = copy.deepcopy(_package("workforce_planning_import.sample.json"))
+    workforce["members"] = [
+        item for item in workforce["members"] if item["member_id"] != "member-synthetic-003"
+    ]
+    workforce["manifest"]["member_ids"] = [
+        item for item in workforce["manifest"]["member_ids"] if item != "member-synthetic-003"
+    ]
+    workforce["manifest"]["workforce_periods"] = [
+        item for item in workforce["manifest"]["workforce_periods"]
+        if item["member_id"] != "member-synthetic-003"
+    ]
+    workforce["manifest"]["allocation_keys"] = [
+        item for item in workforce["manifest"]["allocation_keys"]
+        if item["member_id"] != "member-synthetic-003"
+    ]
+    workforce["monthly_allocations"] = [
+        item for item in workforce["monthly_allocations"]
+        if item["member_id"] != "member-synthetic-003"
+    ]
+    confirmed_workforce = preview_workforce(workforce, db_path=isolated_db)
+    confirm_workforce(confirmed_workforce["session_id"], db_path=isolated_db)
+    capacity = copy.deepcopy(_package("resource_capacity_import.sample.json"))
+    capacity["manifest"]["member_periods"] = [
+        item for item in capacity["manifest"]["member_periods"]
+        if item["member_id"] != "member-synthetic-003"
+    ]
+    capacity["manifest"]["coverage_keys"] = [
+        item for item in capacity["manifest"]["coverage_keys"]
+        if item["member_id"] != "member-synthetic-003"
+    ]
+    capacity["observations"] = [
+        item for item in capacity["observations"] if item["member_id"] != "member-synthetic-003"
+    ]
+    confirmed_capacity = preview_import(capacity, db_path=isolated_db)
+    confirm_import(confirmed_capacity["session_id"], db_path=isolated_db)
 
     legacy = evaluate(PROJECT_ID, db_path=isolated_db)
     current = evaluate(
