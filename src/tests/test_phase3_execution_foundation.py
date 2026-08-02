@@ -139,6 +139,13 @@ def test_bootstrap_adds_b2_canonical_storage(isolated_db: Path) -> None:
     assert expected <= names
 
 
+def test_execution_module_keeps_legacy_helper_aliases() -> None:
+    assert execution._connection is execution.connection_scope
+    assert execution._json is execution.json_dumps
+    assert execution._now is execution.now_utc
+    assert execution._stable_id is execution.stable_id
+
+
 def test_derivation_projects_authoritative_evidence_and_is_idempotent(isolated_db: Path) -> None:
     _seed_board(isolated_db)
     _publish_evidence(isolated_db, authoritative=True)

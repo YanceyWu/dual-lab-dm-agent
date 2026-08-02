@@ -24,19 +24,25 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 
 ## Current state snapshot (always re-verify from PROGRESS.md)
 
-- Branch `codex/usability-r1-r2`; local HEAD `998ed37`.
-- `origin/codex/usability-r1-r2` currently matches local HEAD at `998ed37`.
+- Branch `codex/usability-r1-r2`; local HEAD `717addd`.
+- `origin/codex/usability-r1-r2` remains at `998ed37`; later local commits and
+  working-tree records are not pushed.
 - Usability R1–R7: implemented, validated, owner-confirmed, and pushed.
 - IP-033 (Phase 4 assessment entry): owner-accepted 2026-08-02 as a local
   development-baseline fix.
 - UAT runbook: owner-approved 2026-08-02 as process basis only; execution still
   requires a separate explicit authorization for an integrated release
   candidate.
-- Latest owner-approved repository-convergence batch: **Batch 1 — authority
-  document and capability inventory alignment**.
-- The next recommended bounded batch is **Batch 2 (module boundary hardening
-  design)** or **Batch 3 (promoted-capability closure)**. Do not start either
-  without a named authorization.
+- Latest owner-approved repository-convergence batch: **Batch 2 — module
+  boundary hardening design**.
+- Batch 2 slice 1 (**Phase 3 schema extraction from `database/bootstrap.py`**)
+  is treated as owner-accepted.
+- Batch 2 slice 2 (**`database/execution.py` owner split**) is also now treated
+  as owner-accepted.
+- The next authorized follow-on is **`make rehearse-release` blocker
+  remediation**. The remaining recommended `dashboard/server.py` split, Batch 3
+  (promoted-capability closure), and Phase 7 still need separate authorization
+  after that follow-on.
 
 ## Repository map (module ownership)
 
@@ -45,7 +51,8 @@ of duplicating their content. When anything conflicts, `PROGRESS.md` wins.
 | Read-only use cases + intelligence contract | `src/pm_agent/use_cases/` | `__init__.py` (registry), `execution.py` (executor + contract validation), `service.py` (UseCaseResult) |
 | Presentation (CLI) | `src/pm_agent/cli/` | `app.py` (wiring), `commands/*` (JSON preview/confirm groups) |
 | Bootstrap / composition boundary | `src/pm_agent/database/bootstrap.py` | composes dedicated schema modules; do NOT add tables here |
-| Phase 3 execution facts | `src/pm_agent/database/execution.py`, `execution_review.py` | derive_board, milestone import, latest-facts reader |
+| Phase 3 canonical schema | `src/pm_agent/database/execution_schema.py` | owns canonical Phase 3 DDL only; imported by bootstrap |
+| Phase 3 execution facts | `src/pm_agent/database/execution.py`, `execution_derivation.py`, `execution_milestones.py`, `execution_common.py`, `execution_review.py` | facade + dedicated owners for derivation, milestone operations, and shared helpers |
 | Attention | `src/pm_agent/attention/` + `database/attention.py` | rules, service, preview/confirm operations |
 | Project Health | `src/pm_agent/project_health/` | catalog, configuration (preview/confirm), evaluation, service (IP-033 re-import) |
 | Resource Intelligence | `src/pm_agent/resource_intelligence/` | capacity import, read model (heatmap, coverage) |

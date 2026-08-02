@@ -9,8 +9,8 @@ implemented, validated, and read-only reviewed; local commits on
 Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
-Current implementation item: `BATCH 1 — AUTHORITY DOCUMENT AND CAPABILITY INVENTORY ALIGNMENT (OWNER-APPROVED)`
-Gate status: `BATCH 1 DOCUMENT/INVENTORY ALIGNMENT IMPLEMENTED, VALIDATED, AND OWNER-APPROVED — NEXT: EXPLICITLY AUTHORIZE BATCH 2 (MODULE BOUNDARY HARDENING DESIGN) OR BATCH 3 (PROMOTED-CAPABILITY CLOSURE)`
+Current implementation item: `BATCH 2 IMPLEMENTATION SLICES 1–2 — PHASE 3 STORAGE OWNER HARDENING`
+Gate status: `BATCH 2 SLICES 1–2 OWNER-ACCEPTED; NEXT: SEPARATE AUTHORIZED REHEARSE-RELEASE BLOCKER REMEDIATION OR dashboard/server.py SPLIT`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -158,6 +158,48 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+Batch 2 implementation slice 2 split the former mixed
+`src/pm_agent/database/execution.py` owner into dedicated modules for
+deterministic derivation and controlled Milestone preview/confirm operations:
+`src/pm_agent/database/execution_derivation.py`,
+`src/pm_agent/database/execution_milestones.py`, and
+`src/pm_agent/database/execution_common.py`. The original
+`src/pm_agent/database/execution.py` now remains a compatibility facade at the
+same import path and re-exports the prior helper names used by existing
+callers. Focused validation passed:
+`src/tests/test_phase3_execution_foundation.py`,
+`src/tests/test_delivery_execution_review.py`,
+`src/tests/test_project_health_reimport.py`, and
+`src/tests/test_usability_integration_chain.py` (`33 passed`). After a
+compatibility-review finding, a follow-up alias test was added and the final
+post-fix `make validate` passed with 365 runtime tests, 25 repository-tool
+tests with 19 subtests, repository-boundary, synthetic-sample, and
+documented-use-case checks, Ruff, compilation, diff hygiene, and package build
+(`9` release validation checks total). Because this slice changes Python module
+ownership only and does not change bootstrap/schema composition, import
+contracts, or installed-data behavior, `make rehearse-release` is not required
+for this slice. The separate rehearsal blocker recorded for slice 1 remains
+open but was not broadened here.
+
+Batch 2 implementation slice 1 extracted the Phase 3 canonical schema family
+from `src/pm_agent/database/bootstrap.py` into the dedicated module
+`src/pm_agent/database/execution_schema.py` while leaving bootstrap as the DDL
+composition boundary. Focused validation passed:
+`src/tests/test_phase3_execution_foundation.py`,
+`src/tests/test_bootstrap_v19.py`,
+`src/tests/test_starter_repo_bootstrap.py`, and
+`src/tests/test_project_health_reimport.py` (`29 passed`). The post-slice
+`make validate` also passed with 364 runtime tests, 25 repository-tool tests
+with 19 subtests, repository-boundary, synthetic-sample, and documented-use-case
+checks, Ruff, compilation, diff hygiene, and package build (`9` release
+validation checks total). `make rehearse-release` remains blocked by a
+pre-existing repo-tool/runtime issue unrelated to the schema extraction itself:
+the default local Python 3.10 environment cannot execute
+`tarfile.extractall(..., filter="data")`, and an explicit Python 3.12 rehearsal
+progresses through build/isolated install but then fails before bootstrap
+because the rehearsal's `--no-deps` wheel install cannot import the declared
+runtime dependency `pydantic_settings`.
 
 Batch 1 authority-document alignment added a deterministic
 `documented-use-cases` repository validation step so the public registry list in
@@ -536,21 +578,25 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Batch 1 is implemented, validated, and owner-approved. It aligned the
-   authority documents plus shared use-case inventory and added deterministic
-   validation so the package README inventory cannot drift away from the
-   registry silently.
-2. The next recommended bounded batch is either Batch 2 (core module boundary
-   hardening design) or Batch 3 (promoted-capability closure). Phase 7
-   Forecast v1 remains separately gated and must not start until the owner
-   explicitly authorizes it.
-3. Do not push, merge, tag, release, deploy, activate a connector, use real
-   data, or start Phase 7 runtime/schema/test work without that authorization.
-4. Do not activate Skill Dependency, create a new Attention producer, or infer
-   a required Decision without separate authorization.
-5. Preserve the promoted Phase 1–6 baselines and the accepted IP-033 local
-   baseline fix; Batch 1 changes authority/readability, not the promoted
-   runtime capability boundary.
+1. Batch 2 slice 1 (Phase 3 schema extraction from `database/bootstrap.py`) and
+   slice 2 (`database/execution.py` owner split) are now treated as
+   owner-accepted. Together they complete the mandatory Phase 3 storage-owner
+   hardening identified by the Batch 2 design.
+2. The next separately authorized follow-on is either the recommended
+   `dashboard/server.py` presentation split or the bounded
+   `make rehearse-release` blocker remediation. The owner has directed the
+   next phase toward the rehearsal blocker path.
+3. `make rehearse-release` remains blocked by a pre-existing repo-tool/runtime
+   issue recorded during slice 1. It is not caused by the execution split and
+   does not block behavioral review of this slice, but it still needs separate
+   authorization before installed-release rehearsal can serve as acceptance
+   evidence again on this workstation.
+4. Do not push, merge, tag, release, deploy, activate a connector, use real
+   data, or start Phase 7 runtime/schema/test work without separate explicit
+   authorization.
+5. Do not activate Skill Dependency, create a new Attention producer, or infer
+   a required Decision without separate authorization. Preserve the promoted
+   Phase 1–6 baselines and the accepted IP-033 local baseline fix.
 
 ## Decisions in force
 
@@ -621,6 +667,17 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - The owner selected Batch 1 (authority document and capability inventory
   alignment) as the next bounded repository-convergence batch before any
   separately authorized Phase 7 design work.
+- The owner approved the Batch 2 module-boundary design and separately
+  authorized the first implementation slice: extract the Phase 3 canonical DDL
+  family from `database/bootstrap.py` into a dedicated schema owner module
+  without changing behavior.
+- The owner reviewed Batch 2 slice 1 and authorized the next mandatory Phase 3
+  boundary slice: split `database/execution.py` into dedicated owners for
+  deterministic derivation and controlled Milestone preview/confirm operations
+  while keeping the existing import path behavior-compatible during the
+  transition.
+- The owner completed review of Batch 2 slice 2 and accepted the execution
+  module split as the second mandatory Phase 3 storage-owner hardening slice.
 - The owner approved the revised UAT runbook on 2026-08-02 (`UAT RUNBOOK
   APPROVED`). The runbook is the valid process basis; executing real-
   environment UAT still requires a separate explicit authorization for an
@@ -630,6 +687,197 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — Owner accepted Batch 2 slice 2 execution-module split
+
+- The owner completed review of Batch 2 slice 2 and accepted the
+  `database/execution.py` owner split. With slice 1 already accepted, the
+  mandatory Phase 3 storage-owner hardening work named by the Batch 2 design is
+  now complete at the local repository baseline.
+- Status files updated so `PROGRESS.md` and the onboarding snapshot no longer
+  present the execution split as pending review. The next bounded follow-on is
+  now a separate owner choice between the recommended `dashboard/server.py`
+  presentation split and the independently discovered `make rehearse-release`
+  blocker remediation.
+- Commit status: local Batch 2 working-tree changes pending commit on
+  `codex/usability-r1-r2`; no push instruction received. No merge, tag,
+  release, connector access, or real-data action.
+- Exact next action: commit the accepted Batch 2 slices, then execute the
+  separately authorized rehearsal-blocker remediation as the next bounded
+  follow-on.
+
+### 2026-08-02 — Batch 2 slice 2 split execution derivation from Milestone operations
+
+- The owner completed review of Batch 2 slice 1 and authorized the next
+  mandatory Phase 3 boundary slice: split the mixed
+  `src/pm_agent/database/execution.py` owner into dedicated derivation and
+  controlled Milestone-operation modules while preserving the original import
+  path behavior.
+- Implemented:
+  `src/pm_agent/database/execution_derivation.py` for deterministic board
+  derivation, `src/pm_agent/database/execution_milestones.py` for controlled
+  Milestone preview/confirm operations, and
+  `src/pm_agent/database/execution_common.py` for shared deterministic helpers.
+  `src/pm_agent/database/execution.py` now serves as a compatibility facade and
+  re-exports both the public entry points and the legacy helper aliases used by
+  existing callers.
+- Module owners and allowed dependencies:
+  `execution_derivation.py` owns canonicalization and fact derivation only;
+  `execution_milestones.py` owns the controlled Milestone write path only;
+  `execution_common.py` owns shared value-state/connection/serialization
+  helpers; `execution.py` owns compatibility export only. Dependencies point
+  inward to the shared helper contract and not sideways into unrelated storage
+  internals.
+- Validation evidence: focused pytest coverage over
+  `src/tests/test_phase3_execution_foundation.py`,
+  `src/tests/test_delivery_execution_review.py`,
+  `src/tests/test_project_health_reimport.py`, and
+  `src/tests/test_usability_integration_chain.py` passed (`33 passed`). After a
+  review-found compatibility gap was corrected, the final `make validate`
+  passed with 365 runtime tests, 25 repository-tool tests with 19 subtests,
+  repository-boundary, synthetic-sample, and documented-use-case checks, Ruff,
+  compilation, diff hygiene, and package build (`9` release validation checks
+  total). Repeated independent read-only review then reported no significant
+  issue.
+- Transitional debt explicitly retained: `database/bootstrap.py` still owns
+  broad baseline DDL, Phase 3 evidence DDL, identity/data migrations,
+  compatibility view refresh, and seeding. `dashboard/server.py` remains the
+  next recommended presentation-layer split. The separate `make
+  rehearse-release` blocker discovered during slice 1 remains open as an
+  independent repo-tool/runtime issue.
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review / acceptance of the execution-module split.
+  If accepted, decide whether to authorize the `dashboard/server.py` split or a
+  separate rehearsal-blocker remediation slice before moving to Batch 3.
+
+### 2026-08-02 — Batch 2 slice 1 extracted the Phase 3 canonical schema module
+
+- The owner approved the Batch 2 design and authorized its first implementation
+  slice: extract the embedded Phase 3 canonical DDL family from
+  `src/pm_agent/database/bootstrap.py` into a dedicated schema owner module
+  without changing behavior.
+- Implemented `src/pm_agent/database/execution_schema.py` as the new owner of
+  `PHASE3_CANONICAL_DDL`. `bootstrap.py` now imports that module and remains the
+  bootstrap/migration composition boundary only; the execution tables, indexes,
+  call order, public `initialize_database` import path, and legacy
+  migration/seeding flow are unchanged.
+- Module owner and dependency boundary for this slice:
+  `pm_agent.database.execution_schema` owns only the canonical Phase 3 table DDL
+  constant and depends on no sibling storage internals. `bootstrap.py` may
+  depend inward on that schema contract and continue composing it with the
+  Phase 2 evidence schema, Project Health schema, Workforce Planning import
+  schema, Resource Intelligence schema, Weekly Brief schema, and additive
+  bootstrap migrations.
+- Validation evidence: focused pytest coverage over
+  `src/tests/test_phase3_execution_foundation.py`,
+  `src/tests/test_bootstrap_v19.py`,
+  `src/tests/test_starter_repo_bootstrap.py`, and
+  `src/tests/test_project_health_reimport.py` passed (`29 passed`). The
+  post-slice `make validate` passed with 364 runtime tests, 25 repository-tool
+  tests with 19 subtests, repository-boundary, synthetic-sample, and
+  documented-use-case checks, Ruff, compilation, diff hygiene, and package
+  build (`9` release validation checks total). Independent read-only review
+  over the diff reported no significant issue.
+- Known validation blocker retained: `make rehearse-release` is still not usable
+  as slice evidence on this workstation because the repo tool currently assumes
+  capabilities unavailable in the default Python 3.10 runtime and, when forced
+  to Python 3.12, later fails its installed-wheel smoke import due the
+  rehearsal's `--no-deps` install path. This blocker predates the schema move
+  and was not broadened here.
+- Transitional debt explicitly retained: `database/bootstrap.py` still owns the
+  broad baseline DDL, Phase 3 evidence DDL, identity/data migrations,
+  compatibility view refresh, and seeding flow; `database/execution.py` remains
+  a mixed derivation-plus-Milestone owner until the separately authorized next
+  slice.
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review / acceptance of this schema-extraction slice;
+  if accepted, explicitly authorize the `database/execution.py` split. A
+  separate bounded remediation is needed before `make rehearse-release` can be
+  used again as installed-release evidence on this workstation.
+
+### 2026-08-02 — Batch 2 module boundary hardening design completed
+
+- The owner approved Batch 2 (`module boundary hardening design`) after Batch 1
+  and the stale-doc correction pass. This is a design-only
+  repository-convergence batch: no runtime, schema, or transport behavior was
+  changed. The design translates the adopted module-growth guardrails into an
+  explicit split order for the three oversized boundaries:
+  `database/bootstrap.py`, `database/execution.py`, and
+  `dashboard/server.py`.
+- Current-state findings:
+  1. `database/bootstrap.py` still combines baseline DDL, transitional Phase 3
+     canonical DDL, identity/data migrations, compatibility view refresh,
+     catalog seeding, and top-level bootstrap orchestration. It already
+     composes Phase 4/5/6 schema modules successfully, so the next
+     behavior-preserving extraction should follow that same composition pattern.
+  2. `database/execution.py` currently owns both the deterministic Phase 3
+     derivation pipeline (`derive_board`) and the controlled Milestone
+     preview/confirm write flow (`preview_milestone_import` /
+     `confirm_milestone_import`). The adopted guardrail already prohibits a
+     third responsibility from landing there.
+  3. `dashboard/server.py` currently mixes app assembly, DB/path helpers,
+     legacy direct-SQL read routes, shared executor routes, dedicated
+     preview/confirm operation routes, and project-health sync orchestration.
+- Approved design outcome:
+  - **First mandatory implementation slice (recommended next authorization):**
+    extract the embedded Phase 3 canonical schema family from
+    `database/bootstrap.py` into a dedicated schema owner module (for example,
+    `pm_agent.database.execution_schema`) without changing DDL behavior,
+    migration semantics, bootstrap idempotency, or release-rehearsal outcome.
+    `bootstrap.py` remains the composition boundary only.
+  - **Second mandatory implementation slice before any further Phase 3 feature
+    growth:** split `database/execution.py` into separate owners for
+    deterministic derivation and controlled Milestone operations while keeping
+    the existing public import path behavior-compatible during the transition.
+  - **Recommended, but not the first mandatory slice:** split
+    `dashboard/server.py` into app assembly plus route-group modules (legacy
+    reads, shared use-case reads, dedicated controlled operations, and project-
+    health sync) before adding new Dashboard routes or write behaviors.
+- Module owners, allowed dependencies, and focused validation entry points:
+  - Phase 3 schema extraction owner: new dedicated Phase 3 schema module under
+    `pm_agent.database`; allowed dependencies are schema constants/helpers only
+    inward to shared rules. Validation entry points:
+    `src/tests/test_phase3_execution_foundation.py`,
+    `src/tests/test_bootstrap_v19.py`,
+    `src/tests/test_starter_repo_bootstrap.py`,
+    `src/tests/test_project_health_reimport.py`, plus `make rehearse-release`
+    for the extraction slice because bootstrap/schema composition changes.
+  - Execution split owners: one derivation module and one Milestone operation
+    module under `pm_agent.database`, with any compatibility facade remaining at
+    `database/execution.py` until the transition is complete. Validation entry
+    points: `src/tests/test_phase3_execution_foundation.py`,
+    `src/tests/test_delivery_execution_review.py`,
+    `src/tests/test_project_health_reimport.py`,
+    `src/tests/test_usability_integration_chain.py`.
+  - Dashboard split owner: `pm_agent.dashboard` presentation layer only; no
+    route module may reach sideways into another capability's storage internals
+    beyond current allowed repositories/services. Validation entry points:
+    `src/tests/test_dashboard_health_triggers.py`,
+    `src/tests/test_database_path_resolution.py`,
+    `src/tests/test_weekly_brief_shared_interface.py`, and any existing
+    use-case/operation contract regressions touched by the extraction.
+- Transitional debt explicitly retained:
+  - `database/bootstrap.py` still contains broad baseline DDL and historical
+    compatibility logic after this design batch; Batch 2 only names the next
+    extraction order.
+  - `database/execution.py` remains mixed until the follow-on authorized split.
+  - `dashboard/server.py` remains a single-file router until a later authorized
+    presentation refactor slice.
+- Validation evidence for this design-only batch: focused code/document review
+  of the three target modules, guardrail re-check against `AGENTS.md`, and
+  `git diff --check` passed. No runtime/schema behavior changed, so
+  `make validate` / `make rehearse-release` are not required for the design
+  record itself.
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review of Batch 2 design and, if accepted, explicit
+  authorization of the first implementation slice: Phase 3 schema extraction
+  from `database/bootstrap.py`.
 
 ### 2026-08-02 — High-confidence stale documentation corrected
 
@@ -649,11 +897,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   or package change. `git diff --check` passes, and the targeted stale-phrase
   rescan of the corrected files found no remaining match from the original
   high-confidence drift set.
-- Commit status: committed locally on `codex/usability-r1-r2`; no push
-  instruction received. No merge, tag, release, connector access, or real-data
-  action.
-- Exact next action: explicitly authorize either Batch 2 (module boundary
-  hardening design) or Batch 3 (promoted-capability closure).
+- Commit status: uncommitted local working-tree changes on `codex/usability-r1-r2`;
+  no push instruction received. No merge, tag, release, connector access, or
+  real-data action.
+- Exact next action: owner review of these stale-doc corrections; then
+  explicitly authorize either Batch 2 (module boundary hardening design) or
+  Batch 3 (promoted-capability closure).
 
 ### 2026-08-02 — Owner approved Batch 1 authority alignment
 
