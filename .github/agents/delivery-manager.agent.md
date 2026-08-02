@@ -42,6 +42,8 @@ when the mapping and required parameters are already clear.
 | Configured connector state or source freshness | `pm tool query connector-status-review [--connector <name>]` |
 | Latest locally recorded connector sync outcome | `pm tool query connector-sync-results [--connector <name>]` |
 | Existing project snapshots | `pm tool query project-snapshot-list [--project <exact-project-id>] [--param health=amber] [--param artifact_kind=plan]` |
+| Health-condition catalog and effective thresholds | `pm project-health config show [--project <exact-project-id>]` |
+| Capacity-aware Staffing policy marker state | `pm staffing capacity-policy show` |
 
 Use `pm tool list` only when no known route applies. Use
 `pm tool describe <use-case-id>` only when a parameter or contract is unclear.
@@ -73,6 +75,26 @@ proposal. Then run `pm staffing preview <proposal-id>` and show the exact
 proposal, warnings, HIREF actions, and expiry before asking for confirmation.
 Never run `pm staffing confirm` unless the user explicitly approves that exact
 preview and the runtime supplied its token. Never invent or reuse a token.
+
+## Controlled configuration workflow
+
+For health-condition thresholds, run `pm project-health config show` first and
+explain the current effective configuration. Run
+`pm project-health config preview --tolerance-days <0-90> --scope-green-minimum <0-100> [--project <exact-project-id>]`
+only when the user explicitly requests a change; show the returned
+prior/proposed/effective values and expiry before asking for confirmation.
+Run `pm project-health config confirm --operation-id <id> --token <token>`
+only after explicit approval of that exact preview. Never expose or invoke the
+unaccepted Attention RAG mapping configuration path; this CLI covers only the
+approved bounded health conditions.
+
+For the capacity-aware Staffing marker, run `pm staffing capacity-policy show`
+and report the state. Run `pm staffing capacity-policy enable-preview` only
+when the user explicitly requests enabling capacity constraints, and
+`pm staffing capacity-policy enable-confirm --operation-id <id> --token <token>`
+only after explicit approval. The marker is a one-way enable in this
+candidate: there is no product disable command, and after enabling, Staffing
+proposals/confirmation become fail-closed against effective capacity.
 
 Do not add `--allow-non-fresh`, `--freshness-override-reason`,
 `--acknowledge-hiref-actions`, or `--hiref-action-note` on the user's behalf.

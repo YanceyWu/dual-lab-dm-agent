@@ -1,7 +1,7 @@
 # Layered Project Health and Milestone Evolution
 
-Status: `LAYERED HEALTH INTENT APPROVED — PHASE 4 DESIGN APPROVED`
-Last updated: 2026-07-29
+Status: `HISTORICAL DESIGN GATE — SEE PROGRESS.md FOR CURRENT STATE`
+Last updated: 2026-08-02
 Baseline branch: `codex/phase-2-attention-center`
 Trigger: IP-028 Batch C2 product-contract review
 

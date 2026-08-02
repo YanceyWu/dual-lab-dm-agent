@@ -2,6 +2,7 @@
 
 Status: `PHASE 6 PROMOTED LOCALLY`
 Date: 2026-08-01
+Current-state authority: `PROGRESS.md`.
 Baseline branch: `codex/phase-6-weekly-brief-design`
 Baseline commit: `7442f52cb5fc015c4efdcf20941293314f71e9db`
 Previous promoted phase: `Phase 5 — Resource Intelligence`

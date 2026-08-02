@@ -2,6 +2,7 @@
 
 Status: `PHASE 3 PROMOTED LOCALLY`
 Date: 2026-07-29
+Current-state authority: `PROGRESS.md`.
 Baseline branch: `codex/phase-2-attention-center`
 Baseline commit: `2185334c890e79480a39514cf1d1e45f74e062f1`
 Previous promoted phase: `Phase 2 — Delivery Attention Center`

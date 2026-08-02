@@ -1,7 +1,7 @@
 # Current Implementation Pack Index
 
-Status: `PHASE 6 IP-032 PROMOTED LOCAL BASELINE`
-Last updated: 2026-08-01
+Status: `HISTORICAL PACK INDEX — CURRENT STATE AUTHORITY IS PROGRESS.md`
+Last updated: 2026-08-02
 
 This checkout intentionally contains only implementation material that remains
 useful as validated-baseline reference. Completed IP-000 through IP-023 and
@@ -26,7 +26,17 @@ recoverable from Git history.
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 | IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
-| IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Implemented locally on `codex/phase-4-assessment-entry`; review/acceptance required | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
+| IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Implemented locally on `codex/phase-4-assessment-entry`; R3 independent read-only review passed; awaiting owner acceptance | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
+
+## Usability handoff (2026-08-02)
+
+R1 (synthetic demo pipeline, multi-state + HIREF), R2 (walkthrough), R5
+(cross-capability integration test), R4 (a) `pm project-health config
+show|preview|confirm`, and R4 (b) `pm staffing capacity-policy
+show|enable-preview|enable-confirm` are implemented on
+`codex/usability-r1-r2` and validated; R6 (UAT runbook revision) and R7
+(documentation consistency scan) are in progress. These are usability items,
+not implementation packs; see `PROGRESS.md` for the exact gate.
 
 ## Approved design
 

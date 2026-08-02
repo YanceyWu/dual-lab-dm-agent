@@ -1,6 +1,7 @@
 # Phase 4 — Seven-Dimension Project Health Design
 
 Status: `PROMOTED — LOCAL DEVELOPMENT BASELINE`
+Current-state authority: `PROGRESS.md`.
 Date: 2026-07-30
 Baseline branch: `codex/phase-3-execution-signals`
 Baseline commit: `bdfee9c7c764ea5eff353b31e7a1d5873577192b`

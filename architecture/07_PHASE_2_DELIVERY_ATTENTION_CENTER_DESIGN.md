@@ -1,7 +1,7 @@
 # Phase 2 — Delivery Attention Center Foundation Design
 
-Status: `PHASE 2 PROMOTED LOCALLY — IP-029 REGISTERED`
-Last updated: 2026-07-29
+Status: `HISTORICAL DESIGN GATE — PHASE 2 PROMOTED; CURRENT STATE: PROGRESS.md`
+Last updated: 2026-08-02
 Baseline: `289837855a230a14256a5ed00f5c8e353b1c3d36`
 Implementation branch: `codex/phase-2-attention-center`
 Implementation pack: `IP-028 — DELIVERY ATTENTION CENTER`

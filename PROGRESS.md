@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R6 UAT RUNBOOK REVISED — PENDING OWNER APPROVAL (DO NOT EXECUTE); R7 DOCUMENTATION SCAN IN PROGRESS — IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry`
+Gate status: `USABILITY R1–R7 IMPLEMENTED — AWAITING OWNER REVIEW (UAT RUNBOOK PENDING OWNER APPROVAL — DO NOT EXECUTE; IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -613,8 +613,47 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   `pm staffing capacity-policy show|enable-preview|enable-confirm` is
   implemented with an additive audited operations table. Disable/revert is
   not provided (one-way engine); the marker still installs disabled.
+- The real-environment UAT runbook is revised but not approved
+  (`PENDING OWNER APPROVAL — DO NOT EXECUTE`); it becomes effective only after
+  the owner records `UAT RUNBOOK APPROVED` in PROGRESS.
 
 ## Recent change log
+
+### 2026-08-02 — R7: documentation status-consistency scan completed
+
+- Owner authorized R7.  Scanned status declarations across PROGRESS, ROADMAP,
+  architecture, implementation-packs/INDEX, agent instructions, and docs;
+  dispositions applied below.  `PROGRESS.md` remains the single current-state
+  authority.
+
+| Location | Status statement | Difference vs PROGRESS | Disposition |
+| --- | --- | --- | --- |
+| `ROADMAP.md` | "IP-033 … awaits owner review"; duplicates current state | R3 independent review passed; slice awaits owner acceptance | Sentence fixed; header annotated "Current-state authority: PROGRESS.md" |
+| `architecture/05_DELIVERY_INTELLIGENCE_EVOLUTION_PLAN.md` | "PHASE 5 PROMOTED — PHASE 6 BATCH A DESIGN AUTHORIZED" | Stale gate (Phase 6 promoted, Phase 7 not authorized) | Relabeled historical gate map; annotated |
+| `architecture/07_PHASE_2_DELIVERY_ATTENTION_CENTER_DESIGN.md` | "PHASE 2 PROMOTED — IP-029 REGISTERED" | IP-029 long completed | Relabeled historical; annotated |
+| `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md` | "LAYERED HEALTH INTENT APPROVED — PHASE 4 DESIGN APPROVED" | Phase 4 implemented/promoted | Relabeled historical; annotated |
+| `architecture/06_PHASE_1…`, `09_PHASE_3…`, `11_PHASE_4…`, `12_PHASE_5…`, `13_PHASE_6…` | Promoted labels | Consistent but duplicated | Added "Current-state authority: PROGRESS.md" |
+| `implementation-packs/INDEX.md` | "PHASE 6 IP-032 PROMOTED LOCAL BASELINE"; Last updated 2026-08-01; IP-033 "review/acceptance required" | Stale date; IP-033 review passed; usability items missing | Status relabeled; date updated; IP-033 row corrected; usability-handoff note added; annotated |
+| `implementation-packs/IP-033_…_ASSESSMENT_ENTRY.md` | "IMPLEMENTED LOCALLY — REVIEW/ACCEPTANCE REQUIRED" | R3 independent review passed | Status updated to "INDEPENDENT REVIEW PASSED — AWAITING OWNER ACCEPTANCE" |
+| `.github/agents/delivery-manager.agent.md` | Direct-routing table | R4 (a)/(b) commands missing from the approved capability list | Added `pm project-health config show` and `pm staffing capacity-policy show` routes plus controlled preview/confirm workflows |
+| `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` | "DEFERRED — REVISE BEFORE INTEGRATED RELEASE UAT" | R6 revised the runbook | Status now "REVISED 2026-08-02 — PENDING OWNER APPROVAL — DO NOT EXECUTE" (R6 commit) |
+| `docs/COPILOT_5_4_PROGRAM_CONTEXT.md` | Phase table 0–9 | Consistent; already declares PROGRESS precedence | No change |
+| `docs/RELEASE_ENGINEERING.md`, `docs/LOCAL_PRODUCT_UPGRADE_LIFECYCLE.md`, `docs/SOURCE_PORTABILITY_REVIEW.md` | Durable decisions/status | Consistent, non-driftable | No change |
+| `implementation-reports/IP-0xx` | Historical promoted labels | Historical by design; INDEX explains | No change |
+
+- Outcome: ROADMAP/architecture/IP index no longer carry driftable current
+  state without an explicit "以 PROGRESS.md 为准" annotation; agent
+  instructions now match the promoted/approved capability list including the
+  R4 commands.  Documentation-only batch: no runtime, schema, test, or
+  sample-data change; `git diff --check` passes and `make validate` passed
+  (evidence in the combined validation note below).  Read-only review pass
+  found no remaining P0–P2 (same documented limitation: no sub-agent
+  delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: owner review of R6 and R7 (including the runbook approval
+  decision); no further usability items remain from the 2026-08-02 handoff.
 
 ### 2026-08-02 — R6: real-environment UAT runbook revised (documentation only)
 

@@ -2,6 +2,7 @@
 
 Status: `PROMOTED — IMPLEMENTATION COMPLETE`
 Last updated: 2026-07-28
+Current-state authority: `PROGRESS.md`.
 Baseline: `a272890a7b51856c033df69b5148bc8c2fa928da`
 Approved planning commit: `3d406334f714ccad40daa9e8441499e5b7ebdaab`
 Implementation branch: `codex/phase-1-intelligence-contract`

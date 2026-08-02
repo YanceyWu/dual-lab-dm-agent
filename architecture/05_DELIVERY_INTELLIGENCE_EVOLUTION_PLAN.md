@@ -1,7 +1,11 @@
 # Delivery Intelligence Phase-Gated Evolution Plan
 
-Status: `PHASE 5 PROMOTED LOCALLY — PHASE 6 BATCH A DESIGN AUTHORIZED`
-Last updated: 2026-08-01
+Status: `HISTORICAL GATE MAP — CURRENT STATE AUTHORITY IS PROGRESS.md`
+Last updated: 2026-08-02
+
+This plan is roadmap intent and a historical gate record. It does not carry
+the current implementation state; read `PROGRESS.md` first, and treat any
+conflict as resolved by `PROGRESS.md`.
 
 ## Purpose
 
