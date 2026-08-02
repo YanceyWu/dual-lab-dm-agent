@@ -147,8 +147,9 @@ authorized the IP-033 controlled assessment entry slice: the confirmed clean
 re-import now runs the deterministic seven-dimension assessment per covered
 project and links each run to the import audit. That slice is implemented and
 validated on `codex/phase-4-assessment-entry`; the R3 independent read-only
-review passed and the slice now awaits the owner acceptance decision. It adds
-no standalone CLI, Attention producer, connector, or real-data path.
+review passed and the owner accepted the slice on 2026-08-02 as a local
+development-baseline fix. It adds no standalone CLI, Attention producer,
+connector, or real-data path.
 Phase 5 (IP-031) was promoted locally on 2026-08-01; Skill Dependency and new
 Attention producers remain deliberately excluded. Phase 6 (IP-032 Weekly
 Brief v2) was promoted locally on 2026-08-01 as the current development

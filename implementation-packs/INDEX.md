@@ -26,7 +26,7 @@ recoverable from Git history.
 | IP-030 | Phase 4 fixed seven-dimension Project Health, bounded configuration, and legacy strangler comparison | Promoted as local development baseline | `implementation-packs/IP-030_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH.md` | `implementation-reports/IP-030_IMPLEMENTATION_REPORT.md` |
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 | IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
-| IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Implemented locally on `codex/phase-4-assessment-entry`; R3 independent read-only review passed; awaiting owner acceptance | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
+| IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Owner-accepted on 2026-08-02 as a local development-baseline fix | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
 
 ## Usability handoff (2026-08-02)
 

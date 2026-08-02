@@ -6,12 +6,11 @@ Current HEAD: R1 synthetic demo pipeline (revised with multi-state sample
 data plus HIREF/contract-continuity demo), R2 synthetic walkthrough,
 implemented, validated, and read-only reviewed; local commits on
 `codex/usability-r1-r2` (exact hashes reported in the task handoff; IP-033
-Phase 4 controlled assessment entry remains implemented on
-`codex/phase-4-assessment-entry` awaiting the owner acceptance decision;
+Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `USABILITY R1–R7 IMPLEMENTED — AWAITING OWNER REVIEW (UAT RUNBOOK PENDING OWNER APPROVAL — DO NOT EXECUTE; IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `USABILITY R1–R7 IMPLEMENTED AND OWNER-CONFIRMED; IP-033 ACCEPTED AND UAT RUNBOOK APPROVED ON 2026-08-02 — NEXT: OWNER DIRECTS THE NEXT BATCH (e.g., PHASE 7 DESIGN OR ENGINE COMPLETION ITEMS)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -549,8 +548,9 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - Do not merge or rebase this independent branch into `main`.
 - Do not push any current work to `main`; use independent `codex/` branches.
 - Do not create, move, or push a release tag without explicit owner approval.
-- Treat the current UAT runbook as deferred reference until it is revised and
-  approved for the integrated Delivery Intelligence candidate.
+- The real-environment UAT runbook is approved (2026-08-02, `UAT RUNBOOK
+  APPROVED`) as the process basis; real-environment execution still requires a
+  separate explicit authorization for an integrated release candidate.
 - Do not run migration first against an active operational database.
 - Connector probing or sync requires an explicit request and approved local
   configuration.
@@ -613,11 +613,42 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   `pm staffing capacity-policy show|enable-preview|enable-confirm` is
   implemented with an additive audited operations table. Disable/revert is
   not provided (one-way engine); the marker still installs disabled.
-- The real-environment UAT runbook is revised but not approved
-  (`PENDING OWNER APPROVAL — DO NOT EXECUTE`); it becomes effective only after
-  the owner records `UAT RUNBOOK APPROVED` in PROGRESS.
+- The owner approved the revised UAT runbook on 2026-08-02 (`UAT RUNBOOK
+  APPROVED`). The runbook is the valid process basis; executing real-
+  environment UAT still requires a separate explicit authorization for an
+  integrated release candidate.
+- IP-033 (Phase 4 controlled assessment entry) was accepted by the owner on
+  2026-08-02 as a local development-baseline fix; Phase 7 and every external
+  action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-02 — Owner accepted IP-033 and approved the UAT runbook
+
+- The owner accepted the IP-033 Phase 4 controlled assessment entry
+  (implementation `1d73765` on `codex/phase-4-assessment-entry`, R3
+  independent review `0e7d077`).  Per the pack contract, acceptance promotes
+  it only as a local development-baseline fix: the confirmed clean re-import
+  now runs the deterministic seven-dimension assessment per covered project.
+  This formalizes the dependency already used by the R1 demo pipeline and the
+  R5 integration test.  It does not authorize Phase 7, promotion beyond the
+  local baseline, or any external action.
+- The owner approved the R6-revised real-environment UAT runbook
+  (`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`).  The approval is recorded as
+  `UAT RUNBOOK APPROVED` and makes the runbook the valid process basis only;
+  executing real-environment UAT still requires a separate explicit
+  authorization for an integrated release candidate.
+- Status files updated: `PROGRESS.md` header/gate, the IP-033 pack status,
+  `implementation-packs/INDEX.md`, `ROADMAP.md`, and the runbook status.
+- Documentation-only batch; `git diff --check` passes; `make validate` passes
+  as part of the combined validation evidence (364 runtime tests plus
+  repository/package checks).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed
+  (no push instruction received for this batch).  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner directs the next batch (e.g., Phase 7 Forecast
+  design, engine completion items such as resource-dimension wiring, or the
+  developer onboarding index); until then no further implementation runs.
 
 ### 2026-08-02 — Owner confirmed usability completion; branch pushed to origin
 

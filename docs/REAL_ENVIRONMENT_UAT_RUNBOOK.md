@@ -1,13 +1,14 @@
 # Real-Environment UAT Runbook
 
-Status: `REVISED 2026-08-02 — PENDING OWNER APPROVAL — DO NOT EXECUTE`
+Status: `APPROVED 2026-08-02 — PROCESS BASIS ONLY; EXECUTION REQUIRES SEPARATE AUTHORIZATION`
 
 This revision (usability R6) aligns the deferred real-environment UAT flow
-with the current integrated Delivery Intelligence candidate. It is **not** a
-current gate: the owner must approve this revised runbook explicitly before
-any real-environment action, and the approval must be recorded in
-`PROGRESS.md`. Until then, no connector access, real-data operation, live
-migration, or external action is authorized.
+with the current integrated Delivery Intelligence candidate. The owner
+approved it on 2026-08-02 (recorded in `PROGRESS.md` as `UAT RUNBOOK
+APPROVED`). The approval makes this the valid **process basis** only: it is
+not authorization to execute UAT. Real-environment execution still requires
+a separate explicit authorization for an approved integrated release
+candidate, and each connector/real-data action remains individually gated.
 
 ## Boundary
 
@@ -242,7 +243,7 @@ screenshots, or raw logs.
 
 ## Approval gate
 
-This revised runbook becomes effective only after the owner explicitly
-approves it and that approval is recorded in `PROGRESS.md` as
-`UAT RUNBOOK APPROVED`. Until then it remains `PENDING OWNER APPROVAL — DO NOT
-EXECUTE`.
+The owner approved this revised runbook on 2026-08-02 (`UAT RUNBOOK APPROVED`
+recorded in `PROGRESS.md`). It is the valid process basis; executing UAT
+requires a separate explicit owner authorization for the integrated release
+candidate before any real-environment action begins.

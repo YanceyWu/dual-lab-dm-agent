@@ -1,6 +1,6 @@
 # IP-033 — Phase 4 Controlled Assessment Entry
 
-Status: `INDEPENDENT REVIEW PASSED — AWAITING OWNER ACCEPTANCE`
+Status: `OWNER-ACCEPTED 2026-08-02 — LOCAL DEVELOPMENT-BASELINE FIX`
 Implementation branch: `codex/phase-4-assessment-entry`
 Base: `dd3d10f51b566a207897cba11ba811ebff15f68e` (promoted Phase 6 local baseline)
 Related design: `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`
