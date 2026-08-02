@@ -619,6 +619,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-02 — Owner confirmed usability completion; branch pushed to origin
+
+- The owner confirmed completion of the usability R1–R7 work and authorized
+  pushing the branch.  `codex/usability-r1-r2` (HEAD `bc8d87c`) was pushed to
+  `origin/codex/usability-r1-r2` on 2026-08-02 and its remote HEAD was
+  verified equal to the local HEAD.  No pull request was created, no tag was
+  pushed, no merge into `main` occurred, and no real-environment action took
+  place.  This record commit was pushed afterwards, so the remote branch HEAD
+  is this commit; the exact remote HEAD was reported in the task handoff.
+
 ### 2026-08-02 — R7: documentation status-consistency scan completed
 
 - Owner authorized R7.  Scanned status declarations across PROGRESS, ROADMAP,
