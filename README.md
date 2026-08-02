@@ -135,6 +135,8 @@ verification commands with expected non-empty results.
 Read:
 
 - `PROGRESS.md` for the exact current state and next action;
+- `docs/DEVELOPER_ONBOARDING_INDEX.md` to take over development quickly with a
+  new model or a new session;
 - `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md` before real-data validation;
 - `docs/RELEASE_ENGINEERING.md` before tagging or promotion;
 - `docs/DUAL_LAB_OPERATING_MODEL.md` for the information boundary;

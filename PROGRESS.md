@@ -623,6 +623,25 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-02 — Developer onboarding index added
+
+- The owner requested a model-agnostic onboarding index so a new model can
+  take over development and testing quickly.  Added
+  `docs/DEVELOPER_ONBOARDING_INDEX.md`: 5-minute start order, current-state
+  snapshot pointer, repository/module ownership map, command cheat-sheet,
+  clean re-import data-path map, gates and decisions-in-force summary, known
+  boundaries/UNKNOWN areas, first-session checklist, and a copy-ready
+  first-session prompt.  `README.md` "Read" list links the index.
+- The index points to authoritative files instead of duplicating driftable
+  state; `PROGRESS.md` remains the single current-state authority.
+- Documentation-only batch; `git diff --check` passes; `make validate` passed
+  (combined evidence: 364 runtime tests plus repository/package checks).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed
+  (no push instruction received for this batch).  No merge, tag, release,
+  connector access, or real-data action.
+- Exact next action: owner directs the next batch (e.g., Phase 7 Forecast
+  design or engine completion items).
+
 ### 2026-08-02 — Owner accepted IP-033 and approved the UAT runbook
 
 - The owner accepted the IP-033 Phase 4 controlled assessment entry
