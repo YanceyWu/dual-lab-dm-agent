@@ -233,6 +233,29 @@ silently resume the legacy `1.0` capacity assumption for writes. Rollback
 rehearsal must prove additive-data preservation, read-only compatibility, and
 the confirmation write stop.
 
+## R4 decision record (2026-08-02) — capacity-required marker entry
+
+The owner accepted the R4 recommendation: the capacity-aware Staffing switch
+**remains Python-only** (`enable_capacity_requirement` /
+`capacity_required`). The known boundary is explicit: operators cannot enable
+capacity constraints through the CLI, Dashboard, or Copilot interface, and
+installation always leaves the marker disabled.
+
+Rationale: the marker is one-way (no disable API), has no preview/confirm or
+audit contract, and enabling changes Staffing proposals/confirmation to a
+fail-closed capacity check with a material behavioral effect. Opening a
+product entry before those controls exist would be an asymmetric operational
+risk; the disabled default is the correct safe default.
+
+Consequences: through the product interface, Staffing assessment and
+confirmation never enforce effective capacity; the capacity-aware
+`staffing-effective-capacity-v1` behavior applies only after a Python-session
+enable. If the owner later wants a product entry, it must be a separately
+authorized batch that adds preview/confirm plus audit, decides enable/disable
+(including revert) semantics, runs focused tests, full validation, release
+rehearsal, and independent review, and still does not constitute a new
+business capability.
+
 Capacity-package import confirmation is a controlled ingestion operation, not
 a DM commitment editor. Any future public commitment write uses
 propose/preview/confirm/persist and requires a separate gate.

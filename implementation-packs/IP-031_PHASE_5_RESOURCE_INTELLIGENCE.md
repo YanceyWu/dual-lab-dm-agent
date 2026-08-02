@@ -200,6 +200,13 @@ demonstrate the same atomicity, evidence, replay, and audit requirements.
 No second capacity formula, heatmap storage, presentation adapter, generic
 repository query, public marker command, or capacity editor is added.
 
+R4 decision record (2026-08-02): the `staffing_capacity_policy` marker remains
+Python-only (`enable_capacity_requirement` / `capacity_required`); this pack
+adds no public marker command. Operators cannot enable capacity constraints
+through the CLI, Dashboard, or Copilot interface. Opening a product entry is a
+separately authorized batch with preview/confirm, audit, enable/disable
+semantics, release rehearsal, and independent review.
+
 Focused tests are `test_resource_capacity_heatmap.py` and
 `test_staffing_capacity_consumption.py`, plus the existing capacity import,
 Staffing pipeline, intelligence contract, discovery, and transport regressions.

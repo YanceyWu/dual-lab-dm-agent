@@ -11,7 +11,7 @@ Phase 4 controlled assessment entry remains implemented on
 Phase 6 Weekly Brief v2 remains the promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `R1 (REVISED, WITH HIREF DEMO) + R2 — MULTI-STATE SYNTHETIC DEMO DATA PIPELINE AND WALKTHROUGH (usability handoff 2026-08-02)`
-Gate status: `R5 IMPLEMENTED AND VALIDATED — AWAITING OWNER REVIEW — R4/R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
+Gate status: `R4 DECISION RECORDED (OWNER ACCEPTED RECOMMENDATION ON 2026-08-02) — AWAITING OWNER REVIEW — NEXT: CONFIRM (a) COMMAND SHAPE, THEN THE SEPARATELY AUTHORIZED (a) BATCH; R6/R7 REMAIN (IP-033 ACCEPTANCE REMAINS AN OWNER DECISION ON codex/phase-4-assessment-entry)`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -600,8 +600,53 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - The owner approved the Phase 6 design and separately authorized only IP-032
   Batch B1 public read-contract prerequisites. That authorization excludes B2,
   B3, C, D, and all external actions.
+- R4 decision (2026-08-02): Phase 4 health configuration preview/confirm gets
+  a controlled CLI as a separately authorized bounded batch; until then the
+  product interface has no read or write configuration entry.
+- R4 decision (2026-08-02): the Phase 5 capacity-aware Staffing marker stays
+  Python-only and installs disabled; the product interface cannot enable
+  capacity constraints (`staffing-effective-capacity-v1` applies only after a
+  Python-session enable). Any future product entry needs a separate authorized
+  batch with preview/confirm, audit, enable/disable semantics, release
+  rehearsal, and independent review.
 
 ## Recent change log
+
+### 2026-08-02 — R4: entry-boundary decisions recorded
+
+- R4 asked the owner to decide two "engine exists, entry missing" boundaries.
+  The owner reviewed a code-grounded impact analysis and accepted the
+  recommendation:
+  1. Phase 4 health configuration preview/confirm (Python-only today):
+     **add a controlled CLI as a separately authorized, bounded batch**.
+     Until implemented, configuration stays Python-only and the boundary is
+     explicit (no read or write entry via CLI/Dashboard/Copilot).  The future
+     batch must also expose the read projection, keep the unaccepted Attention
+     RAG surface separate, and decide actor attribution (one additive audit
+     column if wanted).
+  2. Phase 5 capacity-aware Staffing marker (Python-only today):
+     **maintain Python-only**; the marker installs disabled and the product
+     interface cannot enable capacity constraints.  Enabling changes Staffing
+     to fail-closed effective-capacity consumption; any future product entry
+     requires a separate authorized batch with preview/confirm, audit,
+     enable/disable semantics, release rehearsal, and independent review.
+- Decision records added to
+  `architecture/11_PHASE_4_SEVEN_DIMENSION_PROJECT_HEALTH_DESIGN.md`,
+  `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md`, and
+  `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md`, including
+  rationale and consequences; `PROGRESS.md` "Decisions in force" updated.
+- Documentation-only batch: no runtime, schema, test, or sample-data change;
+  `git diff --check` passes; no `make validate`/rehearse requirement beyond the
+  standard documentation consistency checks (repository checks still run in
+  the next validation batch).
+- Read-only review pass found no remaining P0–P2 (same documented limitation:
+  no sub-agent delegation in this session).
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff.  No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: owner confirms the proposed (a) command shape
+  (`pm project-health config show|preview|confirm`), then the separately
+  authorized (a) batch is implemented; R6/R7 remain independently authorizable.
 
 ### 2026-08-02 — R5: cross-capability integration test implemented and validated
 
