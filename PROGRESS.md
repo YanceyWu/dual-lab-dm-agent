@@ -2,29 +2,22 @@
 
 Last updated: 2026-08-06
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this session started from the clean submitted C3 baseline
-`695c8ec9d2153ceb2a684200ef647522ef1249e9`, the required clean local C4
-commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, the required clean local D1
-commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`, and the required clean local
-D2 commit `f1ed9557f99d054480cb379fe2f1d41b38504049`. Batch A, B0, B1, B2, B3,
-B4, the post-B4 C/D redesign freeze, C1, C2, C3, C4, D1, and D2 remain
-committed locally.
-The current working tree now carries only this `PROGRESS.md` status update
-recording owner acceptance of IP-036 Batch D; no new runtime/package behavior
-change is present, and nothing is pushed in this session.
+Current HEAD: this branch includes the accepted local IP-036 sequence through
+D2 (`f1ed9557f99d054480cb379fe2f1d41b38504049`) and now also carries the
+previously committed dashboard rollout from `f773d84` merged into the workbook
+branch for local review. Nothing is pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 695c8ec; C4 OPERATOR-ENTRY CLOSURE FOR RETAINED SOURCES IS COMMITTED LOCALLY AT 0f6108e; D1 DEPRECATED OPERATOR-PATH RETIREMENT IS COMMITTED LOCALLY AT a3eea27; D2 FINAL COMPATIBILITY/READ-ARTIFACT CLEANUP IS COMMITTED LOCALLY AT f1ed955; BATCH D IS OWNER-ACCEPTED; THE CURRENT WORKING TREE CARRIES ONLY THIS STATUS UPDATE AND IS NOT PUSHED`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C4 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, D1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED / COMMITTED LOCALLY, D2 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENT REVIEW PASSED / COMMITTED LOCALLY, AND BATCH D IS OWNER-ACCEPTED; NO D3 SLICE IS CURRENTLY FROZEN OR AUTHORIZED`
+Current implementation item: `IP-036 BATCH D IS OWNER-ACCEPTED LOCALLY; THE PREVIOUSLY COMMITTED DASHBOARD CAPABILITY ROLLOUT FROM f773d84 IS NOW MERGED INTO THIS WORKBOOK BRANCH FOR LOCAL REVIEW; NOTHING IS PUSHED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE DASHBOARD ROLLOUT IS NOW MERGED LOCALLY INTO THIS WORKBOOK BRANCH AND REQUIRES BRANCH-LOCAL VALIDATION / REVIEW BEFORE ANY PUSH OR FOLLOW-ON SLICE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
 handoff is committed locally at `40141b4`. This branch also includes the
-committed A0/B0-B4/post-B4/C1/C2/C3 IP-036 sequence through the clean
-submitted C3 baseline `695c8ec9d2153ceb2a684200ef647522ef1249e9`. The current
-working tree is bounded only to this status update recording owner acceptance
-of Batch D. The accepted D2 runtime/package slice was bounded only to: removal
+committed A0/B0-B4/post-B4/C1/C2/C3/C4/D1/D2 IP-036 sequence plus the local
+dashboard rollout merge from `f773d84`. The accepted D2 runtime/package slice
+was bounded only to: removal
 of the A4-replaced `v_member_load` / `v_project_team` compatibility views in
 `src/pm_agent/current_state_staffing/schema.py`; remarking the
 already-canonical `/api/project-snapshots` dashboard projection in
@@ -201,6 +194,11 @@ belong in Git history and must not be interpreted as current instructions.
   represents usable charge-code coverage.
 - Dashboard writes use preview, explicit confirmation, one-time tokens,
   idempotency, and audit records.
+- The Dashboard now keeps the six legacy pages (Overview, Projects, Team,
+  HIREF, Monthly Plan, Project Health) and also exposes promoted read-only
+  pages for Attention, Weekly Brief v2, Capacity Heatmap, Delivery Execution,
+  Layered Health, Connectors, and Snapshots through the shared
+  `POST /api/tool/query/<use_case_id>` contract.
 - Database bootstrap owns idempotent migrations, integrity constraints,
   concurrency protection, hashed confirmation tokens, and dependent-view
   preservation.
@@ -928,15 +926,14 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Request owner review / acceptance of the bounded local C3 slice against the
-   frozen C3 acceptance criteria only.
-2. Do not start C4, Batch D, broader project-profile redesign, broader
-   change-request redesign, connector redesign, or cleanup/deletion work unless
-   a separate authorization advances the gate.
-3. Preserve the current local C3 diff until that decision; do not mix unrelated
-   follow-on edits into this working tree.
-4. Do not push, merge, tag, release, deploy, activate a connector, or use real
-   data without separate explicit authorization.
+1. Validate and review the dashboard rollout now merged into
+   `workbook-onboarding-test-20260804-1514`, then decide whether to keep it as a
+   local workbook-branch baseline, request a bounded correction, or split
+   follow-on dashboard work into a separate authorized slice.
+2. Preserve the accepted IP-036 local baseline and do not infer a D3 or broader
+   redesign authorization from this dashboard merge.
+3. Do not push, merge to `main`, tag, release, deploy, activate a connector, or
+   use real data without separate explicit authorization.
 
 ## Decisions in force
 
@@ -1036,6 +1033,26 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-06 — Dashboard rollout merged into workbook branch locally
+
+- Cherry-picked the committed dashboard rollout `f773d84` from
+  `yanceywu-manulife-dashboard-capability-rollout` into the latest workbook
+  branch `workbook-onboarding-test-20260804-1514`.
+- The merge brings in the promoted read-only Dashboard pages, shared
+  `use-case-result-v1` rendering helpers, focused dashboard regression coverage,
+  and the Dashboard usage guide on this branch.
+- Conflict resolution intentionally kept the workbook branch's newer
+  `docs/DASHBOARD_USAGE_GUIDE.md`, `src/README.md`, and `PROGRESS.md` text as
+  the authority where they had evolved beyond the older dashboard worktree
+  branch, while preserving the dashboard runtime/test changes from `f773d84`.
+- Branch-local verification passed: `node --check` succeeded for the changed
+  dashboard JS assets, and focused pytest passed 39 tests across
+  `src/tests/test_dashboard_capability_rollout.py`,
+  `src/tests/test_weekly_brief_shared_interface.py`, and
+  `src/tests/test_unified_use_case_contract.py`.
+- Commit status: the cherry-pick is being completed locally on this workbook
+  branch; no push has been performed.
 
 ### 2026-08-06 — Owner accepted IP-036 Batch D
 

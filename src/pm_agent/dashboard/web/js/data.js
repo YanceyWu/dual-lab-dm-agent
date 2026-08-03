@@ -43,12 +43,17 @@ var DataService = {
   projectHealth: function () {
     return DataService._get("/api/project-health");
   },
-  queryUseCase: function (useCaseId, parameters, correlationId) {
-    return DataService._post("/api/tool/query/" + encodeURIComponent(useCaseId), {
-      contract_version: "1.0",
+  queryUseCase: function (useCaseId, parameters, options) {
+    var payload = {
       parameters: parameters || {},
-      correlation_id: correlationId || null,
-    });
+    };
+    if (typeof options === "string") {
+      payload.correlation_id = options;
+    } else if (options) {
+      if (options.correlationId) payload.correlation_id = options.correlationId;
+      if (options.contractVersion) payload.contract_version = options.contractVersion;
+    }
+    return DataService._post("/api/tool/query/" + encodeURIComponent(useCaseId), payload);
   },
   previewProjectHealthSync: function (boardId) {
     return DataService._post("/api/project-health/sync", {

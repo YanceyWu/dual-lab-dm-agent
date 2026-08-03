@@ -968,6 +968,7 @@ def allocations():
     c = db()
     rows = c.execute("""
         SELECT ma.employee_id, e.name, e.wd_id, ma.project_id, p.name as project_name,
+               ma.plan_version_id,
                ma.year, ma.month, ma.allocation
         FROM monthly_allocations ma
         JOIN employees e ON ma.employee_id=e.id

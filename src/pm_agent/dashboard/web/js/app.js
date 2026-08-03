@@ -24,6 +24,13 @@ var App = {
     if (tab === "hiref") SectionHiref.load();
     if (tab === "allocation") SectionAllocation.load();
     if (tab === "health") SectionHealth.load();
+    if (tab === "attention") SectionIntelligence.loadAttention();
+    if (tab === "weekly-brief") SectionIntelligence.loadWeeklyBrief();
+    if (tab === "capacity") SectionIntelligence.loadCapacity();
+    if (tab === "execution") SectionIntelligence.loadExecution();
+    if (tab === "layered-health") SectionIntelligence.loadLayeredHealth();
+    if (tab === "connectors") SectionIntelligence.loadConnectors();
+    if (tab === "snapshots") SectionIntelligence.loadSnapshots();
   },
 
   reload: function () {
