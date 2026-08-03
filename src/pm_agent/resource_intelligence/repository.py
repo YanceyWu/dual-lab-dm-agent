@@ -219,9 +219,15 @@ def publish(*, session_id: str, attempt_id: str, fingerprint: str,
                 row["source_observation_version"]
                 for row in package["observations"]
             }
-            if set(incoming_versions) != set(prior_versions):
+            workbook_package = package.get("dataset_marker") == "WORKBOOK_ONBOARDING_V1"
+            if not workbook_package and set(incoming_versions) != set(prior_versions):
                 raise ValueError("RESOURCE_CAPACITY_REPLACEMENT_SCOPE_INCOMPLETE")
-            if any(incoming_versions[key] <= version for key, version in prior_versions.items()):
+            comparable_keys = (
+                prior_versions.keys() & incoming_versions.keys()
+                if workbook_package
+                else prior_versions.keys()
+            )
+            if any(incoming_versions[key] <= prior_versions[key] for key in comparable_keys):
                 raise ValueError("RESOURCE_CAPACITY_OBSERVATION_VERSION_CONFLICT")
         database.execute(
             "UPDATE resource_capacity_publications SET is_current=0 WHERE is_current=1"

@@ -28,6 +28,108 @@ def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _business_key_capacity_package() -> dict:
+    package = _load(CAPACITY_SAMPLE)
+    package["dataset_marker"] = "WORKBOOK_ONBOARDING_V1"
+    package["package_id"] = "package-workbook-fy26-q4-capacity"
+    package["source_id"] = "source-workbook-team-project-capacity"
+    package["idempotency_key"] = "resource-capacity-workbook-fy26-q4-capacity"
+    package["plan_version_id"] = "plan-workbook-fy26-q4-baseline"
+    member_map = {
+        "member-synthetic-001": "WD100001",
+        "member-synthetic-002": "WD100002",
+        "member-synthetic-003": "WD100003",
+    }
+    for item in package["manifest"]["member_periods"]:
+        item["member_id"] = member_map[item["member_id"]]
+    for item in package["manifest"]["coverage_keys"]:
+        item["member_id"] = member_map[item["member_id"]]
+    for index, item in enumerate(package["observations"], start=1):
+        item["member_id"] = member_map[item["member_id"]]
+        item["source_reference"] = f"workbook-capacity-row-{index:03d}"
+    return package
+
+
+def _business_key_workforce_package() -> dict:
+    package = _load(WORKFORCE_SAMPLE)
+    package["dataset_marker"] = "WORKBOOK_ONBOARDING_V1"
+    package["package_id"] = "package-workbook-fy26-q4-baseline"
+    package["source_id"] = "source-workbook-team-project-capacity"
+    member_map = {
+        "member-synthetic-001": {
+            "member_id": "WD100001",
+            "display_name": "Sample Member One",
+            "role": "Delivery Manager",
+            "level": "8",
+            "resource_type": "LTFTE",
+        },
+        "member-synthetic-002": {
+            "member_id": "WD100002",
+            "display_name": "Sample Member Two",
+            "role": "Engineer",
+            "level": "7",
+            "resource_type": "STFTE",
+            "current_hiref_id": "H99881",
+            "hiref_end_date": "2026-12-31",
+        },
+        "member-synthetic-003": {
+            "member_id": "WD100003",
+            "display_name": "Sample Member Three",
+            "role": "Analyst",
+            "level": "6",
+            "resource_type": "LTFTE",
+        },
+    }
+    project_map = {
+        "project-synthetic-atlas": {
+            "project_id": "RP-PROJ-001",
+            "display_name": "Project Atlas Example",
+            "status": "active",
+            "priority": 2,
+            "start_date": "2026-01-01",
+            "target_end": "2026-12-31",
+        },
+        "project-synthetic-beacon": {
+            "project_id": "RP-PROJ-002",
+            "display_name": "Project Beacon Example",
+            "status": "planning",
+            "priority": 3,
+            "start_date": None,
+            "target_end": "2026-12-31",
+        },
+    }
+    plan_id = "plan-workbook-fy26-q4-baseline"
+    for item in package["members"]:
+        mapped = member_map[item["member_id"]]
+        item.update(mapped)
+    for item in package["projects"]:
+        mapped = project_map[item["project_id"]]
+        item.update(mapped)
+    package["plan_versions"][0]["plan_version_id"] = plan_id
+    package["plan_versions"][0]["version_name"] = "FY26 Q4 Baseline"
+    package["plan_versions"][0]["as_of_date"] = None
+    package["manifest"]["member_ids"] = [
+        mapped["member_id"] for mapped in member_map.values()
+    ]
+    package["manifest"]["project_ids"] = [
+        mapped["project_id"] for mapped in project_map.values()
+    ]
+    package["manifest"]["plan_version_ids"] = [plan_id]
+    member_ids = {key: value["member_id"] for key, value in member_map.items()}
+    project_ids = {key: value["project_id"] for key, value in project_map.items()}
+    for item in package["manifest"]["workforce_periods"]:
+        item["member_id"] = member_ids[item["member_id"]]
+    for item in package["manifest"]["allocation_keys"]:
+        item["member_id"] = member_ids[item["member_id"]]
+        item["project_id"] = project_ids[item["project_id"]]
+        item["plan_version_id"] = plan_id
+    for item in package["monthly_allocations"]:
+        item["member_id"] = member_ids[item["member_id"]]
+        item["project_id"] = project_ids[item["project_id"]]
+        item["plan_version_id"] = plan_id
+    return package
+
+
 def _bootstrap_dependencies(db_path: Path, *, inactive_second: bool = False) -> None:
     init_db(quiet=True)
     package = _load(WORKFORCE_SAMPLE)
@@ -258,6 +360,24 @@ def test_reader_returns_explicit_unknown_before_capacity_publication(isolated_db
     )
     assert result["state"] == "unknown"
     assert result["available_capacity"] is None
+
+
+def test_preview_confirm_accepts_business_keys_and_non_synthetic_source_references(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    workforce_preview = preview_workforce(_business_key_workforce_package(), db_path=isolated_db)
+    confirm_workforce(workforce_preview["session_id"], db_path=isolated_db)
+
+    preview = preview_import(_business_key_capacity_package(), db_path=isolated_db)
+    result = confirm_import(preview["session_id"], db_path=isolated_db)
+
+    assert result["status"] == "completed"
+    capacity = get_effective_capacity(
+        "WD100001", 2026, 8, "plan-workbook-fy26-q4-baseline", db_path=isolated_db
+    )
+    assert capacity["state"] == "known"
+    assert capacity["evidence"]["commitment_observation_fingerprints"]
 
 
 def test_non_interactive_command_requires_dry_run_or_explicit_confirmation(isolated_db: Path) -> None:

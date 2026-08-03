@@ -1,17 +1,15 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-03
-Current branch: `codex/usability-r1-r2`
-Current HEAD: R1 synthetic demo pipeline (revised with multi-state sample
-data plus HIREF/contract-continuity demo), R2 synthetic walkthrough, and
-portable DM usage-bundle / bundle-workspace hardening implemented, validated,
-and read-only reviewed; local commits on `codex/usability-r1-r2` (exact hashes
-reported in the task handoff; IP-033 Phase 4 controlled assessment entry was
-accepted by the owner on 2026-08-02; Phase 6 Weekly Brief v2 remains the
-promoted local baseline)
+Last updated: 2026-08-04
+Current branch: `team-project-capacity-onboarding-v1`
+Current HEAD: the accepted local baseline remains the R1 synthetic demo
+pipeline, R2 synthetic walkthrough, portable DM usage-bundle / bundle-workspace
+hardening, and the accepted IP-033 Phase 4 controlled assessment entry; this
+branch now carries additional uncommitted Team/Project + Capacity workbook
+onboarding v1 implementation work on top of that baseline
 Package version: `0.2.0rc1`
-Current implementation item: `BATCH 3 PROMOTED-CAPABILITY CLOSURE`
-Gate status: `BATCH 3 SLICE 1 (PROJECT HEALTH RESOURCE-CAPACITY SCOPE WIRING) IMPLEMENTED LOCALLY, VALIDATED, AND REVIEWED — NEXT: OWNER REVIEW / ACCEPTANCE`
+Current implementation item: `TEAM/PROJECT + CAPACITY WORKBOOK ONBOARDING V1`
+Gate status: `WORKBOOK BACKEND IMPORT CHAIN IMPLEMENTED LOCALLY; INDEPENDENT READ-ONLY REVIEW CORRECTIONS APPLIED; FULL VALIDATION AND RELEASE REHEARSAL NOW PASS`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -712,6 +710,348 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — Synthetic sample checker false positive corrected
+
+- Corrected `tools/check_synthetic_samples.py` so SQLite sample validation no
+  longer scans every string value for employee/project-style numeric IDs.
+  Instead, the checker now:
+  - still validates marker / email / URL portability across SQLite text; and
+  - restricts numeric synthetic-range enforcement to ID-like columns such as
+    `id`, `*_id`, `wd_id`, `jira_key`, `jira_code`, and the HIREF/current-hiref
+    identifier columns.
+- This fixes the specific false positive in
+  `src/sample-data/demo/sample_pm.db` where `execution_traces.started_at` and
+  `finished_at` ISO timestamps contained six-digit microsecond fragments that
+  matched the generic numeric-ID regex even though they were not business IDs.
+- Added focused repo-tool regression coverage in
+  `tools/tests/test_synthetic_samples.py` for both sides of the behavior:
+  - timestamp microseconds in SQLite execution-trace fields no longer fail the
+    synthetic ID range check;
+  - a real non-reserved numeric identifier in an ID-like SQLite column still
+    fails as expected.
+- Validation evidence:
+  - focused repo-tool validation passed:
+    `src/.venv/bin/python -m pytest tools/tests/test_synthetic_samples.py`
+    → `7 passed`;
+  - `python3 tools/check_synthetic_samples.py` now passes on the tracked sample
+    tree;
+  - full `make validate` now passes all nine release-validation checks,
+    including repository boundary, synthetic samples, documented use cases, 382
+    runtime tests, 33 repository-tool tests with 19 subtests, Ruff,
+    compilation, diff hygiene, and package build;
+  - `make rehearse-release` passes wheel install, isolated clean bootstrap,
+    upgrade-copy rehearsal, integrity, and rollback for `0.2.0rc1`.
+- Compatibility impact:
+  - no sample artifact content changed;
+  - the checker is now narrower and more semantically correct for SQLite
+    samples, while preserving the synthetic-range rule on actual ID-bearing
+    columns.
+- Commit status: no commit and no push were performed. Exact next action:
+  owner review/acceptance of the combined workbook onboarding and validation
+  cleanup working tree.
+
+### 2026-08-03 — Workbook onboarding v1 backend import chain completed locally
+
+- Completed the backend-first Team/Project + Capacity workbook onboarding v1
+  path under the dedicated `pm_agent.workbook_onboarding` capability:
+  - added the workbook-native parser/validator contract
+    (`models.py`, `parser.py`, `validator.py`) for the locked
+    `Setup / Members / Projects / Allocations / Capacity` workbook shape;
+  - added adapter layers so workbook rows are converted into internal
+    workforce/capacity import packages instead of coupling workbook sheets
+    directly to the existing importer JSON contracts;
+  - added the workbook orchestration service and backend file entry point
+    (`src/scripts/import_team_project_capacity_workbook.py`) that performs
+    parse → validate → plan-version resolution → conflict scan → workforce
+    import → optional capacity import;
+  - added the confirmed Copilot adjustment read surface and workbook conflict
+    scan so a workbook is blocked when it would overwrite an already confirmed
+    Copilot staffing change that it has not yet absorbed.
+- Implemented the remaining foundation/runtime wiring needed for workbook
+  onboarding to publish a new baseline and support the stable effective read
+  path:
+  - `workforce_planning_import.repository` now exposes current-publication
+    reads and supports controlled current-publication replacement for workbook
+    baseline refresh instead of failing whenever the target already contains a
+    current publication;
+  - `workforce_planning_import.service.confirm_import(...)` now allows the
+    workbook orchestrator to perform that bounded replacement explicitly;
+  - `resource_intelligence` now accepts workbook-owned commitment-source
+    authorities and workbook capacity publications may replace only the
+    explicitly provided member-month rows, preserving the locked
+    `missing row => unknown / no coverage` semantics;
+  - because the existing workforce read model already reads authoritative
+    coverage from the current publication and effective allocations from
+    `monthly_allocations`, the effective view now remains stable as
+    `current workbook baseline + later confirmed Copilot adjustments`, while
+    workbook re-import blocks unabsorbed confirmed changes and allows absorbed
+    ones to become the next baseline.
+- Added focused workbook onboarding regression coverage in
+  `src/tests/test_workbook_onboarding.py` for:
+  - sheet-contract enforcement;
+  - STFTE / HIREF validation;
+  - sparse allocation expansion to authoritative explicit zero coverage;
+  - empty Capacity = baseline-only;
+  - explicit `0/0/0` retained as known zero observations;
+  - missing Capacity row remaining unknown at read time;
+  - repeated `plan_version_name` auto-suffixing on re-import;
+  - confirmed Copilot adjustment conflict blocking plus absorbed-change
+    acceptance.
+- Completed the required independent read-only review and corrected the three
+  accepted implementation findings before this handoff:
+  - workbook import no longer reports top-level success when the downstream
+    workforce preview rejects;
+  - workbook validation now blocks non-month-boundary member effective dates so
+    the adapter cannot generate workforce coverage that the importer would later
+    reject;
+  - workbook parsing now rejects extra non-blank header/data columns instead of
+    silently discarding them.
+- Validation evidence:
+  - focused workbook/importer suites passed in the project virtual
+    environment:
+    `src/.venv/bin/python -m pytest tests/test_workbook_onboarding.py tests/test_workforce_planning_import.py tests/test_resource_capacity_import.py`
+    → `46 passed`;
+  - the real source-of-truth sample workbook was also exercised end-to-end
+    through the new backend script on a temporary isolated database:
+    dry-run returned `previewed` and confirm returned `completed` with
+    `4 employees`, `4 projects`, `44 monthly_allocations`, `15 observations`,
+    and `5 derivations`;
+  - `make rehearse-release` passed wheel build/install, isolated bootstrap,
+    upgrade-copy rehearsal, integrity, and rollback for `0.2.0rc1`;
+  - full `make validate` was rerun after this batch and failed at the same
+    pre-existing repository-level `synthetic-samples` check as the earlier
+    foundation slice:
+    `demo/sample_pm.db: employee/project-style numeric ID is outside the synthetic range`.
+    The failure still occurs before runtime validation and is not introduced by
+    the workbook onboarding files changed in this branch.
+- Compatibility / scope impact:
+  - workbook onboarding v1 is now usable through the backend script only; no
+    UI, wizard, or preview screen was added in this batch;
+  - workbook remains the baseline / bulk-update channel and Copilot remains the
+    day-to-day adjustment channel, with explicit blocking instead of silent
+    overwrite when a workbook lags a confirmed Copilot change;
+  - empty Capacity imports leave capacity baseline absent, while partial
+    Capacity coverage keeps missing member-months unknown rather than coercing
+    them to zero.
+- Commit status: no commit and no push were performed. Exact next action:
+  perform the required independent read-only review of this working tree,
+  correct any accepted finding, rerun validation evidence as needed, then stop
+  for owner review/acceptance.
+
+### 2026-08-03 — Workbook onboarding v1 foundation cleanup started
+
+- Created the implementation branch `team-project-capacity-onboarding-v1` for
+  the backend-first Team/Project + Capacity workbook onboarding v1 work.
+- Read the source-of-truth sample/template workbook files directly with
+  `openpyxl` and confirmed the locked 5-sheet contract in the actual XLSX
+  assets: `Setup`, `Members`, `Projects`, `Allocations`, `Capacity`. The
+  template `Capacity` sheet is not byte-empty; it contains the required header
+  row plus a note row that states missing rows mean unknown/no coverage.
+- Implemented the first foundation-cleanup slice:
+  - generalized `workforce_planning_import.service` so the import contract no
+    longer requires synthetic-only dataset markers, synthetic ID prefixes, or
+    synthetic names, and so it can carry workbook-relevant member metadata
+    (`resource_type`, `current_hiref_id`, `hiref_end_date`) plus nullable
+    project / plan dates;
+  - generalized `resource_intelligence.service` so capacity packages no longer
+    require synthetic-only package/source/plan/member identifiers or
+    synthetic-only `source_reference` values;
+  - updated `workforce_planning_import.repository` to persist workbook member
+    resource-type / HIREF-compatible fields into the existing core employee
+    columns instead of dropping them on import;
+  - added the dedicated `pm_agent.workbook_onboarding` schema/repository
+    foundation for the system-created default `onboarding_profile` and backend
+    `plan_version_name` de-duplication helpers, and composed that DDL from
+    `database/bootstrap.py`.
+- Added focused regression coverage proving the generalized importer contracts
+  accept workbook-style business keys and non-synthetic references while
+  preserving the existing sample-package behaviors:
+  `src/tests/test_workforce_planning_import.py`,
+  `src/tests/test_resource_capacity_import.py`.
+- Validation evidence:
+  - focused importer tests passed in the project virtual environment:
+    `src/.venv/bin/python -m pytest tests/test_workforce_planning_import.py tests/test_resource_capacity_import.py`
+    → `37 passed`;
+  - full `make validate` was run immediately after the foundation slice and
+    failed in the pre-existing `synthetic-samples` repository check with
+    `demo/sample_pm.db: employee/project-style numeric ID is outside the synthetic range`.
+    The failure is outside the files changed in this slice and occurred before
+    the runtime test phase, so this batch is currently validated only by the
+    focused importer suite until that repository-level sample-data issue is
+    corrected or explicitly accepted as pre-existing.
+- Compatibility impact:
+  - existing synthetic sample contracts remain accepted;
+  - importer validation is now broad enough for workbook-generated business
+    keys;
+  - no workbook parser/orchestrator/read-path behavior exists yet in this
+    branch, so end-user workbook onboarding is not functional at this stage.
+- Commit status: no commit and no push were performed. Exact next action:
+  implement the workbook-native parser/validator and adapter layer on top of
+  this generalized foundation, then rerun full validation.
+
+### 2026-08-03 — Guides now frame a DM-friendly automated refresh target
+
+- Expanded the existing operator-facing guides so they no longer stop at "use
+  structured imports" but also explain the intended **DM-friendly operating
+  model**: the Delivery Manager should not need to memorize importer names,
+  dependency order, or derivation chains in day-to-day work.
+- `docs/LOCAL_DATA_ONBOARDING_GUIDE.md` now adds a clearly labeled target
+  automation shape: source profiles, orchestrated refresh, preview/confirm
+  summaries, post-refresh summaries, and a distinction between today's
+  composable product primitives and the simpler future operator experience they
+  should be wrapped into.
+- `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md` now clarifies that the importer matrix
+  is an onboarding/design aid, not the long-term weekly operating surface for a
+  DM.
+- `docs/DASHBOARD_USAGE_GUIDE.md` now briefly reflects the same principle so
+  Dashboard expectations stay aligned with the onboarding story.
+- This is documentation-only product clarification. No importer contract, sync
+  behavior, CLI command family, or Dashboard runtime changed.
+- Validation evidence: the wording was checked against the repository's clean
+  re-import direction in `AGENTS.md`, current public command surfaces in
+  `src/README.md`, and the existing onboarding/runbook guidance.
+- Commit status: no commit and no push were performed. Exact next action: owner
+  reviews whether the current docs are sufficient, or whether the next bounded
+  step should define a concrete "saved source profile + orchestrated refresh"
+  implementation slice.
+
+### 2026-08-03 — Operator guides clarified post-bootstrap conversational updates
+
+- Expanded `docs/LOCAL_DATA_ONBOARDING_GUIDE.md` and
+  `docs/DASHBOARD_USAGE_GUIDE.md` to clarify the intended operator model after
+  first-time initialization: structured imports/syncs establish the local fact
+  baseline, while day-to-day Delivery Manager work more often happens through
+  Copilot conversation that routes to approved `pm` commands.
+- The new guidance explicitly separates:
+  - **fact refreshes** that should remain file/import/sync driven
+    (workforce planning, capacity, milestones, health re-import packages,
+    registry refreshes, connector-produced evidence), and
+  - **controlled operational updates** that are suitable for conversational
+    preview/confirm flows (staffing proposals, Attention actions, Weekly Brief
+    snapshot capture, and other already approved controlled entry points).
+- This keeps the documentation aligned with the repository boundary that chat is
+  a natural-language interface to approved deterministic commands, not an
+  implicit freeform database write channel.
+- Validation evidence: the added wording was checked against
+  `.github/agents/delivery-manager.agent.md`, the controlled-write summaries in
+  `src/README.md`, and the existing onboarding / Dashboard guidance already in
+  the repository.
+- Commit status: no commit and no push were performed. Exact next action: owner
+  reviews whether the docs now reflect the intended "import once, converse
+  daily, bulk-refresh structurally" operating model clearly enough.
+
+### 2026-08-03 — Local onboarding guide expanded with planning, consistency, and import-order rules
+
+- Expanded `docs/LOCAL_DATA_ONBOARDING_GUIDE.md` so it now explicitly answers
+  whether local data onboarding requires unified planning and consistency
+  (yes), what must stay consistent across sources (identifiers, time windows,
+  source ownership, replay semantics, interpretation of partial/unknown), the
+  recommended full import order, the page-driven minimum import sequences, and
+  the operator rules to follow during import.
+- The new guidance makes the repository's clean re-import direction and
+  idempotent replay expectations more obvious to end users before they touch
+  local data, instead of leaving those ideas split across AGENTS, the sample
+  walkthrough, and the real-environment UAT runbook.
+- This is a documentation-only clarification batch. No importer behavior,
+  schema, CLI contract, or Dashboard runtime changed.
+- Validation evidence: the added sections were aligned against `AGENTS.md`
+  clean re-import rules, the ordered demo pipeline in `src/sample-data/README.md`,
+  and the import/validation expectations in
+  `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`.
+- Commit status: no commit and no push were performed. Exact next action: owner
+  reviews whether this level of import-planning guidance is enough or whether a
+  future follow-up should add a fill-in mapping worksheet template for users.
+
+### 2026-08-03 — External import format matrix documented
+
+- Added `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, a user-oriented matrix that
+  lists the current importers, their expected file type, the corresponding
+  committed sample path, whether the path is fully controlled
+  (preview/confirm), partially controlled (`dry-run` style), or not controlled,
+  and the recommended operator usage scenario.
+- The matrix distinguishes the preferred versioned JSON import path
+  (`workforce_planning`, `resource_capacity`, `milestones`, `project_health`)
+  from earlier template/bridge importers (CSV/Excel/JSON helper scripts), so
+  users can decide whether to map their existing data into a promoted contract
+  or use a lighter bridge importer.
+- Updated `docs/LOCAL_DATA_ONBOARDING_GUIDE.md` so first-time users are pointed
+  to the matrix before choosing an importer.
+- This is a documentation-only batch. No importer runtime, schema, validation
+  behavior, sample payload, or Dashboard behavior changed.
+- Validation evidence: the matrix entries were cross-checked against current
+  importer entrypoints in `src/scripts/`, the ServiceNow CR importer module,
+  and the committed sample files under `src/sample-data/json/`,
+  `src/sample-data/csv/`, and `src/sample-data/excel/`.
+- Commit status: no commit and no push were performed. Exact next action: owner
+  reviews whether the matrix is sufficient or whether a future follow-up should
+  add per-importer field-level mapping templates.
+
+### 2026-08-03 — Local data onboarding guide added
+
+- Added `docs/LOCAL_DATA_ONBOARDING_GUIDE.md` as a user-oriented local data
+  onboarding guide distinct from the heavier real-environment UAT runbook. It
+  explains how an operator should safely start from an approved local database
+  copy or approved structured data inputs, validate configuration, rehearse on
+  isolated copies, run minimal read-only checks, and only then start the
+  Dashboard.
+- Updated `src/README.md` so the initialization section now points directly to
+  the new onboarding guide for users preparing local data.
+- Updated `docs/DASHBOARD_USAGE_GUIDE.md` related links so operators can move
+  from “what the page means” to “how to prepare local data” without searching
+  the repo.
+- This is a documentation-only batch. No runtime, schema, sync/import
+  implementation, API contract, or Dashboard behavior changed.
+- Validation evidence: the new guide was aligned against current installation
+  and initialization steps in `src/README.md`, the safety and stop-condition
+  flow in `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, and the synthetic/demo
+  boundaries in `src/sample-data/README.md` plus
+  `docs/SYNTHETIC_DEMO_WALKTHROUGH.md`.
+- Commit status: no commit and no push were performed. Exact next action: owner
+  reviews whether this onboarding guide is sufficient for end users or whether
+  a later separate quick-start checklist should be extracted from it.
+
+### 2026-08-03 — Dashboard guide expanded with data origin and getting-started flow
+
+- Expanded `docs/DASHBOARD_USAGE_GUIDE.md` so it now explains not only the left
+  navigation meanings but also: where Dashboard data comes from, why some
+  pages are empty/partial/stale, what prerequisites each major page needs to
+  become non-empty, how the synthetic demo pipeline produces visible results,
+  and how an operator should start with either a demo-first path or an approved
+  local data-preparation path.
+- Updated the `src/README.md` Dashboard section wording so the guide is clearly
+  positioned as the reference for sidebar meaning, data origin, data
+  preparation, and first-run usage.
+- This is a documentation-only clarification batch. No runtime, schema,
+  import/sync behavior, API contract, or Dashboard implementation changed.
+- Validation evidence: content was cross-checked against `src/README.md`,
+  `src/sample-data/README.md`, and `docs/SYNTHETIC_DEMO_WALKTHROUGH.md`; the
+  documented demo-start command, local initialization commands, and data-flow
+  explanations remain aligned with the current repository guidance.
+- Commit status: no commit and no push were performed. Exact next action: the
+  owner reviews the expanded guide and decides whether additional operator
+  onboarding material should stay in this guide or move to a separate quick
+  start document later.
+
+### 2026-08-03 — Dashboard usage guide synced into current branch
+
+- Confirmed the earlier mismatch: the completed
+  `docs/DASHBOARD_USAGE_GUIDE.md` existed in the rollout worktree branch
+  `yanceywu-manulife-dashboard-capability-rollout`, while the same path on the
+  current branch `codex/usability-r1-r2` had been left as a zero-byte file.
+- Synced the full guide content into the current branch so the repository path
+  opened by the owner now matches the documented Dashboard behavior.
+- Updated `src/README.md` so the Dashboard section links directly to the guide
+  for lookup during review and local use.
+- This is a documentation-only correction on the current branch. No runtime,
+  schema, API contract, connector, or write-path behavior changed here.
+- Validation evidence: compared the current-branch empty file with the rollout
+  worktree copy, then ran `git diff --check -- docs/DASHBOARD_USAGE_GUIDE.md
+  src/README.md PROGRESS.md` with no diff-hygiene issue.
+- Commit status: no commit and no push were performed. Exact next action: the
+  owner reviews the now-synced guide in the current branch and decides whether
+  to keep this documentation-only correction separate or fold it into the
+  broader Dashboard rollout review.
 
 ### 2026-08-03 — Added portable DM usage bundles and bundle-workspace safety hardening
 

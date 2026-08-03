@@ -23,6 +23,144 @@ def _package() -> dict[str, object]:
     return json.loads(SAMPLE.read_text(encoding="utf-8"))
 
 
+def _business_key_package() -> dict[str, object]:
+    package = _package()
+    package["dataset_marker"] = "WORKBOOK_ONBOARDING_V1"
+    package["package_id"] = "package-workbook-fy26-q4-baseline"
+    package["source_id"] = "source-workbook-team-project-capacity"
+    package["members"] = [
+        {
+            "member_id": "WD100001",
+            "display_name": "Sample Member One",
+            "role": "Delivery Manager",
+            "level": "8",
+            "status": "active",
+            "effective_start": "2026-01-01",
+            "effective_end": None,
+            "resource_type": "LTFTE",
+        },
+        {
+            "member_id": "WD100002",
+            "display_name": "Sample Member Two",
+            "role": "Engineer",
+            "level": "7",
+            "status": "active",
+            "effective_start": "2026-01-01",
+            "effective_end": None,
+            "resource_type": "STFTE",
+            "current_hiref_id": "H99881",
+            "hiref_end_date": "2026-12-31",
+        },
+        {
+            "member_id": "WD100003",
+            "display_name": "Sample Member Three",
+            "role": "Analyst",
+            "level": "6",
+            "status": "active",
+            "effective_start": "2026-01-01",
+            "effective_end": None,
+            "resource_type": "LTFTE",
+        },
+    ]
+    package["projects"] = [
+        {
+            "project_id": "RP-PROJ-001",
+            "display_name": "Project Atlas Example",
+            "status": "active",
+            "priority": 2,
+            "start_date": "2026-01-01",
+            "target_end": "2026-12-31",
+        },
+        {
+            "project_id": "RP-PROJ-002",
+            "display_name": "Project Beacon Example",
+            "status": "planning",
+            "priority": 3,
+            "start_date": None,
+            "target_end": "2026-12-31",
+        },
+    ]
+    package["plan_versions"] = [
+        {
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "version_name": "FY26 Q4 Baseline",
+            "scenario_type": "baseline",
+            "as_of_date": None,
+            "status": "active",
+        }
+    ]
+    package["manifest"]["member_ids"] = ["WD100001", "WD100002", "WD100003"]
+    package["manifest"]["project_ids"] = ["RP-PROJ-001", "RP-PROJ-002"]
+    package["manifest"]["plan_version_ids"] = ["plan-workbook-fy26-q4-baseline"]
+    package["manifest"]["workforce_periods"] = [
+        {"member_id": "WD100001", "year": 2026, "month": 8},
+        {"member_id": "WD100002", "year": 2026, "month": 8},
+        {"member_id": "WD100003", "year": 2026, "month": 8},
+    ]
+    package["manifest"]["allocation_keys"] = [
+        {
+            "member_id": member_id,
+            "project_id": project_id,
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+        }
+        for member_id in ("WD100001", "WD100002", "WD100003")
+        for project_id in ("RP-PROJ-001", "RP-PROJ-002")
+    ]
+    package["monthly_allocations"] = [
+        {
+            "member_id": "WD100001",
+            "project_id": "RP-PROJ-001",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.5,
+        },
+        {
+            "member_id": "WD100002",
+            "project_id": "RP-PROJ-001",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.0,
+        },
+        {
+            "member_id": "WD100001",
+            "project_id": "RP-PROJ-002",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.0,
+        },
+        {
+            "member_id": "WD100002",
+            "project_id": "RP-PROJ-002",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.0,
+        },
+        {
+            "member_id": "WD100003",
+            "project_id": "RP-PROJ-001",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.6,
+        },
+        {
+            "member_id": "WD100003",
+            "project_id": "RP-PROJ-002",
+            "plan_version_id": "plan-workbook-fy26-q4-baseline",
+            "year": 2026,
+            "month": 8,
+            "allocation": 0.6,
+        },
+    ]
+    return package
+
+
 def test_clean_bootstrap_is_idempotent_and_composes_capability_schema(isolated_db: Path) -> None:
     init_db(quiet=True)
     init_db(quiet=True)
@@ -40,6 +178,7 @@ def test_clean_bootstrap_is_idempotent_and_composes_capability_schema(isolated_d
         "workforce_planning_publications",
         "workforce_member_period_coverage",
         "monthly_project_allocation_coverage",
+        "onboarding_profiles",
     } <= tables
 
 
@@ -141,6 +280,62 @@ def test_identical_replay_is_idempotent_without_duplicate_audit_attempt(isolated
         ).fetchone()[0] == 1
 
 
+def test_preview_confirm_accepts_business_keys_and_workbook_member_fields(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    preview = preview_import(_business_key_package(), db_path=isolated_db)
+    result = confirm_import(preview["session_id"], db_path=isolated_db)
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.row_factory = sqlite3.Row
+        member = connection.execute(
+            """
+            SELECT id,wd_id,name,role,level,status,resource_type,billing_end_date,current_hiref
+            FROM employees
+            WHERE id='WD100002'
+            """
+        ).fetchone()
+        plan = connection.execute(
+            """
+            SELECT plan_version_id,version_name,as_of_date
+            FROM plan_versions
+            WHERE plan_version_id='plan-workbook-fy26-q4-baseline'
+            """
+        ).fetchone()
+        project = connection.execute(
+            """
+            SELECT id,name,start_date,target_end
+            FROM projects
+            WHERE id='RP-PROJ-002'
+            """
+        ).fetchone()
+
+    assert result["status"] == "completed"
+    assert dict(member) == {
+        "id": "WD100002",
+        "wd_id": "WD100002",
+        "name": "Sample Member Two",
+        "role": "Engineer",
+        "level": "7",
+        "status": "active",
+        "resource_type": "STFTE",
+        "billing_end_date": "2026-12-31",
+        "current_hiref": "H99881",
+    }
+    assert dict(plan) == {
+        "plan_version_id": "plan-workbook-fy26-q4-baseline",
+        "version_name": "FY26 Q4 Baseline",
+        "as_of_date": None,
+    }
+    assert dict(project) == {
+        "id": "RP-PROJ-002",
+        "name": "Project Beacon Example",
+        "start_date": None,
+        "target_end": "2026-12-31",
+    }
+
+
 def test_conflicting_replay_is_rejected_and_preserves_current_publication(isolated_db: Path) -> None:
     init_db(quiet=True)
     package = _package()
@@ -216,7 +411,7 @@ def test_conflicting_replay_is_rejected_and_preserves_current_publication(isolat
             "WORKFORCE_ALLOCATION_MANIFEST_INCOMPLETE",
         ),
         (
-            lambda package: package["members"][0].update(role="arbitrary narrative"),
+            lambda package: package["members"][0].update(role=["arbitrary narrative"]),
             "WORKFORCE_MEMBER_ROLE_INVALID",
         ),
         (

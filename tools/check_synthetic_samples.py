@@ -22,6 +22,7 @@ ID_PATTERN = re.compile(r"(?<![A-Z0-9])(\d{6,7})(?![A-Z0-9])", re.IGNORECASE)
 EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@([A-Z0-9.-]+)\b", re.IGNORECASE)
 URL_PATTERN = re.compile(r"https?://[^\s,\"'<>]+", re.IGNORECASE)
 SUPPORTED_TEXT_SUFFIXES = {".csv", ".json", ".md"}
+IDENTIFIER_COLUMN_EXTRAS = {"wd_id", "jira_key", "jira_code", "current_hiref", "next_hiref"}
 
 
 @dataclass(frozen=True)
@@ -30,7 +31,13 @@ class Finding:
     reason: str
 
 
-def validate_text(text: str, path: str, *, marker_required: bool = True) -> list[Finding]:
+def validate_text(
+    text: str,
+    path: str,
+    *,
+    marker_required: bool = True,
+    check_numeric_ids: bool = True,
+) -> list[Finding]:
     findings: list[Finding] = []
     if marker_required and MARKER not in text:
         findings.append(Finding(path, "missing synthetic dataset marker"))
@@ -46,10 +53,11 @@ def validate_text(text: str, path: str, *, marker_required: bool = True) -> list
             findings.append(Finding(path, "URL host is not under the reserved synthetic domain"))
             break
 
-    for match in ID_PATTERN.finditer(text):
-        if not match.group(1).startswith("99"):
-            findings.append(Finding(path, "employee/project-style numeric ID is outside the synthetic range"))
-            break
+    if check_numeric_ids:
+        for match in ID_PATTERN.finditer(text):
+            if not match.group(1).startswith("99"):
+                findings.append(Finding(path, "employee/project-style numeric ID is outside the synthetic range"))
+                break
 
     return findings
 
@@ -88,6 +96,55 @@ def sqlite_text(path: Path) -> str:
     return "\n".join(fragments)
 
 
+def validate_sqlite(path: Path, relative_path: str) -> list[Finding]:
+    findings = validate_text(
+        sqlite_text(path),
+        relative_path,
+        check_numeric_ids=False,
+    )
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        tables = connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        ).fetchall()
+        for (table_name,) in tables:
+            escaped_table = table_name.replace('"', '""')
+            columns = connection.execute(f'PRAGMA table_info("{escaped_table}")').fetchall()
+            for _, column_name, *_rest in columns:
+                if not _is_identifier_column(str(column_name)):
+                    continue
+                escaped_column = str(column_name).replace('"', '""')
+                for (value,) in connection.execute(
+                    f'SELECT DISTINCT "{escaped_column}" FROM "{escaped_table}" '
+                    f'WHERE "{escaped_column}" IS NOT NULL'
+                ):
+                    if not isinstance(value, str):
+                        continue
+                    if _contains_non_reserved_numeric_identifier(value):
+                        findings.append(
+                            Finding(
+                                relative_path,
+                                "employee/project-style numeric ID is outside the synthetic range",
+                            )
+                        )
+                        return findings
+    finally:
+        connection.close()
+    return findings
+
+
+def _is_identifier_column(column_name: str) -> bool:
+    normalized = column_name.lower()
+    return normalized == "id" or normalized.endswith("_id") or normalized in IDENTIFIER_COLUMN_EXTRAS
+
+
+def _contains_non_reserved_numeric_identifier(value: str) -> bool:
+    for match in ID_PATTERN.finditer(value):
+        if not match.group(1).startswith("99"):
+            return True
+    return False
+
+
 def iter_sample_files(root: Path) -> Iterable[Path]:
     for path in sorted(root.rglob("*")):
         if path.is_file() and not path.name.startswith("."):
@@ -105,7 +162,7 @@ def validate_sample_tree(root: Path) -> list[Finding]:
             elif path.suffix.lower() == ".xlsx":
                 findings.extend(validate_text(xlsx_text(path), relative))
             elif path.suffix.lower() == ".db":
-                findings.extend(validate_text(sqlite_text(path), relative))
+                findings.extend(validate_sqlite(path, relative))
             else:
                 findings.append(Finding(relative, "unsupported sample artifact type"))
         except (OSError, ValueError, zipfile.BadZipFile, sqlite3.Error, ElementTree.ParseError):

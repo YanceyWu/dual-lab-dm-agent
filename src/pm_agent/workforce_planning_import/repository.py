@@ -54,6 +54,21 @@ def completed_session_for_package(
     return dict(row) if row else None
 
 
+def current_publication(
+    *, db_path: str | Path | None = None
+) -> dict[str, Any] | None:
+    with connection(db_path) as database:
+        row = database.execute(
+            """
+            SELECT p.*,s.package_json
+            FROM workforce_planning_publications p
+            JOIN workforce_planning_import_sessions s ON s.session_id=p.session_id
+            WHERE p.is_current=1
+            """
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def create_session(
     *,
     session_id: str,
@@ -162,12 +177,32 @@ def start_attempt(
 
 
 def _insert_core_records(database: sqlite3.Connection, package: dict[str, Any]) -> None:
+    _upsert_members(database, package)
+    _upsert_projects(database, package)
+    _insert_plan_versions(database, package)
+    _insert_monthly_allocations(database, package)
+
+
+def _upsert_members(database: sqlite3.Connection, package: dict[str, Any]) -> None:
     for member in package["members"]:
         database.execute(
             """
             INSERT INTO employees
-                (id,wd_id,name,role,level,status,notes,skills,metadata)
-            VALUES (?,?,?,?,?,?,?,'{}',?)
+                (id,wd_id,name,role,level,status,notes,skills,metadata,resource_type,
+                 billing_end_date,hiref_id,current_hiref)
+            VALUES (?,?,?,?,?,?,?,'{}',?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+                wd_id=excluded.wd_id,
+                name=excluded.name,
+                role=excluded.role,
+                level=excluded.level,
+                status=excluded.status,
+                notes=excluded.notes,
+                metadata=excluded.metadata,
+                resource_type=excluded.resource_type,
+                billing_end_date=excluded.billing_end_date,
+                hiref_id=excluded.hiref_id,
+                current_hiref=excluded.current_hiref
             """,
             [
                 member["member_id"],
@@ -176,7 +211,7 @@ def _insert_core_records(database: sqlite3.Connection, package: dict[str, Any]) 
                 member["role"],
                 member["level"],
                 member["status"],
-                "SYNTHETIC_DATASET_V1 workforce planning clean import",
+                f'{package["dataset_marker"]} workforce planning clean import',
                 _json(
                     {
                         "effective_start": member["effective_start"],
@@ -184,14 +219,28 @@ def _insert_core_records(database: sqlite3.Connection, package: dict[str, Any]) 
                         "source_id": package["source_id"],
                     }
                 ),
+                member.get("resource_type", ""),
+                member.get("hiref_end_date") or "",
+                member.get("current_hiref_id") or "",
+                member.get("current_hiref_id") or "",
             ],
         )
+
+
+def _upsert_projects(database: sqlite3.Connection, package: dict[str, Any]) -> None:
     for project in package["projects"]:
         database.execute(
             """
             INSERT INTO projects
                 (id,name,status,priority,start_date,target_end,tech_stack,notes)
             VALUES (?,?,?,?,?,?,'[]',?)
+            ON CONFLICT(id) DO UPDATE SET
+                name=excluded.name,
+                status=excluded.status,
+                priority=excluded.priority,
+                start_date=excluded.start_date,
+                target_end=excluded.target_end,
+                notes=excluded.notes
             """,
             [
                 project["project_id"],
@@ -200,9 +249,12 @@ def _insert_core_records(database: sqlite3.Connection, package: dict[str, Any]) 
                 project["priority"],
                 project["start_date"],
                 project["target_end"],
-                "SYNTHETIC_DATASET_V1 workforce planning clean import",
+                f'{package["dataset_marker"]} workforce planning clean import',
             ],
         )
+
+
+def _insert_plan_versions(database: sqlite3.Connection, package: dict[str, Any]) -> None:
     for plan in package["plan_versions"]:
         database.execute(
             """
@@ -216,9 +268,12 @@ def _insert_core_records(database: sqlite3.Connection, package: dict[str, Any]) 
                 plan["scenario_type"],
                 plan["as_of_date"],
                 plan["status"],
-                "SYNTHETIC_DATASET_V1 workforce planning clean import",
+                f'{package["dataset_marker"]} workforce planning clean import',
             ],
         )
+
+
+def _insert_monthly_allocations(database: sqlite3.Connection, package: dict[str, Any]) -> None:
     for allocation in package["monthly_allocations"]:
         database.execute(
             """
@@ -285,18 +340,43 @@ def publish(
     package_fingerprint: str,
     package: dict[str, Any],
     published_at: str,
+    replace_current: bool = False,
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
     publication_id = f"workforce-planning-publication-{uuid4().hex}"
     with connection(db_path) as database:
         database.execute("BEGIN IMMEDIATE")
-        if database.execute(
-            "SELECT 1 FROM workforce_planning_publications WHERE is_current=1"
-        ).fetchone():
-            raise ValueError("WORKFORCE_PLANNING_CURRENT_PUBLICATION_EXISTS")
+        current = database.execute(
+            """
+            SELECT p.publication_id,s.package_json
+            FROM workforce_planning_publications p
+            JOIN workforce_planning_import_sessions s ON s.session_id=p.session_id
+            WHERE p.is_current=1
+            """
+        ).fetchone()
         counts_before = _target_counts(database)
-        if any(counts_before.values()):
+        if current and not replace_current:
+            raise ValueError("WORKFORCE_PLANNING_CURRENT_PUBLICATION_EXISTS")
+        if any(counts_before.values()) and not replace_current:
             raise ValueError("WORKFORCE_PLANNING_TARGET_NOT_EMPTY")
+        if current and replace_current:
+            prior_package = json.loads(current["package_json"])
+            prior_plan_ids = [
+                item["plan_version_id"] for item in prior_package.get("plan_versions", [])
+            ]
+            if prior_plan_ids:
+                placeholders = ",".join("?" for _ in prior_plan_ids)
+                database.execute(
+                    f"""
+                    UPDATE plan_versions
+                    SET version_status='archived'
+                    WHERE plan_version_id IN ({placeholders})
+                    """,
+                    prior_plan_ids,
+                )
+            database.execute(
+                "UPDATE workforce_planning_publications SET is_current=0 WHERE is_current=1"
+            )
 
         _insert_core_records(database, package)
         database.execute(
@@ -377,7 +457,9 @@ def publish(
                 "missing_record_count": 0,
             },
             "integrity": integrity,
-            "reconciliation_state": "not_required_clean_import",
+            "reconciliation_state": (
+                "current_publication_replaced" if replace_current else "not_required_clean_import"
+            ),
             "software_rollback": rollback_compatibility,
             "attempt_id": attempt_id,
         }

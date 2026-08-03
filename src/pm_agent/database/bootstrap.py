@@ -25,6 +25,7 @@ from pm_agent.database.staffing_capacity import (
 )
 from pm_agent.resource_intelligence.schema import RESOURCE_INTELLIGENCE_DDL
 from pm_agent.weekly_brief.schema import WEEKLY_BRIEF_SNAPSHOT_DDL
+from pm_agent.workbook_onboarding.schema import WORKBOOK_ONBOARDING_DDL
 from pm_agent.workforce_planning_import.schema import WORKFORCE_PLANNING_IMPORT_DDL
 from pm_agent.rules.identity import (
     build_default_resource_portal_id,
@@ -2838,6 +2839,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PROJECT_HEALTH_DDL)
     conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
+    conn.executescript(WORKBOOK_ONBOARDING_DDL)
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)
     conn.executescript(STAFFING_CAPACITY_POLICY_DDL)
     conn.executescript(STAFFING_CAPACITY_OPERATIONS_DDL)

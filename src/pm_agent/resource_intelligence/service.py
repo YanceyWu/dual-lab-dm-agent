@@ -14,14 +14,16 @@ from pm_agent.resource_intelligence import repository
 from pm_agent.workforce_planning_import.read_model import dependency_snapshot
 
 PACKAGE_SCHEMA_VERSION = "resource-capacity-import-v1"
-DATASET_MARKER = "SYNTHETIC_DATASET_V1"
 COMMITMENT_KINDS = ("leave", "bau", "non_project")
 SOURCE_AUTHORITY = {
-    "leave": "source-synthetic-leave",
-    "bau": "source-synthetic-bau",
-    "non_project": "source-synthetic-non-project",
+    "leave": {"source-synthetic-leave", "source-workbook-capacity-leave"},
+    "bau": {"source-synthetic-bau", "source-workbook-capacity-bau"},
+    "non_project": {
+        "source-synthetic-non-project",
+        "source-workbook-capacity-non-project",
+    },
 }
-_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _TOP_FIELDS = {
     "dataset_marker", "package_id", "schema_version", "generated_at", "source_id",
     "idempotency_key", "plan_version_id", "assessment_time", "manifest", "observations",
@@ -42,13 +44,25 @@ def _exact(value: object, fields: set[str], code: str) -> dict[str, Any]:
     return value
 
 
-def _string(value: object, *, prefix: str | None = None, limit: int = 128) -> str:
+def _string(
+    value: object,
+    *,
+    limit: int = 128,
+    error_code: str = "RESOURCE_CAPACITY_STRING_INVALID",
+) -> str:
     if not isinstance(value, str):
-        raise ValueError("RESOURCE_CAPACITY_STRING_INVALID")
+        raise ValueError(error_code)
     value = value.strip()
-    if not value or len(value) > limit or (prefix and (not _ID_RE.fullmatch(value) or not value.startswith(prefix))):
-        raise ValueError("RESOURCE_CAPACITY_SYNTHETIC_ID_INVALID" if prefix else "RESOURCE_CAPACITY_STRING_INVALID")
+    if not value or len(value) > limit:
+        raise ValueError(error_code)
     return value
+
+
+def _identifier(value: object, *, error_code: str) -> str:
+    normalized = _string(value, error_code=error_code)
+    if not _IDENTIFIER_RE.fullmatch(normalized):
+        raise ValueError(error_code)
+    return normalized
 
 
 def _timestamp(value: object) -> str:
@@ -71,8 +85,13 @@ def _period(value: object, *, with_kind: bool) -> dict[str, Any]:
     if (not isinstance(year, int) or isinstance(year, bool) or not 2000 <= year <= 2100
             or not isinstance(month, int) or isinstance(month, bool) or not 1 <= month <= 12):
         raise ValueError("RESOURCE_CAPACITY_PERIOD_INVALID")
-    result = {"member_id": _string(item["member_id"], prefix="member-synthetic-"),
-              "year": year, "month": month}
+    result = {
+        "member_id": _identifier(
+            item["member_id"], error_code="RESOURCE_CAPACITY_MEMBER_ID_INVALID"
+        ),
+        "year": year,
+        "month": month,
+    }
     if with_kind:
         if not isinstance(item["commitment_kind"], str) or item["commitment_kind"] not in COMMITMENT_KINDS:
             raise ValueError("RESOURCE_CAPACITY_COMMITMENT_KIND_INVALID")
@@ -98,8 +117,11 @@ def _normalize_observation(value: object, assessment: datetime) -> dict[str, Any
     if item["value_state"] != "known":
         raise ValueError("RESOURCE_CAPACITY_VALUE_STATE_INVALID")
     kind = result["commitment_kind"]
-    source = _string(item["authoritative_source_id"], prefix="source-synthetic-")
-    if source != SOURCE_AUTHORITY[kind]:
+    source = _string(
+        item["authoritative_source_id"],
+        error_code="RESOURCE_CAPACITY_SOURCE_AUTHORITY_INVALID",
+    )
+    if source not in SOURCE_AUTHORITY[kind]:
         raise ValueError("RESOURCE_CAPACITY_SOURCE_AUTHORITY_INVALID")
     observed_at = _timestamp(item["observed_at"])
     if datetime.fromisoformat(observed_at) > assessment:
@@ -110,7 +132,10 @@ def _normalize_observation(value: object, assessment: datetime) -> dict[str, Any
     result.update({
         "fraction": float(fraction), "value_state": "known",
         "authoritative_source_id": source,
-        "source_reference": _string(item["source_reference"], prefix="synthetic-"),
+        "source_reference": _string(
+            item["source_reference"],
+            error_code="RESOURCE_CAPACITY_SOURCE_REFERENCE_INVALID",
+        ),
         "observed_at": observed_at,
         "rule_version": _string(item["rule_version"], limit=80),
         "source_observation_version": version,
@@ -121,8 +146,6 @@ def _normalize_observation(value: object, assessment: datetime) -> dict[str, Any
 
 def validate_package(payload: object) -> dict[str, Any]:
     item = _exact(payload, _TOP_FIELDS, "RESOURCE_CAPACITY_PACKAGE_FIELDS_INVALID")
-    if item["dataset_marker"] != DATASET_MARKER:
-        raise ValueError("RESOURCE_CAPACITY_SYNTHETIC_MARKER_REQUIRED")
     if item["schema_version"] != PACKAGE_SCHEMA_VERSION:
         raise ValueError("RESOURCE_CAPACITY_PACKAGE_VERSION_INVALID")
     assessment_time = _timestamp(item["assessment_time"])
@@ -159,13 +182,22 @@ def validate_package(payload: object) -> dict[str, Any]:
     if set(observation_keys) != expected:
         raise ValueError("RESOURCE_CAPACITY_OBSERVATION_COVERAGE_INCOMPLETE")
     normalized = {
-        "dataset_marker": DATASET_MARKER,
-        "package_id": _string(item["package_id"], prefix="package-synthetic-"),
+        "dataset_marker": _string(
+            item["dataset_marker"],
+            error_code="RESOURCE_CAPACITY_DATASET_MARKER_INVALID",
+        ),
+        "package_id": _identifier(
+            item["package_id"], error_code="RESOURCE_CAPACITY_PACKAGE_ID_INVALID"
+        ),
         "schema_version": PACKAGE_SCHEMA_VERSION,
         "generated_at": generated_at,
-        "source_id": _string(item["source_id"], prefix="source-synthetic-"),
-        "idempotency_key": _string(item["idempotency_key"], prefix="resource-capacity-synthetic-"),
-        "plan_version_id": _string(item["plan_version_id"], prefix="plan-synthetic-"),
+        "source_id": _identifier(item["source_id"], error_code="RESOURCE_CAPACITY_SOURCE_ID_INVALID"),
+        "idempotency_key": _identifier(
+            item["idempotency_key"], error_code="RESOURCE_CAPACITY_IDEMPOTENCY_KEY_INVALID"
+        ),
+        "plan_version_id": _identifier(
+            item["plan_version_id"], error_code="RESOURCE_CAPACITY_PLAN_ID_INVALID"
+        ),
         "assessment_time": assessment_time,
         "manifest": {"member_periods": periods, "commitment_kinds": list(COMMITMENT_KINDS),
                      "coverage_keys": coverage},
@@ -222,7 +254,11 @@ def preview_import(payload: object, *, db_path: str | Path | None = None) -> dic
         raise ValueError("RESOURCE_CAPACITY_DEPENDENCY_COVERAGE_INCOMPLETE")
     scope = set(_key(value) for value in package["manifest"]["coverage_keys"])
     current_scope = repository.current_scope(db_path=db_path)
-    if current_scope is not None and scope != current_scope:
+    if (
+        current_scope is not None
+        and scope != current_scope
+        and package["dataset_marker"] != "WORKBOOK_ONBOARDING_V1"
+    ):
         return _reject(package, fingerprint, "RESOURCE_CAPACITY_REPLACEMENT_SCOPE_INCOMPLETE", counts, db_path=db_path)
     current = repository.current_observation_versions(db_path=db_path)
     for observation in package["observations"]:

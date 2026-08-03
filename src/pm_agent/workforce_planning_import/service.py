@@ -14,10 +14,7 @@ from uuid import uuid4
 from pm_agent.workforce_planning_import import repository
 
 PACKAGE_SCHEMA_VERSION = "workforce-planning-import-v1"
-DATASET_MARKER = "SYNTHETIC_DATASET_V1"
-_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
-_MEMBER_ROLES = {"delivery_manager", "engineer", "tech_lead", "analyst", "tester", "other"}
-_MEMBER_LEVELS = {"junior", "mid", "senior", "lead", "not_applicable"}
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _TOP_LEVEL_FIELDS = {
     "dataset_marker",
     "package_id",
@@ -46,14 +43,50 @@ def _exact_fields(value: object, fields: set[str], error_code: str) -> dict[str,
     return value
 
 
-def _bounded_string(value: object, *, prefix: str | None = None, limit: int = 128) -> str:
+def _allowed_fields(
+    value: object,
+    *,
+    required: set[str],
+    optional: set[str],
+    error_code: str,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(error_code)
+    keys = set(value)
+    if not required.issubset(keys) or not keys.issubset(required | optional):
+        raise ValueError(error_code)
+    return value
+
+
+def _bounded_string(
+    value: object,
+    *,
+    limit: int = 128,
+    error_code: str = "WORKFORCE_PLANNING_STRING_INVALID",
+) -> str:
     if not isinstance(value, str):
-        raise ValueError("WORKFORCE_PLANNING_STRING_INVALID")
+        raise ValueError(error_code)
     normalized = value.strip()
     if not normalized or len(normalized) > limit:
-        raise ValueError("WORKFORCE_PLANNING_STRING_INVALID")
-    if prefix and (not _ID_RE.fullmatch(normalized) or not normalized.startswith(prefix)):
-        raise ValueError("WORKFORCE_PLANNING_SYNTHETIC_ID_INVALID")
+        raise ValueError(error_code)
+    return normalized
+
+
+def _optional_bounded_string(
+    value: object,
+    *,
+    limit: int = 128,
+    error_code: str = "WORKFORCE_PLANNING_STRING_INVALID",
+) -> str | None:
+    if value is None:
+        return None
+    return _bounded_string(value, limit=limit, error_code=error_code)
+
+
+def _identifier_string(value: object, *, error_code: str) -> str:
+    normalized = _bounded_string(value, error_code=error_code)
+    if not _IDENTIFIER_RE.fullmatch(normalized):
+        raise ValueError(error_code)
     return normalized
 
 
@@ -72,6 +105,12 @@ def _iso_date(value: object) -> str:
     if parsed.isoformat() != normalized:
         raise ValueError("WORKFORCE_PLANNING_DATE_INVALID")
     return normalized
+
+
+def _optional_iso_date(value: object) -> str | None:
+    if value is None:
+        return None
+    return _iso_date(value)
 
 
 def _iso_timestamp(value: object) -> str:
@@ -108,9 +147,9 @@ def _unique(items: list[Any], key, error_code: str) -> None:
 
 
 def _normalize_member(value: object) -> dict[str, Any]:
-    item = _exact_fields(
+    item = _allowed_fields(
         value,
-        {
+        required={
             "member_id",
             "display_name",
             "role",
@@ -119,21 +158,47 @@ def _normalize_member(value: object) -> dict[str, Any]:
             "effective_start",
             "effective_end",
         },
-        "WORKFORCE_MEMBER_FIELDS_INVALID",
+        optional={"resource_type", "current_hiref_id", "hiref_end_date"},
+        error_code="WORKFORCE_MEMBER_FIELDS_INVALID",
     )
-    member_id = _bounded_string(item["member_id"], prefix="member-synthetic-")
-    display_name = _bounded_string(item["display_name"], limit=120)
-    if "synthetic" not in display_name.lower():
-        raise ValueError("WORKFORCE_MEMBER_SYNTHETIC_NAME_REQUIRED")
+    member_id = _identifier_string(item["member_id"], error_code="WORKFORCE_MEMBER_ID_INVALID")
+    display_name = _bounded_string(
+        item["display_name"],
+        limit=120,
+        error_code="WORKFORCE_MEMBER_NAME_INVALID",
+    )
     status = _enum_string(
         item["status"], {"active", "inactive"}, "WORKFORCE_MEMBER_STATUS_INVALID"
     )
     effective_start = _iso_date(item["effective_start"])
-    effective_end = None if item["effective_end"] is None else _iso_date(item["effective_end"])
+    effective_end = _optional_iso_date(item["effective_end"])
     if effective_end and effective_end < effective_start:
         raise ValueError("WORKFORCE_MEMBER_EFFECTIVE_RANGE_INVALID")
-    role = _enum_string(item["role"], _MEMBER_ROLES, "WORKFORCE_MEMBER_ROLE_INVALID")
-    level = _enum_string(item["level"], _MEMBER_LEVELS, "WORKFORCE_MEMBER_LEVEL_INVALID")
+    role = _bounded_string(
+        item["role"],
+        limit=120,
+        error_code="WORKFORCE_MEMBER_ROLE_INVALID",
+    )
+    level = _bounded_string(
+        item["level"],
+        limit=40,
+        error_code="WORKFORCE_MEMBER_LEVEL_INVALID",
+    )
+    resource_type = _enum_string(
+        item.get("resource_type", ""),
+        {"", "LTFTE", "STFTE"},
+        "WORKFORCE_MEMBER_RESOURCE_TYPE_INVALID",
+    )
+    current_hiref_id = _optional_bounded_string(
+        item.get("current_hiref_id"),
+        limit=80,
+        error_code="WORKFORCE_MEMBER_HIREF_ID_INVALID",
+    )
+    hiref_end_date = _optional_iso_date(item.get("hiref_end_date"))
+    if resource_type == "STFTE" and (not current_hiref_id or not hiref_end_date):
+        raise ValueError("WORKFORCE_MEMBER_STFTE_HIREF_REQUIRED")
+    if bool(current_hiref_id) != bool(hiref_end_date):
+        raise ValueError("WORKFORCE_MEMBER_HIREF_FIELDS_INCOMPLETE")
     return {
         "member_id": member_id,
         "display_name": display_name,
@@ -142,6 +207,9 @@ def _normalize_member(value: object) -> dict[str, Any]:
         "status": status,
         "effective_start": effective_start,
         "effective_end": effective_end,
+        "resource_type": resource_type,
+        "current_hiref_id": current_hiref_id,
+        "hiref_end_date": hiref_end_date,
     }
 
 
@@ -151,10 +219,12 @@ def _normalize_project(value: object) -> dict[str, Any]:
         {"project_id", "display_name", "status", "priority", "start_date", "target_end"},
         "WORKFORCE_PROJECT_FIELDS_INVALID",
     )
-    project_id = _bounded_string(item["project_id"], prefix="project-synthetic-")
-    display_name = _bounded_string(item["display_name"], limit=120)
-    if "synthetic" not in display_name.lower():
-        raise ValueError("WORKFORCE_PROJECT_SYNTHETIC_NAME_REQUIRED")
+    project_id = _identifier_string(item["project_id"], error_code="WORKFORCE_PROJECT_ID_INVALID")
+    display_name = _bounded_string(
+        item["display_name"],
+        limit=120,
+        error_code="WORKFORCE_PROJECT_NAME_INVALID",
+    )
     status = _enum_string(
         item["status"],
         {"planning", "active", "at_risk", "done"},
@@ -164,9 +234,9 @@ def _normalize_project(value: object) -> dict[str, Any]:
         "priority"
     ] <= 5:
         raise ValueError("WORKFORCE_PROJECT_PRIORITY_INVALID")
-    start_date = _iso_date(item["start_date"])
-    target_end = None if item["target_end"] is None else _iso_date(item["target_end"])
-    if target_end and target_end < start_date:
+    start_date = _optional_iso_date(item["start_date"])
+    target_end = _optional_iso_date(item["target_end"])
+    if start_date and target_end and target_end < start_date:
         raise ValueError("WORKFORCE_PROJECT_DATE_RANGE_INVALID")
     return {
         "project_id": project_id,
@@ -184,10 +254,12 @@ def _normalize_plan(value: object) -> dict[str, Any]:
         {"plan_version_id", "version_name", "scenario_type", "as_of_date", "status"},
         "WORKFORCE_PLAN_FIELDS_INVALID",
     )
-    plan_id = _bounded_string(item["plan_version_id"], prefix="plan-synthetic-")
-    version_name = _bounded_string(item["version_name"], limit=120)
-    if "synthetic" not in version_name.lower():
-        raise ValueError("WORKFORCE_PLAN_SYNTHETIC_NAME_REQUIRED")
+    plan_id = _identifier_string(item["plan_version_id"], error_code="WORKFORCE_PLAN_ID_INVALID")
+    version_name = _bounded_string(
+        item["version_name"],
+        limit=120,
+        error_code="WORKFORCE_PLAN_VERSION_NAME_INVALID",
+    )
     scenario_type = _enum_string(
         item["scenario_type"],
         {"baseline", "forecast", "approved", "what_if"},
@@ -200,7 +272,7 @@ def _normalize_plan(value: object) -> dict[str, Any]:
         "plan_version_id": plan_id,
         "version_name": version_name,
         "scenario_type": scenario_type,
-        "as_of_date": _iso_date(item["as_of_date"]),
+        "as_of_date": _optional_iso_date(item["as_of_date"]),
         "status": status,
     }
 
@@ -213,7 +285,7 @@ def _normalize_workforce_period(value: object) -> dict[str, Any]:
     )
     year, month = _year_month(item, "WORKFORCE_PERIOD_INVALID")
     return {
-        "member_id": _bounded_string(item["member_id"], prefix="member-synthetic-"),
+        "member_id": _identifier_string(item["member_id"], error_code="WORKFORCE_PERIOD_MEMBER_INVALID"),
         "year": year,
         "month": month,
     }
@@ -226,9 +298,15 @@ def _normalize_allocation_identity(value: object, *, with_value: bool) -> dict[s
     item = _exact_fields(value, fields, "WORKFORCE_ALLOCATION_FIELDS_INVALID")
     year, month = _year_month(item, "WORKFORCE_ALLOCATION_MONTH_INVALID")
     result = {
-        "member_id": _bounded_string(item["member_id"], prefix="member-synthetic-"),
-        "project_id": _bounded_string(item["project_id"], prefix="project-synthetic-"),
-        "plan_version_id": _bounded_string(item["plan_version_id"], prefix="plan-synthetic-"),
+        "member_id": _identifier_string(
+            item["member_id"], error_code="WORKFORCE_ALLOCATION_MEMBER_INVALID"
+        ),
+        "project_id": _identifier_string(
+            item["project_id"], error_code="WORKFORCE_ALLOCATION_PROJECT_INVALID"
+        ),
+        "plan_version_id": _identifier_string(
+            item["plan_version_id"], error_code="WORKFORCE_ALLOCATION_PLAN_INVALID"
+        ),
         "year": year,
         "month": month,
     }
@@ -256,16 +334,21 @@ def _allocation_key(item: dict[str, Any]) -> tuple[Any, ...]:
 
 def validate_package(payload: object) -> dict[str, Any]:
     package = _exact_fields(payload, _TOP_LEVEL_FIELDS, "WORKFORCE_PLANNING_PACKAGE_FIELDS_INVALID")
-    if package["dataset_marker"] != DATASET_MARKER:
-        raise ValueError("WORKFORCE_PLANNING_SYNTHETIC_MARKER_REQUIRED")
     if package["schema_version"] != PACKAGE_SCHEMA_VERSION:
         raise ValueError("WORKFORCE_PLANNING_PACKAGE_VERSION_INVALID")
     normalized: dict[str, Any] = {
-        "dataset_marker": DATASET_MARKER,
-        "package_id": _bounded_string(package["package_id"], prefix="package-synthetic-"),
+        "dataset_marker": _bounded_string(
+            package["dataset_marker"],
+            error_code="WORKFORCE_PLANNING_DATASET_MARKER_INVALID",
+        ),
+        "package_id": _identifier_string(
+            package["package_id"], error_code="WORKFORCE_PLANNING_PACKAGE_ID_INVALID"
+        ),
         "schema_version": PACKAGE_SCHEMA_VERSION,
         "generated_at": _iso_timestamp(package["generated_at"]),
-        "source_id": _bounded_string(package["source_id"], prefix="source-synthetic-"),
+        "source_id": _identifier_string(
+            package["source_id"], error_code="WORKFORCE_PLANNING_SOURCE_ID_INVALID"
+        ),
     }
     for field in ("members", "projects", "plan_versions", "monthly_allocations"):
         if not isinstance(package[field], list):
@@ -298,13 +381,16 @@ def validate_package(payload: object) -> dict[str, Any]:
             raise ValueError("WORKFORCE_PLANNING_MANIFEST_COLLECTION_INVALID")
     normalized_manifest = {
         "member_ids": [
-            _bounded_string(item, prefix="member-synthetic-") for item in manifest["member_ids"]
+            _identifier_string(item, error_code="WORKFORCE_MEMBER_ID_INVALID")
+            for item in manifest["member_ids"]
         ],
         "project_ids": [
-            _bounded_string(item, prefix="project-synthetic-") for item in manifest["project_ids"]
+            _identifier_string(item, error_code="WORKFORCE_PROJECT_ID_INVALID")
+            for item in manifest["project_ids"]
         ],
         "plan_version_ids": [
-            _bounded_string(item, prefix="plan-synthetic-") for item in manifest["plan_version_ids"]
+            _identifier_string(item, error_code="WORKFORCE_PLAN_ID_INVALID")
+            for item in manifest["plan_version_ids"]
         ],
         "workforce_periods": [
             _normalize_workforce_period(item) for item in manifest["workforce_periods"]
@@ -503,7 +589,12 @@ def _failure_code(exc: Exception) -> str:
     return "WORKFORCE_PLANNING_PUBLICATION_FAILED"
 
 
-def confirm_import(session_id: str, *, db_path: str | Path | None = None) -> dict[str, Any]:
+def confirm_import(
+    session_id: str,
+    *,
+    replace_current: bool = False,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
     session = repository.load_session(session_id, db_path=db_path)
     if not session:
         raise ValueError("WORKFORCE_PLANNING_SESSION_NOT_FOUND")
@@ -524,6 +615,7 @@ def confirm_import(session_id: str, *, db_path: str | Path | None = None) -> dic
             package_fingerprint=session["package_fingerprint"],
             package=json.loads(session["package_json"]),
             published_at=_now(),
+            replace_current=replace_current,
             db_path=db_path,
         )
     except Exception as exc:
