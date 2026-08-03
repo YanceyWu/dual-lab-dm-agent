@@ -32,6 +32,7 @@ src/.pytest_cache/
 *.db-wal
 *.sqlite
 *.sqlite3
+dist/
 
 # Approved portable product paths. Internal documentation and company
 # configuration remain excluded below; private runtime state stays excluded above.

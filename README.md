@@ -129,6 +129,27 @@ boundary, synthetic-data, and package checks. The second installs the built
 wheel into a temporary target and rehearses database upgrade and rollback using
 synthetic data.
 
+To assemble **end-user DM usage bundles** for offline local distribution, run:
+
+```bash
+python3 -m pip install -r tools/validation-requirements.txt
+make build-usage-bundles
+```
+
+That command generates separate **macOS** and **Windows** usage bundles under
+`dist/dm-usage-bundles/`. The build requires the pinned release-tool
+dependencies above, and each generated bundle is target-specific to its
+configured Python/architecture. Each bundle contains:
+
+- a trimmed workspace with `.github/agents/delivery-manager.agent.md` and
+  `.github/copilot-instructions.md`;
+- `src/` runtime sources and starter config templates only;
+- a platform-specific offline `wheelhouse/`;
+- one-click install/open scripts for VS Code + Copilot entry.
+
+The generated bundles are local artifacts for distribution and must not be
+committed back to the repository.
+
 ## Demo data
 
 The committed `src/sample-data/demo/sample_pm.db` is rebuilt by one command from

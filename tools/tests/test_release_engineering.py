@@ -34,6 +34,8 @@ def test_unified_validation_and_ci_contract_are_present() -> None:
 
     assert "validate:" in makefile
     assert "rehearse-release:" in makefile
+    assert "build-usage-bundles:" in makefile
+    assert "tools/build_usage_bundle.py" in makefile
     for required_step in (
         "repository-boundary",
         "synthetic-samples",
@@ -49,6 +51,19 @@ def test_unified_validation_and_ci_contract_are_present() -> None:
     assert "make validate PYTHON=python" in workflow
     assert "make rehearse-release PYTHON=python" in workflow
     assert "contents: read" in workflow
+
+
+def test_distribution_bundle_workflow_is_documented() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    release_doc = (ROOT / "docs/RELEASE_ENGINEERING.md").read_text(encoding="utf-8")
+
+    assert "make build-usage-bundles" in readme
+    assert "dist/dm-usage-bundles/" in readme
+    assert "offline `wheelhouse/`" in readme
+    assert "tools/validation-requirements.txt" in readme
+    assert "make build-usage-bundles" in release_doc
+    assert "platform-specific offline usage bundles" in release_doc
+    assert "arm64-targeted" in release_doc
 
 
 def test_validation_dependencies_and_lint_rules_are_pinned() -> None:

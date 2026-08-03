@@ -44,21 +44,39 @@ target, upgrades a temporary copy of the synthetic legacy database, checks
 integrity, foreign keys, views, token schema, and aggregate counts, and proves
 the rollback copy matches the original hash. It never uses an active database.
 
+For **end-user Delivery Manager distribution**, run:
+
+```bash
+python3 -m pip install -r tools/validation-requirements.txt
+make build-usage-bundles
+```
+
+The builder assembles separate **macOS** and **Windows** offline usage bundles
+under `dist/dm-usage-bundles/`. Each bundle contains only the DM runtime
+workspace, Copilot agent files, starter config templates, offline dependency
+wheelhouse, and platform-specific install/open scripts. Bundle names and
+installers are specific to the configured Python version and architecture (for
+example the default macOS bundle is arm64-targeted). These bundles are local
+distribution artifacts and are not committed or tagged as repository source.
+
 ## Candidate workflow
 
 1. Confirm only intended portable files are changed.
 2. Install `tools/validation-requirements.txt`, then run `make validate` and
    `make rehearse-release`.
-3. Commit the complete candidate scope and push the independent branch.
-4. Wait for GitHub Actions to pass for the exact pushed commit.
-5. Confirm `git status --short` is empty and record:
+3. If the release is meant for Delivery Manager end users, build the
+   platform-specific offline usage bundles with `make build-usage-bundles` and
+   verify the output under `dist/dm-usage-bundles/`.
+4. Commit the complete candidate scope and push the independent branch.
+5. Wait for GitHub Actions to pass for the exact pushed commit.
+6. Confirm `git status --short` is empty and record:
 
    ```bash
    git rev-parse HEAD
    git show -s --format=%cI HEAD
    ```
 
-6. With explicit owner authorization, create and push the annotated candidate
+7. With explicit owner authorization, create and push the annotated candidate
    tag:
 
    ```bash
@@ -66,11 +84,11 @@ the rollback copy matches the original hash. It never uses an active database.
    git push origin v0.2.0-rc.1
    ```
 
-7. On the work computer, create `pm backup create --label
+8. On the work computer, create `pm backup create --label
    before-v0.2.0-rc.1`, repeat the isolated database-copy rehearsal from the
    real-environment UAT runbook, then install and test the exact tagged
    candidate.
-8. Record only sanitized pass/fail evidence and the exact commit/tag. Do not
+9. Record only sanitized pass/fail evidence and the exact commit/tag. Do not
    copy operational records, logs, screenshots, endpoints, or configuration
    back to this repository.
 

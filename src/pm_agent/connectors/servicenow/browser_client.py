@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 from urllib.parse import quote
 
 from pm_agent.config import settings
 
-DEFAULT_EDGE_PROFILE = Path.home() / "Library/Application Support/Microsoft Edge/Default"
+
+def _default_edge_profile(
+    platform_name: str,
+    home: Path,
+    local_app_data: str | None,
+) -> Path:
+    if platform_name.startswith("win"):
+        root = Path(local_app_data).expanduser() if local_app_data else (home / "AppData/Local")
+        return root / "Microsoft/Edge/User Data"
+    if platform_name == "darwin":
+        return home / "Library/Application Support/Microsoft Edge"
+    return home / ".config/microsoft-edge"
 
 
 def _report_urls() -> tuple[str, str]:
@@ -27,7 +40,7 @@ def _report_urls() -> tuple[str, str]:
 def default_browser_profile() -> Path:
     if settings.snow_browser_profile:
         return Path(settings.snow_browser_profile).expanduser()
-    return DEFAULT_EDGE_PROFILE
+    return _default_edge_profile(sys.platform, Path.home(), os.getenv("LOCALAPPDATA"))
 
 
 def playwright_status() -> tuple[bool, str]:

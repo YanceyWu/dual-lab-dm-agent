@@ -44,7 +44,8 @@ def backup_create(
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("字段", style="bold cyan", width=16)
     table.add_column("值", overflow="fold")
-    table.add_row("git tag", point.tag_name)
+    table.add_row("backup id", point.tag_name)
+    table.add_row("workspace", "git-tagged" if point.git_repo_present else "manifest-only")
     table.add_row("branch", point.branch)
     table.add_row("commit", point.commit_hash)
     table.add_row("created_at", point.created_at)
@@ -63,6 +64,11 @@ def backup_create(
         )
         for line in point.status_lines:
             console.print(f"  [yellow]{line}[/yellow]")
+    elif not point.git_repo_present:
+        console.print(
+            "\n[yellow]⚠ 当前工作区不是 git 仓库；本次备份只创建 manifest 和 DB 快照，"
+            "不会创建 git tag。[/yellow]"
+        )
 
     console.print("\n[bold green]✅ 备份点已创建。[/bold green]")
 

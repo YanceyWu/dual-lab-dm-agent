@@ -1,13 +1,14 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 Current branch: `codex/usability-r1-r2`
 Current HEAD: R1 synthetic demo pipeline (revised with multi-state sample
-data plus HIREF/contract-continuity demo), R2 synthetic walkthrough,
-implemented, validated, and read-only reviewed; local commits on
-`codex/usability-r1-r2` (exact hashes reported in the task handoff; IP-033
-Phase 4 controlled assessment entry was accepted by the owner on 2026-08-02;
-Phase 6 Weekly Brief v2 remains the promoted local baseline)
+data plus HIREF/contract-continuity demo), R2 synthetic walkthrough, and
+portable DM usage-bundle / bundle-workspace hardening implemented, validated,
+and read-only reviewed; local commits on `codex/usability-r1-r2` (exact hashes
+reported in the task handoff; IP-033 Phase 4 controlled assessment entry was
+accepted by the owner on 2026-08-02; Phase 6 Weekly Brief v2 remains the
+promoted local baseline)
 Package version: `0.2.0rc1`
 Current implementation item: `BATCH 3 PROMOTED-CAPABILITY CLOSURE`
 Gate status: `BATCH 3 SLICE 1 (PROJECT HEALTH RESOURCE-CAPACITY SCOPE WIRING) IMPLEMENTED LOCALLY, VALIDATED, AND REVIEWED — NEXT: OWNER REVIEW / ACCEPTANCE`
@@ -711,6 +712,48 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-03 — Added portable DM usage bundles and bundle-workspace safety hardening
+
+- Added `tools/build_usage_bundle.py` plus `make build-usage-bundles` so the
+  repository can assemble end-user Delivery Manager usage bundles for offline
+  local distribution. The builder stages a trimmed operator workspace,
+  includes the Copilot agent/instructions, copies only runtime/config/script
+  sources, downloads a platform-specific offline wheelhouse, writes a bundle
+  manifest, and archives macOS and Windows bundles under
+  `dist/dm-usage-bundles/`.
+- Updated `README.md` and `docs/RELEASE_ENGINEERING.md` to document the usage-
+  bundle flow, prerequisites, and artifact expectations, and extended
+  `tools/tests/test_release_engineering.py` so the build target and release-doc
+  contract stay pinned.
+- Added `tools/tests/test_build_usage_bundle.py` to verify that the staged
+  bundle tree is trimmed correctly, records manifest metadata, and rejects
+  developer-only content.
+- Hardened bundle/operator runtime support paths: `pm backup create` now works
+  in a non-git bundle workspace by creating a manifest plus DB snapshot without
+  requiring a git tag, and the ServiceNow browser helper now chooses the
+  default Edge profile path per platform (macOS / Windows / Linux) instead of
+  assuming a macOS-only location.
+- Added focused regression coverage for those support behaviors in
+  `src/tests/test_backup_points.py` and
+  `src/tests/test_servicenow_browser_profile.py`.
+- Validation evidence: `src/.venv/bin/python -m pytest -q
+  tools/tests/test_build_usage_bundle.py tools/tests/test_release_engineering.py`
+  passed (`7 passed`); `src/.venv/bin/python -m pytest -q
+  src/tests/test_backup_points.py src/tests/test_servicenow_browser_profile.py`
+  passed (`5 passed`); `src/.venv/bin/python tools/build_usage_bundle.py
+  --platform macos --platform windows --output-dir <session-artifact-dir>`
+  completed and produced both macOS and Windows bundle zips with
+  `offline_wheelhouse_included=true` in each bundle manifest.
+- Impact and compatibility: no schema, migration, or business-capability
+  contract changed; this slice adds distribution tooling and makes local backup
+  / browser defaults safer for operator bundles.
+- Commit status: committed locally on `codex/usability-r1-r2`, not pushed;
+  exact hash reported in the task handoff. No merge, tag, release, connector
+  access, or real-data action.
+- Exact next action: if owner review wants a final operator proof, install one
+  generated bundle on a clean target machine and run `pm init`,
+  `pm config validate`, and `pm tool list`.
 
 ### 2026-08-02 — Batch 3 slice 1 wired Project Health re-import to explicit capacity scope
 

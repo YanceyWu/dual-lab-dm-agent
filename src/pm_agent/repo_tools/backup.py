@@ -12,9 +12,6 @@ from pm_agent.config import settings
 from pm_agent.rules.identity import slugify_text
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BACKUP_ROOT = PROJECT_ROOT.parent / f"{PROJECT_ROOT.name}-backups"
-DB_SNAPSHOT_DIR = BACKUP_ROOT / "db-snapshots"
-MANIFEST_DIR = BACKUP_ROOT / "backup-manifests"
 TAG_PREFIX = "backup-"
 
 
@@ -34,6 +31,7 @@ class BackupPoint:
     label: str
     note: str
     status_lines: list[str]
+    git_repo_present: bool
 
 
 def _run_git(args: list[str], check: bool = True) -> str:
@@ -57,10 +55,28 @@ def _database_path() -> Path:
     return db_path
 
 
-def _require_git_repo() -> None:
+def _backup_root() -> Path:
+    return PROJECT_ROOT.parent / f"{PROJECT_ROOT.name}-backups"
+
+
+def _db_snapshot_dir() -> Path:
+    return _backup_root() / "db-snapshots"
+
+
+def _manifest_dir() -> Path:
+    return _backup_root() / "backup-manifests"
+
+
+def _git_repo_present() -> bool:
     if not (PROJECT_ROOT / ".git").exists():
-        raise BackupError(f"{PROJECT_ROOT} is not a git repository")
-    _run_git(["rev-parse", "--show-toplevel"])
+        return False
+    proc = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    return proc.returncode == 0
 
 
 def _tag_exists(tag_name: str) -> bool:
@@ -79,26 +95,31 @@ def create_backup_point(
     include_db_snapshot: bool = True,
     allow_dirty: bool = False,
 ) -> BackupPoint:
-    _require_git_repo()
-
-    status_output = _run_git(["status", "--short"])
-    status_lines = [line for line in status_output.splitlines() if line.strip()]
-    dirty_worktree = bool(status_lines)
-    if dirty_worktree and not allow_dirty:
-        raise BackupError(
-            "Git working tree has uncommitted changes. Commit/stash them first, "
-            "or rerun with --allow-dirty if you intentionally want a tag on HEAD only."
-        )
+    git_repo_present = _git_repo_present()
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     label_slug = slugify_text(label)[:40]
     suffix = f"-{label_slug}" if label_slug else ""
     tag_name = f"{TAG_PREFIX}{timestamp}{suffix}"
-    if _tag_exists(tag_name):
+    if git_repo_present and _tag_exists(tag_name):
         raise BackupError(f"Tag {tag_name} already exists")
 
-    commit_hash = _run_git(["rev-parse", "HEAD"])
-    branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+    if git_repo_present:
+        status_output = _run_git(["status", "--short"])
+        status_lines = [line for line in status_output.splitlines() if line.strip()]
+        dirty_worktree = bool(status_lines)
+        if dirty_worktree and not allow_dirty:
+            raise BackupError(
+                "Git working tree has uncommitted changes. Commit/stash them first, "
+                "or rerun with --allow-dirty if you intentionally want a tag on HEAD only."
+            )
+        commit_hash = _run_git(["rev-parse", "HEAD"])
+        branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+    else:
+        status_lines = []
+        dirty_worktree = False
+        commit_hash = "NO_GIT_WORKSPACE"
+        branch = "bundle-workspace"
     created_at = datetime.now().isoformat(timespec="seconds")
     db_snapshot_path: Path | None = None
     tag_created = False
@@ -107,36 +128,39 @@ def create_backup_point(
         if include_db_snapshot:
             db_path = _database_path()
             if db_path.exists():
-                DB_SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-                db_snapshot_path = DB_SNAPSHOT_DIR / f"{db_path.stem}-snapshot-{timestamp}{suffix}{db_path.suffix}"
+                snapshot_dir = _db_snapshot_dir()
+                snapshot_dir.mkdir(parents=True, exist_ok=True)
+                db_snapshot_path = snapshot_dir / f"{db_path.stem}-snapshot-{timestamp}{suffix}{db_path.suffix}"
                 shutil.copy2(db_path, db_snapshot_path)
             else:
                 raise BackupError(f"Database file does not exist: {db_path}")
 
-        subject = f"Backup point {tag_name}"
-        body_lines = [
-            f"Branch: {branch}",
-            f"Commit: {commit_hash}",
-        ]
-        if label:
-            body_lines.append(f"Label: {label}")
-        if note:
-            body_lines.append(f"Note: {note}")
-        if db_snapshot_path:
-            body_lines.append(f"DB snapshot: {db_snapshot_path}")
-        if dirty_worktree:
-            body_lines.append(
-                "Warning: uncommitted working tree changes were present; "
-                "this tag only captures the current HEAD commit."
-            )
-        tag_args = ["tag", "-a", tag_name, "-m", subject]
-        if body_lines:
-            tag_args.extend(["-m", "\n".join(body_lines)])
-        _run_git(tag_args)
-        tag_created = True
+        if git_repo_present:
+            subject = f"Backup point {tag_name}"
+            body_lines = [
+                f"Branch: {branch}",
+                f"Commit: {commit_hash}",
+            ]
+            if label:
+                body_lines.append(f"Label: {label}")
+            if note:
+                body_lines.append(f"Note: {note}")
+            if db_snapshot_path:
+                body_lines.append(f"DB snapshot: {db_snapshot_path}")
+            if dirty_worktree:
+                body_lines.append(
+                    "Warning: uncommitted working tree changes were present; "
+                    "this tag only captures the current HEAD commit."
+                )
+            tag_args = ["tag", "-a", tag_name, "-m", subject]
+            if body_lines:
+                tag_args.extend(["-m", "\n".join(body_lines)])
+            _run_git(tag_args)
+            tag_created = True
 
-        MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
-        manifest_path = MANIFEST_DIR / f"backup-manifest-{timestamp}{suffix}.json"
+        manifest_dir = _manifest_dir()
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+        manifest_path = manifest_dir / f"backup-manifest-{timestamp}{suffix}.json"
         manifest = {
             "tag_name": tag_name,
             "branch": branch,
@@ -146,6 +170,7 @@ def create_backup_point(
             "note": note,
             "dirty_worktree": dirty_worktree,
             "status_lines": status_lines,
+            "git_repo_present": git_repo_present,
             "database_path": str(_database_path()),
             "db_snapshot_path": str(db_snapshot_path) if db_snapshot_path else None,
             "project_root": str(PROJECT_ROOT),
@@ -166,6 +191,7 @@ def create_backup_point(
             label=label,
             note=note,
             status_lines=status_lines,
+            git_repo_present=git_repo_present,
         )
     except Exception:
         if tag_created:
@@ -182,9 +208,10 @@ def create_backup_point(
 
 def list_backup_points(limit: int = 10) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
-    if MANIFEST_DIR.exists():
+    manifest_dir = _manifest_dir()
+    if manifest_dir.exists():
         files = sorted(
-            MANIFEST_DIR.glob("backup-manifest-*.json"),
+            manifest_dir.glob("backup-manifest-*.json"),
             key=lambda path: path.stat().st_mtime,
             reverse=True,
         )
