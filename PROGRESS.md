@@ -8,8 +8,8 @@ hardening, and the accepted IP-033 Phase 4 controlled assessment entry; this
 branch now carries additional uncommitted Team/Project + Capacity workbook
 onboarding v1 implementation work on top of that baseline
 Package version: `0.2.0rc1`
-Current implementation item: `TEAM/PROJECT + CAPACITY WORKBOOK ONBOARDING V1`
-Gate status: `WORKBOOK BACKEND IMPORT CHAIN IMPLEMENTED LOCALLY; INDEPENDENT READ-ONLY REVIEW CORRECTIONS APPLIED; FULL VALIDATION AND RELEASE REHEARSAL NOW PASS`
+Current implementation item: `V1 WORKBOOK ONBOARDING COMMITTED; NEXT STRUCTURED DATA ONBOARDING DESIGN READY FOR REVIEW`
+Gate status: `V1 WORKBOOK ONBOARDING COMMITTED AND VALIDATED; NEXT-BATCH DESIGN / IMPLEMENTATION DESIGN PREPARED FOR OWNER REVIEW`
 Git state: the owner approved the design at local commit
 `33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
 IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
@@ -710,6 +710,37 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — V1 workbook onboarding committed; next onboarding design drafted
+
+- Committed the validated Team/Project + Capacity workbook onboarding v1
+  backend slice at local commit `bc208d7`. That commit includes the workbook
+  capability, importer/runtime wiring, focused regression coverage, and the
+  synthetic-sample checker false-positive fix that restored full validation.
+- Added the next-batch review documents for easier future data onboarding:
+  - `architecture/14_STRUCTURED_DATA_ONBOARDING_FRAMEWORK_DESIGN.md`
+  - `implementation-packs/IP-034_STRUCTURED_DATA_ONBOARDING_FRAMEWORK.md`
+- The proposed next direction is to keep workbook onboarding semantics as-is and
+  extract a thin general `data_onboarding` framework with source profiles,
+  onboarding run audit, and a shared preview/confirm envelope so new workbook,
+  CSV, JSON, or later approved export sources can be added mainly by adapter
+  work instead of rebuilding orchestration each time.
+- This is design-only material for owner review. It creates no new runtime or
+  schema authority by itself and does not authorize Batch A implementation.
+- Validation evidence for the committed V1 slice remains:
+  - real sample workbook dry-run and confirm passed on an isolated database;
+  - focused workbook/importer regression passed `46` tests;
+  - focused synthetic-sample checker regression passed `7` tests;
+  - `make validate` passed all nine release-validation checks with
+    `382` runtime tests and `33` repository-tool tests with `19` subtests;
+  - `make rehearse-release` passed wheel install, isolated bootstrap,
+    upgrade-copy rehearsal, integrity, and rollback.
+- Commit / push status:
+  - V1 workbook onboarding is committed locally at `bc208d7`;
+  - the current design-only review material is included in the current review
+    candidate and its exact commit hash is reported in the task handoff because
+    a commit cannot contain its own hash;
+  - no push was performed.
 
 ### 2026-08-04 — Synthetic sample checker false positive corrected
 
