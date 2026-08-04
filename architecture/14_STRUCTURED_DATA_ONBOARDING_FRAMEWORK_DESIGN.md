@@ -1,11 +1,11 @@
 # Structured Data Onboarding Framework Design
 
-Status: `PROPOSED FOR OWNER REVIEW`
+Status: `IMPLEMENTED AS LOCAL BATCH A BASELINE`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
-Baseline branch: `team-project-capacity-onboarding-v1`
-Baseline commit: `bc208d70ec7698fb41da4850d7f1f52897410453`
-Previous implemented baseline: `Team/Project + Capacity workbook onboarding v1`
+Baseline branch: `data-onboarding-framework-batch-a`
+Baseline commit: `58e173364df9ffeca5be9bd5f3f31f04b65c21c5`
+Previous implemented baseline: `Committed IP-034 Batch A framework baseline`
 
 ## Decision supported
 
@@ -236,7 +236,8 @@ acceptance should require:
 - Batch A should not absorb older ad hoc importers blindly; each migration needs
   a bounded follow-up review.
 
-## Next gate
+## Historical note
 
-Owner review of this design and, if accepted, separate approval of a bounded
-implementation pack for Batch A only.
+This design is now implemented locally as IP-034 Batch A at commit `58e1733`.
+Current-state progress and any later follow-on design must be reviewed through
+`PROGRESS.md` and newer bounded design material.

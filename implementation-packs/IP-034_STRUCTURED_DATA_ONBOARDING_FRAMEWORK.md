@@ -1,9 +1,10 @@
 # IP-034 — Structured Data Onboarding Framework
 
-Status: `PROPOSED FOR OWNER REVIEW — DESIGN ONLY`
+Status: `IMPLEMENTED AND OWNER-ACCEPTED LOCALLY`
 Design: `architecture/14_STRUCTURED_DATA_ONBOARDING_FRAMEWORK_DESIGN.md`
-Implementation branch: `TBD AFTER OWNER APPROVAL`
-Baseline: `bc208d70ec7698fb41da4850d7f1f52897410453`
+Implementation branch: `data-onboarding-framework-batch-a`
+Implemented local commit: `58e173364df9ffeca5be9bd5f3f31f04b65c21c5`
+Previous baseline: `bc208d70ec7698fb41da4850d7f1f52897410453`
 
 ## Goal
 
@@ -117,7 +118,8 @@ rewriting workforce/capacity data.
 - Partial migration of older import scripts will leave mixed operator paths for
   a while; that is acceptable if recorded and bounded.
 
-## Next gate
+## Historical note
 
-Owner review of this implementation design. No Batch A runtime/schema/code work
-should begin until the owner explicitly approves this pack.
+Batch A runtime/schema/code work is complete and committed locally at `58e1733`.
+New structured onboarding work should proceed only through a later bounded
+design / implementation pack.

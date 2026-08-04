@@ -44,6 +44,7 @@ not implementation packs; see `PROGRESS.md` for the exact gate.
 | --- | --- | --- | --- |
 | Phase 5 | Resource Intelligence: effective capacity, resource risk, heatmap, and shared Staffing capacity facts | Promoted locally; Skill Dependency and new Attention producers remain excluded | `architecture/12_PHASE_5_RESOURCE_INTELLIGENCE_DESIGN.md` |
 | Phase 6 | Weekly Brief v2 from promoted facts | Promoted as the local Phase 6 development baseline on 2026-08-01 | `architecture/13_PHASE_6_WEEKLY_BRIEF_V2_DESIGN.md` |
+| Structured onboarding Batch B | Workbook preset registry plus alias-aware parsing/validation under the existing workbook source type | Owner-approved on 2026-08-04 for a separate follow-on implementation session | `architecture/15_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESET_DESIGN.md` |
 
 ## Current execution order
 
@@ -55,12 +56,12 @@ not implementation packs; see `PROGRESS.md` for the exact gate.
    `architecture/08_LAYERED_PROJECT_HEALTH_AND_MILESTONE_EVOLUTION.md`.
    Do not use the current mapping configuration surface as an accepted
    DM-operable contract.
-4. Phase 6 Weekly Brief v2 (IP-032) is the promoted local baseline. The next
-   planned gate is Phase 7 Forecast v1 design; it and every later phase require
-   separate owner authorization.
-5. IP-033 is implemented locally as the Phase 4 assessment entry slice; it
-   awaits owner review. It does not change the promoted baselines.
-6. Return tagging, isolated operational-copy rehearsal, and refreshed
+4. Phase 6 Weekly Brief v2 (IP-032) is the promoted local baseline.
+5. IP-033 is owner-accepted on 2026-08-02 as a local development-baseline fix.
+6. IP-034 Structured Data Onboarding Framework Batch A is committed locally at
+   `58e1733`. The next planned gate is the owner-approved IP-035 Batch B
+   implementation for workbook preset registry plus alias-aware parsing.
+7. Return tagging, isolated operational-copy rehearsal, and refreshed
    real-environment UAT to the integrated release-candidate phase.
 
 ## Boundary

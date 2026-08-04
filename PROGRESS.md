@@ -2,17 +2,20 @@
 
 Last updated: 2026-08-04
 Current branch: `data-onboarding-framework-batch-a`
-Current HEAD: the approved design baseline for this branch is `3240f3e`; this
-branch now carries the committed IP-034 Structured Data Onboarding Framework
-Batch A implementation on top of that baseline
+Current HEAD: the committed local IP-034 Batch A baseline is `58e1733`; this
+branch now carries additional owner-approved Batch B design material on top of
+that baseline
 Package version: `0.2.0rc1`
-Current implementation item: `IP-034 STRUCTURED DATA ONBOARDING FRAMEWORK BATCH A IMPLEMENTED LOCALLY`
-Gate status: `BATCH A IMPLEMENTED, VALIDATED, RE-REVIEWED, OWNER-ACCEPTED, AND COMMITTED LOCALLY`
+Current implementation item: `IP-035 STRUCTURED DATA ONBOARDING WORKBOOK PRESET BATCH APPROVED FOR IMPLEMENTATION`
+Gate status: `IP-034 BATCH A COMMITTED LOCALLY; BATCH B DESIGN / IMPLEMENTATION PACK OWNER-APPROVED FOR A NEW IMPLEMENTATION SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
-locally at `bc208d7`. The approved next-batch design baseline remains local
-commit `3240f3e`. This branch was created from that design baseline and now
-holds the committed local Batch A framework implementation; the exact commit
-hash is reported in the handoff because a commit cannot contain its own hash.
+locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
+committed locally at `58e1733`. This branch now holds owner-approved design
+material for the next bounded batch:
+`architecture/15_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESET_DESIGN.md` and
+`implementation-packs/IP-035_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESETS.md`;
+the exact commit hash for this design handoff is reported in the handoff
+because a commit cannot contain its own hash.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -46,6 +49,11 @@ belong in Git history and must not be interpreted as current instructions.
   validator, adapter, conflict policy, and importer semantics remain owned by
   `pm_agent.workbook_onboarding`, and the legacy workbook import script remains
   as a transitional fallback.
+- The current workbook source type still uses one packaged preset
+  (`team-project-capacity-workbook-v1`). Broader workbook preset/alias support
+  is not yet implemented; the owner has now approved the bounded Batch B design
+  to add packaged workbook presets plus alias-aware parsing/validation under the
+  existing workbook source type.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -145,8 +153,8 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-IP-034 Structured Data Onboarding Framework Batch A is now implemented locally
-on `data-onboarding-framework-batch-a`. Final focused validation passed
+IP-034 Structured Data Onboarding Framework Batch A is now committed locally on
+`data-onboarding-framework-batch-a` at `58e1733`. Final focused validation passed
 `64` tests across `src/tests/test_data_onboarding.py`,
 `src/tests/test_workbook_onboarding.py`,
 `src/tests/test_workforce_planning_import.py`, and
@@ -154,8 +162,8 @@ on `data-onboarding-framework-batch-a`. Final focused validation passed
 nine release-validation checks with `400` runtime tests plus `33`
 repository-tool tests and `19` subtests. Final `make rehearse-release` passed
 wheel install, isolated clean bootstrap, upgrade-copy rehearsal, integrity, and
-rollback. A final independent read-only diff review of the current uncommitted
-Batch A change set reported no remaining high-confidence issues.
+rollback. A final independent read-only diff review of the committed Batch A
+change set reported no remaining high-confidence issues.
 
 The separately authorized `make rehearse-release` blocker remediation restored
 the default release-rehearsal path on this workstation. `tools/rehearse_release.py`
@@ -592,16 +600,25 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
     onboarding page, live connector sync, workbook v2 mapping expansion, or
     migration/removal of other legacy import scripts is implemented here.
+13. The next authorized batch is workbook preset registry plus alias-aware
+    workbook parsing/validation under the existing workbook source type, bounded
+    by the owner-approved `architecture/15...` design and `IP-035...`
+    implementation pack.
 
 ## Exact next actions
 
-1. Keep workbook onboarding v1 semantics unchanged and keep the legacy workbook
+1. Open a new session from the committed current branch context and implement
+   only the owner-approved IP-035 Batch B scope:
+   workbook preset registry plus alias-aware parsing/validation.
+2. Keep workbook onboarding v1 semantics unchanged and keep the legacy workbook
    import script only as a transitional / fallback path until a later explicitly
    authorized convergence batch.
-2. Do not extend Batch A into UI, Dashboard onboarding, live connector pull or
-   scheduling, workbook v2 mapping, or new source types without separate
-   authorization.
-3. Do not push, merge, tag, release, deploy, activate a connector, or use real
+3. Do not extend Batch B into UI, Dashboard onboarding, live connector
+   pull or scheduling, workbook v2 mapping beyond packaged presets, or new
+   source types without separate authorization.
+4. Before requesting Batch B acceptance, complete focused tests, `make validate`,
+   `make rehearse-release`, and independent read-only review.
+5. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
 ## Decisions in force
@@ -703,6 +720,60 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-04 — Batch B workbook preset design approved for implementation
+
+- The owner approved the next bounded structured-onboarding batch and its
+  implementation pack:
+  - `architecture/15_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESET_DESIGN.md`
+  - `implementation-packs/IP-035_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESETS.md`
+- The approved Batch B direction is intentionally narrow:
+  - keep `pm_agent.data_onboarding` thin and orchestration-only;
+  - keep workbook preset/alias rules in `pm_agent.workbook_onboarding`;
+  - add packaged workbook preset registry and alias-aware
+    parser/validator/preview behavior for additional approved workbook variants;
+  - do not expand into UI, new source types, or freeform mapping DSLs.
+- Updated current-state context so a follow-on session can start Batch B
+  implementation from the committed IP-034 baseline plus this approved design
+  handoff.
+- Validation evidence:
+  - this step changes design/progress documents only;
+  - runtime validation authority remains the committed IP-034 Batch A evidence
+    already recorded in this file.
+- Commit / push status:
+  - this owner-approved design handoff is committed locally in this session; the
+    exact commit hash is reported in the handoff because a commit cannot contain
+    its own hash;
+  - no push was performed.
+
+### 2026-08-04 — Next structured onboarding batch design proposed for review
+
+- Recorded the committed IP-034 Batch A baseline as local commit `58e1733` on
+  `data-onboarding-framework-batch-a` and updated the current-state summary to
+  distinguish the committed runtime baseline from the new uncommitted design
+  review material.
+- Added the next bounded structured-onboarding design:
+  - `architecture/15_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESET_DESIGN.md`
+  - `implementation-packs/IP-035_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESETS.md`
+- The proposed next batch is intentionally narrow:
+  - keep `pm_agent.data_onboarding` thin;
+  - keep workbook-specific preset/alias rules inside
+    `pm_agent.workbook_onboarding`;
+  - add packaged workbook preset registry and alias-aware parsing/validation for
+    additional approved workbook variants under the same workbook source type;
+  - avoid UI, new source types, freeform mapping DSLs, and legacy-script
+    migration in the same batch.
+- Updated the historical Batch A design/pack documents so they no longer appear
+  as pending proposals now that Batch A is implemented and owner-accepted
+  locally.
+- Validation evidence:
+  - no runtime code changed in this follow-up step;
+  - current runtime validation authority remains the committed IP-034 Batch A
+    evidence already recorded above (`64` focused tests, `make validate`,
+    `make rehearse-release`, and final read-only review).
+- Commit / push status:
+  - this next-batch design material is not yet committed;
+  - no push was performed.
+
 ### 2026-08-04 — IP-034 Structured Data Onboarding Framework Batch A implemented locally
 
 - Implemented the approved Batch A backend-only onboarding framework under the
@@ -754,8 +825,7 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - Commit / push status:
   - this Batch A result is implemented and validated locally on
     `data-onboarding-framework-batch-a`;
-  - this accepted branch state is committed locally; the exact commit hash is
-    reported in the handoff because a commit cannot contain its own hash;
+  - this accepted branch state is committed locally at `58e1733`;
   - no push was performed.
 
 ### 2026-08-04 — V1 workbook onboarding committed; next onboarding design drafted
