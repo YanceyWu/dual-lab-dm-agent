@@ -1,38 +1,18 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-04
-Current branch: `team-project-capacity-onboarding-v1`
-Current HEAD: the accepted local baseline remains the R1 synthetic demo
-pipeline, R2 synthetic walkthrough, portable DM usage-bundle / bundle-workspace
-hardening, and the accepted IP-033 Phase 4 controlled assessment entry; this
-branch now carries additional uncommitted Team/Project + Capacity workbook
-onboarding v1 implementation work on top of that baseline
+Current branch: `data-onboarding-framework-batch-a`
+Current HEAD: the approved design baseline for this branch is `3240f3e`; this
+branch now carries the committed IP-034 Structured Data Onboarding Framework
+Batch A implementation on top of that baseline
 Package version: `0.2.0rc1`
-Current implementation item: `V1 WORKBOOK ONBOARDING COMMITTED; NEXT STRUCTURED DATA ONBOARDING DESIGN READY FOR REVIEW`
-Gate status: `V1 WORKBOOK ONBOARDING COMMITTED AND VALIDATED; NEXT-BATCH DESIGN / IMPLEMENTATION DESIGN PREPARED FOR OWNER REVIEW`
-Git state: the owner approved the design at local commit
-`33fc6f100b36f6e54eec73e531590c186f4b0441` and separately authorized only
-IP-032 Batch B1. The owner accepted the validated, reviewed B1 candidate at
-`cce14e42c26c605bc76e895de8d611540eae06f8`. The owner has now explicitly
-  authorized B2 and accepted its validated, independently reviewed local result
-at `da093ba1b1f5dabc44053a2eb7edb4d237197768`. The owner then authorized only
-B3 deterministic nine-section composition and accepted its validated local
-result at `ce726f6c9e7bd334a5af3847141d0b66258a47b3`. The owner authorized
-the corrected Batch C shared-interface implementation on 2026-08-01 and
-accepted the validated, reviewed candidate at `3df79a1`. The owner authorized
-Batch D on 2026-08-01; its combined regression, full validation, installed
-rehearsal, and independent review passed. The owner promoted the validated,
-reviewed Phase 6 Weekly Brief v2 candidate as the local Phase 6 development
-baseline on 2026-08-01. On 2026-08-02 the owner authorized the Phase 4
-controlled assessment entry slice (IP-033). It is implemented on
-`codex/phase-4-assessment-entry`, passed focused and full validation plus
-installed rehearsal, and after the R3 independent read-only review is stopped
-for the owner acceptance decision. On 2026-08-02 the owner directed this
-session to create `codex/usability-r1-r2` and complete R1 then R2 from the
-usability handoff. R1 and R2 are implemented, validated (`make validate` 339
-runtime tests plus repository/package checks; `make rehearse-release` passed),
-and stopped at the review gate for owner review. The exact commit hashes are
-reported in the task handoff because a commit cannot contain its own hash.
+Current implementation item: `IP-034 STRUCTURED DATA ONBOARDING FRAMEWORK BATCH A IMPLEMENTED LOCALLY`
+Gate status: `BATCH A IMPLEMENTED, VALIDATED, RE-REVIEWED, OWNER-ACCEPTED, AND COMMITTED LOCALLY`
+Git state: Team/Project + Capacity workbook onboarding v1 remains committed
+locally at `bc208d7`. The approved next-batch design baseline remains local
+commit `3240f3e`. This branch was created from that design baseline and now
+holds the committed local Batch A framework implementation; the exact commit
+hash is reported in the handoff because a commit cannot contain its own hash.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -59,6 +39,13 @@ belong in Git history and must not be interpreted as current instructions.
 - Phase 6 Weekly Brief v2 is promoted as the local baseline: opt-in structured
   composition with explicit snapshot capture preview/confirm; legacy v1
   weekly brief and `pm report` remain unchanged.
+- IP-034 Batch A now adds a thin `pm_agent.data_onboarding` capability with
+  onboarding-owned profile/run/linkage storage, a profile-oriented `pm
+  onboarding` CLI, shared preview/confirm envelopes, onboarding replay/audit,
+  and workbook onboarding registered as the first source type. Workbook parser,
+  validator, adapter, conflict policy, and importer semantics remain owned by
+  `pm_agent.workbook_onboarding`, and the legacy workbook import script remains
+  as a transitional fallback.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -157,6 +144,18 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-034 Structured Data Onboarding Framework Batch A is now implemented locally
+on `data-onboarding-framework-batch-a`. Final focused validation passed
+`64` tests across `src/tests/test_data_onboarding.py`,
+`src/tests/test_workbook_onboarding.py`,
+`src/tests/test_workforce_planning_import.py`, and
+`src/tests/test_resource_capacity_import.py`. Final `make validate` passed all
+nine release-validation checks with `400` runtime tests plus `33`
+repository-tool tests and `19` subtests. Final `make rehearse-release` passed
+wheel install, isolated clean bootstrap, upgrade-copy rehearsal, integrity, and
+rollback. A final independent read-only diff review of the current uncommitted
+Batch A change set reported no remaining high-confidence issues.
 
 The separately authorized `make rehearse-release` blocker remediation restored
 the default release-rehearsal path on this workstation. `tools/rehearse_release.py`
@@ -588,29 +587,22 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
     allocation for active assignments. Its characterization test now verifies
     that temporal contract without hard-coding July; operational import
     readiness is not inferred from this test.
+11. IP-034 Batch A is implemented, validated, owner-accepted, and committed
+    locally on `data-onboarding-framework-batch-a`. No push has been performed.
+12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
+    onboarding page, live connector sync, workbook v2 mapping expansion, or
+    migration/removal of other legacy import scripts is implemented here.
 
 ## Exact next actions
 
-1. Batch 2 slices 1 and 2 are treated as owner-accepted, and the separately
-   authorized `make rehearse-release` blocker remediation is now owner-accepted
-   and committed locally on `codex/usability-r1-r2`.
-2. The owner then authorized Batch 3 (promoted-capability closure). Its first
-   bounded slice wires explicit Project Health `capacity_scope` input through
-   the promoted IP-033 re-import entry so the resource dimension can use the
-   already promoted capacity-coverage reader instead of always publishing
-   `not_available`.
-3. The next gate is owner review / acceptance of this Batch 3 slice. The
-   explicit-capacity-scope contract is intentional: do not infer a latest month
-   or plan version automatically.
-4. `make rehearse-release` is no longer blocked on this workstation under the
-   repository's default Python environment. The repo-tool test coverage now
-   pins the runtime-compatible archive extraction path.
-5. Do not push, merge, tag, release, deploy, activate a connector, use real
-   data, or start Phase 7 runtime/schema/test work without separate explicit
+1. Keep workbook onboarding v1 semantics unchanged and keep the legacy workbook
+   import script only as a transitional / fallback path until a later explicitly
+   authorized convergence batch.
+2. Do not extend Batch A into UI, Dashboard onboarding, live connector pull or
+   scheduling, workbook v2 mapping, or new source types without separate
    authorization.
-6. Do not activate Skill Dependency, create a new Attention producer, or infer
-   a required Decision without separate authorization. Preserve the promoted
-   Phase 1–6 baselines and the accepted IP-033 local baseline fix.
+3. Do not push, merge, tag, release, deploy, activate a connector, or use real
+   data without separate explicit authorization.
 
 ## Decisions in force
 
@@ -711,6 +703,61 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-04 — IP-034 Structured Data Onboarding Framework Batch A implemented locally
+
+- Implemented the approved Batch A backend-only onboarding framework under the
+  new `src/pm_agent/data_onboarding/` capability:
+  - added onboarding-owned additive schema for saved source profiles,
+    onboarding runs / attempts, publication links, and workbook plan-identity
+    reservations;
+  - added typed models, repository helpers, workbook source registration, a
+    source-type registry, shared preview/confirm envelopes, and shared
+    replay/audit orchestration;
+  - added the profile-oriented `pm onboarding` CLI for
+    `profile save/show/list`, `preview`, `confirm`, and `run show`.
+- Reused the existing workbook onboarding capability as the first registered
+  source type without rewriting domain rules:
+  - workbook parsing, validation, mapping, conflict policy, workforce import,
+    and capacity import behavior remain owned by
+    `pm_agent.workbook_onboarding`;
+  - bootstrap now composes the dedicated onboarding schema while
+    `workbook_onboarding/schema.py` remains a compatibility alias;
+  - the legacy workbook import script remains present as the transitional /
+    fallback entry and direct legacy imports now use the reservation-backed path
+    so rejected imports restore profile revision and release reserved plan
+    identity.
+- Completed the final hardening fixes required by repeated review:
+  - stale profile changes now reject confirm safely without corrupting partial
+    run summaries;
+  - running runs require explicit recovery, partial runs can retry the same
+    run ID, and failed confirms restore claimed profile revision when no domain
+    side effects were published;
+  - source changes during preview are detected and rejected instead of
+    persisting mismatched source identity metadata;
+  - workbook plan identities are now reserved transactionally across concurrent
+    previews/imports and are released on safe terminal paths.
+- Added/expanded focused regression coverage in
+  `src/tests/test_data_onboarding.py` and `src/tests/test_workbook_onboarding.py`
+  for profile save/show/list, preview/confirm round-trips, replay/retry,
+  running-run recovery, partial-run resume, source-change detection, concurrent
+  reservation behavior, and legacy import rollback behavior.
+- Validation evidence:
+  - focused onboarding/integration regression passed:
+    `src/.venv/bin/python -m pytest tests/test_data_onboarding.py tests/test_workbook_onboarding.py tests/test_workforce_planning_import.py tests/test_resource_capacity_import.py`
+    → `64 passed`;
+  - final `make validate` passed all nine release-validation checks with
+    `400` runtime tests and `33` repository-tool tests (`19` subtests);
+  - final `make rehearse-release` passed wheel install, isolated clean
+    bootstrap, upgrade-copy rehearsal, integrity, and rollback;
+  - final independent read-only diff review reported no remaining
+    high-confidence issues.
+- Commit / push status:
+  - this Batch A result is implemented and validated locally on
+    `data-onboarding-framework-batch-a`;
+  - this accepted branch state is committed locally; the exact commit hash is
+    reported in the handoff because a commit cannot contain its own hash;
+  - no push was performed.
+
 ### 2026-08-04 — V1 workbook onboarding committed; next onboarding design drafted
 
 - Committed the validated Team/Project + Capacity workbook onboarding v1
@@ -725,6 +772,16 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   onboarding run audit, and a shared preview/confirm envelope so new workbook,
   CSV, JSON, or later approved export sources can be added mainly by adapter
   work instead of rebuilding orchestration each time.
+- Recorded convergence judgment for later implementation:
+  - keep capability-level canonical importers, synthetic samples/demo data, and
+    validation/rehearsal tooling as long-term repository assets because they
+    prove import contracts, portability, replay, and release safety;
+  - keep older source-specific bridge scripts only as transitional or fallback
+    paths while the unified onboarding framework is being introduced;
+  - do not treat those legacy bridge scripts as the long-term operator entry;
+    future batches should gradually converge user-facing onboarding toward the
+    unified framework once source coverage, preview/confirm behavior, and
+    rollback/replay evidence are equivalent.
 - This is design-only material for owner review. It creates no new runtime or
   schema authority by itself and does not authorize Batch A implementation.
 - Validation evidence for the committed V1 slice remains:

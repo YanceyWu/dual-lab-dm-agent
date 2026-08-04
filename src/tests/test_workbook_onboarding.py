@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -21,6 +22,10 @@ from pm_agent.workbook_onboarding.service import (
     preview_workbook_import,
 )
 from pm_agent.workbook_onboarding import service as workbook_service
+from pm_agent.workbook_onboarding.repository import (
+    advance_profile_revision,
+    resolve_plan_identity,
+)
 from pm_agent.workbook_onboarding.validator import validate_workbook
 from pm_agent.workforce_planning_import import repository as workforce_repository
 
@@ -306,8 +311,10 @@ def test_import_workbook_preserves_explicit_zero_and_missing_capacity_unknown(
 
 
 def test_import_workbook_rejects_when_workforce_preview_rejects(
+    isolated_db: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    init_db(quiet=True)
     monkeypatch.setattr(
         workbook_service,
         "_build_candidate",
@@ -335,10 +342,211 @@ def test_import_workbook_rejects_when_workforce_preview_rejects(
             "failure_code": "WORKFORCE_PLANNING_PACKAGE_REPLAY_CONFLICT",
         },
     )
-    result = import_workbook("test.xlsx")
+    result = import_workbook("test.xlsx", db_path=isolated_db)
     assert result["status"] == "rejected"
     assert result["workforce_result"]["status"] == "rejected"
     assert result["capacity_result"] is None
+
+
+def test_import_workbook_rejection_restores_revision_and_releases_reservation(
+    isolated_db: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(tmp_path / "rejected-import.xlsx")
+    monkeypatch.setattr(
+        workbook_service,
+        "preview_workforce_import",
+        lambda *args, **kwargs: {
+            "status": "rejected",
+            "failure_code": "WORKFORCE_PLANNING_PACKAGE_REPLAY_CONFLICT",
+        },
+    )
+
+    result = import_workbook(workbook_path, db_path=isolated_db)
+    assert result["status"] == "rejected"
+    assert result["revision"] == 1
+
+    with sqlite3.connect(isolated_db) as connection:
+        revision = connection.execute(
+            "SELECT current_revision FROM onboarding_profiles WHERE profile_key='default'"
+        ).fetchone()
+        reservations = connection.execute(
+            """
+            SELECT status
+            FROM data_onboarding_plan_reservations
+            WHERE requested_name='FY26 Q4 Baseline'
+            """
+        ).fetchall()
+    assert revision == (0,)
+    assert reservations == [("released",)]
+
+
+def test_confirm_workbook_candidate_reuses_retryable_workforce_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = {
+        "status": "previewed",
+        "workbook_path": "test.xlsx",
+        "blockers": [],
+        "warnings": [],
+        "conflicts": [],
+        "plan_version": {
+            "plan_version_id": "plan-workbook-test",
+            "version_name": "FY26 Q4 Baseline",
+        },
+        "revision": 1,
+        "counts": {},
+        "workforce_package": {},
+        "capacity_package": None,
+    }
+    monkeypatch.setattr(
+        workbook_service,
+        "preview_workforce_import",
+        lambda *args, **kwargs: {
+            "status": "retryable",
+            "session_id": "workforce-session-1",
+        },
+    )
+    monkeypatch.setattr(
+        workbook_service,
+        "confirm_workforce_import",
+        lambda session_id, **kwargs: {
+            "status": "completed",
+            "session_id": session_id,
+            "idempotent": False,
+            "report": {"publication_id": "workforce-publication-1"},
+        },
+    )
+    result = workbook_service.confirm_workbook_candidate(candidate)
+    assert result["status"] == "completed"
+    assert result["workforce_result"]["session_id"] == "workforce-session-1"
+    assert result["workforce_result"]["report"]["publication_id"] == (
+        "workforce-publication-1"
+    )
+
+
+def test_confirm_workbook_candidate_accepts_already_completed_workforce_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = {
+        "status": "previewed",
+        "workbook_path": "test.xlsx",
+        "blockers": [],
+        "warnings": [],
+        "conflicts": [],
+        "plan_version": {
+            "plan_version_id": "plan-workbook-test",
+            "version_name": "FY26 Q4 Baseline",
+        },
+        "revision": 1,
+        "counts": {},
+        "workforce_package": {},
+        "capacity_package": None,
+    }
+    monkeypatch.setattr(
+        workbook_service,
+        "preview_workforce_import",
+        lambda *args, **kwargs: {
+            "status": "already_completed",
+            "session_id": "workforce-session-1",
+            "report": {"publication_id": "workforce-publication-1"},
+        },
+    )
+    result = workbook_service.confirm_workbook_candidate(candidate)
+    assert result["status"] == "completed"
+    assert result["workforce_result"] == {
+        "status": "completed",
+        "session_id": "workforce-session-1",
+        "idempotent": True,
+        "report": {"publication_id": "workforce-publication-1"},
+    }
+
+
+def test_advance_profile_revision_serializes_concurrent_claims(isolated_db: Path) -> None:
+    init_db(quiet=True)
+    barrier = threading.Barrier(2)
+    results: list[tuple[str, int]] = []
+    errors: list[BaseException] = []
+
+    def worker() -> None:
+        try:
+            barrier.wait()
+            results.append(
+                (
+                    "ok",
+                    advance_profile_revision(profile_key="default", db_path=isolated_db),
+                )
+            )
+        except BaseException as exc:  # pragma: no cover - failure path assertion below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert sorted(revision for _, revision in results) == [1, 2]
+
+
+def test_resolve_plan_identity_serializes_concurrent_reservations(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    barrier = threading.Barrier(2)
+    results: list[dict[str, str]] = []
+    errors: list[BaseException] = []
+
+    def worker(profile_key: str, run_id: str) -> None:
+        try:
+            barrier.wait()
+            results.append(
+                resolve_plan_identity(
+                    "FY26 Q4 Baseline",
+                    profile_key=profile_key,
+                    run_id=run_id,
+                    db_path=isolated_db,
+                )
+            )
+        except BaseException as exc:  # pragma: no cover - failure path assertion below
+            errors.append(exc)
+
+    threads = [
+        threading.Thread(target=worker, args=("profile-a", "run-a")),
+        threading.Thread(target=worker, args=("profile-b", "run-b")),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert {item["version_name"] for item in results} == {
+        "FY26 Q4 Baseline",
+        "FY26 Q4 Baseline-v2",
+    }
+    assert {item["plan_version_id"] for item in results} == {
+        "plan-workbook-fy26-q4-baseline",
+        "plan-workbook-fy26-q4-baseline-v2",
+    }
+    with sqlite3.connect(isolated_db) as connection:
+        reservations = connection.execute(
+            """
+            SELECT run_id, version_name, plan_version_id, status
+            FROM data_onboarding_plan_reservations
+            ORDER BY run_id
+            """
+        ).fetchall()
+    assert len(reservations) == 2
+    assert set(reservations).issubset(
+        {
+        ("run-a", "FY26 Q4 Baseline", "plan-workbook-fy26-q4-baseline", "reserved"),
+        ("run-a", "FY26 Q4 Baseline-v2", "plan-workbook-fy26-q4-baseline-v2", "reserved"),
+        ("run-b", "FY26 Q4 Baseline", "plan-workbook-fy26-q4-baseline", "reserved"),
+        ("run-b", "FY26 Q4 Baseline-v2", "plan-workbook-fy26-q4-baseline-v2", "reserved"),
+        }
+    )
 
 
 def test_reimport_deduplicates_plan_version_name_and_replaces_current_baseline(

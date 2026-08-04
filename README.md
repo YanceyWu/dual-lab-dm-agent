@@ -107,11 +107,17 @@ pm tool query connector-sync-results
 pm tool query project-snapshot-list
 pm project-health config show
 pm staffing capacity-policy show
+pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding preview --profile-key fy26-q4
+pm onboarding confirm --run-id <onboarding-run-id>
+pm onboarding run show --run-id <onboarding-run-id>
 ```
 
 Run `pm staffing assess --help` before a staffing assessment. Use
 `pm connector probe <connector-name>` only for an explicitly requested live
-connector check.
+connector check. The legacy source-specific import scripts remain available as
+transitional/fallback entrypoints while onboarding converges on the shared
+profile-based framework.
 
 The complete package command and configuration guide is in `src/README.md`.
 

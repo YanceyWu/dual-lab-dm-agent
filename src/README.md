@@ -35,6 +35,8 @@ pm connector validate --portable
 `pm init` initializes the configured SQLite database and creates generic starter
 configuration when needed. Add operational paths, endpoints, credentials, and
 company-specific mappings only to ignored local files.
+For a user-oriented guide to safely connect an approved local data copy or
+structured local data inputs, see `docs/LOCAL_DATA_ONBOARDING_GUIDE.md`.
 
 For a synthetic first run:
 
@@ -46,6 +48,24 @@ DATABASE_PATH=sample-data/demo/sample_pm.db pm tool query team-workload-overview
 
 The demo database and fixtures use fictional names, `.invalid` domains, and
 reserved synthetic identifiers.
+
+## Structured data onboarding
+
+Use saved source profiles plus preview/confirm when onboarding approved local
+structured data sources:
+
+```bash
+pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding profile show --profile-key fy26-q4
+pm onboarding preview --profile-key fy26-q4
+pm onboarding confirm --run-id <onboarding-run-id>
+pm onboarding run show --run-id <onboarding-run-id>
+```
+
+Batch A registers Team/Project + Capacity workbook onboarding as the first
+shared source type. The existing source-specific workbook script remains
+available as a transitional fallback while other sources converge on the same
+framework.
 
 ## Structured read-only interface
 
@@ -155,6 +175,10 @@ pm dashboard serve
 The Dashboard binds to loopback by default. Remote binding requires the explicit
 operator option and an approved network scope. Write-capable routes use preview,
 explicit confirmation, one-time tokens, idempotency, and audit records.
+For a human-oriented walkthrough of each left navigation item, where the
+Dashboard data comes from, how to prepare data, and the usual Delivery Manager
+next step, see
+`docs/DASHBOARD_USAGE_GUIDE.md`.
 
 ## Existing operational database
 

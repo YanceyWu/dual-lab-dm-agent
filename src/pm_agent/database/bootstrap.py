@@ -13,6 +13,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pm_agent.config import settings
+from pm_agent.data_onboarding.schema import (
+    DATA_ONBOARDING_DDL,
+    ensure_onboarding_profile_columns,
+)
 from pm_agent.database.execution_schema import PHASE3_CANONICAL_DDL
 from pm_agent.database.project_health_schema import (
     PROJECT_HEALTH_DDL,
@@ -25,7 +29,6 @@ from pm_agent.database.staffing_capacity import (
 )
 from pm_agent.resource_intelligence.schema import RESOURCE_INTELLIGENCE_DDL
 from pm_agent.weekly_brief.schema import WEEKLY_BRIEF_SNAPSHOT_DDL
-from pm_agent.workbook_onboarding.schema import WORKBOOK_ONBOARDING_DDL
 from pm_agent.workforce_planning_import.schema import WORKFORCE_PLANNING_IMPORT_DDL
 from pm_agent.rules.identity import (
     build_default_resource_portal_id,
@@ -2839,13 +2842,14 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PROJECT_HEALTH_DDL)
     conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
-    conn.executescript(WORKBOOK_ONBOARDING_DDL)
+    conn.executescript(DATA_ONBOARDING_DDL)
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)
     conn.executescript(STAFFING_CAPACITY_POLICY_DDL)
     conn.executescript(STAFFING_CAPACITY_OPERATIONS_DDL)
     install_or_validate_policy(
         conn, table_preexisting=staffing_capacity_policy_preexisting
     )
+    ensure_onboarding_profile_columns(conn)
     ensure_project_health_reimport_columns(conn)
     existing_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(employees)").fetchall()
