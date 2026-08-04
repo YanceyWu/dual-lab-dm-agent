@@ -17,6 +17,7 @@ from pm_agent.data_onboarding.schema import (
     DATA_ONBOARDING_DDL,
     ensure_onboarding_profile_columns,
 )
+from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_DDL
 from pm_agent.database.execution_schema import PHASE3_CANONICAL_DDL
 from pm_agent.database.project_health_schema import (
     PROJECT_HEALTH_DDL,
@@ -2841,6 +2842,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PHASE3_CANONICAL_DDL)
     conn.executescript(PROJECT_HEALTH_DDL)
     conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
+    conn.executescript(CURRENT_STATE_STAFFING_DDL)
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
     conn.executescript(DATA_ONBOARDING_DDL)
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)

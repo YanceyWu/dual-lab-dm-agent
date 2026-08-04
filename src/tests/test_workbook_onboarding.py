@@ -345,6 +345,7 @@ def test_preview_workbook_explicit_default_preset_matches_implicit_default(
     assert implicit["counts"] == explicit["counts"]
     assert implicit["plan_version"] == explicit["plan_version"]
     assert implicit["workforce_package"] == explicit["workforce_package"]
+    assert implicit["current_state_staffing_package"] == explicit["current_state_staffing_package"]
     assert implicit["capacity_package"] == explicit["capacity_package"]
 
 
@@ -525,6 +526,7 @@ def test_preview_workbook_expands_sparse_allocations_and_skips_empty_capacity(
     assert preview["status"] == "previewed"
     assert preview["capacity_package"] is None
     assert preview["counts"]["expanded_allocation_records"] == 8
+    assert preview["counts"]["current_state_assignment_records"] == 1
     allocation_map = {
         (
             row["member_id"],
@@ -594,6 +596,7 @@ def test_import_workbook_rejects_when_workforce_preview_rejects(
             "revision": 1,
             "counts": {},
             "workforce_package": {},
+            "current_state_staffing_package": {},
             "capacity_package": None,
         },
     )
@@ -608,6 +611,7 @@ def test_import_workbook_rejects_when_workforce_preview_rejects(
     result = import_workbook("test.xlsx", db_path=isolated_db)
     assert result["status"] == "rejected"
     assert result["workforce_result"]["status"] == "rejected"
+    assert "current_state_staffing_result" not in result
     assert result["capacity_result"] is None
 
 
@@ -660,6 +664,41 @@ def test_confirm_workbook_candidate_reuses_retryable_workforce_session(
         "revision": 1,
         "counts": {},
         "workforce_package": {},
+        "current_state_staffing_package": {
+            "dataset_marker": "WORKBOOK_ONBOARDING_V1",
+            "package_id": "package-workbook-current-state-test-r1",
+            "schema_version": "current-state-staffing-v1",
+            "generated_at": "2026-08-15T00:00:00+00:00",
+            "source_id": "source-workbook-current-state-staffing",
+            "publication_scope": {
+                "scope_key": "workbook-current-state-staffing",
+                "as_of_date": "2026-08-15",
+                "effective_year": 2026,
+                "effective_month": 9,
+            },
+            "manifest": {"member_ids": ["WD100001"], "project_ids": ["RP-PROJ-001"], "assignment_keys": []},
+            "members": [
+                {
+                    "member_id": "WD100001",
+                    "display_name": "Alex Example",
+                    "status": "active",
+                    "role": "Engineer",
+                    "level": "7",
+                    "resource_type": "LTFTE",
+                    "current_hiref_id": None,
+                    "hiref_end_date": None,
+                }
+            ],
+            "projects": [
+                {
+                    "project_id": "RP-PROJ-001",
+                    "display_name": "Project Atlas",
+                    "status": "active",
+                    "priority": 2,
+                }
+            ],
+            "assignments": [],
+        },
         "capacity_package": None,
     }
     monkeypatch.setattr(
@@ -680,12 +719,22 @@ def test_confirm_workbook_candidate_reuses_retryable_workforce_session(
             "report": {"publication_id": "workforce-publication-1"},
         },
     )
+    monkeypatch.setattr(
+        workbook_service,
+        "preview_current_state_staffing_import",
+        lambda *args, **kwargs: {
+            "status": "already_completed",
+            "session_id": "current-state-session-1",
+            "report": {"publication_id": "current-state-publication-1"},
+        },
+    )
     result = workbook_service.confirm_workbook_candidate(candidate)
     assert result["status"] == "completed"
     assert result["workforce_result"]["session_id"] == "workforce-session-1"
     assert result["workforce_result"]["report"]["publication_id"] == (
         "workforce-publication-1"
     )
+    assert result["current_state_staffing_result"]["status"] == "completed"
 
 
 def test_confirm_workbook_candidate_accepts_already_completed_workforce_session(
@@ -704,6 +753,41 @@ def test_confirm_workbook_candidate_accepts_already_completed_workforce_session(
         "revision": 1,
         "counts": {},
         "workforce_package": {},
+        "current_state_staffing_package": {
+            "dataset_marker": "WORKBOOK_ONBOARDING_V1",
+            "package_id": "package-workbook-current-state-test-r1",
+            "schema_version": "current-state-staffing-v1",
+            "generated_at": "2026-08-15T00:00:00+00:00",
+            "source_id": "source-workbook-current-state-staffing",
+            "publication_scope": {
+                "scope_key": "workbook-current-state-staffing",
+                "as_of_date": "2026-08-15",
+                "effective_year": 2026,
+                "effective_month": 9,
+            },
+            "manifest": {"member_ids": ["WD100001"], "project_ids": ["RP-PROJ-001"], "assignment_keys": []},
+            "members": [
+                {
+                    "member_id": "WD100001",
+                    "display_name": "Alex Example",
+                    "status": "active",
+                    "role": "Engineer",
+                    "level": "7",
+                    "resource_type": "LTFTE",
+                    "current_hiref_id": None,
+                    "hiref_end_date": None,
+                }
+            ],
+            "projects": [
+                {
+                    "project_id": "RP-PROJ-001",
+                    "display_name": "Project Atlas",
+                    "status": "active",
+                    "priority": 2,
+                }
+            ],
+            "assignments": [],
+        },
         "capacity_package": None,
     }
     monkeypatch.setattr(
@@ -715,6 +799,15 @@ def test_confirm_workbook_candidate_accepts_already_completed_workforce_session(
             "report": {"publication_id": "workforce-publication-1"},
         },
     )
+    monkeypatch.setattr(
+        workbook_service,
+        "preview_current_state_staffing_import",
+        lambda *args, **kwargs: {
+            "status": "already_completed",
+            "session_id": "current-state-session-1",
+            "report": {"publication_id": "current-state-publication-1"},
+        },
+    )
     result = workbook_service.confirm_workbook_candidate(candidate)
     assert result["status"] == "completed"
     assert result["workforce_result"] == {
@@ -723,6 +816,7 @@ def test_confirm_workbook_candidate_accepts_already_completed_workforce_session(
         "idempotent": True,
         "report": {"publication_id": "workforce-publication-1"},
     }
+    assert result["current_state_staffing_result"]["status"] == "completed"
 
 
 def test_advance_profile_revision_serializes_concurrent_claims(isolated_db: Path) -> None:

@@ -221,6 +221,34 @@ def planned_operations(source_preview: dict[str, Any]) -> list[dict[str, Any]]:
             },
         }
     ]
+    current_state_package = source_preview.get("current_state_staffing_package")
+    if isinstance(current_state_package, dict):
+        scope = current_state_package["publication_scope"]
+        assigned_members = {
+            item["member_id"] for item in current_state_package["assignments"]
+        }
+        operations.append(
+            {
+                "capability": "current_state_staffing",
+                "status": "planned",
+                "package_id": current_state_package["package_id"],
+                "schema_version": current_state_package["schema_version"],
+                "counts": {
+                    "members": len(current_state_package["members"]),
+                    "projects": len(current_state_package["projects"]),
+                    "assignments": len(current_state_package["assignments"]),
+                    "assigned_members": len(assigned_members),
+                    "unassigned_members": len(current_state_package["members"])
+                    - len(assigned_members),
+                },
+                "publication_scope": {
+                    "scope_key": scope["scope_key"],
+                    "as_of_date": scope["as_of_date"],
+                    "effective_year": scope["effective_year"],
+                    "effective_month": scope["effective_month"],
+                },
+            }
+        )
     capacity_package = source_preview.get("capacity_package")
     if isinstance(capacity_package, dict):
         operations.append(
@@ -249,9 +277,31 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(workforce_package, dict):
         return {
             "workforce": {"state": "not_available"},
+            "current_state_staffing": {"state": "not_available"},
             "capacity": {"state": "not_available"},
         }
     workforce_period_count = len(workforce_package["manifest"]["workforce_periods"])
+    current_state_package = source_preview.get("current_state_staffing_package")
+    current_state_coverage = {"state": "not_available"}
+    if isinstance(current_state_package, dict):
+        scope = current_state_package["publication_scope"]
+        assigned_members = {
+            item["member_id"] for item in current_state_package["assignments"]
+        }
+        current_state_coverage = {
+            "state": "complete",
+            "member_count": len(current_state_package["members"]),
+            "project_count": len(current_state_package["projects"]),
+            "assignment_count": len(current_state_package["assignments"]),
+            "assigned_member_count": len(assigned_members),
+            "unassigned_member_count": len(current_state_package["members"])
+            - len(assigned_members),
+            "effective_period": {
+                "year": scope["effective_year"],
+                "month": scope["effective_month"],
+                "as_of_date": scope["as_of_date"],
+            },
+        }
     capacity_package = source_preview.get("capacity_package")
     if not isinstance(capacity_package, dict):
         return {
@@ -261,6 +311,7 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
                 "member_period_count": workforce_period_count,
                 "missing_record_count": 0,
             },
+            "current_state_staffing": current_state_coverage,
             "capacity": {
                 "state": "not_provided",
                 "known_member_period_count": 0,
@@ -285,6 +336,7 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
                 item["fraction"] == 0 for item in capacity_package["observations"]
             ),
         },
+        "current_state_staffing": current_state_coverage,
     }
 
 
@@ -307,6 +359,26 @@ def publication_links(source_result: dict[str, Any]) -> list[DomainLinkRecord]:
                     "package_id": source_result.get("workforce_package", {}).get("package_id", ""),
                     "failure_code": workforce_result.get("failure_code", ""),
                     "report": workforce_result.get("report", {}),
+                },
+            )
+        )
+    current_state_result = source_result.get("current_state_staffing_result")
+    if isinstance(current_state_result, dict):
+        links.append(
+            DomainLinkRecord(
+                capability_key="current_state_staffing",
+                status=str(current_state_result.get("status", "")),
+                domain_session_id=str(current_state_result.get("session_id", "")),
+                domain_publication_id=str(
+                    current_state_result.get("report", {}).get("publication_id", "")
+                ),
+                domain_plan_version_id="",
+                details={
+                    "package_id": source_result.get("current_state_staffing_package", {}).get(
+                        "package_id", ""
+                    ),
+                    "failure_code": current_state_result.get("failure_code", ""),
+                    "report": current_state_result.get("report", {}),
                 },
             )
         )

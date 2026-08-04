@@ -16,6 +16,18 @@ from pm_agent.resource_intelligence.service import (
 from pm_agent.resource_intelligence.service import (
     validate_package as validate_capacity_package,
 )
+from pm_agent.current_state_staffing.service import (
+    confirm_import as confirm_current_state_staffing_import,
+)
+from pm_agent.current_state_staffing.service import (
+    preview_import as preview_current_state_staffing_import,
+)
+from pm_agent.current_state_staffing.service import (
+    validate_package as validate_current_state_staffing_package,
+)
+from pm_agent.workbook_onboarding.current_state_staffing_adapter import (
+    build_current_state_staffing_package,
+)
 from pm_agent.workbook_onboarding.capacity_adapter import build_capacity_package
 from pm_agent.workbook_onboarding.confirmed_adjustments import scan_workbook_conflicts
 from pm_agent.workbook_onboarding.models import ValidationIssue
@@ -133,6 +145,16 @@ def confirm_workbook_candidate(
         }
 
     capacity_result: dict[str, Any] | None = None
+    current_state_result = _resolve_current_state_staffing_result(candidate, db_path=db_path)
+    if current_state_result["status"] != "completed":
+        return {
+            **candidate,
+            "status": "rejected",
+            "workforce_result": workforce_result,
+            "current_state_staffing_result": current_state_result,
+            "capacity_result": None,
+        }
+
     if candidate["capacity_package"] is not None:
         capacity_preview = preview_capacity_import(
             candidate["capacity_package"],
@@ -156,6 +178,7 @@ def confirm_workbook_candidate(
                 **candidate,
                 "status": "partially_completed",
                 "workforce_result": workforce_result,
+                "current_state_staffing_result": current_state_result,
                 "capacity_result": capacity_result,
             }
 
@@ -163,6 +186,7 @@ def confirm_workbook_candidate(
         **candidate,
         "status": "completed",
         "workforce_result": workforce_result,
+        "current_state_staffing_result": current_state_result,
         "capacity_result": capacity_result,
     }
 
@@ -212,6 +236,31 @@ def _resolve_capacity_result(
             "report": capacity_preview["report"],
         }
     return capacity_preview
+
+
+def _resolve_current_state_staffing_result(
+    candidate: dict[str, Any],
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    current_state_preview = preview_current_state_staffing_import(
+        candidate["current_state_staffing_package"],
+        db_path=db_path,
+    )
+    status = current_state_preview["status"]
+    if status in {"previewed", "retryable"}:
+        return confirm_current_state_staffing_import(
+            current_state_preview["session_id"],
+            db_path=db_path,
+        )
+    if status == "already_completed":
+        return {
+            "status": "completed",
+            "session_id": current_state_preview["session_id"],
+            "idempotent": True,
+            "report": current_state_preview["report"],
+        }
+    return current_state_preview
 
 
 def _build_candidate(
@@ -325,8 +374,15 @@ def _build_candidate(
         assessment_time=assessment_time,
         revision=revision,
     )
+    current_state_staffing_package = build_current_state_staffing_package(
+        validation.workbook,
+        version_name=resolved_plan["version_name"],
+        as_of_date=as_of_date,
+        revision=revision,
+    )
     try:
         validate_workforce_package(workforce_package)
+        validate_current_state_staffing_package(current_state_staffing_package)
         if capacity_package is not None:
             validate_capacity_package(capacity_package)
     except ValueError as exc:
@@ -355,8 +411,12 @@ def _build_candidate(
             "allocation_rows": len(validation.workbook.allocations),
             "capacity_rows": len(validation.workbook.capacity_rows),
             "expanded_allocation_records": len(workforce_package["monthly_allocations"]),
+            "current_state_assignment_records": len(
+                current_state_staffing_package["assignments"]
+            ),
         },
         "workforce_package": workforce_package,
+        "current_state_staffing_package": current_state_staffing_package,
         "capacity_package": capacity_package,
     }
 

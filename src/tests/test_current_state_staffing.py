@@ -1,0 +1,144 @@
+from __future__ import annotations
+
+import sqlite3
+from pathlib import Path
+
+from pm_agent.current_state_staffing import read_model, service
+from pm_agent.database.bootstrap import main as init_db
+
+
+def _package(*, package_id: str = "package-current-state-r1", allocation: float = 0.6) -> dict:
+    assignments = []
+    if allocation > 0:
+        assignments.append(
+            {
+                "member_id": "WD100001",
+                "project_id": "RP-PROJ-001",
+                "allocation": allocation,
+            }
+        )
+    return {
+        "dataset_marker": "WORKBOOK_ONBOARDING_V1",
+        "package_id": package_id,
+        "schema_version": service.PACKAGE_SCHEMA_VERSION,
+        "generated_at": "2026-08-15T00:00:00+00:00",
+        "source_id": "source-workbook-current-state-staffing",
+        "publication_scope": {
+            "scope_key": "workbook-current-state-staffing",
+            "as_of_date": "2026-08-15",
+            "effective_year": 2026,
+            "effective_month": 9,
+        },
+        "manifest": {
+            "member_ids": ["WD100001", "WD100002"],
+            "project_ids": ["RP-PROJ-001"],
+            "assignment_keys": [
+                {
+                    "member_id": item["member_id"],
+                    "project_id": item["project_id"],
+                }
+                for item in assignments
+            ],
+        },
+        "members": [
+            {
+                "member_id": "WD100001",
+                "display_name": "Alex Example",
+                "status": "active",
+                "role": "Engineer",
+                "level": "7",
+                "resource_type": "LTFTE",
+                "current_hiref_id": None,
+                "hiref_end_date": None,
+            },
+            {
+                "member_id": "WD100002",
+                "display_name": "Blair Example",
+                "status": "active",
+                "role": "Engineer",
+                "level": "7",
+                "resource_type": "LTFTE",
+                "current_hiref_id": None,
+                "hiref_end_date": None,
+            },
+        ],
+        "projects": [
+            {
+                "project_id": "RP-PROJ-001",
+                "display_name": "Project Atlas",
+                "status": "active",
+                "priority": 2,
+            }
+        ],
+        "assignments": assignments,
+    }
+
+
+def test_current_state_staffing_preview_rejects_same_package_id_with_different_payload(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+
+    first = service.preview_import(_package(allocation=0.6), db_path=isolated_db)
+    conflicting = service.preview_import(_package(allocation=0.4), db_path=isolated_db)
+
+    assert first["status"] == "previewed"
+    assert conflicting["status"] == "rejected"
+    assert conflicting["failure_code"] == "CURRENT_STATE_STAFFING_PACKAGE_REPLAY_CONFLICT"
+
+
+def test_current_state_staffing_confirm_is_idempotent_and_publishes_once(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+
+    preview = service.preview_import(_package(), db_path=isolated_db)
+    confirmed = service.confirm_import(preview["session_id"], db_path=isolated_db)
+    repeated = service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    assert confirmed["status"] == "completed"
+    assert repeated["status"] == "completed"
+    assert repeated["idempotent"] is True
+    assert repeated["report"]["publication_id"] == confirmed["report"]["publication_id"]
+
+    with sqlite3.connect(isolated_db) as connection:
+        publication_count = connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_publications"
+        ).fetchone()[0]
+    assert publication_count == 1
+
+
+def test_current_state_staffing_read_contract_reports_unavailable_unknown_then_known(
+    isolated_db: Path,
+    tmp_path: Path,
+) -> None:
+    uninitialized_db = tmp_path / "uninitialized.sqlite3"
+
+    unavailable = read_model.current_publication_state(db_path=uninitialized_db)
+    assert unavailable["state"] == "unavailable"
+    assert unavailable["state_reason"] == "current_state_staffing_schema_missing"
+
+    init_db(quiet=True)
+
+    unknown = read_model.current_publication_state(db_path=isolated_db)
+    assert unknown["state"] == "unknown"
+    assert unknown["state_reason"] == "current_state_staffing_publication_not_found"
+
+    preview = service.preview_import(_package(), db_path=isolated_db)
+    service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    known = read_model.current_publication_state(db_path=isolated_db)
+    member = read_model.member_load_snapshot("WD100001", db_path=isolated_db)
+    unassigned = read_model.member_load_snapshot("WD100002", db_path=isolated_db)
+    project = read_model.project_team_snapshot("RP-PROJ-001", db_path=isolated_db)
+
+    assert known["state"] == "known"
+    assert member["state"] == "known"
+    assert member["current_load"] == 0.6
+    assert member["active_project_count"] == 1
+    assert unassigned["state"] == "known"
+    assert unassigned["current_load"] == 0.0
+    assert unassigned["assignment_state"] == "unassigned"
+    assert project["state"] == "known"
+    assert project["assignment_state"] == "assigned"
+    assert project["assignments"][0]["member_id"] == "WD100001"

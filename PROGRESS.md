@@ -1,15 +1,15 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-04
+Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: clean submitted baseline `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
-is the required starting point for IP-036 continuation. The current working
-tree now carries a docs-only A0 artifact freeze on top of that clean baseline;
-the separate aborted runtime attempt remains excluded and must not be inherited
-as partial work
+Current HEAD: the local A1 commit on this branch
+is the required starting point for IP-036 continuation into A2. That commit is
+rooted at the accepted A0 freeze commit
+`8ff06e7ab988895fa4f2428179613e289a9107d0`; the separate aborted runtime
+attempt remains excluded and must not be inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 A0 ARTIFACTS COMMITTED LOCALLY ON CLEAN 8bfd9c8 BASELINE; NEXT GATE IS A1 ONLY`
-Gate status: `A0 DOCS FREEZE COMMITTED LOCALLY; NEXT RUNTIME GATE IS A1 CURRENT-STATE STAFFING CONTRACT SKELETON`
+Current implementation item: `IP-036 A1 CURRENT-STATE STAFFING CONTRACT SKELETON IMPLEMENTED LOCALLY ON CLEAN 8ff06e7 BASELINE; NEXT GATE IS A2 ONLY`
+Gate status: `A1 RUNTIME SLICE IMPLEMENTED AND VALIDATED LOCALLY; NEXT RUNTIME GATE IS A2 READER MIGRATION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -28,11 +28,15 @@ current working tree now revises `architecture/16...`,
 actually frozen: coverage/dependency matrix, missing-coverage register,
 invariant checklist, end-to-end state-machine matrix, product/semantic
 decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
-self-review checklist. No runtime or schema file changed in this session. The
-older aborted runtime attempt remains excluded because it reported unresolved
-replay/uniqueness and unknown-data-semantic defects. No push was performed.
-Promotion is local only; every external action remains a separate owner
-decision. No push is authorized or required.
+self-review checklist. The current working tree now adds the bounded A1 runtime
+slice only: a dedicated `pm_agent.current_state_staffing` capability family,
+minimal workbook/onboarding publish wiring, focused replay/idempotency tests,
+and no reader migration, freshness replacement, or legacy deletion. The older
+aborted runtime attempt remains excluded because it reported unresolved
+replay/uniqueness and unknown-data-semantic defects. The A1 slice is
+committed locally in this session and remains unpushed. Promotion is local
+only; every external action remains a separate owner decision. No push is
+authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -86,6 +90,14 @@ belong in Git history and must not be interpreted as current instructions.
   that handoff so A0 must freeze coverage, invariants, state-machine scenarios,
   and semantic decisions because the direct A1-first plan and later runtime
   attempt both risked looping on missing hidden dependencies.
+- IP-036 Batch A1 is now implemented locally as a bounded skeleton only:
+  `pm_agent.current_state_staffing` owns an additive current-state staffing
+  import/publication/read-contract family; workbook onboarding and
+  `pm onboarding` now plan/publish that capability alongside workforce planning
+  and optional capacity; missing-schema and missing-publication states are
+  explicit through the new read-contract skeleton; no existing workload,
+  staffing, Dashboard, capacity-context, skills, or HIREF reader/runtime
+  surfaces changed in this slice.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -647,14 +659,14 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Exact next actions
 
-1. Review the docs-only A0 artifacts now frozen in `architecture/16...` and
-   `implementation-packs/IP-036...`.
-2. After accepting that docs-only freeze, open the next independent session and
-   perform **only IP-036 Batch A1 current-state staffing contract skeleton**.
-3. Do not start A2/A3/A4, and do not resume or inherit the abandoned runtime
-   attempt, until A1 is separately completed and reviewed.
-4. Keep A1 validation and review bounded to its runtime scope; A0 remains
-   validated only with documentation-appropriate checks and read-only review.
+1. Review and accept the local A1 current-state staffing contract skeleton
+   against the frozen A0 boundary.
+2. In the next independent session, perform **only IP-036 Batch A2 reader
+   migration**.
+3. Do not start A3/A4, Batch B/C/D, or any legacy deletion/freshness
+   replacement while A2 is the active gate.
+4. Keep A2 bounded to the readers named in the frozen matrix; preserve the A1
+   current-state staffing publication/read contract as the authority surface.
 5. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
@@ -756,6 +768,52 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — IP-036 Batch A1 current-state staffing contract skeleton implemented locally
+
+- Confirmed this session started from the accepted clean A0 freeze commit
+  `8ff06e7ab988895fa4f2428179613e289a9107d0`; the abandoned dirty runtime
+  attempt remained excluded and was not inherited as partial work.
+- Added the bounded A1 capability-owned skeleton only:
+  - new additive `src/pm_agent/current_state_staffing/` schema, repository,
+    preview/confirm service, and public read-model skeleton;
+  - new workbook adapter
+    `src/pm_agent/workbook_onboarding/current_state_staffing_adapter.py`;
+  - bootstrap composition wiring for the capability-owned schema module only;
+  - minimal workbook/onboarding wiring so `pm onboarding` can plan and publish
+    `current_state_staffing` as a distinct capability.
+- Preserved the frozen A0 semantics in the new capability skeleton:
+  - package identity remains separate from payload identity;
+  - same `package_id` plus different payload identity is rejected with a hard
+    replay conflict;
+  - repeated confirm on a completed session is idempotent and does not create a
+    second completed publication;
+  - missing schema degrades to `unavailable`, missing publication degrades to
+    `unknown`, and no numeric-zero fallback was introduced in the new read
+    contract;
+  - compatibility remains read-only skeleton only; no writable dual authority
+    shim was added.
+- Explicitly kept A1 out of scope:
+  - no reader migration;
+  - no freshness authority replacement;
+  - no Dashboard unknown-data UX rollout;
+  - no legacy table/code deletion;
+  - no skills / HIREF ownership migration.
+- Focused validation evidence:
+  - `cd src && python3 -m pytest tests/test_current_state_staffing.py tests/test_data_onboarding.py tests/test_workbook_onboarding.py`
+  - `make validate`
+  - `make rehearse-release`
+- Read-only self-review evidence:
+  - inspected the bounded diff against the A1 file set after focused tests
+    passed and before closing the slice;
+  - corrected the publication-report identity mismatch before final validation.
+- Commit / push status:
+  - the bounded A1 slice is committed locally in this session and is now the
+    branch HEAD;
+  - no push was performed.
+- Exact next recommended action:
+  - open the next session and perform only **IP-036 Batch A2 reader
+    migration**.
 
 ### 2026-08-04 — IP-036 Batch A0 artifacts frozen on clean 8bfd9c8 baseline
 

@@ -242,13 +242,45 @@ def test_onboarding_profile_save_preview_and_run_show_round_trip(
             "plan_version_id": "plan-workbook-fy26-q4-baseline",
             "schema_version": "workforce-planning-import-v1",
             "status": "planned",
-        }
+        },
+        {
+            "capability": "current_state_staffing",
+            "counts": {
+                "assigned_members": 1,
+                "assignments": 1,
+                "members": 1,
+                "projects": 1,
+                "unassigned_members": 0,
+            },
+            "package_id": "package-workbook-current-state-fy26-q4-baseline-r1",
+            "publication_scope": {
+                "as_of_date": "2026-08-15",
+                "effective_month": 9,
+                "effective_year": 2026,
+                "scope_key": "workbook-current-state-staffing",
+            },
+            "schema_version": "current-state-staffing-v1",
+            "status": "planned",
+        },
     ]
     assert preview["coverage"]["capacity"] == {
         "state": "not_provided",
         "known_member_period_count": 0,
         "unknown_member_period_count": 1,
         "explicit_zero_observation_count": 0,
+    }
+    assert preview["coverage"]["current_state_staffing"] == {
+        "state": "complete",
+        "member_count": 1,
+        "project_count": 1,
+        "assignment_count": 1,
+        "assigned_member_count": 1,
+        "unassigned_member_count": 0,
+        "effective_period": {
+            "year": 2026,
+            "month": 9,
+            "as_of_date": "2026-08-15",
+        },
     }
 
     shown = _invoke("onboarding", "run", "show", "--run-id", preview["run_id"])
@@ -522,7 +554,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
     confirmed = _payload(confirmed_result)
     assert confirmed["status"] == "completed"
     assert confirmed["publish_summary"] == {
-        "completed_operation_count": 2,
+        "completed_operation_count": 3,
         "partial_publication": False,
         "rejected_operation_count": 0,
     }
@@ -530,6 +562,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
         item["capability"]: item for item in confirmed["published_domain_operations"]
     }
     assert operations["workforce_planning_import"]["domain_publication_id"] is not None
+    assert operations["current_state_staffing"]["domain_publication_id"] is not None
     assert operations["resource_intelligence"]["domain_publication_id"] is not None
 
     shown_profile = _invoke(
@@ -548,7 +581,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
     assert shown_run.exit_code == 0, shown_run.output
     run_payload = _payload(shown_run)
     assert run_payload["run"]["state"] == "completed"
-    assert len(run_payload["run"]["domain_links"]) == 2
+    assert len(run_payload["run"]["domain_links"]) == 3
 
     repeated_confirm = _invoke("onboarding", "confirm", "--run-id", preview["run_id"])
     assert repeated_confirm.exit_code == 0, repeated_confirm.output
@@ -842,6 +875,7 @@ def test_partially_completed_onboarding_run_can_resume_same_run_id(
         item["capability"]: item for item in partial["published_domain_operations"]
     }
     assert operations["workforce_planning_import"]["status"] == "completed"
+    assert operations["current_state_staffing"]["status"] == "completed"
     assert operations["resource_intelligence"]["status"] == "failed"
     assert operations["resource_intelligence"]["domain_session_id"] is not None
     assert (
@@ -856,11 +890,18 @@ def test_partially_completed_onboarding_run_can_resume_same_run_id(
     final_operations = {
         item["capability"]: item for item in completed["published_domain_operations"]
     }
+    assert final_operations["current_state_staffing"]["status"] == "completed"
     assert final_operations["resource_intelligence"]["status"] == "completed"
     shown_profile = _payload(
         _invoke("onboarding", "profile", "show", "--profile-key", "partial-resume")
     )
     assert shown_profile["profile"]["current_revision"] == 1
+
+    with sqlite3.connect(isolated_db) as connection:
+        publication_count = connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_publications"
+        ).fetchone()[0]
+    assert publication_count == 1
 
 
 def test_running_onboarding_run_is_recovered_and_resumable(
@@ -1085,6 +1126,7 @@ def test_partial_retry_after_profile_edit_preserves_existing_partial_summary(
         item["capability"]: item for item in persisted["published_domain_operations"]
     }
     assert operations["workforce_planning_import"]["status"] == "completed"
+    assert operations["current_state_staffing"]["status"] == "completed"
     assert operations["resource_intelligence"]["status"] == "failed"
 
 
