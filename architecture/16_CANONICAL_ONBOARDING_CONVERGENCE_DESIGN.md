@@ -1,11 +1,11 @@
 # Canonical Onboarding Convergence Design
 
-Status: `OWNER-REQUESTED FOLLOW-ON DESIGN HANDOFF`
+Status: `OWNER-REQUESTED FOLLOW-ON DESIGN HANDOFF (HARDENED FROM EXECUTION DIAGNOSIS)`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
 Baseline branch: `TBD IN FOLLOW-ON SESSION`
-Baseline commit: `OWNER-SELECTED AFTER THE CURRENT LOCAL ONBOARDING GATE`
-Previous local baseline: `IP-035 Structured Data Onboarding Workbook Presets (current local candidate)`
+Baseline commit: `5f13ee346e629213f8e91e7d4b7d1e95edeb794b`
+Previous local baseline: `IP-035 Structured Data Onboarding Workbook Presets`
 
 ## Decision supported
 
@@ -17,8 +17,14 @@ Rebuild the pre-production onboarding foundation so that:
   contract;
 - redundant tables, views, functions, freshness IDs, and standalone import
   entrypoints can be removed;
-- deprecated scripts, compatibility shims, legacy helpers, and dead code paths
-  can be removed once the new canonical path fully replaces them;
+- deprecated scripts, compatibility shims, legacy helpers, dead branches, and
+  obsolete tests/docs can be removed once the new canonical path fully replaces
+  them;
+- runtime replacement cannot begin until a coverage/dependency audit proves what
+  the legacy path currently supplies beyond its obvious primary facts;
+- every runtime slice must start from explicit invariants, a state-machine
+  matrix, and named semantic decisions instead of relying on review to discover
+  scope gaps;
 - existing user-visible capabilities remain available through the new internals.
 
 This is a pre-production cleanup decision. The repository should preserve
@@ -29,10 +35,11 @@ entrypoints, or migration baggage.
 
 This document defines the target architecture and the recommended execution
 sequence only. Runtime, schema, CLI, Dashboard, connector, and real-data changes
-still require a separately opened implementation session and a bounded batch.
+still require separately bounded implementation slices.
 
-The current local IP-035 gate remains in force until the owner selects the exact
-baseline commit for the new branch.
+The committed IP-035 baseline remains the runtime authority until a later slice
+is implemented and accepted. This redesign changes the follow-on execution plan,
+not the current product behavior.
 
 ## Verified current state
 
@@ -60,6 +67,33 @@ The isolated workbook onboarding UAT proved a deeper architectural fracture:
 
 This means plan-state staffing and current-state staffing are both real product
 needs, but they do not yet have clean, explicit, capability-owned boundaries.
+
+### What the failed runtime attempt exposed
+
+The follow-on runtime attempt demonstrated that the previous plan was too
+optimistic:
+
+- the execution session treated review as the primary tool for discovering
+  missing scope, instead of freezing the behavior model first;
+- fixes were applied to specific examples without first codifying the
+  cross-layer invariants behind them;
+- broad validation passed repeatedly, but that only proved that covered tests
+  still passed, not that the contract surface was complete;
+- product/semantic decisions remained implicit while code changes proceeded.
+
+Two concrete failure classes emerged from that aborted attempt and must now be
+treated as required modeling inputs for A0:
+
+1. replay / uniqueness risk — current-state staffing publication could still be
+   replayed incorrectly if package identity, payload identity, confirmability,
+   and completion invariants are not frozen up front;
+2. unknown-data semantic risk — dashboard or summary surfaces can imply "real
+   zero / everybody available" when current-state staffing publication is
+   actually unavailable, partial, stale, or missing.
+
+The fix is not "more iteration". The fix is to freeze dependency coverage,
+invariants, the state machine, and semantic decisions before runtime replacement
+resumes.
 
 ### What remains fragmented
 
@@ -94,21 +128,115 @@ It should not preserve:
 - script-name freshness coupling;
 - compatibility-only tables or views that no longer carry distinct semantics.
 
+### Adversarial migration assumption
+
+Every legacy import path must be treated as if it produces **more than one kind
+of output**. Assume that each path may contribute some combination of:
+
+1. canonical business facts;
+2. read-model projections or helper views;
+3. freshness, audit, source-evidence, or publication state;
+4. auxiliary side effects such as field enrichment, registry cleanup,
+   full-sync deletion behavior, or other capability-specific prerequisites.
+
+No runtime convergence slice may assume it has replaced a legacy path until it
+has checked all four categories.
+
 ### Clean re-import is the migration strategy
 
 The cleanup path should assume an empty local database plus a versioned,
 supported, structured full re-import. The target architecture must not depend on
 historical backfill, dual-write, or long-lived compatibility storage.
 
-### No dual authority paths
+### No runtime replacement before coverage proof
 
-At end state:
+The next runtime slice must not begin by "just building the new current-state
+capability". It must begin by proving:
 
-- one operator entrypoint exists (`pm onboarding`);
-- one canonical writer exists for each fact family;
-- one public read contract exists for each user-visible capability;
-- any temporary compatibility projection is one-way derived, clearly bounded,
-  and scheduled for removal.
+- what the old path really supplies;
+- which readers and regressions depend on those outputs;
+- which outputs are in-scope for the next slice;
+- which outputs are deferred and therefore must not be touched by that slice.
+
+## Coverage-first migration model
+
+Before any runtime replacement slice starts, the convergence program must create
+and freeze a coverage/dependency matrix.
+
+### Required coverage matrix columns
+
+At minimum, the matrix must name:
+
+- legacy path / importer / script / helper;
+- explicit business facts written;
+- implicit projections, views, or helper-path state affected;
+- freshness, audit, publication, or source-evidence outputs;
+- auxiliary side effects or deletion/full-sync semantics;
+- dependent readers / use cases / dashboard surfaces / rules;
+- dependent focused tests and broader regression surfaces;
+- whether the dependency is blocking, in-scope for the next slice, or deferred;
+- the exact slice that will replace it;
+- whether a temporary compatibility shim is allowed, and if so, its deletion
+  target.
+
+### Required A0 artifacts beyond the matrix
+
+A0 is incomplete unless it also produces all of the following:
+
+1. **Invariant checklist** — the non-negotiable behavior rules that any runtime
+   slice must preserve.
+2. **End-to-end state-machine matrix** — the lifecycle matrix for preview,
+   confirm, replay, rejection, degradation, and missing-data semantics.
+3. **Product/semantic decision log** — decisions that must be explicit before
+   implementation can proceed.
+4. **Slice-scoped self-review checklist** — the internal contract checklist that
+   must be completed before external review.
+
+### Mandatory invariant topics
+
+The invariant checklist must explicitly cover:
+
+- package identity / payload identity / uniqueness invariants;
+- onboarding run identity, preview reuse, confirmability, and replay invariants;
+- publication completion invariants;
+- missing-schema degradation invariants for read contracts;
+- dashboard and summary unknown-data semantics;
+- freshness-state semantics (`fresh`, `stale`, `partial`, `unknown`,
+  `unavailable`) for the affected readers;
+- compatibility-shim rules and deletion targets.
+
+### Mandatory state-machine scenarios
+
+The state-machine matrix must include, at minimum:
+
+- same source: first preview;
+- same source: repeated preview;
+- same source: confirm after preview;
+- same source: post-confirm preview;
+- already completed replay;
+- non-confirmable preview followed by confirm;
+- same `package_id` with different payload;
+- schema partially missing at read time;
+- freshness `fresh/stale/partial/unknown` impact on dashboard summary semantics;
+- missing current-state publication while planned staffing exists.
+
+### Mandatory semantic decisions before A1
+
+The product/semantic decision log must make these explicit before runtime A1:
+
+- unchanged rerun semantics:
+  - `already_completed`,
+  - previewed but non-confirmable,
+  - or conflict/rejected;
+- confirmability rules for reruns and replay candidates;
+- handling of same `package_id` with different payload identity;
+- dashboard semantics when current-state staffing publication is missing:
+  unavailable/unknown versus actual zero-load semantics;
+- degradation rules when a required schema family is partially missing;
+- whether any reader may show a numeric summary when its current-state evidence
+  is unavailable.
+
+No runtime slice may start while any blocking item in this list remains implicit.
 
 ## Target architecture
 
@@ -145,6 +273,13 @@ directly. Only capability-owned import/publication logic writes canonical facts.
 8. Once a legacy storage path or helper path is no longer required for any
    user-visible capability, the deprecated code that only served that path must
    be deleted rather than retained indefinitely.
+9. No runtime convergence slice may start until the coverage/dependency matrix
+   for that legacy path is frozen.
+10. No slice may expand to "fix everything the regression touched"; uncovered
+    dependencies discovered during a slice must be added back to the matrix and
+    triaged as blocking or deferred.
+11. No runtime slice may enter external review until it has passed its own
+    invariant checklist and state-machine self-review.
 
 ## Operator-entry convergence map
 
@@ -176,7 +311,7 @@ directly. Only capability-owned import/publication logic writes canonical facts.
 | Status source registry | Which Confluence sources are configured and current? | Status source registry capability | Keep canonical registry facts; remove standalone CSV operator path |
 | Project profile facts | What project-specific static context is published? | Project profile capability | Keep canonical profile facts; remove standalone workbook operator path |
 | Change request facts | What change request facts are imported? | Change request import capability | Keep canonical change facts; remove standalone CSV operator path |
-| Onboarding audit and freshness | What ran, what published, and how fresh is it? | `pm_agent.data_onboarding` plus capability publication freshness | Keep onboarding run/publication audit as operator authority; demote `sync_runs` and script-name source IDs to low-level internal evidence only where still useful |
+| Onboarding audit and freshness | What ran, what published, and how fresh is it? | `pm_agent.data_onboarding` plus capability publication freshness | Keep onboarding run/publication audit as operator authority; demote script-name source IDs to low-level internal evidence only where still useful |
 
 ## Read-side convergence
 
@@ -197,75 +332,145 @@ The converged rule is:
 - freshness is reported from capability publications, not from script registration
   names.
 
-## Recommended batch sequence
+## Recommended execution sequence
 
-### Batch A — Current-state staffing convergence
+### Batch A0 — Coverage, invariants, state machine, and decision audit
 
-Create the new canonical current-state staffing capability and move all
-current-load readers to it.
+This is the new first slice. It is documentation, analysis, and test-planning
+only.
 
 Scope:
 
-- define the canonical current-staffing import/publication/read contract;
-- expose one approved current-staffing source under `pm onboarding`;
-- replace reader dependency on `assignments`, `v_member_load`, and script-name
-  freshness IDs;
-- keep plan-state staffing semantics unchanged;
-- keep any transitional compatibility projection derived-only and temporary.
+- build the frozen coverage/dependency matrix for the legacy current-state
+  staffing path;
+- enumerate all known reader/test dependencies that will matter to later runtime
+  slices;
+- classify each dependency as blocking, in-scope for the next slice, or
+  explicitly deferred;
+- produce the invariant checklist, state-machine matrix, product/semantic
+  decision log, and slice self-review checklist;
+- freeze the runtime slice plan for A1 through A4.
+
+### Batch A1 — Current-state staffing contract skeleton
+
+Scope:
+
+- define the canonical current-state staffing capability boundary;
+- add the minimal import/publication/read contract skeleton;
+- create the minimal onboarding entry skeleton for that capability;
+- avoid reader migration and avoid freshness replacement in this slice.
+
+### Batch A2 — Reader migration
+
+Scope:
+
+- migrate the current-load readers named in the frozen matrix;
+- keep scope limited to the readers explicitly assigned to A2;
+- avoid unplanned enrichment or registry work.
+
+### Batch A3 — Freshness and evidence migration
+
+Scope:
+
+- replace script-name freshness checks with capability publication freshness for
+  the A-scope readers;
+- wire the required publication-state evidence and warnings;
+- avoid broader data-family migration outside the frozen A-scope.
+
+### Batch A4 — Compatibility closure for current-state staffing
+
+Scope:
+
+- remove or demote temporary shims/projections introduced only for A1-A3;
+- close the A-scope deletion targets for legacy current-state staffing authority;
+- run the batch-level acceptance closure for the completed A-slices.
 
 ### Batch B — Workforce enrichment and contract coverage convergence
 
 Split or strictly bound the mutable workforce facts now mixed into `employees`.
 
-Scope:
-
-- move role/level/email/skills to a capability-owned publication or explicitly
-  owned extension surface;
-- move HIREF/resource-type/billing coverage facts to a contract-coverage
-  publication;
-- migrate skills and HIREF operator entrypoints under `pm onboarding`;
-- remove overlapping multi-writer field ownership.
-
 ### Batch C — Registry and auxiliary onboarding convergence
 
 Converge the remaining onboarding-capable sources.
 
-Scope:
+### Batch D — Final redundancy and deprecated-code cleanup
 
-- move structured JSON importers behind `pm onboarding` while keeping their
-  domain importers as canonical owners;
-- move JIRA board registry, Confluence registry, project profile, and change
-  request onboarding behind `pm onboarding`;
-- standardize audit, publication links, and freshness semantics.
+Remove old operator entrypoints, redundant storage, and deprecated runtime code
+only after the earlier slices have already replaced them.
 
-### Batch D — Redundancy deletion and final cleanup
+## Execution anti-patterns now forbidden
 
-Delete the old operator and storage baggage once all readers and writers have
-converged.
+The convergence program must not repeat these execution patterns:
 
-Scope:
+- using review as the main tool for discovering basic contract scope;
+- fixing an example raised by review without first codifying the invariant it
+  belongs to;
+- entering repeated broad validation loops before the state machine and
+  self-review checklist are frozen;
+- coding through unresolved product semantics and hoping final review will decide
+  them implicitly;
+- resuming an abandoned runtime attempt instead of feeding its findings back into
+  A0.
 
-- remove standalone operator entrypoints;
-- remove script-name freshness assumptions from use cases;
-- remove redundant tables, views, functions, and helper paths that no longer
-  carry distinct semantics;
-- remove deprecated scripts, repository helpers, compatibility facades, dead
-  branches, and obsolete tests/docs that existed only to support the replaced
-  legacy paths;
-- update documentation and synthetic demo paths so they describe only the new
-  authority model.
+## Anti-loop implementation rules
+
+1. **One session = one slice.** Do not try to complete all of Batch A in one
+   session.
+2. **Freeze acceptance criteria before coding.** Each slice must name its exact
+   modified modules, intended outputs, and focused tests before code changes
+   begin.
+3. **Use focused regression during slice development.** Do not treat full-product
+   regression as the primary development loop.
+4. **Treat each slice as the review unit.** Run an early read-only slice review
+   before starting the next slice; do not wait for one final mega-review.
+5. **Triage findings by scope.** Blocking in-scope findings must be fixed in the
+   current slice; out-of-scope findings go back into the matrix and are assigned
+   to a later slice.
+6. **Allow one correction round per accepted slice.** The re-review after a
+   correction must check the correction diff and the previously-blocking finding,
+   not rediscover the whole program again.
+7. **Run broad validation at slice closure, not on every edit.** Each runtime
+   slice still needs the repository-required validation before acceptance, but
+   that validation happens after the slice is frozen rather than after every
+   intermediate fix.
+8. **Self-review before external review.** Every runtime slice must be checked
+   against its invariant checklist and state-machine matrix before asking for a
+   final review.
+9. **Stop and re-scope when a missing invariant appears.** If runtime work finds a
+   missing invariant or missing semantic decision that should have been frozen in
+   A0, stop the slice and reopen the matrix/decision log instead of patching
+   forward blindly.
 
 ## Acceptance expectations
 
-Each bounded batch should prove all of the following before acceptance:
+### Batch A0 acceptance
 
-- output parity for the affected user-visible capabilities;
-- focused regression for the capability owners and the onboarding wrapper;
-- `make validate`;
-- `make rehearse-release`;
-- independent read-only review;
-- explicit clean bootstrap / re-import confidence for any changed import or
-  schema boundary.
+Batch A0 is complete only when:
+
+- the coverage/dependency matrix is frozen;
+- the matrix explicitly lists legacy facts, projections, freshness/evidence, and
+  auxiliary side effects for the current-state staffing path;
+- the invariant checklist is frozen and includes the mandatory topics;
+- the state-machine matrix includes the mandatory scenarios;
+- the product/semantic decision log resolves or explicitly defers every blocking
+  decision;
+- dependent readers and regressions are assigned to A1, A2, A3, A4, or a later
+  batch;
+- the slice plan prevents runtime work from rediscovering unnamed blocking
+  dependencies late.
+
+### Runtime slice acceptance
+
+Each runtime slice should prove all of the following before acceptance:
+
+- the slice's scoped outputs are complete;
+- focused regression for the slice passes;
+- required repository-level validation for that slice passes;
+- read-only review finds no remaining blocking in-scope issue;
+- deferred findings are recorded back into the matrix instead of silently folded
+  into the current slice.
+
+### Final converged state
 
 The final converged state should satisfy:
 
@@ -273,7 +478,9 @@ The final converged state should satisfy:
 - one canonical writer per fact family;
 - one public read contract per capability;
 - no remaining dual-authority path;
-- no deprecated runtime code path kept solely for historical compatibility.
+- no deprecated runtime code path kept solely for historical compatibility;
+- no undocumented legacy side effect still required by regression or product
+  behavior.
 
 ## Risks to keep explicit
 
@@ -284,13 +491,11 @@ The final converged state should satisfy:
 - Registry-source migration must preserve source-specific deletion/full-sync
   semantics without reintroducing direct table mutation outside capability
   owners.
-- `sync_runs` and `data_sources` may still be useful as low-level execution
-  telemetry; the cleanup target is operator-facing authority and script-coupled
-  semantics, not indiscriminate table deletion.
+- If A0 is skipped or rushed, the program will likely fall back into the same
+  regression/review loop with a different slice label.
 
 ## Next gate
 
-Open a separate implementation session and branch from the exact owner-selected
-post-IP-035 baseline and implement only Batch A first. Do not start Batch B or
-later cleanup until Batch A is implemented, validated, rehearsed, reviewed, and
-accepted.
+Open a separate implementation session and perform **only Batch A0** first. Do
+not start A1 runtime work, and do not resume any abandoned runtime attempt,
+until A0 is completed, reviewed, and accepted.

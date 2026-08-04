@@ -2,13 +2,14 @@
 
 Last updated: 2026-08-04
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch now carries the committed local IP-035 Batch B
-implementation together with the committed IP-036 convergence design /
-implementation-pack handoff; the exact current commit hash is reported in the
-latest handoff because a commit cannot contain its own hash
+Current HEAD: this branch now carries the committed revised IP-036 A0 handoff
+baseline; the exact current commit hash is reported in the latest handoff
+because a commit cannot contain its own hash. The current working tree may still
+contain a separate uncommitted aborted runtime attempt with unresolved issues
+that must not be used as the next-session baseline
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 CANONICAL ONBOARDING CONVERGENCE BATCH A READY FOR FOLLOW-ON IMPLEMENTATION`
-Gate status: `LOCAL BASELINE COMMITTED; NEXT GATE IS IP-036 BATCH A IMPLEMENTATION IN A NEW SESSION`
+Current implementation item: `IP-036 A0 COVERAGE / INVARIANT / STATE-MACHINE HANDOFF COMMITTED LOCALLY; ABORTED RUNTIME ATTEMPT EXCLUDED`
+Gate status: `COMMITTED A0 HANDOFF BASELINE READY; DO NOT START FROM THE DIRTY RUNTIME WORKTREE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -20,8 +21,15 @@ packaged workbook preset registry/runtime wiring, CLI preset inspection, thin
 onboarding preset projection, focused regression expansion, the new local
 operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
-the IP-036 convergence design/implementation-pack handoff. No push was
-performed.
+the original IP-036 convergence design/implementation-pack handoff at
+`5f13ee3`. The current working tree further revises `architecture/16...` and
+`implementation-packs/IP-036...` so the next session must start with a
+coverage-first A0 slice that also freezes invariants, state-machine scenarios,
+and product semantics before any runtime convergence resumes. The current
+working tree separately contains an aborted runtime attempt across current-state
+staffing, dashboard, repository, use-case, and test files; that attempt remains
+uncommitted because its self-diagnosis reported unresolved replay and
+unknown-data-semantic defects. No push was performed.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -73,8 +81,10 @@ belong in Git history and must not be interpreted as current instructions.
   `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` preserve
   user-visible capabilities while allowing legacy import entrypoints, redundant
   tables/views, and overlapping read/write paths to be rebuilt around one
-  canonical onboarding authority model. This handoff does not activate runtime
-  cleanup in the current branch by itself.
+  canonical onboarding authority model. The current working tree now hardens
+  that handoff so A0 must freeze coverage, invariants, state-machine scenarios,
+  and semantic decisions because the direct A1-first plan and later runtime
+  attempt both risked looping on missing hidden dependencies.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -621,30 +631,38 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
     onboarding page, live connector sync, workbook v2 mapping expansion, or
     migration/removal of other legacy import scripts is implemented here.
-13. The current branch now contains a committed local baseline for IP-035 Batch
-    B plus the IP-036 convergence design/pack handoff. No push has been
+13. The current branch contains committed local baseline `5f13ee3` for IP-035
+    Batch B plus the first IP-036 design/pack handoff. No push has been
     performed.
-14. A follow-on canonical-onboarding convergence handoff is now recorded in
+14. The current working tree revises `architecture/16...` and `IP-036...` so
+    the next execution step is a coverage/dependency audit with frozen
+    invariants, state-machine scenarios, and semantic decisions rather than
+    direct runtime convergence.
+15. The same working tree also contains an aborted runtime attempt that is not a
+    safe baseline and must remain excluded from the follow-on session until
+    separately triaged.
+16. A follow-on canonical-onboarding convergence handoff is now recorded in
     `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
     `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`.
-15. The next planned execution slice is IP-036 Batch A current-state staffing
-    convergence in a separate session / branch from this committed baseline.
+17. The next planned execution slice is IP-036 Batch A0 coverage/dependency
+    audit plus invariant/state-machine/semantic freeze in a separate session /
+    branch from the committed handoff baseline only.
 
 ## Exact next actions
 
-1. Open a new independent session from this committed branch baseline and
-   implement only IP-036 Batch A:
-   canonical current-state staffing convergence under `pm onboarding`.
-2. Keep the broader IP-036 follow-on batches (workforce enrichment / contract
-   coverage, registry convergence, final redundancy deletion) separately gated
-   until Batch A is implemented, validated, rehearsed, independently reviewed,
-   and accepted.
-3. Before requesting acceptance of IP-036 Batch A, complete the
-   relevant focused tests, `make validate`, `make rehearse-release`, and
-   independent read-only review.
-4. Use the committed local IP-035 runtime and the committed
-   `architecture/16...` / `IP-036...` handoff as the only baseline for the new
-   session; do not re-derive scope from older onboarding proposals.
+1. Commit the revised IP-036 A0 handoff only, then open a new independent
+   session from that exact commit and perform only IP-036 Batch A0:
+   coverage/dependency audit, invariant checklist, state-machine matrix,
+   semantic decision log, and frozen slice plan for current-state staffing
+   convergence.
+2. Do not start runtime A1 work, and do not resume or inherit the abandoned
+   dirty runtime attempt, until A0 is completed, reviewed, and accepted.
+3. Use the revised `architecture/16...` and `IP-036...` handoff as the only
+   scope authority for the next session; do not retry the earlier direct
+   Batch-A runtime prompt.
+4. Because A0 is documentation-only, limit its validation to documentation-
+   appropriate checks and read-only review; reserve runtime release gates for
+   later runtime slices.
 5. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
@@ -746,6 +764,112 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — A0 handoff commit prepared; aborted runtime attempt excluded
+
+- Prepared the revised A0 handoff as the next safe committed baseline while
+  intentionally excluding the separate dirty runtime attempt that self-reported
+  unresolved replay/uniqueness and unknown-data-semantic defects.
+- Clarified in current-state continuity that:
+  - the next session must start from the committed A0 handoff baseline only;
+  - the dirty runtime attempt is diagnostic input, not partial implementation to
+    continue;
+  - no new session should inherit that worktree state implicitly.
+- Validation evidence:
+  - this step changes progress continuity text only;
+  - commit-time diff checks and final commit hash are recorded in the latest
+    handoff after the commit completes.
+- Commit / push status:
+  - this continuity adjustment is included in the same local handoff commit
+    created in this session;
+  - no push was performed.
+
+### 2026-08-04 — IP-036 handoff hardened from aborted runtime-session diagnosis
+
+- Reworked the convergence handoff again after a failed runtime attempt reported
+  that review was being used to discover hidden scope and that repeated full
+  validation loops were not closing the real contract gaps.
+- Recorded two concrete failure classes that A0 must now model explicitly:
+  - replay / uniqueness risk around same `package_id`, different payload, and
+    multiple preview/confirm paths;
+  - unknown-data semantic risk where missing current-state staffing publication
+    can be rendered as apparent real zero / availability instead of
+    unavailable/unknown.
+- Strengthened `architecture/16...` so A0 must produce:
+  - frozen coverage/dependency matrix;
+  - invariant checklist;
+  - end-to-end state-machine matrix;
+  - product/semantic decision log;
+  - slice self-review checklist.
+- Strengthened `IP-036...` so the first implementation session may perform A0
+  only and may not resume any abandoned runtime attempt as partial work.
+- Added explicit execution anti-patterns that are now forbidden:
+  - using review to discover basic scope;
+  - fixing examples without codifying invariants;
+  - entering broad validation loops before state/semantic closure;
+  - coding through unresolved product semantics.
+- Validation evidence:
+  - this hardening changes architecture, implementation-pack, progress, and
+    plan documents only;
+  - final `git diff --check` passed for the redesigned
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`,
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`, and
+    `PROGRESS.md`;
+  - final read-only review confirmed that the revised handoff now freezes A0 as
+    a coverage/invariant/state-machine/semantic gate and explicitly prohibits
+    resuming runtime convergence before those artifacts are complete.
+- Commit / push status:
+  - this hardening is local and uncommitted on top of committed baseline
+    `5f13ee3`;
+  - no push was performed.
+- Exact next recommended action:
+  - open a new session from committed baseline `5f13ee3` and execute only
+    IP-036 Batch A0.
+
+### 2026-08-04 — IP-036 handoff redesigned to coverage-first slices
+
+- Reworked the canonical-onboarding convergence design and implementation handoff
+  after workbook UAT feedback and a failed direct runtime-planning attempt showed
+  that the new onboarding path does not yet cover all legacy side effects,
+  projections, freshness semantics, enrichment, and regression dependencies.
+- Rewrote the next-step model from "start runtime Batch A immediately" to:
+  - Batch A0: coverage/dependency audit;
+  - Batch A1: current-state staffing contract skeleton;
+  - Batch A2: reader migration;
+  - Batch A3: freshness/evidence migration;
+  - Batch A4: compatibility closure.
+- Added the explicit adversarial migration rule that every legacy path must be
+  assumed to produce four categories of outputs:
+  - business facts;
+  - projections/read models;
+  - freshness/audit/evidence;
+  - auxiliary side effects.
+- Added anti-loop execution rules:
+  - one session = one slice;
+  - freeze acceptance criteria before coding;
+  - use focused regression during slice development;
+  - run early slice review instead of one late mega-review;
+  - triage out-of-scope findings back into the matrix;
+  - allow one correction round per slice.
+- Updated the next action so the next implementation session performs A0 only
+  rather than trying to complete current-state runtime convergence directly.
+- Validation evidence:
+  - this redesign changes architecture, implementation-pack, progress, and plan
+    documents only;
+  - final `git diff --check` passed for the redesigned
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`,
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`, and
+    `PROGRESS.md`;
+  - final read-only review confirmed that the revised handoff now freezes A0 as
+    the next gate, makes hidden legacy outputs explicit, and removes the earlier
+    "start runtime Batch A directly" scope ambiguity.
+- Commit / push status:
+  - this redesign is local and uncommitted on top of committed baseline
+    `5f13ee3`;
+  - no push was performed.
+- Exact next recommended action:
+  - open a new session from committed baseline `5f13ee3` and execute only
+    IP-036 Batch A0.
 
 ### 2026-08-04 — Canonical onboarding convergence design and execution handoff drafted
 
