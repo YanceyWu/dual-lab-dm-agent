@@ -73,7 +73,18 @@ def _build_report(
     action_tracker_summary: dict | None,
 ) -> str:
     at_risk = [p for p in projects if p.get("status") == "at_risk"]
-    overloaded = [m for m in members if m.get("current_load", 0) >= 1.0]
+    known_members = [
+        member for member in members if isinstance(member.get("current_load"), (int, float))
+    ]
+    overloaded = [m for m in known_members if float(m.get("current_load", 0.0)) >= 1.0]
+    member_states = {str(member.get("current_state_staffing_state") or "unknown") for member in members}
+    member_load_summary = (
+        f"，{len(overloaded)} 人满载"
+        if members and member_states == {"known"}
+        else "，当前态负载未知/不可用"
+        if members and member_states != {"known"}
+        else "，负载正常"
+    )
     high_actions = [a for a in actions if a.get("priority") == "high"]
     open_changes = sum(
         int(item.get("open_changes") or 0)
@@ -88,7 +99,7 @@ def _build_report(
         f"- 活跃项目：{len(projects)} 个"
         + (f"，其中 **{len(at_risk)} 个风险项目**" if at_risk else ""),
         f"- 团队规模：{len(members)} 人"
-        + (f"，{len(overloaded)} 人满载" if overloaded else "，负载正常"),
+        + member_load_summary,
         f"- 待办事项：{len(actions)} 条开放"
         + (f"，**{len(overdue)} 条逾期**" if overdue else ""),
         f"- 变更请求：{open_changes} 条开放"
@@ -112,7 +123,7 @@ def _build_report(
         lines.extend(_build_project_signal_lines(p, confluence_signals, change_request_summaries))
     lines.append("")
 
-    if overloaded:
+    if overloaded and member_states == {"known"}:
         lines += ["## 👥 资源警告（满载人员）"]
         lines.append(f"- 共 **{len(overloaded)}** 人当前满载（100%）")
         # Only list people with >1 project (at risk of dropping things)

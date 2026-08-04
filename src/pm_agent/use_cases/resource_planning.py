@@ -41,7 +41,26 @@ class ResourcePlanningService(BaseService):
                 success=False,
                 message=f"项目 '{inp.project_id}' 不存在，请先用 `pm project add` 创建。",
             )
-        members = repository.get_all_members()
+        all_members = repository.get_all_members()
+        members = [
+            member
+            for member in all_members
+            if (
+                member.get("current_state_staffing_state") == "known"
+                and member.get("employee_status") == "active"
+                and repository.resolve_employee_id(str(member.get("id") or "")) is not None
+            )
+        ]
+        omitted_members = [
+            member
+            for member in all_members
+            if member not in members
+        ]
+        if not members:
+            return ServiceResponse(
+                success=False,
+                message="当前态人员负载不可用，无法生成推荐方案。",
+            )
 
         # Score every member
         scored: list[scoring.ScoringResult] = []
@@ -88,7 +107,14 @@ class ResourcePlanningService(BaseService):
                 "requirement": inp.model_dump(),
                 "options": [_serialise_option(o) for o in options],
                 "all_scores": _serialise_scores(scored),
-                "warnings": vr.warnings,
+                "warnings": vr.warnings
+                + [
+                    (
+                        f"current_state_staffing_unavailable:{member['id']}:"
+                        f"{member.get('current_state_staffing_state')}"
+                    )
+                    for member in omitted_members
+                ],
             },
         )
 

@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
+from pm_agent.attention import AttentionService
 from pm_agent.config import settings
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
@@ -64,6 +66,15 @@ def demo_db(
     shutil.copy2(built_demo_db, db_path)
     monkeypatch.setattr(settings, "database_path", str(db_path))
     monkeypatch.setattr(dashboard_server, "DB", str(db_path))
+    publish_current_state_staffing_from_legacy(
+        db_path,
+        package_id="package-demo-current-state-r1",
+    )
+    attention_preview = AttentionService().preview_reconciliation(actor="demo-fixture")
+    AttentionService().confirm(
+        operation_id=attention_preview["operation_id"],
+        confirmation_token=attention_preview["confirmation_token"],
+    )
     return db_path
 
 
@@ -212,7 +223,7 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
     assert attention.data["items"]
     assert attention.data["reconciliation_coverage"]["status"] in {"complete", "partial"}
     rule_keys = {item["rule_key"] for item in attention.data["items"]}
-    assert len(attention.data["items"]) >= 8
+    assert len(attention.data["items"]) >= 7
     assert {
         "project_health_attention",
         "critical_milestone_overdue_attention",
@@ -247,7 +258,7 @@ def test_demo_five_capability_commands_return_nonempty_contract_results(demo_db:
     assert brief.data["summary"]["project_count"] == 2
     assert brief.data["summary"]["overall_state"] == "red"
     assert brief.data["sections"]["highest_attention_signals"]["items"]
-    assert len(brief.data["sections"]["highest_attention_signals"]["items"]) >= 8
+    assert len(brief.data["sections"]["highest_attention_signals"]["items"]) >= 7
     assert brief.data["sections"]["next_actions"]["items"]
 
 
@@ -350,6 +361,7 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
     assert summary.status_code == 200
     assert health.status_code == 200
     assert summary.get_json()["total_staff"] == 3
+    assert summary.get_json()["current_state_staffing_state"] == "known"
     health_payload = health.get_json()
     assert isinstance(health_payload, list)
     assert health_payload

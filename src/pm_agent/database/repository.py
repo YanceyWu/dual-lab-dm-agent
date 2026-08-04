@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from pm_agent.config import settings
+from pm_agent.current_state_staffing import read_model as current_state_staffing_read_model
 from pm_agent.database import staffing_capacity
 from pm_agent.resource_intelligence.read_model import (
     get_effective_capacity_in_transaction,
@@ -142,48 +143,245 @@ def resolve_employee_id(employee_id: str | None) -> str | None:
         return _resolve_employee_id(con, employee_id)
 
 
+def get_current_state_staffing_snapshot() -> dict[str, Any]:
+    return current_state_staffing_read_model.current_staffing_snapshot(
+        db_path=settings.database_path
+    )
+
+
+def _load_active_employee_rows(con: sqlite3.Connection) -> list[dict[str, Any]]:
+    return [
+        dict(row)
+        for row in con.execute(
+            """
+            SELECT id,wd_id,name,email,role,level,team,lead_id,max_parallel,status,notes,
+                   skills,resource_type,billing_rate,billing_end_date,hiref_id,
+                   current_hiref,next_hiref
+            FROM employees
+            WHERE status='active'
+            ORDER BY name,id
+            """
+        ).fetchall()
+    ]
+
+
+def _load_external_ids_by_employee(con: sqlite3.Connection) -> dict[str, list[str]]:
+    if not _table_exists(con, "employee_external_ids"):
+        return {}
+    result: dict[str, list[str]] = {}
+    rows = con.execute(
+        """
+        SELECT employee_id, external_id
+        FROM employee_external_ids
+        WHERE COALESCE(external_id, '') != ''
+        ORDER BY employee_id, system_name, external_id
+        """
+    ).fetchall()
+    for row in rows:
+        result.setdefault(str(row["employee_id"]), []).append(str(row["external_id"]))
+    return result
+
+
+def _project_member_record(
+    employee: dict[str, Any] | None,
+    current_member: dict[str, Any] | None,
+    *,
+    state: str,
+    reason: str,
+    publication_id: str | None,
+    external_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    if employee is not None:
+        skills = _json_loads_or(employee.get("skills"), {})
+        role = str(employee.get("role") or (current_member.get("role") if current_member else "") or "")
+        level = str(
+            employee.get("level") or (current_member.get("level") if current_member else "") or ""
+        )
+        resource_type = str(
+            employee.get("resource_type")
+            or (current_member.get("resource_type") if current_member else "")
+            or ""
+        )
+        current_hiref = str(
+            employee.get("current_hiref")
+            or (current_member.get("current_hiref_id") if current_member else "")
+            or ""
+        )
+        billing_end_date = str(
+            employee.get("billing_end_date")
+            or (current_member.get("hiref_end_date") if current_member else "")
+            or ""
+        )
+        result = {
+            "id": str(employee["id"]),
+            "wd_id": str(employee.get("wd_id") or employee["id"]),
+            "name": str(employee.get("name") or employee["id"]),
+            "email": str(employee.get("email") or ""),
+            "role": role,
+            "level": level,
+            "team": str(employee.get("team") or ""),
+            "lead_id": str(employee.get("lead_id") or ""),
+            "max_parallel": employee.get("max_parallel"),
+            "status": str(employee.get("status") or "active"),
+            "employee_status": str(employee.get("status") or "active"),
+            "notes": str(employee.get("notes") or ""),
+            "skills": skills if isinstance(skills, dict) else {},
+            "resource_type": resource_type,
+            "billing_rate": employee.get("billing_rate") or "",
+            "billing_end_date": billing_end_date,
+            "hiref_id": employee.get("hiref_id") or "",
+            "current_hiref": current_hiref,
+            "next_hiref": employee.get("next_hiref") or "",
+        }
+    else:
+        assert current_member is not None
+        result = {
+            "id": current_member["member_id"],
+            "wd_id": current_member["member_id"],
+            "name": current_member["display_name"],
+            "email": "",
+            "role": current_member["role"],
+            "level": current_member["level"],
+            "team": "",
+            "lead_id": "",
+            "max_parallel": None,
+            "status": current_member["employment_status"],
+            "employee_status": current_member["employment_status"],
+            "notes": "",
+            "skills": {},
+            "resource_type": current_member["resource_type"] or "",
+            "billing_rate": "",
+            "billing_end_date": current_member["hiref_end_date"] or "",
+            "hiref_id": current_member["current_hiref_id"] or "",
+            "current_hiref": current_member["current_hiref_id"] or "",
+            "next_hiref": "",
+        }
+    assignments = list(current_member["assignments"]) if current_member is not None else []
+    result.update(
+        {
+            "current_load": current_member["current_load"] if current_member is not None else None,
+            "active_projects": (
+                current_member["active_project_count"] if current_member is not None else None
+            ),
+            "current_state_staffing_state": state,
+            "current_state_staffing_reason": reason,
+            "current_state_staffing_publication_id": publication_id,
+            "current_state_assignment_state": (
+                current_member["assignment_state"] if current_member is not None else None
+            ),
+            "current_state_projects": [item["project_id"] for item in assignments],
+            "current_state_project_details": assignments,
+            "external_ids": list(external_ids or []),
+        }
+    )
+    return result
+
+
 # ──────────────────────────────────────────────
 # Employees
 # ──────────────────────────────────────────────
 
 def get_all_members() -> list[dict]:
-    """Return all active employees with current load (from v_member_load)."""
+    """Return active members with canonical current-state staffing projection."""
     with _conn() as con:
-        rows = con.execute("SELECT * FROM v_member_load").fetchall()
-    members = _rows_to_list(rows)
-    # Deserialise skills JSON
-    for m in members:
-        m["skills"] = json.loads(m.get("skills") or "{}")
+        employee_rows = _load_active_employee_rows(con)
+        external_ids_by_employee = _load_external_ids_by_employee(con)
+
+    snapshot = get_current_state_staffing_snapshot()
+    publication = snapshot.get("publication")
+    publication_id = (
+        str(publication["publication_id"])
+        if isinstance(publication, dict) and publication.get("publication_id")
+        else None
+    )
+    current_by_id = {
+        str(member["member_id"]): member for member in snapshot.get("members", [])
+    }
+    matched_current_ids: set[str] = set()
+    members: list[dict[str, Any]] = []
+    for employee in employee_rows:
+        candidate_ids = _unique_preserving_order(
+            [
+                str(employee["id"]),
+                str(employee.get("wd_id") or ""),
+                *external_ids_by_employee.get(str(employee["id"]), []),
+            ]
+        )
+        current_member = next(
+            (current_by_id[candidate] for candidate in candidate_ids if candidate in current_by_id),
+            None,
+        )
+        if current_member is not None:
+            matched_current_ids.add(str(current_member["member_id"]))
+            members.append(
+                _project_member_record(
+                    employee,
+                    current_member,
+                    state="known",
+                    reason="member_load_available_from_current_state_staffing_publication",
+                    publication_id=publication_id,
+                    external_ids=external_ids_by_employee.get(str(employee["id"]), []),
+                )
+            )
+            continue
+        members.append(
+            _project_member_record(
+                employee,
+                None,
+                state="unknown" if snapshot["state"] == "known" else snapshot["state"],
+                reason=(
+                    "member_not_in_current_state_staffing_publication"
+                    if snapshot["state"] == "known"
+                    else snapshot["state_reason"]
+                ),
+                publication_id=publication_id,
+                external_ids=external_ids_by_employee.get(str(employee["id"]), []),
+            )
+        )
+
+    for member_id, current_member in current_by_id.items():
+        if member_id in matched_current_ids:
+            continue
+        members.append(
+            _project_member_record(
+                None,
+                current_member,
+                state="known",
+                reason="member_load_available_from_current_state_staffing_publication",
+                publication_id=publication_id,
+            )
+        )
+    members.sort(key=lambda item: (str(item.get("name") or ""), str(item.get("id") or "")))
     return members
 
 
 def get_member(member_id: str) -> dict | None:
-    with _conn() as con:
-        resolved_id = _resolve_employee_id(con, member_id)
-        if not resolved_id:
-            return None
-        row = con.execute(
-            "SELECT * FROM v_member_load WHERE id = ?",
-            [resolved_id],
-        ).fetchone()
-    if not row:
+    candidate = (member_id or "").strip().lower()
+    if not candidate:
         return None
-    m = dict(row)
-    m["skills"] = json.loads(m.get("skills") or "{}")
-    return m
+    for member in get_all_members():
+        lookup_values = [
+            str(member.get("id") or ""),
+            str(member.get("wd_id") or ""),
+            *(str(value) for value in member.get("external_ids", [])),
+        ]
+        if any(value.lower() == candidate for value in lookup_values if value):
+            return member
+    return None
 
 
 def get_member_projects(member_id: str) -> list[str]:
-    """Return list of active project_ids for a member."""
-    with _conn() as con:
-        resolved_id = _resolve_employee_id(con, member_id)
-        if not resolved_id:
-            return []
-        rows = con.execute(
-            "SELECT project_id FROM assignments WHERE employee_id=? AND status='active'",
-            [resolved_id],
-        ).fetchall()
-    return [r["project_id"] for r in rows]
+    member = get_member(member_id)
+    if not member or member.get("current_state_staffing_state") != "known":
+        return []
+    return list(member.get("current_state_projects", []))
+
+
+def get_member_project_details(member_id: str) -> list[dict]:
+    member = get_member(member_id)
+    if not member or member.get("current_state_staffing_state") != "known":
+        return []
+    return [dict(item) for item in member.get("current_state_project_details", [])]
 
 
 def upsert_member(data: dict) -> None:
@@ -2055,11 +2253,35 @@ def get_project_plan_snapshot(snapshot_id: str) -> dict | None:
 # ──────────────────────────────────────────────
 
 def get_project_team(project_id: str) -> list[dict]:
-    with _conn() as con:
-        rows = con.execute(
-            "SELECT * FROM v_project_team WHERE project_id=?", [project_id]
-        ).fetchall()
-    return _rows_to_list(rows)
+    snapshot = current_state_staffing_read_model.project_team_snapshot(
+        project_id,
+        db_path=settings.database_path,
+    )
+    if snapshot["state"] != "known" or snapshot["project"] is None:
+        return []
+    project = snapshot["project"]
+    return [
+        {
+            "project_id": project_id,
+            "project_name": project["display_name"],
+            "project_status": project["project_status"],
+            "priority": project["priority"],
+            "jira_key": None,
+            "target_end": None,
+            "member_id": row["member_id"],
+            "member_name": row["display_name"],
+            "role": "",
+            "allocation": row["allocation"],
+        }
+        for row in snapshot["assignments"]
+    ]
+
+
+def get_project_team_snapshot(project_id: str) -> dict[str, Any]:
+    return current_state_staffing_read_model.project_team_snapshot(
+        project_id,
+        db_path=settings.database_path,
+    )
 
 
 def create_assignment(

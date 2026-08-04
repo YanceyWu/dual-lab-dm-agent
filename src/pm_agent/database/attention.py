@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from pm_agent.config import settings
+from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_REQUIRED_TABLES
 
 
 @contextmanager
@@ -173,17 +174,58 @@ def load_source_inputs(connection: sqlite3.Connection) -> list[dict[str, Any]]:
     ]
 
 
-def load_member_inputs(connection: sqlite3.Connection) -> list[dict[str, Any]]:
-    return [
-        dict(row)
+def load_member_inputs(connection: sqlite3.Connection) -> dict[str, Any]:
+    rows = connection.execute(
+        """
+        SELECT name
+        FROM sqlite_master
+        WHERE type='table'
+          AND name IN ({})
+        """.format(",".join("?" for _ in CURRENT_STATE_STAFFING_REQUIRED_TABLES)),
+        sorted(CURRENT_STATE_STAFFING_REQUIRED_TABLES),
+    ).fetchall()
+    if {str(row["name"]) for row in rows} != CURRENT_STATE_STAFFING_REQUIRED_TABLES:
+        return {
+            "state": "unavailable",
+            "state_reason": "current_state_staffing_schema_missing",
+            "members": [],
+        }
+    publication = connection.execute(
+        """
+        SELECT publication_id
+        FROM current_state_staffing_publications
+        WHERE is_current=1
+        ORDER BY published_at DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    if publication is None:
+        return {
+            "state": "unknown",
+            "state_reason": "current_state_staffing_publication_not_found",
+            "members": [],
+        }
+    members = [
+        {
+            "id": str(row["member_id"]),
+            "current_load": float(row["current_load"]),
+            "active_projects": int(row["active_project_count"]),
+        }
         for row in connection.execute(
             """
-            SELECT id, current_load, active_projects
-            FROM v_member_load
-            ORDER BY id
-            """
+            SELECT l.member_id,l.current_load,l.active_project_count
+            FROM current_state_staffing_member_loads l
+            WHERE l.publication_id=?
+            ORDER BY l.member_id
+            """,
+            [publication["publication_id"]],
         ).fetchall()
     ]
+    return {
+        "state": "known",
+        "state_reason": "current_state_staffing_current_publication_available",
+        "members": members,
+    }
 
 
 def load_expected_source_ids(connection: sqlite3.Connection) -> list[str]:

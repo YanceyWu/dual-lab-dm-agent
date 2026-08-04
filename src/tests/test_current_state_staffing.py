@@ -128,11 +128,15 @@ def test_current_state_staffing_read_contract_reports_unavailable_unknown_then_k
     service.confirm_import(preview["session_id"], db_path=isolated_db)
 
     known = read_model.current_publication_state(db_path=isolated_db)
+    snapshot = read_model.current_staffing_snapshot(db_path=isolated_db)
     member = read_model.member_load_snapshot("WD100001", db_path=isolated_db)
     unassigned = read_model.member_load_snapshot("WD100002", db_path=isolated_db)
     project = read_model.project_team_snapshot("RP-PROJ-001", db_path=isolated_db)
 
     assert known["state"] == "known"
+    assert snapshot["state"] == "known"
+    assert [item["member_id"] for item in snapshot["members"]] == ["WD100001", "WD100002"]
+    assert snapshot["projects"][0]["project_id"] == "RP-PROJ-001"
     assert member["state"] == "known"
     assert member["current_load"] == 0.6
     assert member["active_project_count"] == 1

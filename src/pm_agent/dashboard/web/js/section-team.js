@@ -42,10 +42,11 @@ var SectionTeam = {
         || (e.wd_id||'').toLowerCase().indexOf(q) >= 0
         || (e.projects||[]).some(function(p){ return p.name.toLowerCase().indexOf(q) >= 0; });
       var matchT = !typ || (typ==='stfte' && e.is_contractor) || (typ==='ltfte' && !e.is_contractor);
+      var loadKnown = e.current_state_staffing_state === 'known' && e.load_pct != null;
       var matchL = !lod
-        || (lod==='over'  && e.load_pct > 100)
-        || (lod==='full'  && e.load_pct === 100)
-        || (lod==='avail' && e.load_pct < 100);
+        || (lod==='over'  && loadKnown && e.load_pct > 100)
+        || (lod==='full'  && loadKnown && e.load_pct === 100)
+        || (lod==='avail' && loadKnown && e.load_pct < 100);
       return matchQ && matchT && matchL;
     });
     var rows = data.map(function(e){ return C.staffRow(e); }).join('');

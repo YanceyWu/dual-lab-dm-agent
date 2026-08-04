@@ -5,6 +5,7 @@ import sqlite3
 
 from typer.testing import CliRunner
 
+from pm_agent.current_state_staffing import service as current_state_staffing_service
 from pm_agent.cli import app as app_module
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
@@ -18,11 +19,16 @@ from pm_agent.use_cases.service import (
 )
 from pm_agent.use_cases.team_capacity_context import build_team_capacity_context
 from pm_agent.use_cases.tool_transport import ToolTransport
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from scripts import seed
 
 
 def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-reference",
+    )
 
     result = use_case_executor.execute(
         UseCaseRequest(
@@ -48,6 +54,10 @@ def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated
 
 def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-trace",
+    )
     source_id = "import-resource-portal"
     run_id = repository.start_sync_run(source_id, triggered_by="test")
     repository.finish_sync_run(run_id, status="success")
@@ -74,6 +84,10 @@ def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
 
 def test_workload_freshness_distinguishes_stale_and_unavailable_sources(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-freshness-unavailable",
+    )
     stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
     repository.finish_sync_run(stale_id, status="success")
     failed_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
@@ -89,6 +103,10 @@ def test_workload_freshness_distinguishes_stale_and_unavailable_sources(isolated
 
 def test_workload_freshness_distinguishes_stale_and_partial_sources(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-freshness-partial",
+    )
     stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
     repository.finish_sync_run(stale_id, status="success")
     partial_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
@@ -168,6 +186,10 @@ def test_unknown_use_case_is_returned_as_a_result() -> None:
 
 def test_cli_workload_uses_reference_contract(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-cli",
+    )
 
     result = CliRunner().invoke(app_module.app, ["workload"])
 
@@ -177,6 +199,10 @@ def test_cli_workload_uses_reference_contract(isolated_db) -> None:
 
 def test_dashboard_team_workload_endpoint_uses_reference_contract(isolated_db) -> None:
     seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-contract-workload-dashboard",
+    )
     client = dashboard_server.app.test_client()
 
     response = client.get("/api/use-cases/team-workload-overview")
@@ -565,4 +591,123 @@ def test_legacy_dashboard_direct_sql_route_is_explicitly_marked(
     response = dashboard_server.app.test_client().get("/api/summary")
 
     assert response.status_code == 200
-    assert response.headers["X-DM-Interface-Contract"] == "legacy-direct-read"
+    assert response.headers["X-DM-Interface-Contract"] == "current-state-staffing-compat-read"
+
+
+def test_dashboard_summary_suppresses_numeric_loads_without_current_state_publication(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT INTO employees (id, wd_id, name, status)
+            VALUES ('990101', '990101', 'Alex Example', 'active')
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO projects (id, name, status, priority)
+            VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO assignments
+                (employee_id, project_id, role, allocation, start_date, status)
+            VALUES
+                ('990101', 'project-atlas-990001', 'developer', 1.0, '2026-07-01', 'active')
+            """
+        )
+
+    payload = dashboard_server.app.test_client().get("/api/summary").get_json()
+
+    assert payload["total_staff"] == 1
+    assert payload["current_state_staffing_state"] == "unknown"
+    assert payload["avg_load"] is None
+    assert payload["overloaded"] is None
+
+
+def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT INTO employees (id, wd_id, name, status, current_hiref)
+            VALUES ('employee-990201', 'WD-990201', 'Alex Example', 'active', 'HIREF-990201')
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO hiref (id, project, request_type, start_date, end_date)
+            VALUES ('HIREF-990201', 'Project Atlas', 'extend', '2026-08-01', '2026-08-31')
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO projects (id, name, status, priority)
+            VALUES ('project-atlas-990001', 'Project Atlas', 'active', 1)
+            """
+        )
+        con.commit()
+
+    package = {
+        "dataset_marker": "TEST_CURRENT_STATE_STAFFING",
+        "package_id": "package-dashboard-projects-r1",
+        "schema_version": current_state_staffing_service.PACKAGE_SCHEMA_VERSION,
+        "generated_at": "2026-08-15T00:00:00+00:00",
+        "source_id": "source-test-current-state-staffing",
+        "publication_scope": {
+            "scope_key": "test-current-state-staffing",
+            "as_of_date": "2026-08-15",
+            "effective_year": 2026,
+            "effective_month": 8,
+        },
+        "manifest": {
+            "member_ids": ["WD-990201"],
+            "project_ids": ["project-atlas-990001"],
+            "assignment_keys": [
+                {
+                    "member_id": "WD-990201",
+                    "project_id": "project-atlas-990001",
+                }
+            ],
+        },
+        "members": [
+            {
+                "member_id": "WD-990201",
+                "display_name": "Alex Example",
+                "status": "active",
+                "role": "developer",
+                "level": "senior",
+                "resource_type": "LTFTE",
+                "current_hiref_id": "HIREF-990201",
+                "hiref_end_date": "2026-08-31",
+            }
+        ],
+        "projects": [
+            {
+                "project_id": "project-atlas-990001",
+                "display_name": "Project Atlas",
+                "status": "active",
+                "priority": 1,
+            }
+        ],
+        "assignments": [
+            {
+                "member_id": "WD-990201",
+                "project_id": "project-atlas-990001",
+                "allocation": 0.8,
+            }
+        ],
+    }
+    preview = current_state_staffing_service.preview_import(package, db_path=isolated_db)
+    current_state_staffing_service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    payload = dashboard_server.app.test_client().get("/api/projects").get_json()
+
+    assert payload[0]["hiref_risk"] == 1
+    assert payload[0]["members"][0]["wd_id"] == "WD-990201"
+    assert payload[0]["members"][0]["id"] == "employee-990201"

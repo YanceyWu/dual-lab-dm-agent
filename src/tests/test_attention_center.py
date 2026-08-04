@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from typer.testing import CliRunner
 
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.attention import AttentionService
 from pm_agent.cli import app as app_module
 from pm_agent.dashboard import server as dashboard_server
@@ -112,6 +113,10 @@ def _seed_center_scenario(database_path) -> None:
                 ),
             ],
         )
+    publish_current_state_staffing_from_legacy(
+        database_path,
+        package_id="package-attention-center-current-state-r1",
+    )
 
 
 def _confirm_reconciliation(

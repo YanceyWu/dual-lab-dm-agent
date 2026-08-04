@@ -570,8 +570,15 @@ def _evaluate_resources(
 ) -> dict[str, Any]:
     rule_key = "resource_overload_attention"
     version = catalog[rule_key]["rule_version"]
+    inputs = attention_repository.load_member_inputs(connection)
+    if inputs["state"] != "known":
+        return {
+            "status": "partial",
+            "warning_codes": ["ATTENTION_RESOURCE_INPUT_LIMITED"],
+            "observations": [],
+        }
     observations = []
-    for member in attention_repository.load_member_inputs(connection):
+    for member in inputs["members"]:
         current_load = float(member.get("current_load") or 0.0)
         active = current_load > 1.0
         observations.append(
@@ -584,11 +591,11 @@ def _evaluate_resources(
                 complete=True,
                 severity="high" if active else "none",
                 reason_codes=["resource_load_above_100"] if active else ["resource_load_not_above_100"],
-                fact_type="active_assignment_load",
+                fact_type="current_state_staffing_load",
                 fact_value=current_load,
                 value_state="known",
                 evidence={
-                    "entity_kind": "active_assignments",
+                    "entity_kind": "current_state_staffing_assignments",
                     "active_project_count": int(member.get("active_projects") or 0),
                 },
                 freshness={"state": "fresh", "basis": "local_record"},

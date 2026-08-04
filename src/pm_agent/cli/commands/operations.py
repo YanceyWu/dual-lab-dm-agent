@@ -230,12 +230,27 @@ def register(app: typer.Typer) -> None:
             return
 
         console.print()
+        avg_load_text = (
+            f"{stats['avg_load']:.0%}"
+            if isinstance(stats.get("avg_load"), (int, float))
+            else "unknown"
+        )
+        available_text = (
+            str(stats["available"])
+            if stats.get("available") is not None
+            else "unknown"
+        )
+        overloaded_text = (
+            str(stats["overloaded"])
+            if stats.get("overloaded") is not None
+            else "unknown"
+        )
         console.print(
             Panel(
                 f"总人数 [bold]{stats['total']}[/bold]  ·  "
-                f"可用（<80%）[bold green]{stats['available']}[/bold green]  ·  "
-                f"满载（100%）[bold red]{stats['overloaded']}[/bold red]  ·  "
-                f"平均负载 [bold]{stats['avg_load']:.0%}[/bold]",
+                f"可用（<80%）[bold green]{available_text}[/bold green]  ·  "
+                f"满载（100%）[bold red]{overloaded_text}[/bold red]  ·  "
+                f"平均负载 [bold]{avg_load_text}[/bold]",
                 title="[bold cyan]👥 团队负载概览[/bold cyan]",
                 border_style="cyan",
             )
@@ -249,17 +264,35 @@ def register(app: typer.Typer) -> None:
         table.add_column("项目数", width=6)
         table.add_column("技能", style="dim")
 
-        for member_row in sorted(members, key=lambda item: -item.get("current_load", 0)):
-            load = member_row.get("current_load", 0.0)
-            proj_count = member_row.get("active_projects", 0)
-            load_color = "green" if load < 0.6 else "yellow" if load < 0.9 else "red"
+        for member_row in sorted(
+            members,
+            key=lambda item: (
+                item.get("current_load")
+                if isinstance(item.get("current_load"), (int, float))
+                else -1.0
+            ),
+            reverse=True,
+        ):
+            load = member_row.get("current_load")
+            proj_count = member_row.get("active_projects")
+            load_color = (
+                "green"
+                if isinstance(load, (int, float)) and load < 0.6
+                else "yellow"
+                if isinstance(load, (int, float)) and load < 0.9
+                else "red"
+            )
             skills_preview = ", ".join(list(member_row.get("skills", {}).keys())[:4])
             table.add_row(
                 member_row["name"],
                 member_row.get("level", "-"),
                 member_row.get("team", "-"),
-                f"[{load_color}]{load:.0%}[/{load_color}]",
-                str(proj_count),
+                (
+                    f"[{load_color}]{float(load):.0%}[/{load_color}]"
+                    if isinstance(load, (int, float))
+                    else "[dim]unknown[/dim]"
+                ),
+                str(proj_count) if proj_count is not None else "?",
                 skills_preview,
             )
 

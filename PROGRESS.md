@@ -1,15 +1,15 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-05
+Last updated: 2026-08-04
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: the local A1 commit on this branch
-is the required starting point for IP-036 continuation into A2. That commit is
-rooted at the accepted A0 freeze commit
+Current HEAD: this branch now carries the local A2 commit built on the accepted
+A1 commit `73bd8268fef866c3de539deac83b724b69b1e8d4`. That accepted A1 commit is
+the required starting point that is rooted at the accepted A0 freeze commit
 `8ff06e7ab988895fa4f2428179613e289a9107d0`; the separate aborted runtime
 attempt remains excluded and must not be inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 A1 CURRENT-STATE STAFFING CONTRACT SKELETON IMPLEMENTED LOCALLY ON CLEAN 8ff06e7 BASELINE; NEXT GATE IS A2 ONLY`
-Gate status: `A1 RUNTIME SLICE IMPLEMENTED AND VALIDATED LOCALLY; NEXT RUNTIME GATE IS A2 READER MIGRATION`
+Current implementation item: `IP-036 A2 CURRENT-STATE STAFFING READER MIGRATION COMMITTED LOCALLY ON TOP OF ACCEPTED A1; NEXT GATE IS A3 ONLY`
+Gate status: `A2 RUNTIME SLICE IMPLEMENTED AND VALIDATED LOCALLY; NEXT RUNTIME GATE IS A3 FRESHNESS AND EVIDENCE MIGRATION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -28,15 +28,22 @@ current working tree now revises `architecture/16...`,
 actually frozen: coverage/dependency matrix, missing-coverage register,
 invariant checklist, end-to-end state-machine matrix, product/semantic
 decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
-self-review checklist. The current working tree now adds the bounded A1 runtime
-slice only: a dedicated `pm_agent.current_state_staffing` capability family,
-minimal workbook/onboarding publish wiring, focused replay/idempotency tests,
-and no reader migration, freshness replacement, or legacy deletion. The older
-aborted runtime attempt remains excluded because it reported unresolved
-replay/uniqueness and unknown-data-semantic defects. The A1 slice is
-committed locally in this session and remains unpushed. Promotion is local
-only; every external action remains a separate owner decision. No push is
-authorized or required.
+self-review checklist. The current working tree now keeps the accepted A1
+capability family and adds only the bounded A2 reader migration slice: the
+A-scope current-load readers, workload/capacity context, weekly report,
+resource-planning read path, attention overload inputs, Dashboard current-state
+compatibility routes, and CLI adapters now read the canonical current-state
+staffing publication contract or an approved read-only compatibility projection.
+This slice preserves the frozen A0/A1 semantics: missing publication remains
+unknown/unavailable rather than numeric zero, partial/unknown current-state does
+not masquerade as available capacity, and the compatibility shim remains read-
+only. Freshness replacement, evidence authority migration, legacy deletion,
+skills/HIREF ownership migration, and mutable staffing-write redesign remain out
+of scope for this session. The older aborted runtime attempt remains excluded
+because it reported unresolved replay/uniqueness and unknown-data-semantic
+defects. A2 is now committed locally in this session and remains unpushed.
+Promotion is local only; every external action remains a separate owner
+decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -90,14 +97,20 @@ belong in Git history and must not be interpreted as current instructions.
   that handoff so A0 must freeze coverage, invariants, state-machine scenarios,
   and semantic decisions because the direct A1-first plan and later runtime
   attempt both risked looping on missing hidden dependencies.
-- IP-036 Batch A1 is now implemented locally as a bounded skeleton only:
+- IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2 now
+  builds on it in the working tree:
   `pm_agent.current_state_staffing` owns an additive current-state staffing
   import/publication/read-contract family; workbook onboarding and
   `pm onboarding` now plan/publish that capability alongside workforce planning
   and optional capacity; missing-schema and missing-publication states are
-  explicit through the new read-contract skeleton; no existing workload,
-  staffing, Dashboard, capacity-context, skills, or HIREF reader/runtime
-  surfaces changed in this slice.
+  explicit through the new read-contract skeleton. The current A2 working tree
+  now migrates only the authorized reader surfaces to that contract or a read-
+  only compatibility projection: repository read helpers, team workload,
+  capacity context, weekly report, resource-planning read-side recommendation,
+  attention overload inputs, Dashboard current-state compatibility routes, and
+  CLI adapters. Freshness authority, evidence authority, skills/HIREF source
+  ownership, mutable write paths, and legacy deletion still do not change in
+  this slice.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -196,6 +209,29 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-036 Batch A2 reader migration is now committed locally on top of the
+accepted A1 commit
+`73bd8268fef866c3de539deac83b724b69b1e8d4`. The final focused A2 regression run
+passed `47` tests across `src/tests/test_unified_use_case_contract.py`,
+`src/tests/test_allocation_and_weekly_report.py`,
+`src/tests/test_demo_characterization.py`, and
+`src/tests/test_attention_center.py`, including new coverage that
+resource-planning recommendation fails closed when only publication-only members
+exist and that `/api/projects` resolves HIREF risk through canonical current-
+state member identity rather than assuming `member_id == employees.id`. The
+final post-fix `make validate` passed all nine release-validation checks with
+`421` runtime tests plus `33` repository-tool tests and `19` subtests. The
+final `make rehearse-release` passed wheel install, isolated clean bootstrap,
+upgrade-copy rehearsal, and rollback. A final read-only self-review of the A2
+slice corrected four high-confidence issues before closure: planned dashboard
+rows had been dropped, unknown dashboard load could render as `0%`, attention
+resource loading had bypassed the active database connection, and current-state
+reader identity resolution still needed employee-backed filtering plus HIREF
+risk resolution through canonical member identity. A2 preserves the frozen
+A0/A1 invariants and defers all freshness/evidence authority replacement,
+compatibility closure, and legacy deletion to A3/A4. The next and only
+authorized follow-on runtime gate is A3 freshness and evidence migration.
 
 IP-034 Structured Data Onboarding Framework Batch A is now committed locally on
 `data-onboarding-framework-batch-a` at `58e1733`. Final focused validation passed

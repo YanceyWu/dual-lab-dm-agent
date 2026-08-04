@@ -21,16 +21,21 @@ def build_team_capacity_context(
     """Build a size-bounded current-state context from an existing result only."""
     members = sorted(
         data.get("members", []),
-        key=lambda member: (member.get("current_load", 0.0), member.get("id", "")),
+        key=lambda member: (
+            member.get("current_load")
+            if isinstance(member.get("current_load"), (int, float))
+            else float("inf"),
+            member.get("id", ""),
+        ),
     )
     selected_members = members[:MAX_CONTEXT_MEMBERS]
     context_members = [
         {
             "member_id": member.get("id", ""),
             "display_name": member.get("name", ""),
-            "current_load": member.get("current_load", 0.0),
-            "active_project_count": member.get("active_projects", 0),
-            "availability_classification": _availability_classification(member.get("current_load", 0.0)),
+            "current_load": member.get("current_load"),
+            "active_project_count": member.get("active_projects"),
+            "availability_classification": _availability_classification(member.get("current_load")),
         }
         for member in selected_members
     ]
@@ -47,10 +52,11 @@ def build_team_capacity_context(
         },
         "capacity_summary": {
             "total_members": stats.get("total", 0),
-            "available_members": stats.get("available", 0),
-            "overloaded_members": stats.get("overloaded", 0),
-            "average_load": stats.get("avg_load", 0.0),
-            "maximum_load": stats.get("max_load", 0.0),
+            "available_members": stats.get("available"),
+            "overloaded_members": stats.get("overloaded"),
+            "average_load": stats.get("avg_load"),
+            "maximum_load": stats.get("max_load"),
+            "current_state_state": stats.get("current_state_state", "unknown"),
         },
         "members": context_members,
         "evidence": evidence,
@@ -60,7 +66,7 @@ def build_team_capacity_context(
         "alternatives": alternatives,
         "calculation": {
             "rule_version": RULE_VERSION,
-            "calculation_basis": "active_assignments",
+            "calculation_basis": "current_state_staffing_publication",
             "freshness_state": "fresh" if not non_fresh else "qualified",
         },
         "truncation": {
@@ -72,7 +78,9 @@ def build_team_capacity_context(
     }
 
 
-def _availability_classification(current_load: float) -> str:
+def _availability_classification(current_load: float | None) -> str:
+    if current_load is None:
+        return "unknown"
     if current_load >= 1.0:
         return "overloaded"
     if current_load < 0.8:

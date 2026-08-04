@@ -191,12 +191,15 @@ var C = {
       hirefCell = C.badge('N/A','badge-muted');
     }
     var typeTag = e.is_contractor ? C.badge('STFTE','badge-coral') : C.badge('LTFTE','badge-blue');
+    var loadHtml = (e.current_state_staffing_state === 'known' && e.load_pct != null)
+      ? C.loadBar(e.load_pct)
+      : C.badge('Unknown','badge-muted');
     return '<tr>'
       + '<td class="td-mono">' + (e.wd_id||e.id||'') + '</td>'
       + '<td class="td-name">' + (e.name||'') + '</td>'
       + '<td>' + typeTag + '</td>'
       + '<td class="text-sec">' + (e.level||'--') + '</td>'
-      + '<td>' + C.loadBar(e.load_pct||0) + '</td>'
+      + '<td>' + loadHtml + '</td>'
       + '<td>' + projs + nextHtml + '</td>'
       + '<td>' + hirefCell + '</td>'
     + '</tr>';

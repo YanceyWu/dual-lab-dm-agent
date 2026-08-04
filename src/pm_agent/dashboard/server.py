@@ -46,22 +46,26 @@ DB: str | None = None
 app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
 
 LEGACY_DIRECT_SQL_ROUTES = {
-    "/api/summary",
     "/api/use-cases",
     "/api/sync-runs",
     "/api/freshness",
-    "/api/projects",
-    "/api/employees",
     "/api/hiref",
     "/api/allocations",
     "/api/project-plans",
     "/api/project-health",
 }
+CURRENT_STATE_COMPAT_ROUTES = {
+    "/api/summary",
+    "/api/projects",
+    "/api/employees",
+}
 
 
 @app.after_request
 def _mark_legacy_interface(response):
-    if request.path in LEGACY_DIRECT_SQL_ROUTES:
+    if request.path in CURRENT_STATE_COMPAT_ROUTES:
+        response.headers["X-DM-Interface-Contract"] = "current-state-staffing-compat-read"
+    elif request.path in LEGACY_DIRECT_SQL_ROUTES:
         response.headers["X-DM-Interface-Contract"] = "legacy-direct-read"
     elif request.path == "/api/project-snapshots":
         response.headers["X-DM-Interface-Contract"] = "legacy-result-projection"
@@ -72,6 +76,17 @@ def db():
     conn = sqlite3.connect(DB or _resolve_db_path())
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _current_state_member_coverage(members: list[dict]) -> str:
+    if not members:
+        return "unknown"
+    states = {str(member.get("current_state_staffing_state") or "unknown") for member in members}
+    if "unavailable" in states:
+        return "unavailable"
+    if "unknown" in states:
+        return "partial" if "known" in states else "unknown"
+    return "known"
 
 
 def jl(text):
@@ -284,11 +299,23 @@ def index():
 @app.route("/api/summary")
 def summary():
     c = db()
-    total_staff   = c.execute("SELECT COUNT(*) FROM employees WHERE status='active'").fetchone()[0]
+    members = repository.get_all_members()
+    total_staff = len(members)
     active_proj   = c.execute("SELECT COUNT(*) FROM projects  WHERE status='active'").fetchone()[0]
-    avg_load_row  = c.execute("SELECT AVG(current_load) FROM v_member_load").fetchone()
-    avg_load      = round((avg_load_row[0] or 0) * 100, 1)
-    overloaded    = c.execute("SELECT COUNT(*) FROM v_member_load WHERE current_load > 1.0").fetchone()[0]
+    member_coverage = _current_state_member_coverage(members)
+    known_members = [
+        member for member in members if isinstance(member.get("current_load"), (int, float))
+    ]
+    avg_load = (
+        round((sum(float(member["current_load"]) for member in known_members) / len(known_members)) * 100, 1)
+        if member_coverage == "known" and known_members
+        else None
+    )
+    overloaded = (
+        sum(1 for member in known_members if float(member["current_load"]) > 1.0)
+        if member_coverage == "known"
+        else None
+    )
     hiref_60d     = c.execute("""
         SELECT COUNT(*) FROM employees e JOIN hiref h ON e.current_hiref=h.id
         WHERE e.status='active' AND h.end_date <= date('now','+60 days')
@@ -321,6 +348,7 @@ def summary():
         "total_staff": total_staff, "ltfte": ltfte_count, "stfte": stfte_count,
         "active_projects": active_proj, "focus_projects": focus_proj,
         "avg_load": avg_load, "overloaded": overloaded,
+        "current_state_staffing_state": member_coverage,
         "hiref_alerts_60d": hiref_60d, "free_hiref_slots": free_hiref,
         "last_successful_sync": last_success_sync,
         "stale_sources_count": stale_sources,
@@ -396,10 +424,12 @@ def freshness():
 def projects():
     c = db()
     plan_join = ""
-    plan_fields = (
-        "NULL as latest_snapshot_date, NULL as latest_plan_snapshot_date, "
-        "0 as snapshot_count, 0 as plan_snapshot_count,"
-    )
+    plan_fields = [
+        "NULL as latest_snapshot_date",
+        "NULL as latest_plan_snapshot_date",
+        "0 as snapshot_count",
+        "0 as plan_snapshot_count",
+    ]
     if table_exists(c, "project_snapshots"):
         plan_join = """
         LEFT JOIN (
@@ -408,19 +438,29 @@ def projects():
             GROUP BY project_id
         ) plans ON p.id=plans.project_id
         """
-        plan_fields = (
-            "plans.latest_snapshot_date, plans.latest_snapshot_date as latest_plan_snapshot_date, "
-            "plans.snapshot_count, plans.snapshot_count as plan_snapshot_count,"
-        )
+        plan_fields = [
+            "plans.latest_snapshot_date",
+            "plans.latest_snapshot_date as latest_plan_snapshot_date",
+            "plans.snapshot_count",
+            "plans.snapshot_count as plan_snapshot_count",
+        ]
+    select_fields = [
+        "p.id",
+        "p.name",
+        "pp.phase",
+        "pp.phase_detail",
+        "pp.priority_tier",
+        "pp.is_focus",
+        "pp.objective",
+        "pp.milestones",
+        "pp.stakeholders",
+        *plan_fields,
+    ]
     rows = c.execute(f"""
-        SELECT p.id, p.name, pp.phase, pp.phase_detail, pp.priority_tier, pp.is_focus,
-               pp.objective, pp.milestones, pp.stakeholders,
-               {plan_fields}
-               COUNT(a.id) as team_size
+        SELECT {", ".join(select_fields)}
         FROM projects p
         LEFT JOIN project_profiles pp ON p.id=pp.project_id
         {plan_join}
-        LEFT JOIN assignments a ON p.id=a.project_id AND a.status IN ('active','planned')
         WHERE p.status='active'
         GROUP BY p.id ORDER BY COALESCE(pp.priority_tier,99), p.name
     """).fetchall()
@@ -430,21 +470,75 @@ def projects():
         p["milestones"]   = jl(p.get("milestones"))
         p["stakeholders"] = jl(p.get("stakeholders"))
         p["phase"]        = p.get("phase") or "TBC"
-        members = c.execute("""
-            SELECT e.wd_id, e.id, e.name, a.allocation, a.status as assign_status,
-                   a.start_date, a.end_date
-            FROM assignments a JOIN employees e ON a.employee_id=e.id
-            WHERE a.project_id=? AND a.status IN ('active','planned') ORDER BY a.status, e.name
-        """, [p["id"]]).fetchall()
-        p["members"] = [dict(m) for m in members]
-        # HIREF risk
-        hiref_risk = c.execute("""
-            SELECT COUNT(*) FROM employees e
-            JOIN hiref h ON e.current_hiref=h.id
-            JOIN assignments a ON e.id=a.employee_id
-            WHERE a.project_id=? AND a.status IN ('active','planned') AND h.end_date <= date('now','+90 days')
-        """, [p["id"]]).fetchone()[0]
-        p["hiref_risk"] = hiref_risk
+        team_snapshot = repository.get_project_team_snapshot(p["id"])
+        planned_members = [
+            dict(row)
+            for row in c.execute(
+                """
+                SELECT e.wd_id, e.id, e.name, a.allocation, a.status as assign_status,
+                       a.start_date, a.end_date
+                FROM assignments a
+                JOIN employees e ON a.employee_id=e.id
+                WHERE a.project_id=? AND a.status='planned'
+                ORDER BY a.start_date, e.name
+                """,
+                [p["id"]],
+            ).fetchall()
+        ]
+        p["current_state_staffing_state"] = team_snapshot["state"]
+        p["current_state_staffing_reason"] = team_snapshot["state_reason"]
+        if team_snapshot["state"] == "known":
+            active_members = []
+            active_member_ids: list[str] = []
+            for row in team_snapshot["assignments"]:
+                member_projection = repository.get_member(row["member_id"])
+                member_id = (
+                    str(member_projection.get("id") or row["member_id"])
+                    if member_projection
+                    else str(row["member_id"])
+                )
+                active_member_ids.append(member_id)
+                active_members.append(
+                    {
+                        "wd_id": (
+                            str(member_projection.get("wd_id") or row["member_id"])
+                            if member_projection
+                            else row["member_id"]
+                        ),
+                        "id": member_id,
+                        "name": (
+                            str(member_projection.get("name") or row["display_name"])
+                            if member_projection
+                            else row["display_name"]
+                        ),
+                        "allocation": row["allocation"],
+                        "assign_status": "active",
+                        "start_date": None,
+                        "end_date": None,
+                    }
+                )
+            p["members"] = active_members + planned_members
+            p["team_size"] = len(p["members"])
+            member_ids = active_member_ids + [row["id"] for row in planned_members]
+            if member_ids:
+                placeholders = ",".join("?" for _ in member_ids)
+                hiref_risk = c.execute(
+                    f"""
+                    SELECT COUNT(*)
+                    FROM employees e
+                    JOIN hiref h ON e.current_hiref=h.id
+                    WHERE e.id IN ({placeholders})
+                      AND h.end_date <= date('now','+90 days')
+                    """,
+                    member_ids,
+                ).fetchone()[0]
+            else:
+                hiref_risk = 0
+            p["hiref_risk"] = hiref_risk
+        else:
+            p["team_size"] = None
+            p["members"] = planned_members
+            p["hiref_risk"] = None
         result.append(p)
     c.close()
     return jsonify(result)
@@ -452,28 +546,30 @@ def projects():
 @app.route("/api/employees")
 def employees():
     c = db()
-    rows = c.execute("""
-        SELECT e.wd_id, e.id, e.name, e.resource_type, e.role, e.level, e.team,
-               e.current_hiref, e.next_hiref, v.current_load, v.active_projects, e.skills
-        FROM employees e
-        LEFT JOIN v_member_load v ON e.id=v.id
-        WHERE e.status='active' ORDER BY e.name
-    """).fetchall()
     result = []
-    for r in rows:
-        emp = dict(r)
-        emp["load_pct"] = round((emp.get("current_load") or 0) * 100)
+    for member in repository.get_all_members():
+        emp = dict(member)
+        project_details = list(emp.pop("current_state_project_details", []))
+        emp.pop("current_state_projects", None)
+        emp.pop("external_ids", None)
+        emp["load_pct"] = (
+            round(float(emp["current_load"]) * 100)
+            if isinstance(emp.get("current_load"), (int, float))
+            else None
+        )
         emp["is_contractor"] = emp.get("resource_type") == "STFTE"
-        try:
-            emp["skills"] = json.loads(emp.get("skills") or "{}")
-        except (TypeError, json.JSONDecodeError):
-            emp["skills"] = {}
-        projs = c.execute("""
-            SELECT p.name, a.allocation FROM assignments a
-            JOIN projects p ON a.project_id=p.id
-            WHERE a.employee_id=? AND a.status='active'
-        """, [emp["id"]]).fetchall()
-        emp["projects"] = [dict(p) for p in projs]
+        if not isinstance(emp.get("skills"), dict):
+            try:
+                emp["skills"] = json.loads(emp.get("skills") or "{}")
+            except (TypeError, json.JSONDecodeError):
+                emp["skills"] = {}
+        emp["projects"] = [
+            {
+                "name": item["project_name"],
+                "allocation": item["allocation"],
+            }
+            for item in project_details
+        ]
         # Next planned assignment (Problem 2 - show future visibility)
         next_plan = c.execute("""
             SELECT p.name, a.allocation, a.start_date

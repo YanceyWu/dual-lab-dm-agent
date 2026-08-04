@@ -4,6 +4,8 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
+from pm_agent.current_state_staffing import service as current_state_staffing_service
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.rules import scoring
 from pm_agent.use_cases.resource_planning import AllocationRequest, ResourcePlanningService
@@ -162,3 +164,123 @@ def test_weekly_report_includes_confluence_and_change_request_signals(
     raw = result.data["raw"]
     assert raw["confluence_signals"]["project-atlas-990001"]["source"] == "page_registry"
     assert raw["change_request_summaries"]["project-atlas-990001"]["open_changes"] == 1
+
+
+def test_recommendation_reads_current_state_staffing_publication(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    con = sqlite3.connect(isolated_db)
+    try:
+        _seed_basic_projects(con)
+        con.execute(
+            """
+            INSERT INTO employees
+                (id, wd_id, name, level, status, skills)
+            VALUES
+                ('990103', '990103', 'Casey Example', 'senior', 'active', '{"python": 0.9}')
+            """
+        )
+        con.execute(
+            """
+            INSERT INTO assignments
+                (employee_id, project_id, role, allocation, start_date, status)
+            VALUES
+                ('990103', 'project-atlas-990001', 'developer', 0.6, '2026-07-01', 'active')
+            """
+        )
+        con.commit()
+    finally:
+        con.close()
+
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-allocation-current-state-r1",
+    )
+
+    with sqlite3.connect(isolated_db) as con:
+        con.execute("DELETE FROM assignments")
+        con.commit()
+
+    result = ResourcePlanningService().recommend(
+        AllocationRequest(
+            query="allocate",
+            project_id="project-atlas-990001",
+            required_skills=["python"],
+        )
+    )
+
+    assert result.success is True
+    candidate = result.data["all_scores"][0]
+    assert candidate["breakdown"]["availability"] == 0.4
+    assert "已在该项目组" in candidate["reason"]
+
+
+def test_recommendation_omits_publication_only_members(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        _seed_basic_projects(con)
+        con.execute(
+            """
+            INSERT INTO employees
+                (id, wd_id, name, level, status, skills)
+            VALUES
+                ('990104', '990104', 'Dana Example', 'senior', 'active', '{"python": 0.9}')
+            """
+        )
+        con.commit()
+
+    package = {
+        "dataset_marker": "TEST_CURRENT_STATE_STAFFING",
+        "package_id": "package-allocation-ghost-r1",
+        "schema_version": current_state_staffing_service.PACKAGE_SCHEMA_VERSION,
+        "generated_at": "2026-08-15T00:00:00+00:00",
+        "source_id": "source-test-current-state-staffing",
+        "publication_scope": {
+            "scope_key": "test-current-state-staffing",
+            "as_of_date": "2026-08-15",
+            "effective_year": 2026,
+            "effective_month": 8,
+        },
+        "manifest": {
+            "member_ids": ["ghost-990201"],
+            "project_ids": ["project-atlas-990001"],
+            "assignment_keys": [],
+        },
+        "members": [
+            {
+                "member_id": "ghost-990201",
+                "display_name": "Ghost Example",
+                "status": "active",
+                "role": "developer",
+                "level": "senior",
+                "resource_type": "LTFTE",
+                "current_hiref_id": None,
+                "hiref_end_date": None,
+            }
+        ],
+        "projects": [
+            {
+                "project_id": "project-atlas-990001",
+                "display_name": "Project Atlas",
+                "status": "active",
+                "priority": 1,
+            }
+        ],
+        "assignments": [],
+    }
+    preview = current_state_staffing_service.preview_import(package, db_path=isolated_db)
+    current_state_staffing_service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    result = ResourcePlanningService().recommend(
+        AllocationRequest(
+            query="allocate",
+            project_id="project-atlas-990001",
+            required_skills=["python"],
+        )
+    )
+
+    assert result.success is False
+    assert result.message == "当前态人员负载不可用，无法生成推荐方案。"

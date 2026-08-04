@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.attention import AttentionService
 from pm_agent.database.bootstrap import (
     _migrate_attention_signal_evaluation_hash,
@@ -136,6 +137,10 @@ def _seed_attention_scenario(database_path) -> None:
             )
             """
         )
+    publish_current_state_staffing_from_legacy(
+        database_path,
+        package_id="package-attention-scenario-current-state-r1",
+    )
 
 
 def _confirm_reconciliation(
@@ -608,6 +613,10 @@ def test_resource_threshold_is_strict_and_semantic_change_keeps_identity(
             VALUES ('Synthetic late action', 'high', 'open', '2000-01-01')
             """
         )
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-attention-resource-threshold-r1",
+    )
     service = AttentionService()
     _confirm_reconciliation(
         service,
@@ -638,6 +647,10 @@ def test_resource_threshold_is_strict_and_semantic_change_keeps_identity(
         connection.execute(
             "UPDATE action_items SET priority = 'medium'"
         )
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-attention-resource-threshold-r2",
+    )
 
     _confirm_reconciliation(
         service,
@@ -855,7 +868,7 @@ def test_malformed_nested_rag_config_fails_preview_safely(isolated_db) -> None:
                 WHERE rule_key = 'project_health_attention'
                   AND is_current = 1
                 """
-            ).fetchone()[0]
+            ).fetchone()[0            ]
         )
     malformed_parameters = []
     for field, value in (
