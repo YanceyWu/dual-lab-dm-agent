@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from pm_agent.config import settings
 from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_REQUIRED_TABLES
+
+CURRENT_STATE_STAFFING_PUBLICATION_SOURCE_ID = "current-state-staffing-publication"
+DEFAULT_PUBLICATION_REFRESH_SLA_HOURS = 24.0
 
 
 def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
@@ -16,6 +20,16 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     database.row_factory = sqlite3.Row
     database.execute("PRAGMA foreign_keys = ON")
     return database
+
+
+def _use_database(
+    *,
+    db_path: str | Path | None = None,
+    database: sqlite3.Connection | None = None,
+) -> tuple[sqlite3.Connection, bool]:
+    if database is not None:
+        return database, False
+    return _connect(db_path), True
 
 
 def _schema_available(database: sqlite3.Connection) -> bool:
@@ -31,8 +45,128 @@ def _schema_available(database: sqlite3.Connection) -> bool:
     return {str(row["name"]) for row in rows} == CURRENT_STATE_STAFFING_REQUIRED_TABLES
 
 
-def current_publication_state(*, db_path: str | Path | None = None) -> dict[str, Any]:
-    database = _connect(db_path)
+def _table_exists(database: sqlite3.Connection, table_name: str) -> bool:
+    row = database.execute(
+        "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?",
+        [table_name],
+    ).fetchone()
+    return row is not None
+
+
+def _parse_json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    try:
+        parsed = json.loads(str(value))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _load_current_publication(
+    database: sqlite3.Connection,
+) -> dict[str, Any] | None:
+    publication = database.execute(
+        """
+        SELECT publication_id,package_id,package_fingerprint,scope_key,
+               as_of_date,effective_year,effective_month,published_at,report_json
+        FROM current_state_staffing_publications
+        WHERE is_current=1
+        ORDER BY published_at DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    if publication is None:
+        return None
+    return {
+        "publication_id": str(publication["publication_id"]),
+        "package_id": str(publication["package_id"]),
+        "package_fingerprint": str(publication["package_fingerprint"]),
+        "scope_key": str(publication["scope_key"]),
+        "as_of_date": str(publication["as_of_date"]),
+        "effective_year": int(publication["effective_year"]),
+        "effective_month": int(publication["effective_month"]),
+        "published_at": str(publication["published_at"]),
+        "report": _parse_json_object(publication["report_json"]),
+    }
+
+
+def _publication_refresh_sla_hours(database: sqlite3.Connection) -> float:
+    if not _table_exists(database, "data_sources"):
+        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
+    row = database.execute(
+        """
+        SELECT refresh_sla_hours
+        FROM data_sources
+        WHERE id = 'import-resource-portal'
+        LIMIT 1
+        """
+    ).fetchone()
+    if row is None or row["refresh_sla_hours"] in (None, ""):
+        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
+    try:
+        value = float(row["refresh_sla_hours"])
+    except (TypeError, ValueError):
+        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
+    return value if value > 0 else DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _coverage_state(report: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    coverage = report.get("coverage")
+    if not isinstance(coverage, dict):
+        return (
+            "partial",
+            "current_state_staffing_publication_coverage_missing",
+            {},
+        )
+    state_values = [
+        str(value)
+        for key, value in coverage.items()
+        if key.endswith("_state") and value is not None
+    ]
+    try:
+        missing_record_count = int(coverage.get("missing_record_count") or 0)
+    except (TypeError, ValueError):
+        missing_record_count = 1
+    if missing_record_count > 0 or any(value != "complete" for value in state_values):
+        return (
+            "partial",
+            "current_state_staffing_publication_coverage_incomplete",
+            dict(coverage),
+        )
+    return (
+        "complete",
+        "current_state_staffing_publication_coverage_complete",
+        dict(coverage),
+    )
+
+
+def _freshness_warning(state: str) -> str:
+    return {
+        "fresh": "",
+        "stale": "Current-state staffing publication is stale.",
+        "partial": "Current-state staffing publication coverage is partial.",
+        "unknown": "Current-state staffing publication is missing.",
+        "unavailable": "Current-state staffing publication schema is unavailable.",
+    }.get(state, "Current-state staffing publication freshness is unknown.")
+
+
+def current_publication_state(
+    *,
+    db_path: str | Path | None = None,
+    database: sqlite3.Connection | None = None,
+) -> dict[str, Any]:
+    database, should_close = _use_database(db_path=db_path, database=database)
     try:
         if not _schema_available(database):
             return {
@@ -40,16 +174,7 @@ def current_publication_state(*, db_path: str | Path | None = None) -> dict[str,
                 "state_reason": "current_state_staffing_schema_missing",
                 "publication": None,
             }
-        publication = database.execute(
-            """
-            SELECT publication_id,package_id,package_fingerprint,scope_key,
-                   as_of_date,effective_year,effective_month,published_at,report_json
-            FROM current_state_staffing_publications
-            WHERE is_current=1
-            ORDER BY published_at DESC
-            LIMIT 1
-            """
-        ).fetchone()
+        publication = _load_current_publication(database)
         if publication is None:
             return {
                 "state": "unknown",
@@ -59,28 +184,104 @@ def current_publication_state(*, db_path: str | Path | None = None) -> dict[str,
         return {
             "state": "known",
             "state_reason": "current_state_staffing_current_publication_available",
-            "publication": {
-                "publication_id": str(publication["publication_id"]),
-                "package_id": str(publication["package_id"]),
-                "package_fingerprint": str(publication["package_fingerprint"]),
-                "scope_key": str(publication["scope_key"]),
-                "as_of_date": str(publication["as_of_date"]),
-                "effective_year": int(publication["effective_year"]),
-                "effective_month": int(publication["effective_month"]),
-                "published_at": str(publication["published_at"]),
-                "report": json.loads(str(publication["report_json"])),
-            },
+            "publication": publication,
         }
     finally:
-        database.close()
+        if should_close:
+            database.close()
 
 
-def current_staffing_snapshot(*, db_path: str | Path | None = None) -> dict[str, Any]:
-    publication_state = current_publication_state(db_path=db_path)
+def current_publication_freshness(
+    *,
+    db_path: str | Path | None = None,
+    database: sqlite3.Connection | None = None,
+) -> dict[str, Any]:
+    database, should_close = _use_database(db_path=db_path, database=database)
+    try:
+        publication_state = current_publication_state(database=database)
+        base = {
+            "source_id": CURRENT_STATE_STAFFING_PUBLICATION_SOURCE_ID,
+            "state": publication_state["state"],
+            "state_reason": publication_state["state_reason"],
+            "observed_at": None,
+            "last_success_at": None,
+            "refresh_sla_hours": None,
+            "publication_id": None,
+            "package_id": None,
+            "package_fingerprint": None,
+            "scope_key": None,
+            "as_of_date": None,
+            "effective_year": None,
+            "effective_month": None,
+            "coverage_state": None,
+            "coverage": None,
+            "warning": _freshness_warning(publication_state["state"]),
+        }
+        publication = publication_state.get("publication")
+        if not isinstance(publication, dict):
+            return base
+        refresh_sla_hours = _publication_refresh_sla_hours(database)
+        coverage_state, coverage_reason, coverage = _coverage_state(
+            publication.get("report", {})
+        )
+        published_at = publication.get("published_at")
+        freshness_state = "fresh"
+        freshness_reason = "current_state_staffing_publication_fresh"
+        if coverage_state != "complete":
+            freshness_state = "partial"
+            freshness_reason = coverage_reason
+        else:
+            observed_at = _parse_datetime(published_at)
+            if observed_at is None:
+                freshness_state = "partial"
+                freshness_reason = "current_state_staffing_publication_timestamp_invalid"
+            else:
+                age_hours = (
+                    datetime.now(timezone.utc) - observed_at
+                ).total_seconds() / 3600
+                if age_hours > refresh_sla_hours:
+                    freshness_state = "stale"
+                    freshness_reason = "current_state_staffing_publication_stale"
+        return {
+            **base,
+            "state": freshness_state,
+            "state_reason": freshness_reason,
+            "observed_at": published_at,
+            "last_success_at": published_at,
+            "refresh_sla_hours": refresh_sla_hours,
+            "publication_id": publication["publication_id"],
+            "package_id": publication["package_id"],
+            "package_fingerprint": publication["package_fingerprint"],
+            "scope_key": publication["scope_key"],
+            "as_of_date": publication["as_of_date"],
+            "effective_year": publication["effective_year"],
+            "effective_month": publication["effective_month"],
+            "coverage_state": coverage_state,
+            "coverage": coverage,
+            "warning": _freshness_warning(freshness_state),
+        }
+    finally:
+        if should_close:
+            database.close()
+
+
+def current_staffing_snapshot(
+    *,
+    db_path: str | Path | None = None,
+    database: sqlite3.Connection | None = None,
+) -> dict[str, Any]:
+    publication_state = current_publication_state(db_path=db_path, database=database)
+    publication_freshness = current_publication_freshness(
+        db_path=db_path,
+        database=database,
+    )
     base = {
         "state": publication_state["state"],
         "state_reason": publication_state["state_reason"],
         "publication": publication_state["publication"],
+        "freshness": publication_freshness,
+        "freshness_state": publication_freshness["state"],
+        "freshness_reason": publication_freshness["state_reason"],
         "members": [],
         "projects": [],
     }
@@ -88,7 +289,7 @@ def current_staffing_snapshot(*, db_path: str | Path | None = None) -> dict[str,
         return base
     publication = publication_state["publication"]
     assert isinstance(publication, dict)
-    database = _connect(db_path)
+    database, should_close = _use_database(db_path=db_path, database=database)
     try:
         member_rows = database.execute(
             """
@@ -127,7 +328,8 @@ def current_staffing_snapshot(*, db_path: str | Path | None = None) -> dict[str,
             [publication["publication_id"]],
         ).fetchall()
     finally:
-        database.close()
+        if should_close:
+            database.close()
 
     member_assignments: dict[str, list[dict[str, Any]]] = {}
     project_assignments: dict[str, list[dict[str, Any]]] = {}
@@ -190,6 +392,9 @@ def member_load_snapshot(
         "state": snapshot["state"],
         "state_reason": snapshot["state_reason"],
         "publication": snapshot["publication"],
+        "freshness": snapshot["freshness"],
+        "freshness_state": snapshot["freshness_state"],
+        "freshness_reason": snapshot["freshness_reason"],
         "member": None,
         "current_load": None,
         "active_project_count": None,
@@ -237,6 +442,9 @@ def project_team_snapshot(
         "state": snapshot["state"],
         "state_reason": snapshot["state_reason"],
         "publication": snapshot["publication"],
+        "freshness": snapshot["freshness"],
+        "freshness_state": snapshot["freshness_state"],
+        "freshness_reason": snapshot["freshness_reason"],
         "project": None,
         "assignment_state": None,
         "assignments": [],

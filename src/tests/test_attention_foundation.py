@@ -759,6 +759,38 @@ def test_partial_health_never_clears_until_sources_and_inputs_are_complete(
     assert "cleared" in event_types
 
 
+def test_resource_overload_uses_current_state_publication_freshness(
+    isolated_db,
+) -> None:
+    _seed_attention_scenario(isolated_db)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET published_at = '2000-01-01T00:00:00+00:00'
+            WHERE is_current = 1
+            """
+        )
+    _confirm_reconciliation(
+        AttentionService(),
+        rule_keys=["resource_overload_attention"],
+    )
+    with sqlite3.connect(isolated_db) as connection:
+        observation_json = connection.execute(
+            """
+            SELECT observation_json
+            FROM attention_signals
+            WHERE rule_key = 'resource_overload_attention'
+            """
+        ).fetchone()[0]
+    observation = json.loads(observation_json)
+    assert observation["freshness"]["basis"] == "current_state_staffing_publication"
+    assert observation["freshness"]["state"] == "stale"
+    assert observation["freshness"]["publication_id"].startswith(
+        "current-state-staffing-publication-"
+    )
+
+
 def test_invalid_required_inputs_never_clear_active_attention(
     isolated_db,
 ) -> None:

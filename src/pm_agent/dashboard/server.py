@@ -89,6 +89,10 @@ def _current_state_member_coverage(members: list[dict]) -> str:
     return "known"
 
 
+def _current_state_publication_freshness() -> dict:
+    return repository.get_current_state_staffing_publication_freshness()
+
+
 def jl(text):
     try:
         return json.loads(text or "[]")
@@ -303,17 +307,19 @@ def summary():
     total_staff = len(members)
     active_proj   = c.execute("SELECT COUNT(*) FROM projects  WHERE status='active'").fetchone()[0]
     member_coverage = _current_state_member_coverage(members)
+    publication_freshness = _current_state_publication_freshness()
+    freshness_state = str(publication_freshness.get("state") or "unknown")
     known_members = [
         member for member in members if isinstance(member.get("current_load"), (int, float))
     ]
     avg_load = (
         round((sum(float(member["current_load"]) for member in known_members) / len(known_members)) * 100, 1)
-        if member_coverage == "known" and known_members
+        if member_coverage == "known" and freshness_state in {"fresh", "stale"} and known_members
         else None
     )
     overloaded = (
         sum(1 for member in known_members if float(member["current_load"]) > 1.0)
-        if member_coverage == "known"
+        if member_coverage == "known" and freshness_state in {"fresh", "stale"}
         else None
     )
     hiref_60d     = c.execute("""
@@ -349,6 +355,9 @@ def summary():
         "active_projects": active_proj, "focus_projects": focus_proj,
         "avg_load": avg_load, "overloaded": overloaded,
         "current_state_staffing_state": member_coverage,
+        "current_state_staffing_freshness_state": freshness_state,
+        "current_state_staffing_freshness_reason": publication_freshness.get("state_reason"),
+        "current_state_staffing_publication_id": publication_freshness.get("publication_id"),
         "hiref_alerts_60d": hiref_60d, "free_hiref_slots": free_hiref,
         "last_successful_sync": last_success_sync,
         "stale_sources_count": stale_sources,
@@ -487,6 +496,13 @@ def projects():
         ]
         p["current_state_staffing_state"] = team_snapshot["state"]
         p["current_state_staffing_reason"] = team_snapshot["state_reason"]
+        p["current_state_staffing_freshness_state"] = team_snapshot.get("freshness_state")
+        p["current_state_staffing_freshness_reason"] = team_snapshot.get("freshness_reason")
+        p["current_state_staffing_publication_id"] = (
+            (team_snapshot.get("publication") or {}).get("publication_id")
+            if isinstance(team_snapshot.get("publication"), dict)
+            else None
+        )
         if team_snapshot["state"] == "known":
             active_members = []
             active_member_ids: list[str] = []
@@ -517,24 +533,29 @@ def projects():
                         "end_date": None,
                     }
                 )
-            p["members"] = active_members + planned_members
-            p["team_size"] = len(p["members"])
-            member_ids = active_member_ids + [row["id"] for row in planned_members]
-            if member_ids:
-                placeholders = ",".join("?" for _ in member_ids)
-                hiref_risk = c.execute(
-                    f"""
-                    SELECT COUNT(*)
-                    FROM employees e
-                    JOIN hiref h ON e.current_hiref=h.id
-                    WHERE e.id IN ({placeholders})
-                      AND h.end_date <= date('now','+90 days')
-                    """,
-                    member_ids,
-                ).fetchone()[0]
+            if team_snapshot.get("freshness_state") in {"fresh", "stale"}:
+                p["members"] = active_members + planned_members
+                p["team_size"] = len(p["members"])
+                member_ids = active_member_ids + [row["id"] for row in planned_members]
+                if member_ids:
+                    placeholders = ",".join("?" for _ in member_ids)
+                    hiref_risk = c.execute(
+                        f"""
+                        SELECT COUNT(*)
+                        FROM employees e
+                        JOIN hiref h ON e.current_hiref=h.id
+                        WHERE e.id IN ({placeholders})
+                          AND h.end_date <= date('now','+90 days')
+                        """,
+                        member_ids,
+                    ).fetchone()[0]
+                else:
+                    hiref_risk = 0
+                p["hiref_risk"] = hiref_risk
             else:
-                hiref_risk = 0
-            p["hiref_risk"] = hiref_risk
+                p["members"] = planned_members
+                p["team_size"] = None
+                p["hiref_risk"] = None
         else:
             p["team_size"] = None
             p["members"] = planned_members
@@ -549,13 +570,17 @@ def employees():
     result = []
     for member in repository.get_all_members():
         emp = dict(member)
+        freshness_state = str(
+            emp.get("current_state_staffing_freshness_state") or "unknown"
+        )
         project_details = list(emp.pop("current_state_project_details", []))
         emp.pop("current_state_projects", None)
         emp.pop("external_ids", None)
         emp["load_pct"] = (
             round(float(emp["current_load"]) * 100)
-            if isinstance(emp.get("current_load"), (int, float))
-            else None
+        if freshness_state in {"fresh", "stale"}
+        and isinstance(emp.get("current_load"), (int, float))
+        else None
         )
         emp["is_contractor"] = emp.get("resource_type") == "STFTE"
         if not isinstance(emp.get("skills"), dict):

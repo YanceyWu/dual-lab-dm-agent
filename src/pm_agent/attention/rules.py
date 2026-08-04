@@ -571,12 +571,17 @@ def _evaluate_resources(
     rule_key = "resource_overload_attention"
     version = catalog[rule_key]["rule_version"]
     inputs = attention_repository.load_member_inputs(connection)
-    if inputs["state"] != "known":
+    if inputs["state"] != "known" or inputs.get("freshness_state") in {
+        "partial",
+        "unknown",
+        "unavailable",
+    }:
         return {
             "status": "partial",
             "warning_codes": ["ATTENTION_RESOURCE_INPUT_LIMITED"],
             "observations": [],
         }
+    freshness_state = str(inputs.get("freshness_state") or "unknown")
     observations = []
     for member in inputs["members"]:
         current_load = float(member.get("current_load") or 0.0)
@@ -597,8 +602,14 @@ def _evaluate_resources(
                 evidence={
                     "entity_kind": "current_state_staffing_assignments",
                     "active_project_count": int(member.get("active_projects") or 0),
+                    "publication_id": inputs.get("publication_id"),
                 },
-                freshness={"state": "fresh", "basis": "local_record"},
+                freshness={
+                    "state": freshness_state,
+                    "basis": "current_state_staffing_publication",
+                    "state_reason": inputs.get("freshness_reason"),
+                    "publication_id": inputs.get("publication_id"),
+                },
             )
         )
     return {"status": "complete", "warning_codes": [], "observations": observations}

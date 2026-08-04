@@ -23,6 +23,31 @@ from current_state_staffing_test_helpers import publish_current_state_staffing_f
 from scripts import seed
 
 
+def _mark_current_state_publication_partial(db_path) -> None:
+    with sqlite3.connect(db_path) as connection:
+        report = json.loads(
+            connection.execute(
+                """
+                SELECT report_json
+                FROM current_state_staffing_publications
+                WHERE is_current = 1
+                LIMIT 1
+                """
+            ).fetchone()[0]
+        )
+        report["coverage"]["assignment_manifest_state"] = "partial"
+        report["coverage"]["missing_record_count"] = 1
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET report_json = ?
+            WHERE is_current = 1
+            """,
+            [json.dumps(report)],
+        )
+        connection.commit()
+
+
 def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated_db) -> None:
     seed.main()
     publish_current_state_staffing_from_legacy(
@@ -45,11 +70,16 @@ def test_team_workload_reference_use_case_has_stable_trace_and_evidence(isolated
     assert result.execution_metadata["use_case_id"] == "team-workload-overview"
     assert result.execution_metadata["actor"] == "contract-test"
     assert result.execution_metadata["execution_id"]
-    assert {item["state"] for item in result.freshness} == {"unknown"}
-    assert result.warnings
+    assert {item["source_id"] for item in result.freshness} == {
+        "current-state-staffing-publication"
+    }
+    assert {item["state"] for item in result.freshness} == {"fresh"}
+    assert result.evidence[1]["authority"] == "canonical"
+    assert result.warnings == []
     assert result.context["context_type"] == "team_capacity"
     assert result.context["requested_scope"]["effective_period"] == "current"
     assert result.context["members"][0]["availability_classification"] == "available"
+    assert result.context["calculation"]["freshness_state"] == "fresh"
 
 
 def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
@@ -82,48 +112,44 @@ def test_execution_trace_is_bounded_and_retrievable(isolated_db) -> None:
     assert not hasattr(trace, "members")
 
 
-def test_workload_freshness_distinguishes_stale_and_unavailable_sources(isolated_db) -> None:
+def test_workload_freshness_uses_current_state_publication_staleness(isolated_db) -> None:
     seed.main()
     publish_current_state_staffing_from_legacy(
         isolated_db,
-        package_id="package-contract-workload-freshness-unavailable",
+        package_id="package-contract-workload-freshness-stale",
     )
-    stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
-    repository.finish_sync_run(stale_id, status="success")
-    failed_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
-    repository.fail_sync_run(failed_id, "synthetic failure")
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET published_at = '2000-01-01T00:00:00+00:00'
+            WHERE is_current = 1
+            """
+        )
+        connection.commit()
 
     result = use_case_executor.execute(UseCaseRequest(use_case_id="team-workload-overview"))
     states = {item["source_id"]: item["state"] for item in result.freshness}
 
-    assert states["import-resource-portal"] == "fresh"
-    assert states["import-skills-matrix"] == "unavailable"
-    assert "freshness:import-skills-matrix:unavailable" in result.warnings
+    assert states == {"current-state-staffing-publication": "stale"}
+    assert "freshness:current-state-staffing-publication:stale" in result.warnings
+    assert result.data["stats"]["avg_load"] is not None
 
 
-def test_workload_freshness_distinguishes_stale_and_partial_sources(isolated_db) -> None:
+def test_workload_freshness_uses_current_state_publication_partial_coverage(isolated_db) -> None:
     seed.main()
     publish_current_state_staffing_from_legacy(
         isolated_db,
         package_id="package-contract-workload-freshness-partial",
     )
-    stale_id = repository.start_sync_run("import-resource-portal", triggered_by="test")
-    repository.finish_sync_run(stale_id, status="success")
-    partial_id = repository.start_sync_run("import-skills-matrix", triggered_by="test")
-    repository.finish_sync_run(partial_id, status="partial")
-    with sqlite3.connect(isolated_db) as connection:
-        connection.execute(
-            "UPDATE sync_runs SET finished_at = datetime('now', '-1000 hours') WHERE id = ?",
-            [stale_id],
-        )
+    _mark_current_state_publication_partial(isolated_db)
 
     result = use_case_executor.execute(UseCaseRequest(use_case_id="team-workload-overview"))
     states = {item["source_id"]: item["state"] for item in result.freshness}
 
-    assert states == {
-        "import-resource-portal": "stale",
-        "import-skills-matrix": "partial",
-    }
+    assert states == {"current-state-staffing-publication": "partial"}
+    assert result.data["stats"]["avg_load"] is None
+    assert "freshness:current-state-staffing-publication:partial" in result.warnings
 
 
 def test_execution_trace_retention_is_bounded(isolated_db, monkeypatch) -> None:
@@ -174,6 +200,42 @@ def test_team_capacity_context_is_deterministic_and_explicitly_truncated() -> No
         "maximum_members": 20,
     }
     assert context["requested_scope"]["team"] == "Example Delivery Team"
+
+
+def test_team_capacity_context_suppresses_member_capacity_when_publication_is_partial() -> None:
+    context = build_team_capacity_context(
+        data={
+            "members": [
+                {
+                    "id": "member-01",
+                    "name": "Member 1",
+                    "current_load": 0.8,
+                    "active_projects": 2,
+                }
+            ],
+            "stats": {"total": 1},
+        },
+        evidence=[{"applied_filters": {"team": "Example Delivery Team"}}],
+        freshness=[
+            {
+                "source_id": "current-state-staffing-publication",
+                "state": "partial",
+            }
+        ],
+        assumptions=[],
+        warnings=[],
+        alternatives=[],
+        execution_metadata={"use_case_id": "team-workload-overview", "requested_output": "json"},
+    )
+
+    assert context["members"][0] == {
+        "member_id": "member-01",
+        "display_name": "Member 1",
+        "current_load": None,
+        "active_project_count": None,
+        "availability_classification": "unknown",
+    }
+    assert context["calculation"]["freshness_state"] == "partial"
 
 
 def test_unknown_use_case_is_returned_as_a_result() -> None:
@@ -624,8 +686,46 @@ def test_dashboard_summary_suppresses_numeric_loads_without_current_state_public
 
     assert payload["total_staff"] == 1
     assert payload["current_state_staffing_state"] == "unknown"
+    assert payload["current_state_staffing_freshness_state"] == "unknown"
     assert payload["avg_load"] is None
     assert payload["overloaded"] is None
+
+
+def test_dashboard_summary_suppresses_numeric_loads_for_partial_current_state_publication(
+    isolated_db,
+) -> None:
+    seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-dashboard-summary-partial",
+    )
+    _mark_current_state_publication_partial(isolated_db)
+
+    payload = dashboard_server.app.test_client().get("/api/summary").get_json()
+
+    assert payload["current_state_staffing_state"] == "known"
+    assert payload["current_state_staffing_freshness_state"] == "partial"
+    assert payload["avg_load"] is None
+    assert payload["overloaded"] is None
+
+
+def test_dashboard_employees_suppress_load_for_partial_current_state_publication(
+    isolated_db,
+) -> None:
+    seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-dashboard-employees-partial",
+    )
+    _mark_current_state_publication_partial(isolated_db)
+
+    payload = dashboard_server.app.test_client().get("/api/employees").get_json()
+
+    assert payload
+    assert {
+        employee["current_state_staffing_freshness_state"] for employee in payload
+    } == {"partial"}
+    assert all(employee["load_pct"] is None for employee in payload)
 
 
 def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
@@ -711,3 +811,39 @@ def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
     assert payload[0]["hiref_risk"] == 1
     assert payload[0]["members"][0]["wd_id"] == "WD-990201"
     assert payload[0]["members"][0]["id"] == "employee-990201"
+
+
+def test_dashboard_projects_suppress_active_members_for_partial_publication(
+    isolated_db,
+) -> None:
+    seed.main()
+    publish_current_state_staffing_from_legacy(
+        isolated_db,
+        package_id="package-dashboard-projects-partial",
+    )
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT INTO assignments
+                (employee_id, project_id, role, allocation, start_date, end_date, status)
+            VALUES
+                ('990004', 'project-atlas-990001', 'delivery_manager', 0.5, '2026-08-01', '2026-08-31', 'planned')
+            """
+        )
+        con.commit()
+    _mark_current_state_publication_partial(isolated_db)
+
+    payload = dashboard_server.app.test_client().get("/api/projects").get_json()
+    command = CliRunner().invoke(
+        app_module.app,
+        ["project", "team", "project-atlas-990001"],
+    )
+    atlas = next(project for project in payload if project["id"] == "project-atlas-990001")
+
+    assert atlas["current_state_staffing_freshness_state"] == "partial"
+    assert atlas["team_size"] is None
+    assert atlas["hiref_risk"] is None
+    assert [member["assign_status"] for member in atlas["members"]] == ["planned"]
+    assert command.exit_code == 0, command.output
+    assert "当前状态团队不可用" in command.output
+    assert "暂无分配成员" not in command.output

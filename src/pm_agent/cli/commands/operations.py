@@ -440,6 +440,15 @@ def register(app: typer.Typer) -> None:
             console.print("\n[yellow]⚠  plan_versions 为空，capacity 将退回 legacy monthly_allocations 视图。[/yellow]")
             total_warnings += 1
 
+        current_state_freshness = repository.get_current_state_staffing_publication_freshness()
+        if current_state_freshness.get("state") != "fresh":
+            console.print(
+                "\n[yellow]⚠  current-state staffing publication freshness: "
+                f"{current_state_freshness.get('state')} "
+                f"({current_state_freshness.get('state_reason')}).[/yellow]"
+            )
+            total_warnings += 1
+
         if total_warnings == 0:
             console.print("\n[bold green]✅ 数据检查通过，无异常。[/bold green]")
             return
@@ -555,6 +564,25 @@ def project_team(
     project_id: str = typer.Argument(..., help="项目ID"),
 ):
     """查看项目团队成员"""
+    snapshot = repository.get_project_team_snapshot(project_id)
+    freshness_state = snapshot.get("freshness_state")
+    if snapshot.get("state") != "known":
+        project = repository.get_project(project_id)
+        if not project:
+            console.print(f"[red]项目 '{project_id}' 不存在[/red]")
+        else:
+            console.print(
+                "[yellow]当前状态团队不可用：current-state staffing publication "
+                f"{snapshot.get('state')} ({snapshot.get('state_reason')}).[/yellow]"
+            )
+        return
+    if freshness_state not in {"fresh", "stale"}:
+        console.print(
+            "[yellow]当前状态团队不可用：current-state staffing publication "
+            f"{freshness_state or 'unknown'}。[/yellow]"
+        )
+        return
+
     team = repository.get_project_team(project_id)
     if not team:
         project = repository.get_project(project_id)

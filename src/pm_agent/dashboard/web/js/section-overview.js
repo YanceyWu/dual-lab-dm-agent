@@ -18,7 +18,7 @@ var SectionOverview = {
       var alerts = '';
       if (crit > 0)
         alerts += C.alertStrip('!', '<strong>' + crit + ' contractor(s)</strong> have HIREF expiring within 60 days', 'red');
-      var overloaded = emps.filter(function(e){ return e.load_pct > 100; });
+      var overloaded = emps.filter(function(e){ return typeof e.load_pct === 'number' && e.load_pct > 100; });
       if (overloaded.length > 0)
         alerts += C.alertStrip('!', '<strong>' + overloaded.length + ' staff</strong> exceeding 100% -- review', 'amber');
       if (h.free_count > 0)
@@ -33,10 +33,15 @@ var SectionOverview = {
             + '</div>';
           }).join('')
         : '<div class="text-muted" style="font-size:13px">No focus projects set</div>';
-      var overLoad  = emps.filter(function(e){ return e.load_pct > 100; }).length;
-      var fullLoad  = emps.filter(function(e){ return e.load_pct === 100; }).length;
-      var availLoad = emps.filter(function(e){ return e.load_pct < 100; }).length;
+      var loadKnown = function(e) { return typeof e.load_pct === 'number'; };
+      var overLoad  = emps.filter(function(e){ return loadKnown(e) && e.load_pct > 100; }).length;
+      var fullLoad  = emps.filter(function(e){ return loadKnown(e) && e.load_pct === 100; }).length;
+      var availLoad = emps.filter(function(e){ return loadKnown(e) && e.load_pct < 100; }).length;
       var total = emps.length;
+      var avgLoadHeadline = s.avg_load != null ? s.avg_load + '%' : 'Unknown';
+      var avgLoadSubtitle = s.overloaded != null
+        ? s.overloaded + ' staff overloaded'
+        : 'Current-state staffing ' + (s.current_state_staffing_freshness_state || 'unknown');
       function distBar(count, color, label) {
         var w = total > 0 ? Math.round(count / total * 160) : 0;
         return '<div class="load-dist-row">'
@@ -51,7 +56,7 @@ var SectionOverview = {
         '<div class="kpi-grid">'
           + C.kpiCard('Total Staff',     s.total_staff,        s.ltfte + ' LTFTE / ' + s.stfte + ' STFTE')
           + C.kpiCard('Active Projects', s.active_projects,    s.focus_projects + ' focus project(s)', 'blue')
-          + C.kpiCard('Avg Team Load',   s.avg_load + '%',     s.overloaded + ' staff overloaded', s.overloaded > 0 ? 'coral' : '')
+          + C.kpiCard('Avg Team Load',   avgLoadHeadline,      avgLoadSubtitle, s.overloaded > 0 ? 'coral' : '')
           + C.kpiCard('HIREF Alerts',    s.hiref_alerts_60d,   'expiring within 60 days', s.hiref_alerts_60d > 0 ? 'amber' : '')
           + C.kpiCard('Free HIREF',      s.free_hiref_slots,   'slots available', 'info')
         + '</div>'

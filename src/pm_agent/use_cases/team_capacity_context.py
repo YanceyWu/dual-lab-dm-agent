@@ -29,18 +29,33 @@ def build_team_capacity_context(
         ),
     )
     selected_members = members[:MAX_CONTEXT_MEMBERS]
+    stats = data.get("stats", {})
+    publication_freshness = next(
+        (
+            item
+            for item in freshness
+            if item.get("source_id") == "current-state-staffing-publication"
+        ),
+        freshness[0] if freshness else {"state": "unknown"},
+    )
+    publication_state = publication_freshness.get("state", "unknown")
+    publication_known = publication_state in {"fresh", "stale"}
     context_members = [
         {
             "member_id": member.get("id", ""),
             "display_name": member.get("name", ""),
-            "current_load": member.get("current_load"),
-            "active_project_count": member.get("active_projects"),
-            "availability_classification": _availability_classification(member.get("current_load")),
+            "current_load": (
+                member.get("current_load") if publication_known else None
+            ),
+            "active_project_count": (
+                member.get("active_projects") if publication_known else None
+            ),
+            "availability_classification": _availability_classification(
+                member.get("current_load") if publication_known else None
+            ),
         }
         for member in selected_members
     ]
-    stats = data.get("stats", {})
-    non_fresh = [item["state"] for item in freshness if item.get("state") != "fresh"]
     return {
         "context_version": "1.0",
         "context_type": "team_capacity",
@@ -57,6 +72,14 @@ def build_team_capacity_context(
             "average_load": stats.get("avg_load"),
             "maximum_load": stats.get("max_load"),
             "current_state_state": stats.get("current_state_state", "unknown"),
+            "current_state_freshness_state": stats.get(
+                "current_state_freshness_state",
+                publication_freshness.get("state", "unknown"),
+            ),
+            "current_state_freshness_reason": stats.get(
+                "current_state_freshness_reason",
+                publication_freshness.get("state_reason"),
+            ),
         },
         "members": context_members,
         "evidence": evidence,
@@ -67,7 +90,8 @@ def build_team_capacity_context(
         "calculation": {
             "rule_version": RULE_VERSION,
             "calculation_basis": "current_state_staffing_publication",
-            "freshness_state": "fresh" if not non_fresh else "qualified",
+            "freshness_state": publication_freshness.get("state", "unknown"),
+            "freshness_reason": publication_freshness.get("state_reason"),
         },
         "truncation": {
             "is_truncated": len(members) > MAX_CONTEXT_MEMBERS,

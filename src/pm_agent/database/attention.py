@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from pm_agent.config import settings
-from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_REQUIRED_TABLES
+from pm_agent.current_state_staffing import read_model as current_state_staffing_read_model
 
 
 @contextmanager
@@ -175,55 +175,26 @@ def load_source_inputs(connection: sqlite3.Connection) -> list[dict[str, Any]]:
 
 
 def load_member_inputs(connection: sqlite3.Connection) -> dict[str, Any]:
-    rows = connection.execute(
-        """
-        SELECT name
-        FROM sqlite_master
-        WHERE type='table'
-          AND name IN ({})
-        """.format(",".join("?" for _ in CURRENT_STATE_STAFFING_REQUIRED_TABLES)),
-        sorted(CURRENT_STATE_STAFFING_REQUIRED_TABLES),
-    ).fetchall()
-    if {str(row["name"]) for row in rows} != CURRENT_STATE_STAFFING_REQUIRED_TABLES:
-        return {
-            "state": "unavailable",
-            "state_reason": "current_state_staffing_schema_missing",
-            "members": [],
-        }
-    publication = connection.execute(
-        """
-        SELECT publication_id
-        FROM current_state_staffing_publications
-        WHERE is_current=1
-        ORDER BY published_at DESC
-        LIMIT 1
-        """
-    ).fetchone()
-    if publication is None:
-        return {
-            "state": "unknown",
-            "state_reason": "current_state_staffing_publication_not_found",
-            "members": [],
-        }
+    snapshot = current_state_staffing_read_model.current_staffing_snapshot(
+        database=connection,
+    )
+    freshness = current_state_staffing_read_model.current_publication_freshness(
+        database=connection,
+    )
     members = [
         {
-            "id": str(row["member_id"]),
-            "current_load": float(row["current_load"]),
-            "active_projects": int(row["active_project_count"]),
+            "id": str(member["member_id"]),
+            "current_load": float(member["current_load"]),
+            "active_projects": int(member["active_project_count"]),
         }
-        for row in connection.execute(
-            """
-            SELECT l.member_id,l.current_load,l.active_project_count
-            FROM current_state_staffing_member_loads l
-            WHERE l.publication_id=?
-            ORDER BY l.member_id
-            """,
-            [publication["publication_id"]],
-        ).fetchall()
+        for member in snapshot.get("members", [])
     ]
     return {
-        "state": "known",
-        "state_reason": "current_state_staffing_current_publication_available",
+        "state": snapshot["state"],
+        "state_reason": snapshot["state_reason"],
+        "freshness_state": freshness["state"],
+        "freshness_reason": freshness["state_reason"],
+        "publication_id": freshness.get("publication_id"),
         "members": members,
     }
 

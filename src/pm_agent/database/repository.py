@@ -149,6 +149,12 @@ def get_current_state_staffing_snapshot() -> dict[str, Any]:
     )
 
 
+def get_current_state_staffing_publication_freshness() -> dict[str, Any]:
+    return current_state_staffing_read_model.current_publication_freshness(
+        db_path=settings.database_path
+    )
+
+
 def _load_active_employee_rows(con: sqlite3.Connection) -> list[dict[str, Any]]:
     return [
         dict(row)
@@ -189,6 +195,7 @@ def _project_member_record(
     state: str,
     reason: str,
     publication_id: str | None,
+    freshness: dict[str, Any] | None = None,
     external_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     if employee is not None:
@@ -266,6 +273,21 @@ def _project_member_record(
             "current_state_staffing_state": state,
             "current_state_staffing_reason": reason,
             "current_state_staffing_publication_id": publication_id,
+            "current_state_staffing_freshness_state": (
+                freshness.get("state") if freshness else None
+            ),
+            "current_state_staffing_freshness_reason": (
+                freshness.get("state_reason") if freshness else None
+            ),
+            "current_state_staffing_published_at": (
+                freshness.get("observed_at") if freshness else None
+            ),
+            "current_state_staffing_as_of_date": (
+                freshness.get("as_of_date") if freshness else None
+            ),
+            "current_state_staffing_refresh_sla_hours": (
+                freshness.get("refresh_sla_hours") if freshness else None
+            ),
             "current_state_assignment_state": (
                 current_member["assignment_state"] if current_member is not None else None
             ),
@@ -288,6 +310,7 @@ def get_all_members() -> list[dict]:
         external_ids_by_employee = _load_external_ids_by_employee(con)
 
     snapshot = get_current_state_staffing_snapshot()
+    freshness = snapshot.get("freshness")
     publication = snapshot.get("publication")
     publication_id = (
         str(publication["publication_id"])
@@ -320,6 +343,7 @@ def get_all_members() -> list[dict]:
                     state="known",
                     reason="member_load_available_from_current_state_staffing_publication",
                     publication_id=publication_id,
+                    freshness=freshness if isinstance(freshness, dict) else None,
                     external_ids=external_ids_by_employee.get(str(employee["id"]), []),
                 )
             )
@@ -335,6 +359,7 @@ def get_all_members() -> list[dict]:
                     else snapshot["state_reason"]
                 ),
                 publication_id=publication_id,
+                freshness=freshness if isinstance(freshness, dict) else None,
                 external_ids=external_ids_by_employee.get(str(employee["id"]), []),
             )
         )
@@ -349,6 +374,7 @@ def get_all_members() -> list[dict]:
                 state="known",
                 reason="member_load_available_from_current_state_staffing_publication",
                 publication_id=publication_id,
+                freshness=freshness if isinstance(freshness, dict) else None,
             )
         )
     members.sort(key=lambda item: (str(item.get("name") or ""), str(item.get("id") or "")))

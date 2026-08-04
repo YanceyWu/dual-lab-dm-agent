@@ -19,10 +19,10 @@ from pm_agent.rules.hiref import project_alignment_status
 RULE_VERSION = "staffing-feasibility-v2"
 CAPACITY_RULE_VERSION = "staffing-effective-capacity-v1"
 STAFFING_SOURCE_IDS = (
-    "import-resource-portal",
     "import-skills-matrix",
     "import-hiref-report",
 )
+CURRENT_STATE_PUBLICATION_SOURCE_ID = "current-state-staffing-publication"
 
 
 def _utc_now() -> datetime:
@@ -280,6 +280,8 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
             "code": "source_not_fresh",
             "source_id": item["source_id"],
             "state": item["state"],
+            "state_reason": item.get("state_reason"),
+            "overrideable": item.get("overrideable", True),
         }
         for item in source_states
         if item["state"] != "fresh"
@@ -354,18 +356,41 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
 
 def _source_states() -> list[dict[str, Any]]:
     rows = {row["id"]: row for row in repository.get_data_source_freshness(active_only=False)}
-    return [
+    publication = repository.get_current_state_staffing_publication_freshness()
+    result = [
         {
-            "source_id": source_id,
-            "state": (rows.get(source_id) or {}).get("freshness_state", "unknown"),
-            "observed_at": (
-                (rows.get(source_id) or {}).get("latest_finished_at")
-                or (rows.get(source_id) or {}).get("latest_started_at")
-            ),
-            "latest_run_id": (rows.get(source_id) or {}).get("latest_run_id"),
+            "source_id": CURRENT_STATE_PUBLICATION_SOURCE_ID,
+            "state": publication.get("state", "unknown"),
+            "state_reason": publication.get("state_reason"),
+            "observed_at": publication.get("observed_at"),
+            "latest_run_id": publication.get("publication_id"),
+            "overrideable": publication.get("state_reason")
+            != "current_state_staffing_schema_missing",
         }
-        for source_id in STAFFING_SOURCE_IDS
     ]
+    for source_id in STAFFING_SOURCE_IDS:
+        row = rows.get(source_id) or {}
+        raw_state = row.get("freshness_state")
+        state = {
+            "fresh": "fresh",
+            "stale": "stale",
+            "partial": "partial",
+            "failed": "unavailable",
+            "never_synced": "unknown",
+            "inactive": "unknown",
+            "running": "partial",
+        }.get(raw_state, "unknown")
+        result.append(
+            {
+                "source_id": source_id,
+                "state": state,
+                "state_reason": f"legacy_source_freshness_{raw_state or 'unknown'}",
+                "observed_at": row.get("latest_finished_at") or row.get("latest_started_at"),
+                "latest_run_id": row.get("latest_run_id"),
+                "overrideable": True,
+            }
+        )
+    return result
 
 
 def _hiref_context(
@@ -521,6 +546,7 @@ def _freshness_blockers(feasibility: dict[str, Any]) -> list[dict[str, Any]]:
         blocker
         for blocker in feasibility["safety_blockers"]
         if blocker["code"] == "source_not_fresh"
+        and blocker.get("overrideable", True)
     ]
 
 
@@ -529,6 +555,7 @@ def _non_overridable_blockers(feasibility: dict[str, Any]) -> list[dict[str, Any
         blocker
         for blocker in feasibility["safety_blockers"]
         if blocker["code"] != "source_not_fresh"
+        or not blocker.get("overrideable", True)
     ]
 
 

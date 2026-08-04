@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.database import repository, staffing_capacity
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.resource_intelligence.service import confirm_import, preview_import
@@ -33,6 +34,10 @@ def _bootstrap_workforce(db_path: Path) -> None:
         _package("workforce_planning_import.sample.json"), db_path=db_path
     )
     confirm_workforce(workforce["session_id"], db_path=db_path)
+    publish_current_state_staffing_from_legacy(
+        db_path,
+        package_id="package-synthetic-current-state-staffing-001",
+    )
     for source_id in (
         "import-resource-portal",
         "import-skills-matrix",

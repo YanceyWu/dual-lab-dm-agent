@@ -28,6 +28,7 @@ class WeeklyReportService(BaseService):
         confluence_signals = repository.get_project_confluence_signals()
         change_request_summaries = repository.get_project_change_request_summaries()
         action_tracker_summary = repository.get_latest_action_tracker_summary()
+        current_state_freshness = repository.get_current_state_staffing_publication_freshness()
 
         report = _build_report(
             week_label,
@@ -39,6 +40,7 @@ class WeeklyReportService(BaseService):
             confluence_signals,
             change_request_summaries,
             action_tracker_summary,
+            current_state_freshness,
         )
 
         return ServiceResponse(
@@ -71,6 +73,7 @@ def _build_report(
     confluence_signals: dict[str, dict],
     change_request_summaries: dict[str, dict],
     action_tracker_summary: dict | None,
+    current_state_freshness: dict,
 ) -> str:
     at_risk = [p for p in projects if p.get("status") == "at_risk"]
     known_members = [
@@ -78,11 +81,21 @@ def _build_report(
     ]
     overloaded = [m for m in known_members if float(m.get("current_load", 0.0)) >= 1.0]
     member_states = {str(member.get("current_state_staffing_state") or "unknown") for member in members}
+    freshness_state = str(current_state_freshness.get("state") or "unknown")
     member_load_summary = (
         f"，{len(overloaded)} 人满载"
-        if members and member_states == {"known"}
-        else "，当前态负载未知/不可用"
-        if members and member_states != {"known"}
+        + ("（当前态数据已过期）" if freshness_state == "stale" else "")
+        if members
+        and member_states == {"known"}
+        and freshness_state in {"fresh", "stale"}
+        else (
+            "，当前态负载部分可用"
+            if freshness_state == "partial"
+            else "，当前态负载不可用"
+            if freshness_state == "unavailable"
+            else "，当前态负载未知"
+        )
+        if members
         else "，负载正常"
     )
     high_actions = [a for a in actions if a.get("priority") == "high"]
@@ -123,9 +136,11 @@ def _build_report(
         lines.extend(_build_project_signal_lines(p, confluence_signals, change_request_summaries))
     lines.append("")
 
-    if overloaded and member_states == {"known"}:
+    if overloaded and member_states == {"known"} and freshness_state in {"fresh", "stale"}:
         lines += ["## 👥 资源警告（满载人员）"]
         lines.append(f"- 共 **{len(overloaded)}** 人当前满载（100%）")
+        if freshness_state == "stale":
+            lines.append("- 当前态人员负载来自最近一次已发布但已过期的 current-state staffing publication。")
         # Only list people with >1 project (at risk of dropping things)
         multi = [m for m in overloaded if m.get('active_projects', 0) > 1]
         if multi:

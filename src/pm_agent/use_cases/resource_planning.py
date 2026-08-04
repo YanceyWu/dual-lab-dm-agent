@@ -41,6 +41,18 @@ class ResourcePlanningService(BaseService):
                 success=False,
                 message=f"项目 '{inp.project_id}' 不存在，请先用 `pm project add` 创建。",
             )
+        current_state_freshness = repository.get_current_state_staffing_publication_freshness()
+        freshness_state = str(current_state_freshness.get("state") or "unknown")
+        if freshness_state in {"partial", "unknown", "unavailable"}:
+            return ServiceResponse(
+                success=False,
+                message={
+                    "partial": "当前态人员负载数据不完整，无法生成推荐方案。",
+                    "unknown": "当前态人员负载未知，无法生成推荐方案。",
+                    "unavailable": "当前态人员负载不可用，无法生成推荐方案。",
+                }[freshness_state],
+                data={"freshness": current_state_freshness},
+            )
         all_members = repository.get_all_members()
         members = [
             member
@@ -108,6 +120,11 @@ class ResourcePlanningService(BaseService):
                 "options": [_serialise_option(o) for o in options],
                 "all_scores": _serialise_scores(scored),
                 "warnings": vr.warnings
+                + (
+                    [f"current_state_staffing_freshness:{freshness_state}"]
+                    if freshness_state == "stale"
+                    else []
+                )
                 + [
                     (
                         f"current_state_staffing_unavailable:{member['id']}:"
@@ -115,6 +132,7 @@ class ResourcePlanningService(BaseService):
                     )
                     for member in omitted_members
                 ],
+                "freshness": current_state_freshness,
             },
         )
 

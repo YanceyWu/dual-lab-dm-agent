@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
@@ -115,34 +116,89 @@ def test_current_state_staffing_read_contract_reports_unavailable_unknown_then_k
     uninitialized_db = tmp_path / "uninitialized.sqlite3"
 
     unavailable = read_model.current_publication_state(db_path=uninitialized_db)
+    unavailable_freshness = read_model.current_publication_freshness(
+        db_path=uninitialized_db
+    )
     assert unavailable["state"] == "unavailable"
     assert unavailable["state_reason"] == "current_state_staffing_schema_missing"
+    assert unavailable_freshness["state"] == "unavailable"
 
     init_db(quiet=True)
 
     unknown = read_model.current_publication_state(db_path=isolated_db)
+    unknown_freshness = read_model.current_publication_freshness(db_path=isolated_db)
     assert unknown["state"] == "unknown"
     assert unknown["state_reason"] == "current_state_staffing_publication_not_found"
+    assert unknown_freshness["state"] == "unknown"
 
     preview = service.preview_import(_package(), db_path=isolated_db)
     service.confirm_import(preview["session_id"], db_path=isolated_db)
 
     known = read_model.current_publication_state(db_path=isolated_db)
+    fresh = read_model.current_publication_freshness(db_path=isolated_db)
     snapshot = read_model.current_staffing_snapshot(db_path=isolated_db)
     member = read_model.member_load_snapshot("WD100001", db_path=isolated_db)
     unassigned = read_model.member_load_snapshot("WD100002", db_path=isolated_db)
     project = read_model.project_team_snapshot("RP-PROJ-001", db_path=isolated_db)
 
     assert known["state"] == "known"
+    assert fresh["state"] == "fresh"
     assert snapshot["state"] == "known"
+    assert snapshot["freshness_state"] == "fresh"
     assert [item["member_id"] for item in snapshot["members"]] == ["WD100001", "WD100002"]
     assert snapshot["projects"][0]["project_id"] == "RP-PROJ-001"
     assert member["state"] == "known"
+    assert member["freshness_state"] == "fresh"
     assert member["current_load"] == 0.6
     assert member["active_project_count"] == 1
     assert unassigned["state"] == "known"
     assert unassigned["current_load"] == 0.0
     assert unassigned["assignment_state"] == "unassigned"
     assert project["state"] == "known"
+    assert project["freshness_state"] == "fresh"
     assert project["assignment_state"] == "assigned"
     assert project["assignments"][0]["member_id"] == "WD100001"
+
+
+def test_current_state_staffing_freshness_reports_stale_and_partial_states(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    preview = service.preview_import(_package(), db_path=isolated_db)
+    service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET published_at = '2000-01-01T00:00:00+00:00'
+            WHERE is_current = 1
+            """
+        )
+        connection.commit()
+    stale = read_model.current_publication_freshness(db_path=isolated_db)
+    assert stale["state"] == "stale"
+
+    with sqlite3.connect(isolated_db) as connection:
+        report = connection.execute(
+            """
+            SELECT report_json
+            FROM current_state_staffing_publications
+            WHERE is_current = 1
+            LIMIT 1
+            """
+        ).fetchone()[0]
+        parsed = json.loads(report)
+        parsed["coverage"]["assignment_manifest_state"] = "partial"
+        parsed["coverage"]["missing_record_count"] = 1
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET report_json = ?
+            WHERE is_current = 1
+            """,
+            [json.dumps(parsed)],
+        )
+        connection.commit()
+    partial = read_model.current_publication_freshness(db_path=isolated_db)
+    assert partial["state"] == "partial"

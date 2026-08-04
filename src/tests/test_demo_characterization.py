@@ -362,6 +362,7 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
     assert health.status_code == 200
     assert summary.get_json()["total_staff"] == 3
     assert summary.get_json()["current_state_staffing_state"] == "known"
+    assert summary.get_json()["current_state_staffing_freshness_state"] == "fresh"
     health_payload = health.get_json()
     assert isinstance(health_payload, list)
     assert health_payload

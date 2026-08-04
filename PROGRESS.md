@@ -1,15 +1,15 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-04
+Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch now carries the local A2 commit built on the accepted
-A1 commit `73bd8268fef866c3de539deac83b724b69b1e8d4`. That accepted A1 commit is
-the required starting point that is rooted at the accepted A0 freeze commit
-`8ff06e7ab988895fa4f2428179613e289a9107d0`; the separate aborted runtime
-attempt remains excluded and must not be inherited as partial work
+Current HEAD: this branch now carries the accepted A2 baseline commit
+`5728da0833587f69495422e0677bf0b682747ef6` plus the bounded local A3
+freshness/evidence migration commit created in this session. The separate
+aborted runtime attempt remains excluded and must not be inherited as partial
+work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 A2 CURRENT-STATE STAFFING READER MIGRATION COMMITTED LOCALLY ON TOP OF ACCEPTED A1; NEXT GATE IS A3 ONLY`
-Gate status: `A2 RUNTIME SLICE IMPLEMENTED AND VALIDATED LOCALLY; NEXT RUNTIME GATE IS A3 FRESHNESS AND EVIDENCE MIGRATION`
+Current implementation item: `IP-036 A3 FRESHNESS / EVIDENCE MIGRATION IMPLEMENTED LOCALLY ON TOP OF ACCEPTED A2; NEXT GATE IS A4 ONLY`
+Gate status: `A3 RUNTIME SLICE IMPLEMENTED AND VALIDATED LOCALLY; NEXT RUNTIME GATE IS A4 COMPATIBILITY CLOSURE AND LEGACY DELETION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -34,14 +34,16 @@ A-scope current-load readers, workload/capacity context, weekly report,
 resource-planning read path, attention overload inputs, Dashboard current-state
 compatibility routes, and CLI adapters now read the canonical current-state
 staffing publication contract or an approved read-only compatibility projection.
-This slice preserves the frozen A0/A1 semantics: missing publication remains
+This slice preserves the frozen A0/A1/A2 semantics: missing publication remains
 unknown/unavailable rather than numeric zero, partial/unknown current-state does
 not masquerade as available capacity, and the compatibility shim remains read-
-only. Freshness replacement, evidence authority migration, legacy deletion,
-skills/HIREF ownership migration, and mutable staffing-write redesign remain out
-of scope for this session. The older aborted runtime attempt remains excluded
-because it reported unresolved replay/uniqueness and unknown-data-semantic
-defects. A2 is now committed locally in this session and remains unpushed.
+only. The current working tree now migrates A-scope freshness/evidence authority
+to canonical current-state staffing publication semantics while keeping A4
+compatibility closure / legacy deletion, skills/HIREF ownership migration, and
+mutable staffing-write redesign out of scope. The older aborted runtime attempt
+remains excluded because it reported unresolved replay/uniqueness and
+unknown-data-semantic defects. A2 remains committed locally and unpushed, and
+A3 is now also committed locally and unpushed in the latest branch commit.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -97,8 +99,8 @@ belong in Git history and must not be interpreted as current instructions.
   that handoff so A0 must freeze coverage, invariants, state-machine scenarios,
   and semantic decisions because the direct A1-first plan and later runtime
   attempt both risked looping on missing hidden dependencies.
-- IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2 now
-  builds on it in the working tree:
+- IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2/A3 now
+  build on it in the working tree:
   `pm_agent.current_state_staffing` owns an additive current-state staffing
   import/publication/read-contract family; workbook onboarding and
   `pm onboarding` now plan/publish that capability alongside workforce planning
@@ -108,9 +110,11 @@ belong in Git history and must not be interpreted as current instructions.
   only compatibility projection: repository read helpers, team workload,
   capacity context, weekly report, resource-planning read-side recommendation,
   attention overload inputs, Dashboard current-state compatibility routes, and
-  CLI adapters. Freshness authority, evidence authority, skills/HIREF source
-  ownership, mutable write paths, and legacy deletion still do not change in
-  this slice.
+  CLI adapters. The current A3 working tree now migrates those A-scope readers'
+  freshness and evidence semantics to canonical current-state staffing
+  publication authority, including stale/partial/unknown/unavailable handling
+  and compatibility-route suppression rules. Skills/HIREF source ownership,
+  mutable write paths, and legacy deletion still do not change in this slice.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -210,28 +214,32 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-IP-036 Batch A2 reader migration is now committed locally on top of the
-accepted A1 commit
-`73bd8268fef866c3de539deac83b724b69b1e8d4`. The final focused A2 regression run
-passed `47` tests across `src/tests/test_unified_use_case_contract.py`,
-`src/tests/test_allocation_and_weekly_report.py`,
+IP-036 Batch A3 freshness/evidence migration now builds locally on the accepted
+A2 commit `5728da0833587f69495422e0677bf0b682747ef6`. The final focused A3
+regression run passed `101` tests across
+`src/tests/test_current_state_staffing.py`,
+`src/tests/test_unified_use_case_contract.py`,
+`src/tests/test_staffing_pipeline.py`,
+`src/tests/test_attention_foundation.py`,
 `src/tests/test_demo_characterization.py`, and
-`src/tests/test_attention_center.py`, including new coverage that
-resource-planning recommendation fails closed when only publication-only members
-exist and that `/api/projects` resolves HIREF risk through canonical current-
-state member identity rather than assuming `member_id == employees.id`. The
-final post-fix `make validate` passed all nine release-validation checks with
-`421` runtime tests plus `33` repository-tool tests and `19` subtests. The
-final `make rehearse-release` passed wheel install, isolated clean bootstrap,
-upgrade-copy rehearsal, and rollback. A final read-only self-review of the A2
-slice corrected four high-confidence issues before closure: planned dashboard
-rows had been dropped, unknown dashboard load could render as `0%`, attention
-resource loading had bypassed the active database connection, and current-state
-reader identity resolution still needed employee-backed filtering plus HIREF
-risk resolution through canonical member identity. A2 preserves the frozen
-A0/A1 invariants and defers all freshness/evidence authority replacement,
-compatibility closure, and legacy deletion to A3/A4. The next and only
-authorized follow-on runtime gate is A3 freshness and evidence migration.
+`src/tests/test_staffing_capacity_consumption.py`. Coverage now includes
+canonical publication freshness states, stale/partial/unknown/unavailable
+staffing semantics, dashboard compatibility-route suppression, CLI project-team
+degradation, attention overload freshness authority, and capacity-aware staffing
+continuity under the new publication prerequisite. The final post-fix
+`make validate` passed all nine release-validation checks with `428` runtime
+tests plus `33` repository-tool tests and `19` subtests. The final
+`make rehearse-release` passed wheel install, isolated clean bootstrap,
+upgrade-copy rehearsal, and rollback. The final read-only self-review corrected
+the last high-confidence A3 issues before closure: partial publication had still
+leaked employee numeric load, active project-team membership, and member-level
+availability classification through compatibility paths; repository validation
+also surfaced stale staffing-capacity tests that still assumed legacy staffing
+authority, and the dashboard overview needed explicit null-handling so unknown
+load did not render or bucket as available. A3 preserves the frozen A0/A1/A2
+invariants and defers compatibility closure / legacy deletion to A4. The next
+and only authorized follow-on runtime gate is A4 compatibility closure and
+legacy deletion.
 
 IP-034 Structured Data Onboarding Framework Batch A is now committed locally on
 `data-onboarding-framework-batch-a` at `58e1733`. Final focused validation passed
@@ -804,6 +812,54 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — IP-036 Batch A3 freshness/evidence migration implemented locally
+
+- Confirmed this session started from the accepted clean A2 baseline commit
+  `5728da0833587f69495422e0677bf0b682747ef6`; the abandoned dirty runtime
+  attempt remained excluded and was not inherited as partial work.
+- Implemented only the bounded A3 freshness/evidence migration:
+  - `pm_agent.current_state_staffing` now computes canonical publication
+    freshness semantics (`fresh`, `stale`, `partial`, `unknown`,
+    `unavailable`) from current publication state and coverage;
+  - A-scope readers now consume that authority for workload, capacity context,
+    weekly report, resource planning, attention overload, staffing freshness
+    blockers, Dashboard compatibility routes, and CLI adapters;
+  - compatibility projections now suppress current-state numeric/team outputs
+    when publication freshness is `partial` / `unknown` / `unavailable`
+    instead of presenting them as current or zero.
+- Preserved the frozen A0/A1/A2 semantics in this slice:
+  - package identity remains separate from payload identity;
+  - same `package_id` plus different payload identity remains a hard conflict;
+  - preview reuse, confirmability, replay, and duplicate-completed-publication
+    invariants remain unchanged;
+  - missing schema still degrades to `unavailable`, missing publication still
+    degrades to `unknown`, and no writable dual-authority path was added.
+- Explicitly kept A3 out of scope:
+  - no compatibility closure or legacy deletion;
+  - no skills / HIREF ownership migration;
+  - no mutable staffing-write redesign;
+  - no Batch A4 or Batch B/C/D work.
+- Focused validation evidence:
+  - `cd src && python3 -m pytest tests/test_current_state_staffing.py tests/test_unified_use_case_contract.py tests/test_staffing_pipeline.py tests/test_attention_foundation.py tests/test_demo_characterization.py tests/test_staffing_capacity_consumption.py`
+    → `101 passed`
+  - `make validate`
+  - `make rehearse-release`
+- Read-only self-review evidence:
+  - an independent diff review first found three high-confidence A3 semantic
+    leaks in `/api/employees`, `/api/projects`, and `team_capacity_context`;
+  - those issues were corrected, repository validation exposed stale
+    staffing-capacity tests that still assumed legacy staffing authority, and a
+    second review exposed dashboard overview null-handling gaps;
+  - the final independent read-only review of the post-fix diff reported
+    `no high-confidence issues found`.
+- Commit / push status:
+  - the bounded A3 slice is committed locally in the latest branch commit on
+    top of accepted A2 commit `5728da0833587f69495422e0677bf0b682747ef6`;
+  - no push was performed.
+- Exact next recommended action:
+  - open the next session and perform only **IP-036 Batch A4 compatibility
+    closure and legacy deletion**.
 
 ### 2026-08-04 — IP-036 Batch A1 current-state staffing contract skeleton implemented locally
 

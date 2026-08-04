@@ -22,6 +22,7 @@ class TeamWorkloadService(BaseService):
 
     def overview(self, team_filter: str | None = None) -> ServiceResponse:
         members = repository.get_all_members()
+        current_state_freshness = repository.get_current_state_staffing_publication_freshness()
 
         if team_filter:
             members = [m for m in members if m.get("team") == team_filter]
@@ -29,7 +30,10 @@ class TeamWorkloadService(BaseService):
         if not members:
             return ServiceResponse(success=False, message="没有找到成员数据。")
 
-        stats = _compute_stats(members)
+        stats = _compute_stats(
+            members,
+            str(current_state_freshness.get("state") or "unknown"),
+        )
         public_members = [_public_member_view(member) for member in members]
         return ServiceResponse(
             success=True,
@@ -70,6 +74,14 @@ def execute_team_workload_overview(request: UseCaseRequest) -> UseCaseResult:
     members = response.data["members"]
     coverage_state = response.data["stats"].get("current_state_state", "unknown")
     freshness, freshness_warnings = _workload_freshness()
+    publication_freshness = freshness[0] if freshness else {"state": "unknown"}
+    response.data["stats"]["current_state_freshness_state"] = publication_freshness.get(
+        "state",
+        "unknown",
+    )
+    response.data["stats"]["current_state_freshness_reason"] = publication_freshness.get(
+        "state_reason",
+    )
     warnings = list(freshness_warnings)
     if coverage_state != "known":
         warnings.append(f"current_state_staffing:{coverage_state}")
@@ -83,7 +95,19 @@ def execute_team_workload_overview(request: UseCaseRequest) -> UseCaseResult:
                 "entity_kind": "employees",
                 "record_count": len(members),
                 "applied_filters": {"team": request.parameters.get("team")},
-            }
+            },
+            {
+                "evidence_id": "current-state-staffing-publication",
+                "source_kind": "current_state_staffing_publication",
+                "entity_kind": "current_state_staffing_publication",
+                "authority": "canonical",
+                "publication_id": publication_freshness.get("publication_id"),
+                "state": publication_freshness.get("state"),
+                "state_reason": publication_freshness.get("state_reason"),
+                "as_of_date": publication_freshness.get("as_of_date"),
+                "observed_at": publication_freshness.get("observed_at"),
+                "coverage_state": publication_freshness.get("coverage_state"),
+            },
         ],
         freshness=freshness,
         assumptions=[
@@ -110,50 +134,18 @@ def execute_team_workload_overview(request: UseCaseRequest) -> UseCaseResult:
 
 
 def _workload_freshness() -> tuple[list[dict], list[str]]:
-    source_ids = {"import-resource-portal", "import-skills-matrix"}
-    rows = {row["id"]: row for row in repository.get_data_source_freshness(active_only=False)}
-    freshness: list[dict] = []
-    warnings: list[str] = []
-    for source_id in sorted(source_ids):
-        row = rows.get(source_id)
-        if row is None:
-            state = "unknown"
-            warning = "Source state is not registered locally."
-        else:
-            raw_state = row.get("freshness_state")
-            state = {
-                "fresh": "fresh",
-                "stale": "stale",
-                "partial": "partial",
-                "failed": "unavailable",
-                "never_synced": "unknown",
-                "inactive": "unknown",
-                "running": "partial",
-            }.get(raw_state, "unknown")
-            warning = "" if state == "fresh" else f"Source freshness is {state}."
-        freshness.append(
-            {
-                "source_id": source_id,
-                "state": state,
-                "observed_at": row.get("latest_finished_at") if row else None,
-                "last_success_at": row.get("latest_finished_at") if row and row.get("latest_status") == "success" else None,
-                "refresh_sla_hours": row.get("refresh_sla_hours") if row else None,
-                "warning": warning,
-            }
-        )
-        if warning:
-            warnings.append(f"freshness:{source_id}:{state}")
-    return freshness, warnings
+    publication = repository.get_current_state_staffing_publication_freshness()
+    warnings = (
+        [f"freshness:{publication['source_id']}:{publication['state']}"]
+        if publication.get("warning")
+        else []
+    )
+    return [publication], warnings
 
 
-def _compute_stats(members: list[dict]) -> dict:
+def _compute_stats(members: list[dict], freshness_state: str) -> dict:
     coverage_state = _coverage_state(members)
-    known_members = [
-        member
-        for member in members
-        if isinstance(member.get("current_load"), (int, float))
-    ]
-    if len(known_members) != len(members):
+    if coverage_state != "known" or freshness_state not in {"fresh", "stale"}:
         return {
             "total": len(members),
             "available": None,
@@ -162,7 +154,11 @@ def _compute_stats(members: list[dict]) -> dict:
             "max_load": None,
             "current_state_state": coverage_state,
         }
-
+    known_members = [
+        member
+        for member in members
+        if isinstance(member.get("current_load"), (int, float))
+    ]
     loads = [float(m.get("current_load", 0.0)) for m in known_members]
     available = [m for m in known_members if float(m.get("current_load", 0.0)) < 0.8]
     overloaded = [m for m in known_members if float(m.get("current_load", 0.0)) >= 1.0]
