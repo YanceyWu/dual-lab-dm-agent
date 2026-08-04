@@ -1,10 +1,10 @@
 # Canonical Onboarding Convergence Design
 
-Status: `OWNER-REQUESTED FOLLOW-ON DESIGN HANDOFF (HARDENED FROM EXECUTION DIAGNOSIS)`
+Status: `A0 ARTIFACTS FROZEN; A1 IS THE NEXT RUNTIME GATE`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
-Baseline branch: `TBD IN FOLLOW-ON SESSION`
-Baseline commit: `5f13ee346e629213f8e91e7d4b7d1e95edeb794b`
+Baseline branch: `workbook-onboarding-test-20260804-1514`
+Baseline commit: `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
 Previous local baseline: `IP-035 Structured Data Onboarding Workbook Presets`
 
 ## Decision supported
@@ -238,6 +238,21 @@ The product/semantic decision log must make these explicit before runtime A1:
 
 No runtime slice may start while any blocking item in this list remains implicit.
 
+### A0 freeze authority
+
+Batch A0 is now frozen as a docs-only artifact set in
+`implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`.
+
+The architecture-level outcomes fixed by that artifact are:
+
+- package identity and payload identity remain separate replay concepts;
+- identical preview identities may reuse preview lineage, but completed
+  publication may never duplicate;
+- same `package_id` with different payload identity fails closed as a conflict;
+- missing current-state staffing publication is `unknown` or `unavailable`, never
+  numeric zero or implicit availability;
+- A1 through A4 now have fixed slice boundaries and stop conditions.
+
 ## Target architecture
 
 The converged onboarding stack should be:
@@ -336,20 +351,18 @@ The converged rule is:
 
 ### Batch A0 — Coverage, invariants, state machine, and decision audit
 
-This is the new first slice. It is documentation, analysis, and test-planning
-only.
+This slice is now complete as a documentation-only handoff unit. Its normative
+outputs live in `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`
+and include:
 
-Scope:
-
-- build the frozen coverage/dependency matrix for the legacy current-state
-  staffing path;
-- enumerate all known reader/test dependencies that will matter to later runtime
-  slices;
-- classify each dependency as blocking, in-scope for the next slice, or
-  explicitly deferred;
-- produce the invariant checklist, state-machine matrix, product/semantic
-  decision log, and slice self-review checklist;
-- freeze the runtime slice plan for A1 through A4.
+- the frozen coverage/dependency matrix;
+- the missing-coverage register;
+- the invariant checklist;
+- the end-to-end state-machine matrix;
+- the product/semantic decision log;
+- the frozen slice plan for A1 through A4;
+- the regression-scope map;
+- the runtime slice self-review checklist.
 
 ### Batch A1 — Current-state staffing contract skeleton
 
@@ -496,6 +509,7 @@ The final converged state should satisfy:
 
 ## Next gate
 
-Open a separate implementation session and perform **only Batch A0** first. Do
-not start A1 runtime work, and do not resume any abandoned runtime attempt,
-until A0 is completed, reviewed, and accepted.
+After accepting the frozen A0 artifact set, open a separate implementation
+session and perform **only Batch A1 — current-state staffing contract
+skeleton**. Do not start A2/A3/A4 in the same session, and do not resume any
+abandoned runtime attempt.

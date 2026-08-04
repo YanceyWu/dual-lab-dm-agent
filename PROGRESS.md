@@ -2,14 +2,14 @@
 
 Last updated: 2026-08-04
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch now carries the committed revised IP-036 A0 handoff
-baseline; the exact current commit hash is reported in the latest handoff
-because a commit cannot contain its own hash. The current working tree may still
-contain a separate uncommitted aborted runtime attempt with unresolved issues
-that must not be used as the next-session baseline
+Current HEAD: clean submitted baseline `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
+is the required starting point for IP-036 continuation. The current working
+tree now carries a docs-only A0 artifact freeze on top of that clean baseline;
+the separate aborted runtime attempt remains excluded and must not be inherited
+as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 A0 COVERAGE / INVARIANT / STATE-MACHINE HANDOFF COMMITTED LOCALLY; ABORTED RUNTIME ATTEMPT EXCLUDED`
-Gate status: `COMMITTED A0 HANDOFF BASELINE READY; DO NOT START FROM THE DIRTY RUNTIME WORKTREE`
+Current implementation item: `IP-036 A0 ARTIFACTS COMMITTED LOCALLY ON CLEAN 8bfd9c8 BASELINE; NEXT GATE IS A1 ONLY`
+Gate status: `A0 DOCS FREEZE COMMITTED LOCALLY; NEXT RUNTIME GATE IS A1 CURRENT-STATE STAFFING CONTRACT SKELETON`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -22,14 +22,15 @@ onboarding preset projection, focused regression expansion, the new local
 operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
 the original IP-036 convergence design/implementation-pack handoff at
-`5f13ee3`. The current working tree further revises `architecture/16...` and
-`implementation-packs/IP-036...` so the next session must start with a
-coverage-first A0 slice that also freezes invariants, state-machine scenarios,
-and product semantics before any runtime convergence resumes. The current
-working tree separately contains an aborted runtime attempt across current-state
-staffing, dashboard, repository, use-case, and test files; that attempt remains
-uncommitted because its self-diagnosis reported unresolved replay and
-unknown-data-semantic defects. No push was performed.
+`5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`. The
+current working tree now revises `architecture/16...`,
+`implementation-packs/IP-036...`, and this progress log so A0 artifacts are
+actually frozen: coverage/dependency matrix, missing-coverage register,
+invariant checklist, end-to-end state-machine matrix, product/semantic
+decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
+self-review checklist. No runtime or schema file changed in this session. The
+older aborted runtime attempt remains excluded because it reported unresolved
+replay/uniqueness and unknown-data-semantic defects. No push was performed.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -631,38 +632,29 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
     onboarding page, live connector sync, workbook v2 mapping expansion, or
     migration/removal of other legacy import scripts is implemented here.
-13. The current branch contains committed local baseline `5f13ee3` for IP-035
-    Batch B plus the first IP-036 design/pack handoff. No push has been
-    performed.
-14. The current working tree revises `architecture/16...` and `IP-036...` so
-    the next execution step is a coverage/dependency audit with frozen
-    invariants, state-machine scenarios, and semantic decisions rather than
-    direct runtime convergence.
-15. The same working tree also contains an aborted runtime attempt that is not a
-    safe baseline and must remain excluded from the follow-on session until
-    separately triaged.
-16. A follow-on canonical-onboarding convergence handoff is now recorded in
+13. The current branch contains the clean submitted IP-036 A0 baseline commit
+    `8bfd9c8`; this session confirmed that baseline and a clean worktree before
+    doing any continuation work.
+14. The current working tree now updates the IP-036 handoff documents only so
+    A0 artifacts are explicitly frozen rather than merely requested.
+15. The separate aborted runtime attempt remains excluded and must not be
+    treated as inherited partial progress.
+16. The canonical-onboarding convergence handoff is recorded in
     `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
     `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`.
-17. The next planned execution slice is IP-036 Batch A0 coverage/dependency
-    audit plus invariant/state-machine/semantic freeze in a separate session /
-    branch from the committed handoff baseline only.
+17. The next planned execution slice, after A0 review/acceptance, is
+    **IP-036 Batch A1 current-state staffing contract skeleton only**.
 
 ## Exact next actions
 
-1. Commit the revised IP-036 A0 handoff only, then open a new independent
-   session from that exact commit and perform only IP-036 Batch A0:
-   coverage/dependency audit, invariant checklist, state-machine matrix,
-   semantic decision log, and frozen slice plan for current-state staffing
-   convergence.
-2. Do not start runtime A1 work, and do not resume or inherit the abandoned
-   dirty runtime attempt, until A0 is completed, reviewed, and accepted.
-3. Use the revised `architecture/16...` and `IP-036...` handoff as the only
-   scope authority for the next session; do not retry the earlier direct
-   Batch-A runtime prompt.
-4. Because A0 is documentation-only, limit its validation to documentation-
-   appropriate checks and read-only review; reserve runtime release gates for
-   later runtime slices.
+1. Review the docs-only A0 artifacts now frozen in `architecture/16...` and
+   `implementation-packs/IP-036...`.
+2. After accepting that docs-only freeze, open the next independent session and
+   perform **only IP-036 Batch A1 current-state staffing contract skeleton**.
+3. Do not start A2/A3/A4, and do not resume or inherit the abandoned runtime
+   attempt, until A1 is separately completed and reviewed.
+4. Keep A1 validation and review bounded to its runtime scope; A0 remains
+   validated only with documentation-appropriate checks and read-only review.
 5. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
@@ -764,6 +756,46 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — IP-036 Batch A0 artifacts frozen on clean 8bfd9c8 baseline
+
+- Confirmed the session started from clean submitted baseline
+  `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`; the dirty aborted runtime attempt
+  was not inherited and remained out of scope.
+- Completed the docs-only A0 artifact freeze in:
+  - `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`
+  - `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`
+  - `PROGRESS.md`
+- Frozen the required A0 outputs:
+  - coverage/dependency matrix;
+  - missing-coverage register;
+  - invariant checklist;
+  - end-to-end state-machine matrix;
+  - product/semantic decision log;
+  - frozen A1/A2/A3/A4 boundaries;
+  - regression-scope map;
+  - slice self-review checklist.
+- Explicitly froze the blocking semantic classes:
+  - replay / uniqueness semantics around `package_id`, payload identity, preview
+    reuse, confirmability, and duplicate completed publication prevention;
+  - unknown-data semantics so missing current-state staffing publication becomes
+    `unknown` / `unavailable` rather than numeric zero or implicit availability.
+- Explicitly deferred only non-blocking details:
+  - exact current-state staffing physical schema/module shape to A1;
+  - exact dashboard wording/badge copy to A2/A3;
+  - manual mutable assignment convergence after A4 unless separately
+    authorized.
+- Validation evidence:
+  - this session changed architecture/implementation-pack/progress documents
+    only;
+  - docs-only validation is limited to `git diff --check` and read-only review;
+  - `make validate` and `make rehearse-release` were intentionally not run.
+- Commit / push status:
+  - this A0 artifact freeze is committed locally in the latest branch commit;
+  - no push was performed.
+- Exact next recommended action:
+  - open the next session and perform only **IP-036 Batch A1 current-state
+    staffing contract skeleton**.
 
 ### 2026-08-04 — A0 handoff commit prepared; aborted runtime attempt excluded
 
