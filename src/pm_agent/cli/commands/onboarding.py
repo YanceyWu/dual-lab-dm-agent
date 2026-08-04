@@ -7,6 +7,12 @@ import json
 import typer
 
 from pm_agent.data_onboarding import service
+from pm_agent.workbook_onboarding.presets import (
+    get_workbook_preset,
+    list_workbook_presets,
+    serialize_workbook_preset,
+    serialize_workbook_preset_summary,
+)
 
 onboarding_app = typer.Typer(
     help="Structured data onboarding profiles and runs",
@@ -20,8 +26,13 @@ run_app = typer.Typer(
     help="Onboarding run inspection",
     no_args_is_help=True,
 )
+preset_app = typer.Typer(
+    help="Packaged workbook mapping presets",
+    no_args_is_help=True,
+)
 onboarding_app.add_typer(profile_app, name="profile")
 onboarding_app.add_typer(run_app, name="run")
+onboarding_app.add_typer(preset_app, name="preset")
 
 _TERMINAL_STATUSES = {
     "saved",
@@ -115,6 +126,38 @@ def profile_list(
         _emit(_failed(str(exc)))
         return
     _emit(result)
+
+
+@preset_app.command("list")
+def preset_list() -> None:
+    """List packaged workbook mapping presets."""
+
+    _emit(
+        {
+            "status": "success",
+            "mapping_presets": [
+                serialize_workbook_preset_summary(preset)
+                for preset in list_workbook_presets()
+            ],
+        }
+    )
+
+
+@preset_app.command("show")
+def preset_show(
+    mapping_preset_id: str = typer.Option(..., "--mapping-preset"),
+) -> None:
+    """Show one packaged workbook mapping preset."""
+
+    try:
+        preset = get_workbook_preset(mapping_preset_id.strip())
+    except ValueError as exc:
+        code = str(exc)
+        if code == "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            code = "DATA_ONBOARDING_WORKBOOK_MAPPING_PRESET_INVALID"
+        _emit(_failed(code))
+        return
+    _emit({"status": "success", "mapping_preset": serialize_workbook_preset(preset)})
 
 
 @onboarding_app.command("preview")

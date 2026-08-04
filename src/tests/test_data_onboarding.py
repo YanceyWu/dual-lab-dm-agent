@@ -14,6 +14,10 @@ from pm_agent.data_onboarding import service as data_onboarding_service
 from pm_agent.data_onboarding import workbook_source
 from pm_agent.database import repository as legacy_repository
 from pm_agent.database.bootstrap import main as init_db
+from pm_agent.workbook_onboarding.presets import (
+    DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+    WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+)
 from pm_agent.workbook_onboarding.parser import EXPECTED_HEADERS
 from pm_agent.workbook_onboarding import service as workbook_service
 from pm_agent.workbook_onboarding.service import (
@@ -39,12 +43,22 @@ def _write_workbook(
     project_rows: list[list[object]],
     allocation_rows: list[list[object]],
     capacity_rows: list[list[object]],
+    sheet_names: tuple[str, str, str, str, str] = (
+        "Setup",
+        "Members",
+        "Projects",
+        "Allocations",
+        "Capacity",
+    ),
+    header_overrides: dict[str, list[str]] | None = None,
 ) -> Path:
     workbook = Workbook()
     first = workbook.active
-    first.title = "Setup"
-    for title in ("Members", "Projects", "Allocations", "Capacity"):
+    first.title = sheet_names[0]
+    for title in sheet_names[1:]:
         workbook.create_sheet(title)
+    header_overrides = header_overrides or {}
+    logical_sheet_names = ("Setup", "Members", "Projects", "Allocations", "Capacity")
     rows_by_sheet = {
         "Setup": setup_rows,
         "Members": member_rows,
@@ -52,9 +66,9 @@ def _write_workbook(
         "Allocations": allocation_rows,
         "Capacity": capacity_rows,
     }
-    for name, worksheet in zip(rows_by_sheet, workbook.worksheets, strict=True):
-        worksheet.append(EXPECTED_HEADERS[name])
-        for row in rows_by_sheet[name]:
+    for logical_name, worksheet in zip(logical_sheet_names, workbook.worksheets, strict=True):
+        worksheet.append(header_overrides.get(logical_name, EXPECTED_HEADERS[logical_name]))
+        for row in rows_by_sheet[logical_name]:
             worksheet.append(row)
     workbook.save(path)
     return path
@@ -65,6 +79,14 @@ def _baseline_workbook(
     *,
     allocation_value: float = 0.5,
     include_capacity: bool = False,
+    sheet_names: tuple[str, str, str, str, str] = (
+        "Setup",
+        "Members",
+        "Projects",
+        "Allocations",
+        "Capacity",
+    ),
+    header_overrides: dict[str, list[str]] | None = None,
 ) -> Path:
     return _write_workbook(
         path,
@@ -75,6 +97,8 @@ def _baseline_workbook(
         project_rows=[["RP-PROJ-001", "Project Atlas", "active", 2, "2026-09-01", "2026-12-31"]],
         allocation_rows=[["WD100001", "RP-PROJ-001", "2026-09", allocation_value]],
         capacity_rows=[["WD100001", "2026-09", 0.0, 0.0, 0.0]] if include_capacity else [],
+        sheet_names=sheet_names,
+        header_overrides=header_overrides,
     )
 
 
@@ -120,6 +144,47 @@ def _confirm_staffing_adjustment(
         },
     )
     assert result["status"] == "confirmed"
+
+
+ALIAS_SHEET_NAMES = (
+    "Plan Setup",
+    "Team Members",
+    "Project List",
+    "Project Allocations",
+    "Member Capacity",
+)
+
+ALIAS_HEADERS = {
+    "Setup": ["plan_name", "snapshot_date", "start_month", "end_month"],
+    "Members": [
+        "member_key",
+        "member_name",
+        "fte_type",
+        "status",
+        "hiref_id",
+        "hiref_end_date",
+        "role",
+        "level",
+        "effective_start",
+        "effective_until",
+    ],
+    "Projects": [
+        "project_id",
+        "display_name",
+        "status",
+        "priority",
+        "start_date",
+        "target_end_date",
+    ],
+    "Allocations": ["member_key", "project_id", "month", "allocation_fraction"],
+    "Capacity": [
+        "member_key",
+        "month",
+        "leave_fraction",
+        "bau_fraction",
+        "non_project_allocation",
+    ],
+}
 
 
 def test_onboarding_profile_save_preview_and_run_show_round_trip(
@@ -192,6 +257,243 @@ def test_onboarding_profile_save_preview_and_run_show_round_trip(
     assert run_payload["run"]["state"] == "previewed"
     assert run_payload["run"]["payload"]["status"] == "previewed"
     assert run_payload["run"]["domain_links"] == []
+
+
+def test_onboarding_preset_cli_inspection_lists_and_shows_packaged_presets() -> None:
+    listed = _invoke("onboarding", "preset", "list")
+    assert listed.exit_code == 0, listed.output
+    payload = _payload(listed)
+    assert payload["status"] == "success"
+    assert [item["mapping_preset_id"] for item in payload["mapping_presets"]] == [
+        DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    ]
+
+    shown = _invoke(
+        "onboarding",
+        "preset",
+        "show",
+        "--mapping-preset",
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    )
+    assert shown.exit_code == 0, shown.output
+    show_payload = _payload(shown)
+    assert show_payload["mapping_preset"]["display_name"] == "Workbook v1 alias contract"
+    setup_section = next(
+        section
+        for section in show_payload["mapping_preset"]["sections"]
+        if section["section_key"] == "setup"
+    )
+    assert setup_section["accepted_sheet_names"] == ["Setup", "Plan Setup"]
+    assert setup_section["header_aliases"]["plan_version_name"] == ["plan_name"]
+
+
+def test_onboarding_profile_persists_explicit_preset_selection_and_projects_metadata(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "alias-profile.xlsx",
+        sheet_names=ALIAS_SHEET_NAMES,
+        header_overrides=ALIAS_HEADERS,
+    )
+
+    saved = _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "alias-profile",
+        "--file",
+        str(workbook_path),
+        "--mapping-preset",
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    )
+    assert saved.exit_code == 0, saved.output
+    payload = _payload(saved)
+    assert payload["profile"]["mapping_preset_id"] == WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES
+    assert payload["profile"]["mapping_preset"]["display_name"] == "Workbook v1 alias contract"
+    assert payload["profile"]["source_options"]["sheet_aliases"]["Setup"] == ["Plan Setup"]
+
+    shown = _invoke("onboarding", "profile", "show", "--profile-key", "alias-profile")
+    assert shown.exit_code == 0, shown.output
+    shown_payload = _payload(shown)
+    assert shown_payload["profile"]["mapping_preset_id"] == WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES
+    assert shown_payload["profile"]["mapping_preset"]["status"] == "active"
+
+    listed = _invoke("onboarding", "profile", "list")
+    assert listed.exit_code == 0, listed.output
+    listed_payload = _payload(listed)
+    alias_profile = next(
+        item for item in listed_payload["profiles"] if item["profile_key"] == "alias-profile"
+    )
+    assert alias_profile["mapping_preset"]["mapping_preset_id"] == (
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES
+    )
+
+
+def test_onboarding_profile_save_rejects_unknown_workbook_mapping_preset(
+    tmp_path: Path,
+) -> None:
+    workbook_path = _baseline_workbook(tmp_path / "unknown-preset.xlsx")
+
+    failed = _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "bad-preset",
+        "--file",
+        str(workbook_path),
+        "--mapping-preset",
+        "workbook-preset-does-not-exist",
+    )
+    assert failed.exit_code == 2
+    assert _payload(failed) == {
+        "status": "failed",
+        "warnings": ["DATA_ONBOARDING_WORKBOOK_MAPPING_PRESET_INVALID"],
+    }
+
+
+def test_onboarding_profile_show_and_list_tolerate_unknown_saved_preset(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(tmp_path / "stale-profile.xlsx")
+    saved = data_onboarding_service.save_source_profile(
+        profile_key="stale-profile",
+        source_type="workbook",
+        source_locator=str(workbook_path),
+        db_path=isolated_db,
+    )
+    assert saved["status"] == "saved"
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE onboarding_profiles
+            SET mapping_preset_id=?
+            WHERE profile_key=?
+            """,
+            ["stale-workbook-preset", "stale-profile"],
+        )
+        connection.commit()
+
+    shown = data_onboarding_service.show_source_profile(
+        "stale-profile",
+        db_path=isolated_db,
+    )
+    assert shown["status"] == "success"
+    assert shown["profile"]["mapping_preset_id"] == "stale-workbook-preset"
+    assert shown["profile"]["mapping_preset"] == {
+        "source_type": "workbook",
+        "mapping_preset_id": "stale-workbook-preset",
+        "display_name": None,
+        "status": "unknown",
+    }
+
+    listed = data_onboarding_service.list_source_profiles(db_path=isolated_db)
+    assert listed["status"] == "success"
+    stale_profile = next(
+        item for item in listed["profiles"] if item["profile_key"] == "stale-profile"
+    )
+    assert stale_profile["mapping_preset"]["status"] == "unknown"
+
+
+def test_onboarding_preview_includes_preset_resolution_details(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "alias-preview.xlsx",
+        sheet_names=ALIAS_SHEET_NAMES,
+        header_overrides=ALIAS_HEADERS,
+        include_capacity=True,
+    )
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "alias-preview",
+        "--file",
+        str(workbook_path),
+        "--mapping-preset",
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    ).exit_code == 0
+
+    preview_result = _invoke("onboarding", "preview", "--profile-key", "alias-preview")
+    assert preview_result.exit_code == 0, preview_result.output
+    payload = _payload(preview_result)
+    assert payload["status"] == "previewed"
+    assert payload["source_contract"]["mapping_preset"]["mapping_preset_id"] == (
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES
+    )
+    assert payload["source_contract"]["resolution"]["matched_via_alias"] is True
+    sections = {
+        section["section_key"]: section
+        for section in payload["source_contract"]["resolution"]["sections"]
+    }
+    assert sections["setup"]["resolved_sheet_name"] == "Plan Setup"
+    assert sections["setup"]["matched_via_alias"] is True
+    assert any(
+        match["field_key"] == "plan_version_name"
+        and match["resolved_header_name"] == "plan_name"
+        and match["matched_via_alias"] is True
+        for match in sections["setup"]["header_matches"]
+    )
+    warning_codes = {item["code"] for item in payload["warnings"]}
+    assert "WORKBOOK_SHEET_ALIAS_USED" in warning_codes
+    assert "WORKBOOK_HEADER_ALIAS_USED" in warning_codes
+
+
+def test_onboarding_preview_missing_file_preserves_preset_contract_and_unknown_preset(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    missing_workbook = tmp_path / "missing.xlsx"
+    saved = data_onboarding_service.save_source_profile(
+        profile_key="missing-file",
+        source_type="workbook",
+        source_locator=str(missing_workbook),
+        db_path=isolated_db,
+    )
+    assert saved["status"] == "saved"
+
+    preview = data_onboarding_service.preview_source_profile(
+        "missing-file",
+        db_path=isolated_db,
+    )
+    assert preview["status"] == "rejected"
+    assert preview["source_contract"]["mapping_preset"]["mapping_preset_id"] == (
+        DEFAULT_WORKBOOK_MAPPING_PRESET_ID
+    )
+    assert preview["source_contract"]["resolution"] is None
+    assert preview["blockers"][0]["code"] == "DATA_ONBOARDING_SOURCE_LOCATOR_NOT_FOUND"
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE onboarding_profiles
+            SET mapping_preset_id=?
+            WHERE profile_key=?
+            """,
+            ["stale-workbook-preset", "missing-file"],
+        )
+        connection.commit()
+
+    stale_preview = data_onboarding_service.preview_source_profile(
+        "missing-file",
+        db_path=isolated_db,
+    )
+    assert stale_preview["status"] == "rejected"
+    assert stale_preview["source_contract"]["mapping_preset"] == {
+        "source_type": "workbook",
+        "mapping_preset_id": "stale-workbook-preset",
+        "display_name": None,
+        "status": "unknown",
+    }
+    assert stale_preview["blockers"][0]["code"] == "WORKBOOK_MAPPING_PRESET_UNKNOWN"
 
 
 def test_onboarding_confirm_records_linkage_and_updates_profile(
@@ -674,6 +976,15 @@ def test_onboarding_preview_rejects_if_source_changes_during_preview(
         db_path=isolated_db,
     )
     assert preview["status"] == "rejected"
+    assert preview["source_contract"] == {
+        "mapping_preset": {
+            "source_type": "workbook",
+            "mapping_preset_id": DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+            "display_name": "Team/Project + Capacity workbook v1",
+            "status": "active",
+        },
+        "resolution": None,
+    }
     assert preview["blockers"] == [
         {
             "severity": "blocker",
@@ -827,4 +1138,7 @@ def test_bootstrap_backfills_legacy_default_onboarding_profile(
     assert preview.exit_code == 0, preview.output
     preview_payload = _payload(preview)
     assert preview_payload["status"] == "rejected"
+    assert preview_payload["source_contract"]["mapping_preset"]["mapping_preset_id"] == (
+        DEFAULT_WORKBOOK_MAPPING_PRESET_ID
+    )
     assert preview_payload["blockers"][0]["code"] == "DATA_ONBOARDING_SOURCE_LOCATOR_NOT_FOUND"

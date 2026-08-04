@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -14,12 +15,17 @@ from pm_agent.data_onboarding.workbook_contract import (
     WORKBOOK_BASELINE_SOURCE,
     WORKBOOK_CONFLICT_POLICY,
     WORKBOOK_DEFAULT_DISPLAY_NAME,
-    WORKBOOK_DEFAULT_SOURCE_OPTIONS,
     WORKBOOK_MAPPING_PRESET_ID,
     WORKBOOK_MEMBER_KEY_TYPE,
     WORKBOOK_PLAN_NAMING_POLICY,
     WORKBOOK_PROJECT_KEY_TYPE,
     WORKBOOK_SOURCE_TYPE,
+)
+from pm_agent.workbook_onboarding.presets import (
+    default_source_options,
+    get_workbook_preset,
+    serialize_workbook_preset_lookup,
+    serialize_workbook_preset_summary,
 )
 from pm_agent.workbook_onboarding.repository import release_plan_identity
 from pm_agent.workbook_onboarding.service import (
@@ -38,7 +44,11 @@ def validate_profile(profile: SourceProfileUpsert) -> SourceProfileUpsert:
     if Path(normalized_path).suffix.lower() != ".xlsx":
         raise ValueError("DATA_ONBOARDING_WORKBOOK_SOURCE_LOCATOR_INVALID")
     mapping_preset_id = profile.mapping_preset_id.strip() or WORKBOOK_MAPPING_PRESET_ID
-    if mapping_preset_id != WORKBOOK_MAPPING_PRESET_ID:
+    try:
+        get_workbook_preset(mapping_preset_id)
+    except ValueError as exc:
+        if str(exc) == "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            raise ValueError("DATA_ONBOARDING_WORKBOOK_MAPPING_PRESET_INVALID") from exc
         raise ValueError("DATA_ONBOARDING_WORKBOOK_MAPPING_PRESET_INVALID")
     member_key_type = profile.member_key_type.strip() or WORKBOOK_MEMBER_KEY_TYPE
     if member_key_type != WORKBOOK_MEMBER_KEY_TYPE:
@@ -70,8 +80,25 @@ def validate_profile(profile: SourceProfileUpsert) -> SourceProfileUpsert:
         adjustment_source=adjustment_source,
         conflict_policy=conflict_policy,
         plan_naming_policy=plan_naming_policy,
-        source_options=dict(WORKBOOK_DEFAULT_SOURCE_OPTIONS),
+        source_options=default_source_options(mapping_preset_id),
     )
+
+
+def profile_metadata(profile: SourceProfileRecord) -> dict[str, Any]:
+    mapping_preset_id = profile.mapping_preset_id or WORKBOOK_MAPPING_PRESET_ID
+    try:
+        preset = get_workbook_preset(mapping_preset_id)
+    except ValueError as exc:
+        if str(exc) != "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            raise
+        return {
+            "mapping_preset": serialize_workbook_preset_lookup(mapping_preset_id),
+            "source_options": copy.deepcopy(profile.source_options),
+        }
+    return {
+        "mapping_preset": serialize_workbook_preset_summary(preset),
+        "source_options": default_source_options(mapping_preset_id),
+    }
 
 
 def build_source_identity(profile: SourceProfileRecord) -> dict[str, Any]:
@@ -102,10 +129,38 @@ def preview(
     run_id: str,
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
+    mapping_preset_id = profile.mapping_preset_id.strip() or WORKBOOK_MAPPING_PRESET_ID
+    try:
+        preset = get_workbook_preset(mapping_preset_id)
+    except ValueError as exc:
+        if str(exc) != "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            raise
+        return {
+            "status": "rejected",
+            "source_contract": {
+                "mapping_preset": serialize_workbook_preset_lookup(mapping_preset_id),
+                "resolution": None,
+            },
+            "blockers": [
+                {
+                    "severity": "blocker",
+                    "code": "WORKBOOK_MAPPING_PRESET_UNKNOWN",
+                    "message": f"Unknown workbook mapping preset: {mapping_preset_id}.",
+                    "location": "mapping_preset_id",
+                }
+            ],
+            "warnings": [],
+            "conflicts": [],
+        }
+    source_contract = {
+        "mapping_preset": serialize_workbook_preset_summary(preset),
+        "resolution": None,
+    }
     path = Path(profile.source_locator)
     if not path.is_file():
         return {
             "status": "rejected",
+            "source_contract": source_contract,
             "blockers": [
                 {
                     "severity": "blocker",
@@ -119,6 +174,7 @@ def preview(
         }
     return preview_workbook_import(
         path,
+        mapping_preset_id=mapping_preset_id,
         profile_key=profile.profile_key,
         run_id=run_id,
         db_path=db_path,

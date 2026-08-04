@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -10,60 +11,112 @@ from openpyxl import load_workbook
 
 from pm_agent.workbook_onboarding.models import (
     ParsedWorkbook,
+    ValidationIssue,
     WorkbookAllocationRow,
     WorkbookCapacityRow,
     WorkbookMemberRow,
     WorkbookProjectRow,
     WorkbookSetupRow,
 )
+from pm_agent.workbook_onboarding.presets import (
+    DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+    WorkbookHeaderResolution,
+    WorkbookPreset,
+    WorkbookPresetField,
+    WorkbookPresetResolution,
+    WorkbookPresetSection,
+    WorkbookSectionResolution,
+    get_workbook_preset,
+)
 
-EXPECTED_SHEETS = ("Setup", "Members", "Projects", "Allocations", "Capacity")
+_DEFAULT_PRESET = get_workbook_preset(DEFAULT_WORKBOOK_MAPPING_PRESET_ID)
+EXPECTED_SHEETS = tuple(
+    section.primary_sheet_name for section in _DEFAULT_PRESET.sections
+)
 EXPECTED_HEADERS = {
-    "Setup": ["plan_version_name", "as_of_date", "start_month", "end_month"],
-    "Members": [
-        "member_key",
-        "display_name",
-        "fte_type",
-        "status",
-        "current_hiref_id",
-        "hiref_end_date",
-        "role",
-        "level",
-        "effective_start",
-        "effective_end",
-    ],
-    "Projects": [
-        "project_key",
-        "display_name",
-        "status",
-        "priority",
-        "start_date",
-        "target_end",
-    ],
-    "Allocations": ["member_key", "project_key", "month", "allocation"],
-    "Capacity": [
-        "member_key",
-        "month",
-        "leave_fraction",
-        "bau_fraction",
-        "non_project_fraction",
-    ],
+    section.primary_sheet_name: [field.header_name for field in section.fields]
+    for section in _DEFAULT_PRESET.sections
 }
 
 
 class WorkbookParseError(ValueError):
-    """Raised when the workbook structure does not match the locked contract."""
+    """Raised when the workbook structure does not match the selected preset."""
+
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        location: str = "workbook",
+        preset_resolution: WorkbookPresetResolution | None = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.location = location
+        self.preset_resolution = preset_resolution
+        super().__init__(self._render())
+
+    def _render(self) -> str:
+        if self.location == "workbook":
+            return self.code
+        return f"{self.code}:{self.location}"
 
 
-def parse_workbook(path: str | Path) -> ParsedWorkbook:
+def parse_workbook(
+    path: str | Path,
+    *,
+    mapping_preset_id: str = DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+) -> ParsedWorkbook:
+    preset = get_workbook_preset(mapping_preset_id)
     workbook = load_workbook(Path(path), data_only=True)
-    sheet_names = tuple(workbook.sheetnames)
-    if set(sheet_names) != set(EXPECTED_SHEETS) or len(sheet_names) != len(EXPECTED_SHEETS):
-        raise WorkbookParseError("WORKBOOK_SHEETS_INVALID")
-    rows_by_sheet = {
-        name: _read_sheet(workbook[name], expected_headers=EXPECTED_HEADERS[name])
-        for name in EXPECTED_SHEETS
-    }
+    matched_sections, missing_optional = _resolve_sections(
+        tuple(workbook.sheetnames),
+        preset,
+    )
+    section_resolutions = [resolution for _, resolution in matched_sections]
+    contract_warnings = _section_contract_warnings(section_resolutions, missing_optional)
+    rows_by_section: dict[str, list[tuple[int, list[Any]]]] = {}
+
+    for index, (section, section_resolution) in enumerate(matched_sections):
+        if section_resolution.resolved_sheet_name is None:
+            rows_by_section[section.section_key] = []
+            continue
+        try:
+            header_matches, rows = _read_sheet(
+                workbook[section_resolution.resolved_sheet_name],
+                section=section,
+                preset=preset,
+                section_resolutions=section_resolutions,
+                missing_optional=missing_optional,
+            )
+        except WorkbookParseError as exc:
+            if exc.preset_resolution is None:
+                exc.preset_resolution = _build_resolution(
+                    preset,
+                    tuple(section_resolutions),
+                    missing_optional=missing_optional,
+                    missing_required=(),
+                )
+            raise
+        section_resolutions[index] = replace(
+            section_resolution,
+            header_matches=header_matches,
+        )
+        rows_by_section[section.section_key] = rows
+        contract_warnings.extend(
+            _header_contract_warnings(
+                header_matches,
+                section=section,
+                sheet_name=section_resolution.resolved_sheet_name,
+            )
+        )
+
+    preset_resolution = _build_resolution(
+        preset,
+        tuple(section_resolutions),
+        missing_optional=missing_optional,
+        missing_required=(),
+    )
     return ParsedWorkbook(
         setup_rows=[
             WorkbookSetupRow(
@@ -73,7 +126,7 @@ def parse_workbook(path: str | Path) -> ParsedWorkbook:
                 start_month=_as_month_text(values[2]),
                 end_month=_as_month_text(values[3]),
             )
-            for row_number, values in rows_by_sheet["Setup"]
+            for row_number, values in rows_by_section["setup"]
         ],
         members=[
             WorkbookMemberRow(
@@ -89,7 +142,7 @@ def parse_workbook(path: str | Path) -> ParsedWorkbook:
                 effective_start=_as_date_text(values[8]),
                 effective_end=_as_date_text(values[9]),
             )
-            for row_number, values in rows_by_sheet["Members"]
+            for row_number, values in rows_by_section["members"]
         ],
         projects=[
             WorkbookProjectRow(
@@ -101,7 +154,7 @@ def parse_workbook(path: str | Path) -> ParsedWorkbook:
                 start_date=_as_date_text(values[4]),
                 target_end=_as_date_text(values[5]),
             )
-            for row_number, values in rows_by_sheet["Projects"]
+            for row_number, values in rows_by_section["projects"]
         ],
         allocations=[
             WorkbookAllocationRow(
@@ -111,7 +164,7 @@ def parse_workbook(path: str | Path) -> ParsedWorkbook:
                 month=_as_month_text(values[2]),
                 allocation=_as_float(values[3]),
             )
-            for row_number, values in rows_by_sheet["Allocations"]
+            for row_number, values in rows_by_section["allocations"]
         ],
         capacity_rows=[
             WorkbookCapacityRow(
@@ -122,34 +175,302 @@ def parse_workbook(path: str | Path) -> ParsedWorkbook:
                 bau_fraction=_as_float(values[3]),
                 non_project_fraction=_as_float(values[4]),
             )
-            for row_number, values in rows_by_sheet["Capacity"]
+            for row_number, values in rows_by_section["capacity"]
             if not _is_capacity_note_row(values)
         ],
+        preset_resolution=preset_resolution,
+        contract_warnings=tuple(contract_warnings),
     )
 
 
-def _read_sheet(worksheet: Any, *, expected_headers: list[str]) -> list[tuple[int, list[Any]]]:
+def _resolve_sections(
+    sheet_names: tuple[str, ...],
+    preset: WorkbookPreset,
+) -> tuple[
+    list[tuple[WorkbookPresetSection, WorkbookSectionResolution]],
+    tuple[str, ...],
+]:
+    matched_sections: list[tuple[WorkbookPresetSection, WorkbookSectionResolution]] = []
+    used_sheet_names: set[str] = set()
+    missing_optional: list[str] = []
+    missing_required: list[str] = []
+
+    for section in preset.sections:
+        matches = [name for name in sheet_names if name in section.accepted_sheet_names]
+        if len(matches) > 1:
+            partial_resolution = _build_resolution(
+                preset,
+                tuple(resolution for _, resolution in matched_sections)
+                + (
+                    WorkbookSectionResolution(
+                        section_key=section.section_key,
+                        display_name=section.display_name,
+                        required=section.required,
+                        expected_sheet_name=section.primary_sheet_name,
+                        resolved_sheet_name=None,
+                        matched_via_alias=False,
+                    ),
+                ),
+                missing_optional=tuple(missing_optional),
+                missing_required=tuple(missing_required),
+            )
+            raise WorkbookParseError(
+                "WORKBOOK_SECTION_AMBIGUOUS",
+                (
+                    f"{section.display_name} matched more than one allowed sheet name: "
+                    f"{', '.join(matches)}."
+                ),
+                location=section.display_name,
+                preset_resolution=partial_resolution,
+            )
+        if not matches:
+            resolution = WorkbookSectionResolution(
+                section_key=section.section_key,
+                display_name=section.display_name,
+                required=section.required,
+                expected_sheet_name=section.primary_sheet_name,
+                resolved_sheet_name=None,
+                matched_via_alias=False,
+            )
+            matched_sections.append((section, resolution))
+            if section.required:
+                missing_required.append(section.section_key)
+            else:
+                missing_optional.append(section.section_key)
+            continue
+        resolved_sheet_name = matches[0]
+        used_sheet_names.add(resolved_sheet_name)
+        matched_sections.append(
+            (
+                section,
+                WorkbookSectionResolution(
+                    section_key=section.section_key,
+                    display_name=section.display_name,
+                    required=section.required,
+                    expected_sheet_name=section.primary_sheet_name,
+                    resolved_sheet_name=resolved_sheet_name,
+                    matched_via_alias=resolved_sheet_name != section.primary_sheet_name,
+                ),
+            )
+        )
+
+    unexpected = tuple(name for name in sheet_names if name not in used_sheet_names)
+    if missing_required or unexpected:
+        resolution = _build_resolution(
+            preset,
+            tuple(section_resolution for _, section_resolution in matched_sections),
+            missing_optional=tuple(missing_optional),
+            missing_required=tuple(missing_required),
+        )
+        details: list[str] = []
+        if missing_required:
+            details.append(f"missing required sections: {', '.join(missing_required)}")
+        if unexpected:
+            details.append(f"unexpected sheets: {', '.join(unexpected)}")
+        raise WorkbookParseError(
+            "WORKBOOK_SHEETS_INVALID",
+            "Workbook sheets do not satisfy the selected preset (" + "; ".join(details) + ").",
+            preset_resolution=resolution,
+        )
+
+    return matched_sections, tuple(missing_optional)
+
+
+def _read_sheet(
+    worksheet: Any,
+    *,
+    section: WorkbookPresetSection,
+    preset: WorkbookPreset,
+    section_resolutions: list[WorkbookSectionResolution],
+    missing_optional: tuple[str, ...],
+) -> tuple[tuple[WorkbookHeaderResolution, ...], list[tuple[int, list[Any]]]]:
     rows = list(worksheet.iter_rows(values_only=True))
     if not rows:
-        raise WorkbookParseError("WORKBOOK_HEADER_MISSING")
+        raise WorkbookParseError(
+            "WORKBOOK_HEADER_MISSING",
+            f"{worksheet.title} is missing a header row.",
+            location=worksheet.title,
+            preset_resolution=_build_resolution(
+                preset,
+                tuple(section_resolutions),
+                missing_optional=missing_optional,
+                missing_required=(),
+            ),
+        )
+
     header_row = list(rows[0])
-    header = [_as_header_text(value) for value in header_row[: len(expected_headers)]]
-    if header != expected_headers:
-        raise WorkbookParseError(f"WORKBOOK_HEADERS_INVALID:{worksheet.title}")
-    if any(not _is_blank(value) for value in header_row[len(expected_headers) :]):
-        raise WorkbookParseError(f"WORKBOOK_HEADERS_INVALID:{worksheet.title}")
+    header_texts = [_as_header_text(value) for value in header_row]
+    field_matches = [_matching_header_indexes(header_texts, field) for field in section.fields]
+    for field, indexes in zip(section.fields, field_matches, strict=True):
+        if len(indexes) > 1:
+            raise WorkbookParseError(
+                "WORKBOOK_HEADER_AMBIGUOUS",
+                (
+                    f"{worksheet.title} contains more than one allowed header for "
+                    f"{field.field_key}."
+                ),
+                location=f"{worksheet.title}:{field.field_key}",
+                preset_resolution=_build_resolution(
+                    preset,
+                    tuple(section_resolutions),
+                    missing_optional=missing_optional,
+                    missing_required=(),
+                ),
+            )
+
+    matched_indexes = [indexes[0] for indexes in field_matches if indexes]
+    if (
+        len(matched_indexes) != len(section.fields)
+        or matched_indexes != list(range(len(section.fields)))
+        or any(not _is_blank(value) for value in header_row[len(section.fields) :])
+    ):
+        raise WorkbookParseError(
+            "WORKBOOK_HEADERS_INVALID",
+            f"{worksheet.title} headers do not match the selected preset.",
+            location=worksheet.title,
+            preset_resolution=_build_resolution(
+                preset,
+                tuple(section_resolutions),
+                missing_optional=missing_optional,
+                missing_required=(),
+            ),
+        )
+
+    header_matches = tuple(
+        WorkbookHeaderResolution(
+            field_key=field.field_key,
+            expected_header_name=field.header_name,
+            resolved_header_name=header_texts[indexes[0]],
+            matched_via_alias=header_texts[indexes[0]] != field.header_name,
+        )
+        for field, indexes in zip(section.fields, field_matches, strict=True)
+    )
+    enriched_section_resolutions = _with_section_header_matches(
+        section_resolutions,
+        section_key=section.section_key,
+        header_matches=header_matches,
+    )
     results: list[tuple[int, list[Any]]] = []
+    field_count = len(section.fields)
     for row_number, values in enumerate(rows[1:], start=2):
         row_values = list(values)
-        if any(not _is_blank(value) for value in row_values[len(expected_headers) :]):
+        if any(not _is_blank(value) for value in row_values[field_count:]):
             raise WorkbookParseError(
-                f"WORKBOOK_ROW_WIDTH_INVALID:{worksheet.title}:{row_number}"
+                "WORKBOOK_ROW_WIDTH_INVALID",
+                f"{worksheet.title} row {row_number} contains unexpected extra values.",
+                location=f"{worksheet.title}:{row_number}",
+                preset_resolution=_build_resolution(
+                    preset,
+                    enriched_section_resolutions,
+                    missing_optional=missing_optional,
+                    missing_required=(),
+                ),
             )
-        current = row_values[: len(expected_headers)]
+        current = row_values[:field_count]
+        if len(current) < field_count:
+            current.extend([None] * (field_count - len(current)))
         if all(_is_blank(value) for value in current):
             continue
         results.append((row_number, current))
-    return results
+    return header_matches, results
+
+
+def _matching_header_indexes(
+    header_texts: list[str],
+    field: WorkbookPresetField,
+) -> list[int]:
+    return [
+        index
+        for index, text in enumerate(header_texts)
+        if text in field.accepted_header_names
+    ]
+
+
+def _build_resolution(
+    preset: WorkbookPreset,
+    sections: tuple[WorkbookSectionResolution, ...],
+    *,
+    missing_optional: tuple[str, ...],
+    missing_required: tuple[str, ...],
+) -> WorkbookPresetResolution:
+    return WorkbookPresetResolution(
+        mapping_preset_id=preset.mapping_preset_id,
+        display_name=preset.display_name,
+        status=preset.status,
+        matched_via_alias=any(
+            section.matched_via_alias
+            or any(match.matched_via_alias for match in section.header_matches)
+            for section in sections
+        ),
+        sections=sections,
+        missing_optional_sections=missing_optional,
+        missing_required_sections=missing_required,
+    )
+
+
+def _with_section_header_matches(
+    section_resolutions: list[WorkbookSectionResolution],
+    *,
+    section_key: str,
+    header_matches: tuple[WorkbookHeaderResolution, ...],
+) -> tuple[WorkbookSectionResolution, ...]:
+    return tuple(
+        replace(section_resolution, header_matches=header_matches)
+        if section_resolution.section_key == section_key
+        else section_resolution
+        for section_resolution in section_resolutions
+    )
+
+
+def _section_contract_warnings(
+    section_resolutions: list[WorkbookSectionResolution],
+    missing_optional: tuple[str, ...],
+) -> list[ValidationIssue]:
+    warnings: list[ValidationIssue] = []
+    optional_missing = set(missing_optional)
+    for section in section_resolutions:
+        if section.section_key in optional_missing:
+            warnings.append(
+                ValidationIssue(
+                    "warning",
+                    "WORKBOOK_OPTIONAL_SECTION_MISSING",
+                    f"{section.display_name} is not present and will be treated as missing optional source coverage.",
+                    section.display_name,
+                )
+            )
+        elif section.matched_via_alias and section.resolved_sheet_name is not None:
+            warnings.append(
+                ValidationIssue(
+                    "warning",
+                    "WORKBOOK_SHEET_ALIAS_USED",
+                    f"{section.display_name} matched allowed sheet alias {section.resolved_sheet_name!r}.",
+                    section.resolved_sheet_name,
+                )
+            )
+    return warnings
+
+
+def _header_contract_warnings(
+    header_matches: tuple[WorkbookHeaderResolution, ...],
+    *,
+    section: WorkbookPresetSection,
+    sheet_name: str,
+) -> list[ValidationIssue]:
+    warnings: list[ValidationIssue] = []
+    for match in header_matches:
+        if match.matched_via_alias:
+            warnings.append(
+                ValidationIssue(
+                    "warning",
+                    "WORKBOOK_HEADER_ALIAS_USED",
+                    (
+                        f"{section.display_name} field {match.field_key} matched allowed "
+                        f"header alias {match.resolved_header_name!r}."
+                    ),
+                    f"{sheet_name}!1",
+                )
+            )
+    return warnings
 
 
 def _is_blank(value: object) -> bool:

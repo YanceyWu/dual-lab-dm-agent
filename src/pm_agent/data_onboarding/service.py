@@ -94,7 +94,9 @@ def preview_source_profile(
     if source_changed_during_preview:
         handler.release_run(run_id, db_path=db_path)
         source_identity = source_identity_after
-        source_preview = _build_source_changed_preview()
+        source_preview = _build_source_changed_preview(
+            profile_payload.get("mapping_preset")
+        )
     else:
         source_identity = source_identity_after
     preview_fingerprint = _fingerprint(
@@ -379,7 +381,8 @@ def _normalize_profile_status(value: str | None) -> str:
 
 
 def _serialize_profile(profile: SourceProfileRecord) -> dict[str, Any]:
-    return {
+    handler = get_handler(profile.source_type)
+    payload = {
         "profile_id": profile.profile_id,
         "profile_key": profile.profile_key,
         "display_name": profile.display_name,
@@ -400,6 +403,8 @@ def _serialize_profile(profile: SourceProfileRecord) -> dict[str, Any]:
         "created_at": profile.created_at,
         "updated_at": profile.updated_at,
     }
+    payload.update(handler.profile_metadata(profile))
+    return payload
 
 
 def _load_active_profile(
@@ -466,6 +471,7 @@ def _build_preview_payload(
         "run_id": run_id,
         "profile": profile_payload,
         "source": source_identity,
+        "source_contract": copy.deepcopy(source_preview.get("source_contract")),
         "plan_version": source_preview.get("plan_version"),
         "revision_candidate": source_preview.get("revision"),
         "blockers": list(source_preview.get("blockers", [])),
@@ -504,6 +510,9 @@ def _build_confirm_payload(
         "run_id": run_id,
         "profile": profile_payload,
         "source": source_identity,
+        "source_contract": copy.deepcopy(
+            source_result.get("source_contract", source_preview.get("source_contract"))
+        ),
         "plan_version": source_preview.get("plan_version"),
         "applied_revision": source_preview.get("revision"),
         "blockers": list(source_result.get("blockers", source_preview.get("blockers", []))),
@@ -550,6 +559,7 @@ def _build_stale_preview_payload(
         "run_id": run_id,
         "profile": profile_payload,
         "source": source_identity,
+        "source_contract": copy.deepcopy(source_preview.get("source_contract")),
         "plan_version": source_preview.get("plan_version"),
         "applied_revision": source_preview.get("revision"),
         "blockers": blockers,
@@ -569,9 +579,17 @@ def _build_stale_preview_payload(
     }
 
 
-def _build_source_changed_preview() -> dict[str, Any]:
+def _build_source_changed_preview(mapping_preset: object) -> dict[str, Any]:
     return {
         "status": "rejected",
+        "source_contract": (
+            {
+                "mapping_preset": copy.deepcopy(mapping_preset),
+                "resolution": None,
+            }
+            if mapping_preset is not None
+            else None
+        ),
         "blockers": [
             {
                 "severity": "blocker",

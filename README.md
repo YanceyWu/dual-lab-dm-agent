@@ -107,7 +107,9 @@ pm tool query connector-sync-results
 pm tool query project-snapshot-list
 pm project-health config show
 pm staffing capacity-policy show
-pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding preset list
+pm onboarding preset show --mapping-preset team-project-capacity-workbook-v1
+pm onboarding profile save --profile-key fy26-q4 --source-type workbook --mapping-preset team-project-capacity-workbook-v1 --file /approved/path/team-project-capacity.xlsx
 pm onboarding preview --profile-key fy26-q4
 pm onboarding confirm --run-id <onboarding-run-id>
 pm onboarding run show --run-id <onboarding-run-id>

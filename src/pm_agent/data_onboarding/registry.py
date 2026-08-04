@@ -14,6 +14,7 @@ from pm_agent.data_onboarding import workbook_source
 class SourceTypeHandler:
     source_type: str
     validate_profile: Callable[[SourceProfileUpsert], SourceProfileUpsert]
+    profile_metadata: Callable[[SourceProfileRecord], dict[str, Any]]
     build_source_identity: Callable[[SourceProfileRecord], dict[str, Any]]
     preview: Callable[..., dict[str, Any]]
     confirm: Callable[..., dict[str, Any]]
@@ -26,6 +27,7 @@ class SourceTypeHandler:
 WORKBOOK_HANDLER = SourceTypeHandler(
     source_type=WORKBOOK_SOURCE_TYPE,
     validate_profile=workbook_source.validate_profile,
+    profile_metadata=workbook_source.profile_metadata,
     build_source_identity=workbook_source.build_source_identity,
     preview=workbook_source.preview,
     confirm=workbook_source.confirm,

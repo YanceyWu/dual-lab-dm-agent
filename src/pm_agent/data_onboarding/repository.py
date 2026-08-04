@@ -30,6 +30,7 @@ from pm_agent.data_onboarding.workbook_contract import (
     WORKBOOK_PROJECT_KEY_TYPE,
     WORKBOOK_SOURCE_TYPE,
 )
+from pm_agent.workbook_onboarding.presets import default_source_options
 
 
 def _json(value: Any) -> str:
@@ -191,18 +192,28 @@ def ensure_workbook_default_profile(
     *, db_path: str | Path | None = None
 ) -> SourceProfileRecord:
     existing = load_profile(WORKBOOK_DEFAULT_PROFILE_KEY, db_path=db_path)
-    source_options = (
-        existing.source_options
-        if existing and existing.source_options
-        else dict(WORKBOOK_DEFAULT_SOURCE_OPTIONS)
+    mapping_preset_id = (
+        existing.mapping_preset_id
+        if existing and existing.mapping_preset_id
+        else WORKBOOK_MAPPING_PRESET_ID
     )
+    try:
+        source_options = default_source_options(mapping_preset_id)
+    except ValueError as exc:
+        if str(exc) != "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            raise
+        source_options = (
+            existing.source_options
+            if existing and existing.source_options
+            else dict(WORKBOOK_DEFAULT_SOURCE_OPTIONS)
+        )
     profile = SourceProfileUpsert(
         profile_id=existing.profile_id if existing else WORKBOOK_DEFAULT_PROFILE_ID,
         profile_key=WORKBOOK_DEFAULT_PROFILE_KEY,
         display_name=existing.display_name if existing and existing.display_name else WORKBOOK_DEFAULT_DISPLAY_NAME,
         source_type=existing.source_type if existing and existing.source_type else WORKBOOK_SOURCE_TYPE,
         source_locator=existing.source_locator if existing else "",
-        mapping_preset_id=existing.mapping_preset_id if existing and existing.mapping_preset_id else WORKBOOK_MAPPING_PRESET_ID,
+        mapping_preset_id=mapping_preset_id,
         member_key_type=existing.member_key_type if existing and existing.member_key_type else WORKBOOK_MEMBER_KEY_TYPE,
         project_key_type=existing.project_key_type if existing and existing.project_key_type else WORKBOOK_PROJECT_KEY_TYPE,
         baseline_source=existing.baseline_source if existing and existing.baseline_source else WORKBOOK_BASELINE_SOURCE,

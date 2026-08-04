@@ -19,7 +19,7 @@ from pm_agent.workbook_onboarding.models import (
 
 def validate_workbook(parsed: ParsedWorkbook) -> WorkbookValidationResult:
     blockers: list[ValidationIssue] = []
-    warnings: list[ValidationIssue] = []
+    warnings: list[ValidationIssue] = list(parsed.contract_warnings)
 
     setup = _validate_setup(parsed, blockers, warnings)
     members = _validate_members(parsed, blockers, warnings)

@@ -19,7 +19,12 @@ from pm_agent.resource_intelligence.service import (
 from pm_agent.workbook_onboarding.capacity_adapter import build_capacity_package
 from pm_agent.workbook_onboarding.confirmed_adjustments import scan_workbook_conflicts
 from pm_agent.workbook_onboarding.models import ValidationIssue
-from pm_agent.workbook_onboarding.parser import parse_workbook
+from pm_agent.workbook_onboarding.parser import WorkbookParseError, parse_workbook
+from pm_agent.workbook_onboarding.presets import (
+    DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+    build_source_contract,
+    serialize_workbook_preset_lookup,
+)
 from pm_agent.workbook_onboarding.repository import (
     advance_profile_revision,
     ensure_default_onboarding_profile,
@@ -44,12 +49,14 @@ from pm_agent.workforce_planning_import.service import (
 def preview_workbook_import(
     workbook_path: str | Path,
     *,
+    mapping_preset_id: str = DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
     profile_key: str = "default",
     run_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
     candidate = _build_candidate(
         workbook_path,
+        mapping_preset_id=mapping_preset_id,
         reserve_revision=False,
         profile_key=profile_key,
         run_id=run_id,
@@ -61,6 +68,7 @@ def preview_workbook_import(
 def import_workbook(
     workbook_path: str | Path,
     *,
+    mapping_preset_id: str = DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
     profile_key: str = "default",
     run_id: str | None = None,
     db_path: str | Path | None = None,
@@ -68,6 +76,7 @@ def import_workbook(
     effective_run_id = run_id or f"workbook-import-run-{uuid4().hex}"
     candidate = _build_candidate(
         workbook_path,
+        mapping_preset_id=mapping_preset_id,
         reserve_revision=True,
         profile_key=profile_key,
         run_id=effective_run_id,
@@ -208,29 +217,64 @@ def _resolve_capacity_result(
 def _build_candidate(
     workbook_path: str | Path,
     *,
+    mapping_preset_id: str,
     reserve_revision: bool,
     profile_key: str,
     run_id: str | None,
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
     workbook_file = Path(workbook_path)
+    effective_preset_id = mapping_preset_id.strip() or DEFAULT_WORKBOOK_MAPPING_PRESET_ID
     try:
-        parsed = parse_workbook(workbook_file)
-    except ValueError as exc:
+        parsed = parse_workbook(
+            workbook_file,
+            mapping_preset_id=effective_preset_id,
+        )
+    except WorkbookParseError as exc:
         return {
             "status": "rejected",
             "workbook_path": str(workbook_file),
-            "blockers": [_serialize_issue(_parse_error(str(exc)))],
+            "source_contract": (
+                build_source_contract(exc.preset_resolution)
+                if exc.preset_resolution is not None
+                else None
+            ),
+            "blockers": [_serialize_issue(_parse_error(exc))],
+            "warnings": [],
+            "conflicts": [],
+        }
+    except ValueError as exc:
+        if str(exc) != "WORKBOOK_MAPPING_PRESET_UNKNOWN":
+            raise
+        return {
+            "status": "rejected",
+            "workbook_path": str(workbook_file),
+            "source_contract": {
+                "mapping_preset": serialize_workbook_preset_lookup(effective_preset_id),
+                "resolution": None,
+            },
+            "blockers": [
+                _serialize_issue(
+                    ValidationIssue(
+                        severity="blocker",
+                        code="WORKBOOK_MAPPING_PRESET_UNKNOWN",
+                        message=f"Unknown workbook mapping preset: {effective_preset_id}.",
+                        location="mapping_preset_id",
+                    )
+                )
+            ],
             "warnings": [],
             "conflicts": [],
         }
     validation = validate_workbook(parsed)
+    source_contract = build_source_contract(parsed.preset_resolution)
     blockers = [_serialize_issue(item) for item in validation.blockers]
     warnings = [_serialize_issue(item) for item in validation.warnings]
     if validation.workbook is None:
         return {
             "status": "rejected",
             "workbook_path": str(workbook_file),
+            "source_contract": source_contract,
             "blockers": blockers,
             "warnings": warnings,
             "conflicts": [],
@@ -267,6 +311,7 @@ def _build_candidate(
         return {
             "status": "rejected",
             "workbook_path": str(workbook_file),
+            "source_contract": source_contract,
             "blockers": blockers,
             "warnings": warnings,
             "conflicts": conflicts,
@@ -288,6 +333,7 @@ def _build_candidate(
         return {
             "status": "rejected",
             "workbook_path": str(workbook_file),
+            "source_contract": source_contract,
             "blockers": blockers + [_serialize_issue(_import_error(str(exc)))],
             "warnings": warnings,
             "conflicts": conflicts,
@@ -297,6 +343,7 @@ def _build_candidate(
     return {
         "status": "previewed",
         "workbook_path": str(workbook_file),
+        "source_contract": source_contract,
         "blockers": blockers,
         "warnings": warnings,
         "conflicts": conflicts,
@@ -314,12 +361,12 @@ def _build_candidate(
     }
 
 
-def _parse_error(message: str) -> ValidationIssue:
+def _parse_error(error: WorkbookParseError) -> ValidationIssue:
     return ValidationIssue(
         severity="blocker",
-        code="WORKBOOK_ONBOARDING_PARSE_ERROR",
-        message=message,
-        location="workbook",
+        code=error.code,
+        message=error.message,
+        location=error.location,
     )
 
 

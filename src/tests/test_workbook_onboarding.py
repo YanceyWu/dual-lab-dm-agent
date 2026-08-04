@@ -17,6 +17,14 @@ from pm_agent.workbook_onboarding.parser import (
     WorkbookParseError,
     parse_workbook,
 )
+from pm_agent.workbook_onboarding.presets import (
+    DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+    WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    get_workbook_preset,
+    list_workbook_presets,
+    serialize_workbook_preset,
+    validate_preset_registry,
+)
 from pm_agent.workbook_onboarding.service import (
     import_workbook,
     preview_workbook_import,
@@ -45,12 +53,15 @@ def _write_workbook(
         "Allocations",
         "Capacity",
     ),
+    header_overrides: dict[str, list[str]] | None = None,
 ) -> Path:
     workbook = Workbook()
     first = workbook.active
     first.title = sheet_names[0]
     for title in sheet_names[1:]:
         workbook.create_sheet(title)
+    header_overrides = header_overrides or {}
+    logical_sheet_names = ("Setup", "Members", "Projects", "Allocations", "Capacity")
     rows_by_sheet = {
         "Setup": setup_rows,
         "Members": member_rows,
@@ -58,9 +69,9 @@ def _write_workbook(
         "Allocations": allocation_rows,
         "Capacity": capacity_rows,
     }
-    for name, worksheet in zip(sheet_names, workbook.worksheets, strict=True):
-        worksheet.append(EXPECTED_HEADERS[name if name in EXPECTED_HEADERS else "Capacity"])
-        for row in rows_by_sheet.get(name, []):
+    for logical_name, worksheet in zip(logical_sheet_names, workbook.worksheets, strict=True):
+        worksheet.append(header_overrides.get(logical_name, EXPECTED_HEADERS[logical_name]))
+        for row in rows_by_sheet[logical_name]:
             worksheet.append(row)
     workbook.save(path)
     return path
@@ -77,6 +88,14 @@ def _baseline_workbook(
     allocations: list[list[object]] | None = None,
     start_month: str = "2026-09",
     end_month: str = "2026-09",
+    sheet_names: tuple[str, str, str, str, str] = (
+        "Setup",
+        "Members",
+        "Projects",
+        "Allocations",
+        "Capacity",
+    ),
+    header_overrides: dict[str, list[str]] | None = None,
 ) -> Path:
     return _write_workbook(
         path,
@@ -105,6 +124,8 @@ def _baseline_workbook(
             if capacity_rows is not None
             else ([["WD100001", "2026-09", 0.0, 0.0, 0.0]] if include_capacity else [])
         ),
+        sheet_names=sheet_names,
+        header_overrides=header_overrides,
     )
 
 
@@ -150,6 +171,248 @@ def _confirm_staffing_adjustment(
         },
     )
     assert result["status"] == "confirmed"
+
+
+ALIAS_SHEET_NAMES = (
+    "Plan Setup",
+    "Team Members",
+    "Project List",
+    "Project Allocations",
+    "Member Capacity",
+)
+
+ALIAS_HEADERS = {
+    "Setup": ["plan_name", "snapshot_date", "start_month", "end_month"],
+    "Members": [
+        "member_key",
+        "member_name",
+        "fte_type",
+        "status",
+        "hiref_id",
+        "hiref_end_date",
+        "role",
+        "level",
+        "effective_start",
+        "effective_until",
+    ],
+    "Projects": [
+        "project_id",
+        "display_name",
+        "status",
+        "priority",
+        "start_date",
+        "target_end_date",
+    ],
+    "Allocations": ["member_key", "project_id", "month", "allocation_fraction"],
+    "Capacity": [
+        "member_key",
+        "month",
+        "leave_fraction",
+        "bau_fraction",
+        "non_project_allocation",
+    ],
+}
+
+
+def test_workbook_preset_registry_lists_and_validates_packaged_presets() -> None:
+    validate_preset_registry()
+    presets = list_workbook_presets()
+
+    assert [preset.mapping_preset_id for preset in presets] == [
+        DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+        WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    ]
+
+    alias_preset = serialize_workbook_preset(
+        get_workbook_preset(WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES)
+    )
+    assert alias_preset["status"] == "active"
+    setup_section = next(
+        section for section in alias_preset["sections"] if section["section_key"] == "setup"
+    )
+    assert setup_section["accepted_sheet_names"] == ["Setup", "Plan Setup"]
+    assert setup_section["header_aliases"]["plan_version_name"] == ["plan_name"]
+
+
+def test_parse_workbook_accepts_alias_preset_layout_and_tracks_resolution(
+    tmp_path: Path,
+) -> None:
+    workbook_path = _baseline_workbook(
+        tmp_path / "alias-layout.xlsx",
+        include_capacity=True,
+        sheet_names=ALIAS_SHEET_NAMES,
+        header_overrides=ALIAS_HEADERS,
+    )
+
+    parsed = parse_workbook(
+        workbook_path,
+        mapping_preset_id=WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+    )
+    result = validate_workbook(parsed)
+
+    assert result.workbook is not None
+    warning_codes = {item.code for item in result.warnings}
+    assert "WORKBOOK_SHEET_ALIAS_USED" in warning_codes
+    assert "WORKBOOK_HEADER_ALIAS_USED" in warning_codes
+    assert parsed.preset_resolution.mapping_preset_id == WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES
+    assert parsed.preset_resolution.matched_via_alias is True
+    sections = {
+        section.section_key: section for section in parsed.preset_resolution.sections
+    }
+    assert sections["setup"].resolved_sheet_name == "Plan Setup"
+    assert sections["setup"].matched_via_alias is True
+    assert any(
+        match.field_key == "plan_version_name"
+        and match.resolved_header_name == "plan_name"
+        and match.matched_via_alias is True
+        for match in sections["setup"].header_matches
+    )
+
+
+def test_parse_workbook_rejects_ambiguous_alias_header_match(tmp_path: Path) -> None:
+    workbook_path = _baseline_workbook(
+        tmp_path / "ambiguous-alias.xlsx",
+        sheet_names=ALIAS_SHEET_NAMES,
+        header_overrides={
+            **ALIAS_HEADERS,
+            "Setup": ["plan_version_name", "plan_name", "start_month", "end_month"],
+        },
+    )
+
+    with pytest.raises(
+        WorkbookParseError, match="WORKBOOK_HEADER_AMBIGUOUS:Plan Setup:plan_version_name"
+    ):
+        parse_workbook(
+            workbook_path,
+            mapping_preset_id=WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+        )
+
+
+def test_parse_workbook_preserves_alias_resolution_on_row_width_failure(
+    tmp_path: Path,
+) -> None:
+    workbook_path = _write_workbook(
+        tmp_path / "alias-row-width.xlsx",
+        setup_rows=[["FY26 Q4 Baseline", "2026-08-15", "2026-09", "2026-09", "extra"]],
+        member_rows=[],
+        project_rows=[],
+        allocation_rows=[],
+        capacity_rows=[],
+        header_overrides=ALIAS_HEADERS,
+    )
+
+    with pytest.raises(WorkbookParseError) as exc_info:
+        parse_workbook(
+            workbook_path,
+            mapping_preset_id=WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
+        )
+
+    error = exc_info.value
+    assert str(error) == "WORKBOOK_ROW_WIDTH_INVALID:Setup:2"
+    assert error.preset_resolution is not None
+    assert error.preset_resolution.matched_via_alias is True
+    setup_section = next(
+        section
+        for section in error.preset_resolution.sections
+        if section.section_key == "setup"
+    )
+    assert any(
+        match.field_key == "plan_version_name"
+        and match.resolved_header_name == "plan_name"
+        and match.matched_via_alias is True
+        for match in setup_section.header_matches
+    )
+
+
+def test_preview_workbook_explicit_default_preset_matches_implicit_default(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "default-preset-regression.xlsx",
+        include_capacity=True,
+    )
+
+    implicit = preview_workbook_import(workbook_path, db_path=isolated_db)
+    explicit = preview_workbook_import(
+        workbook_path,
+        mapping_preset_id=DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
+        db_path=isolated_db,
+    )
+
+    assert implicit["status"] == "previewed"
+    assert explicit["status"] == "previewed"
+    assert implicit["counts"] == explicit["counts"]
+    assert implicit["plan_version"] == explicit["plan_version"]
+    assert implicit["workforce_package"] == explicit["workforce_package"]
+    assert implicit["capacity_package"] == explicit["capacity_package"]
+
+
+def test_preview_workbook_rejects_unknown_mapping_preset_id(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(tmp_path / "unknown-preset.xlsx")
+
+    result = preview_workbook_import(
+        workbook_path,
+        mapping_preset_id="workbook-preset-does-not-exist",
+        db_path=isolated_db,
+    )
+
+    assert result["status"] == "rejected"
+    assert result["source_contract"]["mapping_preset"] == {
+        "source_type": "workbook",
+        "mapping_preset_id": "workbook-preset-does-not-exist",
+        "display_name": None,
+        "status": "unknown",
+    }
+    assert result["source_contract"]["resolution"] is None
+    assert result["blockers"] == [
+        {
+            "severity": "blocker",
+            "code": "WORKBOOK_MAPPING_PRESET_UNKNOWN",
+            "message": "Unknown workbook mapping preset: workbook-preset-does-not-exist.",
+            "location": "mapping_preset_id",
+        }
+    ]
+
+
+def test_preview_workbook_rejects_unknown_mapping_preset_before_loading_file(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+
+    result = preview_workbook_import(
+        tmp_path / "missing.xlsx",
+        mapping_preset_id="workbook-preset-does-not-exist",
+        db_path=isolated_db,
+    )
+
+    assert result["status"] == "rejected"
+    assert result["blockers"][0]["code"] == "WORKBOOK_MAPPING_PRESET_UNKNOWN"
+
+
+def test_preview_workbook_tolerates_stale_default_profile_preset(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(tmp_path / "stale-default.xlsx")
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE onboarding_profiles
+            SET mapping_preset_id=?
+            WHERE profile_key='default'
+            """,
+            ["stale-workbook-preset"],
+        )
+        connection.commit()
+
+    result = preview_workbook_import(workbook_path, db_path=isolated_db)
+
+    assert result["status"] == "previewed"
 
 
 def test_parse_workbook_rejects_invalid_sheet_contract(tmp_path: Path) -> None:

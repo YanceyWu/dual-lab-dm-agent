@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from pm_agent.workbook_onboarding.presets import WorkbookPresetResolution
 
 
 IssueSeverity = Literal["blocker", "warning"]
@@ -78,6 +81,8 @@ class ParsedWorkbook:
     projects: list[WorkbookProjectRow]
     allocations: list[WorkbookAllocationRow]
     capacity_rows: list[WorkbookCapacityRow]
+    preset_resolution: WorkbookPresetResolution
+    contract_warnings: tuple[ValidationIssue, ...] = ()
 
 
 @dataclass(frozen=True)

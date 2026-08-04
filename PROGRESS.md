@@ -1,21 +1,27 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-04
-Current branch: `data-onboarding-framework-batch-a`
-Current HEAD: the committed local IP-034 Batch A baseline is `58e1733`; this
-branch now carries additional owner-approved Batch B design material on top of
-that baseline
+Current branch: `workbook-onboarding-test-20260804-1514`
+Current HEAD: this branch now carries the committed local IP-035 Batch B
+implementation together with the committed IP-036 convergence design /
+implementation-pack handoff; the exact current commit hash is reported in the
+latest handoff because a commit cannot contain its own hash
 Package version: `0.2.0rc1`
-Current implementation item: `IP-035 STRUCTURED DATA ONBOARDING WORKBOOK PRESET BATCH APPROVED FOR IMPLEMENTATION`
-Gate status: `IP-034 BATCH A COMMITTED LOCALLY; BATCH B DESIGN / IMPLEMENTATION PACK OWNER-APPROVED FOR A NEW IMPLEMENTATION SESSION`
+Current implementation item: `IP-036 CANONICAL ONBOARDING CONVERGENCE BATCH A READY FOR FOLLOW-ON IMPLEMENTATION`
+Gate status: `LOCAL BASELINE COMMITTED; NEXT GATE IS IP-036 BATCH A IMPLEMENTATION IN A NEW SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
-committed locally at `58e1733`. This branch now holds owner-approved design
-material for the next bounded batch:
+committed locally at `58e1733`. The owner-approved Batch B design / pack
+handoff is committed locally at `40141b4`. This branch now also commits the
+local Batch B implementation covering:
 `architecture/15_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESET_DESIGN.md` and
-`implementation-packs/IP-035_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESETS.md`;
-the exact commit hash for this design handoff is reported in the handoff
-because a commit cannot contain its own hash.
+`implementation-packs/IP-035_STRUCTURED_DATA_ONBOARDING_WORKBOOK_PRESETS.md`,
+packaged workbook preset registry/runtime wiring, CLI preset inspection, thin
+onboarding preset projection, focused regression expansion, the new local
+operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
+`docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
+the IP-036 convergence design/implementation-pack handoff. No push was
+performed.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -49,11 +55,26 @@ belong in Git history and must not be interpreted as current instructions.
   validator, adapter, conflict policy, and importer semantics remain owned by
   `pm_agent.workbook_onboarding`, and the legacy workbook import script remains
   as a transitional fallback.
-- The current workbook source type still uses one packaged preset
-  (`team-project-capacity-workbook-v1`). Broader workbook preset/alias support
-  is not yet implemented; the owner has now approved the bounded Batch B design
-  to add packaged workbook presets plus alias-aware parsing/validation under the
-  existing workbook source type.
+- IP-035 Batch B is now implemented locally on top of that framework:
+  `pm_agent.workbook_onboarding` owns a packaged workbook preset registry,
+  source-contract metadata, CLI-inspectable preset definitions, and bounded
+  alias-aware sheet/header parsing diagnostics; `pm_agent.data_onboarding`
+  remains thin and now persists `mapping_preset_id`, projects preset metadata,
+  and surfaces preview/confirm source-contract resolution details without
+  absorbing workbook rules.
+- The default preset `team-project-capacity-workbook-v1` remains the backward-
+  compatible workbook v1 baseline. A second approved packaged preset
+  `team-project-capacity-workbook-v1-aliases` now allows bounded worksheet /
+  header aliases while preserving the same downstream canonical workforce and
+  capacity semantics.
+- A separate follow-on convergence design handoff now exists for a later
+  independent session and branch:
+  `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` plus
+  `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` preserve
+  user-visible capabilities while allowing legacy import entrypoints, redundant
+  tables/views, and overlapping read/write paths to be rebuilt around one
+  canonical onboarding authority model. This handoff does not activate runtime
+  cleanup in the current branch by itself.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -600,24 +621,30 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
     onboarding page, live connector sync, workbook v2 mapping expansion, or
     migration/removal of other legacy import scripts is implemented here.
-13. The next authorized batch is workbook preset registry plus alias-aware
-    workbook parsing/validation under the existing workbook source type, bounded
-    by the owner-approved `architecture/15...` design and `IP-035...`
-    implementation pack.
+13. The current branch now contains a committed local baseline for IP-035 Batch
+    B plus the IP-036 convergence design/pack handoff. No push has been
+    performed.
+14. A follow-on canonical-onboarding convergence handoff is now recorded in
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`.
+15. The next planned execution slice is IP-036 Batch A current-state staffing
+    convergence in a separate session / branch from this committed baseline.
 
 ## Exact next actions
 
-1. Open a new session from the committed current branch context and implement
-   only the owner-approved IP-035 Batch B scope:
-   workbook preset registry plus alias-aware parsing/validation.
-2. Keep workbook onboarding v1 semantics unchanged and keep the legacy workbook
-   import script only as a transitional / fallback path until a later explicitly
-   authorized convergence batch.
-3. Do not extend Batch B into UI, Dashboard onboarding, live connector
-   pull or scheduling, workbook v2 mapping beyond packaged presets, or new
-   source types without separate authorization.
-4. Before requesting Batch B acceptance, complete focused tests, `make validate`,
-   `make rehearse-release`, and independent read-only review.
+1. Open a new independent session from this committed branch baseline and
+   implement only IP-036 Batch A:
+   canonical current-state staffing convergence under `pm onboarding`.
+2. Keep the broader IP-036 follow-on batches (workforce enrichment / contract
+   coverage, registry convergence, final redundancy deletion) separately gated
+   until Batch A is implemented, validated, rehearsed, independently reviewed,
+   and accepted.
+3. Before requesting acceptance of IP-036 Batch A, complete the
+   relevant focused tests, `make validate`, `make rehearse-release`, and
+   independent read-only review.
+4. Use the committed local IP-035 runtime and the committed
+   `architecture/16...` / `IP-036...` handoff as the only baseline for the new
+   session; do not re-derive scope from older onboarding proposals.
 5. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
@@ -719,6 +746,99 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-04 — Canonical onboarding convergence design and execution handoff drafted
+
+- Added the follow-on architecture handoff for pre-production onboarding
+  convergence and redundancy cleanup:
+  - `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`
+  - `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`
+- The new design explicitly changes the cleanup rule from "preserve legacy
+  paths" to "preserve user-visible functionality and output contracts while
+  rebuilding internals through canonical ownership and clean re-import."
+- Recorded the target end state:
+  - `pm onboarding` becomes the sole operator-visible import entrypoint;
+  - every fact family gets one canonical writer and one public read contract;
+  - plan-state and current-state staffing stay distinct semantics;
+  - redundant tables, views, helper paths, freshness IDs, and standalone import
+    entrypoints become delete candidates once replaced.
+  - deprecated scripts, compatibility shims, dead helper branches, and obsolete
+    tests/docs are also delete candidates once the new canonical path is fully
+    accepted.
+- Defined the recommended execution sequence for the separate refactor branch:
+  - Batch A: current-state staffing convergence;
+  - Batch B: workforce enrichment and contract coverage convergence;
+  - Batch C: registry and auxiliary onboarding convergence;
+  - Batch D: redundancy deletion and final cleanup.
+- The first bounded implementation pack is intentionally narrow:
+  - IP-036 Batch A targets current-state staffing so workload, Dashboard,
+    staffing, and load-based Attention can survive the removal of the legacy
+    `assignments` / `v_member_load` authority path.
+- Validation evidence:
+  - this step changes architecture, implementation-pack, and progress documents
+    only;
+  - final `make validate` passed all nine release-validation checks with `414`
+    runtime tests and `33` repository-tool tests (`19` subtests);
+  - final `make rehearse-release` passed wheel install, isolated clean bootstrap,
+    isolated upgrade-copy rehearsal, and rollback;
+  - final read-only review of the new architecture handoff, implementation pack,
+    and continuity updates found no remaining scope/gate/contract issue.
+- Commit / push status:
+  - this documentation handoff is committed locally in the same branch baseline
+    as the IP-035 runtime changes; the exact commit hash is reported in the
+    latest handoff because a commit cannot contain its own hash;
+  - no push was performed.
+- Exact next recommended action:
+  - open a separate session / branch from this committed baseline and start only
+    IP-036 Batch A.
+
+### 2026-08-04 — IP-035 Structured Data Onboarding Workbook Presets implemented locally
+
+- Implemented the owner-approved Batch B workbook preset slice without widening
+  scope or adding schema:
+  - added `src/pm_agent/workbook_onboarding/presets.py` as the packaged workbook
+    preset registry with registry validation, preset metadata serialization, and
+    default/alias contract definitions;
+  - extended `pm_agent.workbook_onboarding` parser/service flow so selected
+    `mapping_preset_id` drives bounded sheet/header alias matching, explicit
+    ambiguity rejection, parse diagnostics, and previewable source-contract
+    resolution;
+  - kept `pm_agent.data_onboarding` thin by limiting it to preset persistence,
+    preset metadata projection, missing-file/unknown-preset orchestration, and
+    shared preview/confirm envelope projection.
+- Added CLI-first preset inspection and profile-oriented preset projection:
+  - `pm onboarding preset list`
+  - `pm onboarding preset show --mapping-preset <id>`
+  - `pm onboarding profile save/show/list` now project preset metadata and
+    preset-driven source-options details.
+- Preserved default workbook v1 behavior while adding the bounded alias-aware
+  contract:
+  - explicit default preset and implicit default runtime produce the same
+    canonical packages;
+  - unknown/stale preset IDs now reject explicitly or degrade safely instead of
+    crashing profile/show/list/default-profile bootstrap paths;
+  - `DATA_ONBOARDING_SOURCE_CHANGED_DURING_PREVIEW` now clears stale resolution
+    details and keeps only the preset summary.
+- Updated direct CLI examples in `README.md` for preset inspection and explicit
+  preset selection.
+- Validation evidence:
+  - final focused regression passed:
+    `python3 -m pytest tests/test_workbook_onboarding.py tests/test_data_onboarding.py -q`
+    → `41 passed`;
+  - final `make validate` passed all nine release-validation checks with `414`
+    runtime tests and `33` repository-tool tests (`19` subtests);
+  - final `make rehearse-release` passed wheel install, isolated clean
+    bootstrap, isolated upgrade-copy rehearsal, and rollback;
+  - final independent read-only review result: `no high-confidence issues were found.`
+- Commit / push status:
+  - Batch B implementation is committed locally on the current
+    `workbook-onboarding-test-20260804-1514` baseline together with the IP-036
+    design handoff; the exact commit hash is reported in the latest handoff
+    because a commit cannot contain its own hash;
+  - no push was performed.
+- Exact next recommended action:
+  - open the follow-on implementation session from this committed baseline and
+    start only IP-036 Batch A.
 
 ### 2026-08-04 — Batch B workbook preset design approved for implementation
 
