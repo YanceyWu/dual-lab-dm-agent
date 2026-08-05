@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-scripts/import_from_excel.py — Import team data from a Distribution Excel export.
+scripts/import_from_excel.py — Legacy Distribution Excel import helper.
 
 Usage:
     python3 scripts/import_from_excel.py --file "data-feed/distribution.xlsx"
@@ -12,6 +12,10 @@ What it does:
 3. Stores employees by canonical source ID
 4. Routes HIREF-only / placeholder rows into staffing_placeholders
 5. Creates assignments using the current month's allocation value
+
+Current-state staffing readers no longer treat those assignment rows as the
+authoritative workload source. Use the workbook onboarding entrypoint when you
+need canonical current-state staffing publication behavior.
 """
 
 import re
@@ -503,20 +507,6 @@ def import_data(file_path: str, dry_run: bool = False) -> None:
             con.commit()
             print(f"  ✓ Applied {override_count} memory_facts status override(s) (resigned/inactive staff)")
 
-        # ── Show load summary ──
-        print()
-        print("  Top loaded members (current month):")
-        rows = con.execute("""
-            SELECT name, current_load, active_projects
-            FROM v_member_load
-            WHERE current_load > 0
-            ORDER BY current_load DESC
-            LIMIT 15
-        """).fetchall()
-        for name, load, projs in rows:
-            bar = '█' * int(load * 10)
-            print(f"    {name:<35} {load:.0%}  {bar}  ({projs} project{'s' if projs!=1 else ''})")
-
         con.close()
         con = None
 
@@ -538,7 +528,17 @@ def import_data(file_path: str, dry_run: bool = False) -> None:
             notes="Distribution Excel import completed successfully.",
         )
         print()
-        print("🎉 Import complete. Run `python3 -m pm_agent.cli.app workload` to view.")
+        print("⚠️  Legacy import complete.")
+        print(
+            "   Current-state staffing product reads now use canonical publications,"
+        )
+        print(
+            "   not direct assignment rows from this script."
+        )
+        print(
+            "   Use `python3 scripts/import_team_project_capacity_workbook.py --file <workbook> --confirm`"
+        )
+        print("   for authoritative workbook onboarding.")
     except Exception as exc:
         if con is not None:
             con.close()

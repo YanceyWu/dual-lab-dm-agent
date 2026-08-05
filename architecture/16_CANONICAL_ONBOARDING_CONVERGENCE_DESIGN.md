@@ -1,11 +1,18 @@
 # Canonical Onboarding Convergence Design
 
-Status: `A0 ARTIFACTS FROZEN; A1 IS THE NEXT RUNTIME GATE`
+Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; FROZEN A0-A4 BOUNDARIES BELOW REMAIN AUTHORITATIVE`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
 Baseline branch: `workbook-onboarding-test-20260804-1514`
 Baseline commit: `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
 Previous local baseline: `IP-035 Structured Data Onboarding Workbook Presets`
+
+Runtime closure note (2026-08-05): the frozen coverage matrix, invariants, and
+slice boundaries below remain the Batch A authority. A1, A2, and A3 were
+completed and committed before this session, and the current working tree closes
+A4 by demoting the remaining A-scope legacy current-state staffing projections
+and route markers to canonical publication authority. Batch B/C/D, skills/HIREF
+ownership migration, and mutable staffing-write redesign remain deferred.
 
 ## Decision supported
 

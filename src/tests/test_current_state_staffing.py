@@ -202,3 +202,96 @@ def test_current_state_staffing_freshness_reports_stale_and_partial_states(
         connection.commit()
     partial = read_model.current_publication_freshness(db_path=isolated_db)
     assert partial["state"] == "partial"
+
+
+def test_legacy_member_and_project_views_are_derived_from_current_publication(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            INSERT INTO employees
+                (id, wd_id, name, team, max_parallel, status, skills)
+            VALUES
+                ('employee-1', 'WD100001', 'Legacy Alex', 'Platform', 5, 'active', '{"python": 0.9}')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO projects
+                (id, name, jira_key, target_end, status, priority)
+            VALUES
+                ('RP-PROJ-001', 'Legacy Project Atlas', 'ATLAS', '2026-12-31', 'active', 2)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO assignments
+                (employee_id, project_id, role, allocation, start_date, status)
+            VALUES
+                ('employee-1', 'RP-PROJ-001', 'legacy', 0.1, '2026-08-01', 'active')
+            """
+        )
+        connection.commit()
+
+    preview = service.preview_import(_package(allocation=0.6), db_path=isolated_db)
+    service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    with sqlite3.connect(isolated_db) as connection:
+        member_row = connection.execute(
+            """
+            SELECT id, name, team, max_parallel, current_load, active_projects
+            FROM v_member_load
+            WHERE id = 'WD100001'
+            """
+        ).fetchone()
+        project_row = connection.execute(
+            """
+            SELECT project_id, project_name, jira_key, target_end, member_id, member_name, allocation
+            FROM v_project_team
+            WHERE project_id = 'RP-PROJ-001'
+            """
+        ).fetchone()
+
+    assert member_row == ("WD100001", "Alex Example", "Platform", 5, 0.6, 1)
+    assert project_row == (
+        "RP-PROJ-001",
+        "Project Atlas",
+        "ATLAS",
+        "2026-12-31",
+        "WD100001",
+        "Alex Example",
+        0.6,
+    )
+
+
+def test_current_state_publication_freshness_is_decoupled_from_legacy_source_sla(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    preview = service.preview_import(_package(), db_path=isolated_db)
+    service.confirm_import(preview["session_id"], db_path=isolated_db)
+
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            UPDATE current_state_staffing_publications
+            SET published_at = '2026-08-04T00:00:00+00:00'
+            WHERE is_current = 1
+            """
+        )
+        connection.execute(
+            """
+            UPDATE data_sources
+            SET refresh_sla_hours = 1
+            WHERE id = 'import-resource-portal'
+            """
+        )
+        connection.commit()
+
+    freshness = read_model.current_publication_freshness(db_path=isolated_db)
+
+    assert freshness["source_id"] == "current-state-staffing-publication"
+    assert freshness["refresh_sla_hours"] == 720.0
+    assert freshness["state"] == "fresh"

@@ -645,15 +645,20 @@ def test_generic_interfaces_preserve_executor_validation_errors() -> None:
     ]
 
 
-def test_legacy_dashboard_direct_sql_route_is_explicitly_marked(
+def test_dashboard_current_state_routes_are_explicitly_marked_canonical(
     isolated_db,
 ) -> None:
     init_db(quiet=True)
 
-    response = dashboard_server.app.test_client().get("/api/summary")
+    client = dashboard_server.app.test_client()
 
-    assert response.status_code == 200
-    assert response.headers["X-DM-Interface-Contract"] == "current-state-staffing-compat-read"
+    for path in ("/api/summary", "/api/projects", "/api/employees"):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert (
+            response.headers["X-DM-Interface-Contract"]
+            == "current-state-staffing-canonical-read"
+        )
 
 
 def test_dashboard_summary_suppresses_numeric_loads_without_current_state_publication(

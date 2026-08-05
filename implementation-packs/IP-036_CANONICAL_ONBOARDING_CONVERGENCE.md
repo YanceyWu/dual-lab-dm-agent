@@ -1,9 +1,16 @@
 # IP-036 — Canonical Onboarding Convergence Batch A0
 
-Status: `A0 FROZEN DOCS-ONLY HANDOFF DRAFTED`
+Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; FROZEN A0-A4 PLAN BELOW REMAINS AUTHORITATIVE`
 Design: `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`
 Implementation branch: `workbook-onboarding-test-20260804-1514`
 Clean baseline commit for this session: `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
+
+Runtime closure note (2026-08-05): A0 artifacts below remain the frozen Batch A
+boundary. A1 accepted and committed, A2 accepted and committed, A3 accepted and
+committed, and the current working tree implements A4 compatibility closure /
+legacy deletion for A-scope current-state staffing readers only. Batch B/C/D,
+skills/HIREF ownership migration, and mutable staffing-write redesign remain
+deferred to separately approved follow-on work.
 
 ## Goal
 

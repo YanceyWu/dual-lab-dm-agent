@@ -12,7 +12,7 @@ from pm_agent.config import settings
 from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_REQUIRED_TABLES
 
 CURRENT_STATE_STAFFING_PUBLICATION_SOURCE_ID = "current-state-staffing-publication"
-DEFAULT_PUBLICATION_REFRESH_SLA_HOURS = 24.0
+DEFAULT_PUBLICATION_REFRESH_SLA_HOURS = 720.0
 
 
 def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
@@ -43,14 +43,6 @@ def _schema_available(database: sqlite3.Connection) -> bool:
         sorted(CURRENT_STATE_STAFFING_REQUIRED_TABLES),
     ).fetchall()
     return {str(row["name"]) for row in rows} == CURRENT_STATE_STAFFING_REQUIRED_TABLES
-
-
-def _table_exists(database: sqlite3.Connection, table_name: str) -> bool:
-    row = database.execute(
-        "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?",
-        [table_name],
-    ).fetchone()
-    return row is not None
 
 
 def _parse_json_object(value: Any) -> dict[str, Any]:
@@ -91,24 +83,8 @@ def _load_current_publication(
     }
 
 
-def _publication_refresh_sla_hours(database: sqlite3.Connection) -> float:
-    if not _table_exists(database, "data_sources"):
-        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
-    row = database.execute(
-        """
-        SELECT refresh_sla_hours
-        FROM data_sources
-        WHERE id = 'import-resource-portal'
-        LIMIT 1
-        """
-    ).fetchone()
-    if row is None or row["refresh_sla_hours"] in (None, ""):
-        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
-    try:
-        value = float(row["refresh_sla_hours"])
-    except (TypeError, ValueError):
-        return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
-    return value if value > 0 else DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
+def _publication_refresh_sla_hours() -> float:
+    return DEFAULT_PUBLICATION_REFRESH_SLA_HOURS
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -220,7 +196,7 @@ def current_publication_freshness(
         publication = publication_state.get("publication")
         if not isinstance(publication, dict):
             return base
-        refresh_sla_hours = _publication_refresh_sla_hours(database)
+        refresh_sla_hours = _publication_refresh_sla_hours()
         coverage_state, coverage_reason, coverage = _coverage_state(
             publication.get("report", {})
         )

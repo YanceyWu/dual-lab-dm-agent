@@ -252,46 +252,6 @@ CREATE INDEX IF NOT EXISTS idx_action_items_due     ON action_items(due_date, st
 CREATE INDEX IF NOT EXISTS idx_decision_type        ON decision_log(type, outcome);
 CREATE INDEX IF NOT EXISTS idx_decision_project     ON decision_log(project_id);
 
--- ────────────────────────────────────────────
--- VIEWS  (query shortcuts, no stored data)
--- ────────────────────────────────────────────
-
-DROP VIEW IF EXISTS v_member_load;
-CREATE VIEW v_member_load AS
-SELECT
-    e.id,
-    e.name,
-    e.level,
-    e.team,
-    e.status                                                   AS employee_status,
-    e.max_parallel,
-    COALESCE(SUM(a.allocation), 0.0)                           AS current_load,
-    COUNT(a.id)                                                AS active_projects,
-    e.skills
-FROM employees e
-LEFT JOIN assignments a
-       ON e.id = a.employee_id AND a.status = 'active'
-WHERE e.status = 'active'
-GROUP BY e.id;
-
-DROP VIEW IF EXISTS v_project_team;
-CREATE VIEW v_project_team AS
-SELECT
-    p.id           AS project_id,
-    p.name         AS project_name,
-    p.status       AS project_status,
-    p.priority,
-    p.jira_key,
-    p.target_end,
-    e.id           AS member_id,
-    e.name         AS member_name,
-    a.role,
-    a.allocation
-FROM projects p
-JOIN assignments a ON p.id = a.project_id  AND a.status = 'active'
-JOIN employees  e ON a.employee_id = e.id
-ORDER BY p.priority, p.name;
-
 DROP VIEW IF EXISTS v_overdue_actions;
 CREATE VIEW v_overdue_actions AS
 SELECT
@@ -2339,7 +2299,7 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
             "refresh_sla_hours": 720,
             "active": 1,
             "config_json": {"script": "scripts/import_from_excel.py"},
-            "notes": "Canonical staffing baseline import.",
+            "notes": "Legacy workbook mirror import; current-state staffing authority now lives in canonical publications.",
         },
         {
             "id": "import-hiref-report",

@@ -50,7 +50,7 @@
 | `src/scripts/import_cr_csv.py` | CSV | `src/sample-data/csv/servicenow_change_requests.sample.csv` | **部分（dry-run）** | 导入 ServiceNow change request CSV 导出；适合已有报表导出时接入变更记录 |
 | `src/scripts/import_hiref.py` | Excel (`.xlsx`) | `src/sample-data/excel/hiref_status_sample.xlsx` | **部分（dry-run）** | 导入 HIREF 状态报表；用于合同连续性、HIREF 页面、contract continuity 相关查询 |
 | `src/scripts/import_project_profiles.py` | Excel (`.xlsx`) | `src/sample-data/excel/project_profiles_sample.xlsx` | **部分（dry-run）** | 从填写好的项目资料模板回写项目 profile；适合项目级静态资料维护 |
-| `src/scripts/import_from_excel.py` | Excel (`.xlsx`) | `src/sample-data/excel/resource_portal_team_sample.xlsx` | **部分（dry-run）** | 早期的 Distribution Excel 团队导入；适合从资源门户导出表快速建立/刷新基础 team 数据 |
+| `src/scripts/import_from_excel.py` | Excel (`.xlsx`) | `src/sample-data/excel/resource_portal_team_sample.xlsx` | **部分（dry-run，legacy）** | 早期的 Distribution Excel 团队导入；仅适合作为遗留桥接/镜像导入，不再是 current-state staffing 的 authoritative 产品入口。要发布 authoritative workbook current-state，请改用 `src/scripts/import_team_project_capacity_workbook.py` |
 | `src/scripts/import_skills.py` | 两个 JSON 文件 | `src/sample-data/json/team_data.sample.json` + `src/sample-data/json/skillset.sample.json` | **否** | 导入团队基础资料与技能画像；适合已有 team JSON + skill JSON 的补充更新 |
 
 ---
@@ -84,7 +84,7 @@
 - `import_cr_csv.py`
 - `import_hiref.py`
 - `import_project_profiles.py`
-- `import_from_excel.py`
+- `import_from_excel.py`（legacy bridge only；current-state authoritative path 已转向 workbook onboarding）
 - `import_skills.py`
 
 这些入口的特点是：

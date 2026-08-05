@@ -54,7 +54,7 @@ LEGACY_DIRECT_SQL_ROUTES = {
     "/api/project-plans",
     "/api/project-health",
 }
-CURRENT_STATE_COMPAT_ROUTES = {
+CURRENT_STATE_CANONICAL_ROUTES = {
     "/api/summary",
     "/api/projects",
     "/api/employees",
@@ -63,8 +63,8 @@ CURRENT_STATE_COMPAT_ROUTES = {
 
 @app.after_request
 def _mark_legacy_interface(response):
-    if request.path in CURRENT_STATE_COMPAT_ROUTES:
-        response.headers["X-DM-Interface-Contract"] = "current-state-staffing-compat-read"
+    if request.path in CURRENT_STATE_CANONICAL_ROUTES:
+        response.headers["X-DM-Interface-Contract"] = "current-state-staffing-canonical-read"
     elif request.path in LEGACY_DIRECT_SQL_ROUTES:
         response.headers["X-DM-Interface-Contract"] = "legacy-direct-read"
     elif request.path == "/api/project-snapshots":
