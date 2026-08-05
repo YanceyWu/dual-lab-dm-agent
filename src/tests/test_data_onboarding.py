@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -14,6 +15,9 @@ from pm_agent.data_onboarding import service as data_onboarding_service
 from pm_agent.data_onboarding import workbook_source
 from pm_agent.database import repository as legacy_repository
 from pm_agent.database.bootstrap import main as init_db
+from pm_agent.resource_intelligence.read_model import get_effective_capacity
+from pm_agent.use_cases.layered_project_health import execute_layered_project_health_review
+from pm_agent.use_cases.service import UseCaseRequest
 from pm_agent.workbook_onboarding.presets import (
     DEFAULT_WORKBOOK_MAPPING_PRESET_ID,
     WORKBOOK_MAPPING_PRESET_ID_WITH_ALIASES,
@@ -23,8 +27,13 @@ from pm_agent.workbook_onboarding import service as workbook_service
 from pm_agent.workbook_onboarding.service import (
     confirm_workbook_candidate as workbook_confirm_candidate,
 )
+from pm_agent.workforce_planning_import.service import (
+    confirm_import as confirm_workforce_import,
+    preview_import as preview_workforce_import,
+)
 
 runner = CliRunner()
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _invoke(*args: str):
@@ -33,6 +42,36 @@ def _invoke(*args: str):
 
 def _payload(result) -> dict:
     return json.loads(result.stdout)
+
+
+def _sample_json(name: str) -> dict:
+    return json.loads((ROOT / "sample-data" / "json" / name).read_text(encoding="utf-8"))
+
+
+def _write_json(path: Path, payload: dict) -> Path:
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return path
+
+
+def _seed_workforce_publication(db_path: Path) -> None:
+    preview = preview_workforce_import(
+        _sample_json("workforce_planning_import.sample.json"),
+        db_path=db_path,
+    )
+    confirm_workforce_import(preview["session_id"], db_path=db_path)
+
+
+def _seed_project_health_boards(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO jira_board_configs
+                (id,name,project_key,base_jql,pm_project_id,active)
+            VALUES
+                ('atlas-board','Atlas Board','ATLAS','project = ATLAS','project-synthetic-atlas',1),
+                ('beacon-board','Beacon Board','BEACON','project = BEACON','project-synthetic-beacon',1)
+            """
+        )
 
 
 def _write_workbook(
@@ -1274,3 +1313,273 @@ def test_bootstrap_backfills_legacy_default_onboarding_profile(
         DEFAULT_WORKBOOK_MAPPING_PRESET_ID
     )
     assert preview_payload["blockers"][0]["code"] == "DATA_ONBOARDING_SOURCE_LOCATOR_NOT_FOUND"
+
+
+def test_onboarding_workforce_planning_json_round_trip_and_replay(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source_path = _write_json(
+        tmp_path / "workforce-planning.json",
+        _sample_json("workforce_planning_import.sample.json"),
+    )
+
+    saved = _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "workforce-json",
+        "--source-type",
+        "workforce-planning-json",
+        "--file",
+        str(source_path),
+    )
+    assert saved.exit_code == 0, saved.output
+
+    preview = _payload(_invoke("onboarding", "preview", "--profile-key", "workforce-json"))
+    assert preview["status"] == "previewed"
+    assert preview["source_contract"]["source_type"] == "workforce-planning-json"
+    assert preview["counts"] == {
+        "members": 3,
+        "projects": 2,
+        "plan_versions": 1,
+        "monthly_allocations": 6,
+        "workforce_periods": 3,
+        "allocation_keys": 6,
+        "explicit_zero_allocations": 3,
+    }
+    assert preview["planned_domain_operations"] == [
+        {
+            "capability": "workforce_planning_import",
+            "counts": preview["counts"],
+            "package_id": "package-synthetic-workforce-planning-001",
+            "plan_version_id": "plan-synthetic-baseline-001",
+            "schema_version": "workforce-planning-import-v1",
+            "status": "planned",
+        }
+    ]
+
+    confirmed = _payload(_invoke("onboarding", "confirm", "--run-id", preview["run_id"]))
+    assert confirmed["status"] == "completed"
+    assert confirmed["published_domain_operations"][0]["capability"] == "workforce_planning_import"
+    assert confirmed["published_domain_operations"][0]["domain_publication_id"] is not None
+
+    replay_preview = _payload(
+        _invoke("onboarding", "preview", "--profile-key", "workforce-json")
+    )
+    assert replay_preview["status"] == "already_completed"
+    assert replay_preview["confirmation_required"] is True
+
+    replay_confirm = _payload(
+        _invoke("onboarding", "confirm", "--run-id", replay_preview["run_id"])
+    )
+    assert replay_confirm["status"] == "completed"
+    assert replay_confirm["replay_identity"]["idempotent"] is True
+
+    shown = _payload(_invoke("onboarding", "run", "show", "--run-id", preview["run_id"]))
+    assert shown["run"]["domain_links"][0]["capability"] == "workforce_planning_import"
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM workforce_planning_publications"
+        ).fetchone()[0] == 1
+
+
+def test_onboarding_resource_capacity_json_preserves_capacity_reader(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    _seed_workforce_publication(isolated_db)
+    source_path = _write_json(
+        tmp_path / "resource-capacity.json",
+        _sample_json("resource_capacity_import.sample.json"),
+    )
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "capacity-json",
+        "--source-type",
+        "resource-capacity-json",
+        "--file",
+        str(source_path),
+    ).exit_code == 0
+
+    preview = _payload(_invoke("onboarding", "preview", "--profile-key", "capacity-json"))
+    assert preview["status"] == "previewed"
+    assert preview["planned_domain_operations"][0]["capability"] == "resource_intelligence"
+    confirmed = _payload(_invoke("onboarding", "confirm", "--run-id", preview["run_id"]))
+    assert confirmed["status"] == "completed"
+    capacity = get_effective_capacity(
+        "member-synthetic-001",
+        2026,
+        8,
+        "plan-synthetic-baseline-001",
+        db_path=isolated_db,
+    )
+    assert capacity["state"] == "known"
+    assert capacity["available_capacity"] == 0.2
+
+
+def test_onboarding_milestone_json_round_trip_and_no_op_replay(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    _seed_workforce_publication(isolated_db)
+    source_path = _write_json(
+        tmp_path / "milestones.json",
+        _sample_json("milestone_import.sample.json"),
+    )
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "milestone-json",
+        "--source-type",
+        "milestone-json",
+        "--file",
+        str(source_path),
+    ).exit_code == 0
+
+    preview = _payload(_invoke("onboarding", "preview", "--profile-key", "milestone-json"))
+    assert preview["status"] == "previewed"
+    assert preview["planned_domain_operations"] == [
+        {
+            "capability": "execution_milestones",
+            "changed_milestone_count": 6,
+            "counts": {"milestones": 6, "projects": 2},
+            "schema_version": "milestone-import-v1",
+            "status": "planned",
+        }
+    ]
+    confirmed = _payload(_invoke("onboarding", "confirm", "--run-id", preview["run_id"]))
+    assert confirmed["status"] == "completed"
+
+    replay_preview = _payload(
+        _invoke("onboarding", "preview", "--profile-key", "milestone-json")
+    )
+    assert replay_preview["status"] == "already_completed"
+    replay_confirm = _payload(
+        _invoke("onboarding", "confirm", "--run-id", replay_preview["run_id"])
+    )
+    assert replay_confirm["status"] == "completed"
+    assert replay_confirm["replay_identity"]["idempotent"] is True
+
+    with sqlite3.connect(isolated_db) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM execution_milestones"
+        ).fetchone()[0] == 6
+        assert connection.execute(
+            "SELECT COUNT(*) FROM milestone_import_operations WHERE status='confirmed'"
+        ).fetchone()[0] == 1
+
+
+def test_onboarding_project_health_json_preserves_layered_review(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    _seed_workforce_publication(isolated_db)
+    _seed_project_health_boards(isolated_db)
+    source_path = _write_json(
+        tmp_path / "project-health.json",
+        _sample_json("project_health_reimport.sample.json"),
+    )
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "project-health-json",
+        "--source-type",
+        "project-health-reimport-json",
+        "--file",
+        str(source_path),
+    ).exit_code == 0
+
+    preview = _payload(
+        _invoke("onboarding", "preview", "--profile-key", "project-health-json")
+    )
+    assert preview["status"] == "previewed"
+    assert preview["planned_domain_operations"][0]["capability"] == "project_health"
+    confirmed = _payload(_invoke("onboarding", "confirm", "--run-id", preview["run_id"]))
+    assert confirmed["status"] == "completed"
+
+    review = execute_layered_project_health_review(
+        UseCaseRequest(
+            use_case_id="layered-project-health-review",
+            parameters={"project_id": "project-synthetic-atlas"},
+        )
+    )
+    assert review.status == "success"
+    assert review.data["assessments"][0]["project_id"] == "project-synthetic-atlas"
+
+
+def test_onboarding_json_profile_change_rejects_confirm_after_preview(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    first = _sample_json("workforce_planning_import.sample.json")
+    second = deepcopy(first)
+    second["package_id"] = "package-synthetic-workforce-planning-002"
+    second["source_id"] = "source-synthetic-workforce-planning-002"
+    first_path = _write_json(tmp_path / "workforce-a.json", first)
+    second_path = _write_json(tmp_path / "workforce-b.json", second)
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "mutable-json",
+        "--source-type",
+        "workforce-planning-json",
+        "--file",
+        str(first_path),
+    ).exit_code == 0
+    preview = _payload(_invoke("onboarding", "preview", "--profile-key", "mutable-json"))
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "mutable-json",
+        "--source-type",
+        "workforce-planning-json",
+        "--file",
+        str(second_path),
+    ).exit_code == 0
+    confirmed = _payload(_invoke("onboarding", "confirm", "--run-id", preview["run_id"]))
+    assert confirmed["status"] == "rejected"
+    assert confirmed["blockers"][-1]["code"] == "DATA_ONBOARDING_PROFILE_CHANGED"
+
+
+def test_onboarding_json_preview_rejects_invalid_json_with_persisted_run(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source_path = tmp_path / "invalid.json"
+    source_path.write_text("{not-json", encoding="utf-8")
+
+    assert _invoke(
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        "invalid-json",
+        "--source-type",
+        "workforce-planning-json",
+        "--file",
+        str(source_path),
+    ).exit_code == 0
+    preview = _payload(_invoke("onboarding", "preview", "--profile-key", "invalid-json"))
+    assert preview["status"] == "rejected"
+    assert preview["blockers"][0]["code"] == "DATA_ONBOARDING_SOURCE_JSON_INVALID"
+
+    shown = _payload(_invoke("onboarding", "run", "show", "--run-id", preview["run_id"]))
+    assert shown["run"]["state"] == "rejected"

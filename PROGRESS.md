@@ -2,17 +2,16 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this session started from the required clean accepted B4
-transitional baseline commit `e005ab6d53ac1f50506bbf30abf2f91e847a325e`
-(`git status --short --branch` clean; `HEAD` exactly matched the required
-commit before any edit). The B4 workbook-closure runtime slice is now committed
-locally at `b5906c7`, and the current local working tree adds only the
-post-B4 Batch C/D design-freeze docs on top of that accepted B4 result. The
-separate aborted runtime attempt remains excluded and must not be inherited as
-partial work.
+Current HEAD: this session started from the required clean accepted baseline
+commit `a2716c90de65644fc0f532bf55a7c8e9c85d0d02` (`git status --short --branch`
+clean; `HEAD` exactly matched the required commit before any edit). Batch A,
+B0, B1, B2, B3, B4, and the post-B4 C/D redesign freeze remain committed
+locally; the current local working tree now contains only the bounded IP-036
+Batch C1 runtime slice on top of that clean baseline. The separate aborted
+runtime attempt remains excluded and must not be inherited as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; THE CURRENT WORKING TREE NOW UPDATES ONLY THE POST-B4 BATCH C/D DESIGN / PACK / PROGRESS DOCS`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B4 IS CLOSED / VALIDATED / COMMITTED LOCALLY; THE NEXT IP-036 GATE IS C1 ONLY — BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS; BATCH D REMAINS BLOCKED UNTIL BATCH C PARITY IS PROVEN`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; THE CURRENT WORKING TREE NOW IMPLEMENTS ONLY C1 — BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, AND THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 IS NOW IMPLEMENTED / FOCUSED-VALIDATED LOCALLY IN THE WORKING TREE; C2/C3/C4 AND BATCH D REMAIN OUT OF SCOPE FOR THIS SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -25,11 +24,14 @@ onboarding preset projection, focused regression expansion, the new local
 operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
 the original IP-036 convergence design/implementation-pack handoff at
-`5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`, and the
-committed B4 workbook closure at `b5906c7`. The current working tree now revises
-`architecture/16...`, `implementation-packs/IP-036...`, and this progress log
-only to freeze the post-B4 Batch C/D scope against the surviving operator
-surface. The already-committed B4 runtime slice closed the authorized workbook-
+`5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`, the
+committed B4 workbook closure at `b5906c7`, and the committed post-B4 redesign
+freeze. The current working tree now adds only the bounded C1 runtime slice
+through `src/pm_agent/data_onboarding/domain_json_source.py`,
+`registry.py`, `service.py`, the onboarding CLI help text, the top-level
+`README.md` operator examples, and focused `test_data_onboarding.py` coverage
+for the retained domain JSON source families. No C2/C3/C4 or Batch D code path
+is touched. The already-committed B4 runtime slice closed the authorized workbook-
 only surface through the bounded files:
 `src/pm_agent/workbook_onboarding/models.py`,
 `parser.py`,
@@ -102,16 +104,25 @@ belong in Git history and must not be interpreted as current instructions.
   `team-project-capacity-workbook-v1-aliases` now allows bounded worksheet /
   header aliases while preserving the same downstream canonical workforce and
   capacity semantics.
-- A separate follow-on convergence design handoff now exists for a later
-  independent session and branch:
+- The IP-036 convergence design handoff remains the authority for the remaining
+  onboarding convergence program:
   `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` plus
   `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` preserve
   user-visible capabilities while allowing legacy import entrypoints, redundant
   tables/views, and overlapping read/write paths to be rebuilt around one
-  canonical onboarding authority model. The current working tree now hardens
-  that handoff so A0 must freeze coverage, invariants, state-machine scenarios,
-  and semantic decisions because the direct A1-first plan and later runtime
-  attempt both risked looping on missing hidden dependencies.
+  canonical onboarding authority model. A0/B0-B4/post-B4 freeze are already
+  committed; the current working tree implements only the next authorized slice,
+  C1.
+- IP-036 Batch C1 is now implemented locally as bounded source-handler
+  orchestration only:
+  `pm_agent.data_onboarding` now registers retained JSON source types for
+  workforce planning, resource capacity, milestones, and Project Health
+  re-import under `pm onboarding` profile/preview/confirm/run-show flows while
+  keeping each domain importer as the canonical owner of its preview/confirm,
+  publication, replay, and consumer semantics. The wrapper layer adds source
+  profile validation, local-file identity tracking, source-contract projection,
+  publication-link/audit continuity, and explicit onboarding failure mapping
+  without redesigning the underlying domain models or downstream readers.
 - IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2/A3 now
   build on it in the working tree:
   `pm_agent.current_state_staffing` owns an additive current-state staffing
@@ -951,6 +962,64 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 Batch C1 bounded domain-source onboarding wrappers implemented locally
+
+- Implemented only the frozen C1 slice under `src/pm_agent/data_onboarding/`:
+  - added `domain_json_source.py`, a bounded wrapper layer that registers the
+    retained JSON source families:
+    - workforce planning JSON
+    - resource capacity JSON
+    - milestone JSON
+    - Project Health re-import JSON
+  - each wrapper now provides consistent `pm onboarding` profile validation,
+    preview translation, confirm translation, run-audit continuity, and
+    publication-link projection while delegating all business semantics to the
+    existing domain capability owners;
+  - `registry.py` now registers those four retained source types;
+  - `service.py` now stores non-terminal retained-domain preview states in a
+    confirmable onboarding run form, preserves idempotent replay markers from
+    retained domain confirmations, and avoids caching stale `in_progress` /
+    `retryable` preview results;
+  - `cli/commands/onboarding.py` now describes `--file` generically for workbook
+    and JSON source types;
+  - `README.md` now documents the retained JSON `pm onboarding profile save`
+    entrypoints and clarifies that these retained file sources are supported
+    under `pm onboarding` while legacy scripts remain transitional wrappers.
+- Explicitly preserved the frozen boundaries:
+  - no business-semantic redesign of workforce planning, capacity, milestones,
+    or Project Health re-import;
+  - no change to existing canonical publication or downstream consumer
+    contracts;
+  - no C2/C3/C4 work;
+  - no Batch D cleanup/deletion;
+  - no skills redesign;
+  - no mutable staffing-write redesign;
+  - no broader project-profile / change-request / connector / contract-model
+    redesign.
+- Expanded focused regression only in `src/tests/test_data_onboarding.py`:
+  - added `pm onboarding` round-trip coverage for all four retained JSON source
+    families;
+  - covered replay/idempotency through onboarding for workforce planning and
+    milestones;
+  - covered behavior parity via the retained capacity read model and layered
+    Project Health review consumer surfaces;
+  - covered failure semantics for invalid JSON and profile drift after preview.
+- Validation / self-review evidence:
+  - `cd src && ./.venv/bin/python -m pytest tests/test_data_onboarding.py -q`
+    → `26 passed`
+  - `cd src && ./.venv/bin/python -m pytest tests/test_workforce_planning_import.py tests/test_resource_capacity_import.py tests/test_phase3_execution_foundation.py tests/test_project_health_reimport.py -q`
+    → `64 passed`
+  - read-only self-review against the C1 scope table in
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`
+    confirmed the working tree stays inside C1 and does not touch C2/C3/C4/D.
+- Commit / push status:
+  - this C1 runtime slice is committed locally in this session and not pushed;
+  - no additional uncommitted runtime scope beyond that committed C1 slice is
+    intended to remain.
+- Exact next recommended action: perform the independent read-only review for
+  the committed C1 diff only; do not start C2 unless that review is accepted
+  and a separate authorization explicitly advances the gate.
 
 ### 2026-08-05 — IP-036 post-B4 Batch C/D redesign frozen locally
 

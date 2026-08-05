@@ -65,7 +65,7 @@ def profile_save(
         ...,
         "--source-locator",
         "--file",
-        help="Approved local source locator (workbook path for the workbook source type).",
+        help="Approved local source locator (for example a workbook or JSON file path).",
     ),
     display_name: str = typer.Option("", "--display-name", help="Human-readable profile name."),
     mapping_preset_id: str = typer.Option("", "--mapping-preset", help="Optional mapping preset identifier."),

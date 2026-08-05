@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from pm_agent.data_onboarding import domain_json_source
 from pm_agent.data_onboarding.models import DomainLinkRecord, SourceProfileRecord, SourceProfileUpsert
 from pm_agent.data_onboarding.workbook_contract import WORKBOOK_SOURCE_TYPE
 from pm_agent.data_onboarding import workbook_source
@@ -37,7 +38,66 @@ WORKBOOK_HANDLER = SourceTypeHandler(
     release_run=workbook_source.release_run,
 )
 
-_REGISTRY = {WORKBOOK_SOURCE_TYPE: WORKBOOK_HANDLER}
+def _json_handler(
+    definition: domain_json_source.JsonDomainSourceDefinition,
+) -> SourceTypeHandler:
+    return SourceTypeHandler(
+        source_type=definition.source_type,
+        validate_profile=lambda profile: domain_json_source.validate_profile(
+            definition, profile
+        ),
+        profile_metadata=lambda profile: domain_json_source.profile_metadata(
+            definition, profile
+        ),
+        build_source_identity=lambda profile: domain_json_source.build_source_identity(
+            definition, profile
+        ),
+        preview=lambda profile, *, run_id, db_path=None: domain_json_source.preview(
+            definition,
+            profile,
+            db_path=db_path,
+        ),
+        confirm=lambda profile, source_preview, *, db_path=None: domain_json_source.confirm(
+            definition,
+            profile,
+            source_preview,
+            db_path=db_path,
+        ),
+        planned_operations=lambda source_preview: domain_json_source.planned_operations(
+            definition,
+            source_preview,
+        ),
+        coverage_summary=lambda source_preview: domain_json_source.coverage_summary(
+            definition,
+            source_preview,
+        ),
+        publication_links=lambda source_result: domain_json_source.publication_links(
+            definition,
+            source_result,
+        ),
+        release_run=lambda run_id, *, db_path=None: domain_json_source.release_run(
+            definition,
+            run_id,
+            db_path=db_path,
+        ),
+    )
+
+
+_REGISTRY = {
+    WORKBOOK_SOURCE_TYPE: WORKBOOK_HANDLER,
+    domain_json_source.WORKFORCE_PLANNING_JSON_SOURCE_TYPE: _json_handler(
+        domain_json_source.WORKFORCE_PLANNING_JSON_DEFINITION
+    ),
+    domain_json_source.RESOURCE_CAPACITY_JSON_SOURCE_TYPE: _json_handler(
+        domain_json_source.RESOURCE_CAPACITY_JSON_DEFINITION
+    ),
+    domain_json_source.MILESTONE_JSON_SOURCE_TYPE: _json_handler(
+        domain_json_source.MILESTONE_JSON_DEFINITION
+    ),
+    domain_json_source.PROJECT_HEALTH_REIMPORT_JSON_SOURCE_TYPE: _json_handler(
+        domain_json_source.PROJECT_HEALTH_REIMPORT_JSON_DEFINITION
+    ),
+}
 
 
 def get_handler(source_type: str) -> SourceTypeHandler:

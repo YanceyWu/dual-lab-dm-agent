@@ -133,7 +133,7 @@ def preview_source_profile(
         preview_fingerprint=preview_fingerprint,
         source_preview=source_preview,
         preview_payload=preview_payload,
-        status=str(source_preview.get("status", "rejected")),
+        status=_stored_run_status(source_preview),
         created_at=_utc_now(),
         failure_code=_preview_failure_code(source_preview),
         db_path=db_path,
@@ -480,7 +480,9 @@ def _build_preview_payload(
         "counts": dict(source_preview.get("counts", {})),
         "coverage": coverage,
         "planned_domain_operations": planned_operations,
-        "confirmation_required": str(source_preview.get("status")) == "previewed",
+        "confirmation_required": _confirmation_required(
+            str(source_preview.get("status", "rejected"))
+        ),
         "replay_identity": {
             "preview_fingerprint": preview_fingerprint,
             "planned_package_ids": package_ids,
@@ -530,7 +532,9 @@ def _build_confirm_payload(
         },
         "replay_identity": {
             "preview_fingerprint": preview_fingerprint,
-            "idempotent": False,
+            "idempotent": bool(
+                source_result.get("domain_result", {}).get("idempotent", False)
+            ),
         },
     }
 
@@ -665,6 +669,11 @@ def _failure_code_from_result(source_result: dict[str, Any]) -> str:
     status = str(source_result.get("status", "failed"))
     if status == "rejected":
         return _preview_failure_code(source_result)
+    if status == "failed":
+        failure_code = source_result.get("failure_code")
+        if isinstance(failure_code, str) and failure_code:
+            return failure_code
+        return "DATA_ONBOARDING_CONFIRMATION_FAILED"
     if status == "partially_completed":
         for item in ("capacity_result", "workforce_result"):
             result = source_result.get(item)
@@ -702,12 +711,27 @@ def _has_published_side_effects(links: list[DomainLinkRecord]) -> bool:
 
 
 def _should_reuse_existing_preview(run: dict[str, Any]) -> bool:
+    preview_payload = _load_payload(str(run["preview_json"]))
+    preview_status = str(preview_payload.get("status", ""))
+    if preview_status in {"in_progress", "retryable"}:
+        return False
     if str(run["status"]) != "rejected":
         return True
     return str(run["failure_code"]) not in {
         "DATA_ONBOARDING_PROFILE_CHANGED",
         "DATA_ONBOARDING_PROFILE_REVISION_CONFLICT",
     }
+
+
+def _stored_run_status(source_preview: dict[str, Any]) -> str:
+    preview_status = str(source_preview.get("status", "rejected"))
+    if preview_status == "rejected":
+        return "rejected"
+    return "previewed"
+
+
+def _confirmation_required(status: str) -> bool:
+    return status in {"previewed", "retryable", "already_completed"}
 
 
 def _serialize_link(link: DomainLinkRecord) -> dict[str, Any]:
