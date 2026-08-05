@@ -1,6 +1,6 @@
 # Canonical Onboarding Convergence Design
 
-Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; FROZEN A0-A4 BOUNDARIES BELOW REMAIN AUTHORITATIVE`
+Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; POST-BATCH-A REDESIGN BELOW NOW RETIRES LEGACY SKILLS AND FREEZES B1-B4`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
 Baseline branch: `workbook-onboarding-test-20260804-1514`
@@ -11,8 +11,11 @@ Runtime closure note (2026-08-05): the frozen coverage matrix, invariants, and
 slice boundaries below remain the Batch A authority. A1, A2, and A3 were
 completed and committed before this session, and the current working tree closes
 A4 by demoting the remaining A-scope legacy current-state staffing projections
-and route markers to canonical publication authority. Batch B/C/D, skills/HIREF
-ownership migration, and mutable staffing-write redesign remain deferred.
+and route markers to canonical publication authority. Post-Batch-A owner
+feedback now further freezes that legacy `import_skills.py` is not a viable
+onboarding candidate: it must be retired rather than migrated, and any future
+skills capability requires a separate approved redesign. Contract coverage /
+HIREF convergence and mutable staffing-write redesign remain deferred.
 
 ## Decision supported
 
@@ -313,7 +316,7 @@ directly. Only capability-owned import/publication logic writes canonical facts.
 | `import_project_health.py` | Structured JSON preview/confirm | Project Health re-import source under `pm onboarding` | Project Health re-import capability | Remove separate operator path; keep domain importer |
 | Workbook planning source | Workbook profile already under `pm onboarding` | Keep workbook planning source | Workforce planning import capability | Retain as canonical planning path |
 | `import_from_excel.py` | Mixed roster + current-load + plan-state workbook path | Split into explicit onboarding-managed planning and current-state staffing sources | Workforce planning plus a new canonical current-state staffing capability | Retire script as product entrypoint |
-| `import_skills.py` | Team/skills enrichment JSON | Workforce profile enrichment source under `pm onboarding` | Workforce profile enrichment capability | Retire script as product entrypoint |
+| `import_skills.py` | Team/skills enrichment JSON | No retained onboarding source in IP-036; retire unsupported feature | None in IP-036; any future skills capability requires a separate redesign | Remove script and all product/runtime dependence |
 | `import_hiref.py` | HIREF/contract Excel import | Contract coverage source under `pm onboarding` | Contract coverage capability | Retire script as product entrypoint |
 | `import_jira_boards.py` | Board registry CSV | Execution source registry source under `pm onboarding` | Execution source registry capability | Retire script as product entrypoint |
 | `import_confluence_pages.py` | Confluence page registry CSV | Status source registry source under `pm onboarding` | Status source registry capability | Retire script as product entrypoint |
@@ -327,7 +330,8 @@ directly. Only capability-owned import/publication logic writes canonical facts.
 | Member and project identity | Who exists in the planning universe? | Workforce identity / reference publication | Keep identity facts canonical; remove scattered direct-writer ownership |
 | Planned staffing | What is planned by month and plan version? | Workforce planning import capability | Keep `plan_versions` and `monthly_allocations` as canonical plan-state facts |
 | Current staffing | What is active right now? | New canonical current-state staffing capability | Replace `assignments` / `v_member_load` as authority; allow temporary derived projection only if still needed during migration |
-| Workforce profile enrichment | What are role/level/email/skills facts? | Workforce profile enrichment capability | Move away from generic multi-writer `employees` mutation |
+| Member profile context | What retained role/level/email context is available for members? | Existing supported planning/current-state/member sources until a later approved redesign proves a separate owner is needed | Keep only facts still supplied by supported sources; do not preserve `import_skills.py` as an authority path |
+| Skills matching | What skill-proficiency facts are available for staffing decisions? | No retained canonical owner in IP-036; unsupported feature is retired in Batch B1 | Remove runtime dependence on `employees.skills` and `import-skills-matrix`; any future reintroduction requires a new design/pack |
 | Contract coverage | What HIREF / contract / resource-type facts are in force? | Contract coverage capability | Move away from direct employee-field mutation as the authority path |
 | Execution source registry | Which JIRA sources are configured and current? | Execution source registry capability | Keep canonical registry facts; remove standalone CSV operator path |
 | Status source registry | Which Confluence sources are configured and current? | Status source registry capability | Keep canonical registry facts; remove standalone CSV operator path |
@@ -405,9 +409,58 @@ Scope:
 - close the A-scope deletion targets for legacy current-state staffing authority;
 - run the batch-level acceptance closure for the completed A-slices.
 
-### Batch B — Workforce enrichment and contract coverage convergence
+### Batch B0 — Post-Batch-A redesign freeze
 
-Split or strictly bound the mutable workforce facts now mixed into `employees`.
+This slice is now complete as a documentation-only redesign handoff unit.
+
+Scope:
+
+- freeze the owner-approved redesign that retires legacy skills instead of
+  migrating it into onboarding;
+- freeze the retained contract-coverage / HIREF convergence slices and their
+  boundaries;
+- avoid runtime, schema, or behavior changes in this slice.
+
+### Batch B1 — Skills retirement
+
+Scope:
+
+- remove product dependence on `employees.skills` and
+  `import-skills-matrix` freshness;
+- retire `import_skills.py` and its attached operator/test/doc surfaces as a
+  bounded deletion slice;
+- keep role/level/email handling bounded to already supported sources and do
+  not invent a replacement skills onboarding path.
+
+### Batch B2 — Contract coverage contract skeleton
+
+Scope:
+
+- define the canonical contract-coverage capability boundary;
+- add the minimal onboarding import/publication/read contract skeleton for
+  HIREF / contract facts;
+- avoid reader migration and avoid broad employee-field cleanup in this slice.
+
+### Batch B3 — Contract coverage reader and freshness migration
+
+Scope:
+
+- migrate staffing, contract continuity, dashboard, and other explicitly mapped
+  read surfaces from direct `employees` / `hiref` sidecar authority to the B2
+  contract;
+- replace retained HIREF freshness checks with contract-coverage publication
+  freshness and evidence semantics;
+- avoid unrelated staffing-write redesign or skills reintroduction.
+
+### Batch B4 — Contract coverage closure and legacy deletion
+
+Scope:
+
+- remove or demote temporary HIREF / contract compatibility shims introduced
+  only for B2-B3;
+- retire the legacy `import_hiref.py` product entry once its readers and
+  freshness semantics have converged;
+- run the batch-level acceptance closure for the completed B-slices.
 
 ### Batch C — Registry and auxiliary onboarding convergence
 

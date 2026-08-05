@@ -8,8 +8,8 @@ compatibility-closure / legacy-deletion commit created in this session. The
 separate aborted runtime attempt remains excluded and must not be inherited as
 partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 A4 COMPATIBILITY CLOSURE / LEGACY DELETION IMPLEMENTED LOCALLY ON TOP OF ACCEPTED A3; BATCH A IS NOW CLOSED LOCALLY`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY; NEXT WORK MUST START IN A SEPARATE POST-BATCH-A SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; POST-BATCH-A DESIGN NOW RETIRES LEGACY SKILLS AND NARROWS FOLLOW-ON WORK TO B1 SKILLS RETIREMENT PLUS B2-B4 CONTRACT COVERAGE CONVERGENCE`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, AND THE POST-BATCH-A REDESIGN IS NOW FROZEN; NEXT WORK MUST START IN A SEPARATE B1-ONLY SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -41,8 +41,11 @@ missing publication remains unknown/unavailable rather than numeric zero,
 partial/unknown/unavailable do not masquerade as available/current, package and
 payload identity invariants remain unchanged, replay/confirmability/duplicate-
 publication guarantees stay intact, and no writable dual-authority redesign was
-added. Skills/HIREF ownership migration, multi-scope current-publication
-selection, and mutable staffing-write redesign remain deferred beyond Batch A.
+added. Post-Batch-A owner feedback now further freezes that legacy
+`import_skills.py` is not an onboarding-migration target: the unsupported
+skills feature should be retired in B1, while HIREF / contract coverage remains
+the retained B2-B4 convergence family. Multi-scope current-publication
+selection and mutable staffing-write redesign remain deferred beyond Batch A.
 Promotion is local only; every external action remains a separate owner
 decision. No push is authorized or required.
 Do not push,
@@ -811,6 +814,38 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 post-Batch-A redesign updated for skills retirement
+
+- Reworked the follow-on IP-036 design/implementation handoff to match owner
+  feedback that the legacy skills feature is not operationally used and its
+  import/data source is not viable.
+- Updated `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` so the
+  post-Batch-A plan now:
+  - retires `import_skills.py` instead of migrating it into onboarding;
+  - removes any retained canonical-owner assumption for legacy skills facts
+    inside IP-036;
+  - decomposes follow-on work into **B0 docs freeze**, **B1 skills
+    retirement**, and **B2-B4 contract coverage / HIREF convergence**.
+- Updated `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` so
+  the authoritative pack now reflects:
+  - unsupported skills sidecar as a B1 removal target rather than a migration
+    target;
+  - contract coverage as the retained B2-B4 convergence family;
+  - explicit B1/B2/B3/B4 slice boundaries, regression scope, and next-gate
+    sequencing after Batch A closure.
+- No runtime/schema/test behavior was changed in this session; this was a
+  documentation-only redesign update.
+- Validation / review evidence:
+  - `git diff --check`
+  - read-only review of the updated authority docs against the owner feedback,
+    Batch A closure state, and next-gate sequencing.
+- Commit / push status:
+  - not committed;
+  - not pushed.
+- Exact next recommended action:
+  - open the next session and perform only **IP-036 Batch B1 — skills
+    retirement**.
 
 ### 2026-08-05 — IP-036 Batch A4 compatibility closure / legacy deletion implemented locally
 
