@@ -3,10 +3,10 @@
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this branch now carries the accepted clean A3 baseline commit
-`4a3a77588ecde07d5f75f9839105875350f4f898` plus the bounded local A4
-compatibility-closure / legacy-deletion commit created in this session. The
-separate aborted runtime attempt remains excluded and must not be inherited as
-partial work
+`4a3a77588ecde07d5f75f9839105875350f4f898`, the bounded local A4
+compatibility-closure / legacy-deletion commit, and the committed local B0
+post-Batch-A redesign freeze at `7eba012`. The separate aborted runtime attempt
+remains excluded and must not be inherited as partial work
 Package version: `0.2.0rc1`
 Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; POST-BATCH-A DESIGN NOW RETIRES LEGACY SKILLS AND NARROWS FOLLOW-ON WORK TO B1 SKILLS RETIREMENT PLUS B2-B4 CONTRACT COVERAGE CONVERGENCE`
 Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, AND THE POST-BATCH-A REDESIGN IS NOW FROZEN; NEXT WORK MUST START IN A SEPARATE B1-ONLY SESSION`
@@ -841,7 +841,7 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   - read-only review of the updated authority docs against the owner feedback,
     Batch A closure state, and next-gate sequencing.
 - Commit / push status:
-  - not committed;
+  - committed locally at `7eba012`;
   - not pushed.
 - Exact next recommended action:
   - open the next session and perform only **IP-036 Batch B1 — skills
