@@ -2,16 +2,18 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this session started from the required clean accepted baseline
-commit `a2716c90de65644fc0f532bf55a7c8e9c85d0d02` (`git status --short --branch`
-clean; `HEAD` exactly matched the required commit before any edit). Batch A,
-B0, B1, B2, B3, B4, and the post-B4 C/D redesign freeze remain committed
-locally; the current local working tree now contains only the bounded IP-036
-Batch C1 runtime slice on top of that clean baseline. The separate aborted
-runtime attempt remains excluded and must not be inherited as partial work.
+Current HEAD: the committed local C1 runtime baseline is
+`263ca232b9301687d34d314f20eca63ee1214487` (`git status --short --branch`
+was clean and `HEAD` exactly matched that commit at the start of the
+independent read-only C1 review). Batch A, B0, B1, B2, B3, B4, the post-B4
+C/D redesign freeze, and the bounded C1 runtime slice are committed locally;
+the current local working tree now contains only this `PROGRESS.md`
+continuity correction after the independent read-only C1 review. The separate
+aborted runtime attempt remains excluded and must not be inherited as partial
+work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; THE CURRENT WORKING TREE NOW IMPLEMENTS ONLY C1 — BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, AND THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 IS NOW IMPLEMENTED / FOCUSED-VALIDATED LOCALLY IN THE WORKING TREE; C2/C3/C4 AND BATCH D REMAIN OUT OF SCOPE FOR THIS SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; THE CURRENT WORKING TREE NOW CONTAINS ONLY A PROGRESS CONTINUITY CORRECTION AFTER INDEPENDENT REVIEW`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, AND C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY; C2/C3/C4 AND BATCH D REMAIN OUT OF SCOPE UNTIL A SEPARATE AUTHORIZATION ADVANCES THE GATE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -25,13 +27,15 @@ operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
 the original IP-036 convergence design/implementation-pack handoff at
 `5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`, the
-committed B4 workbook closure at `b5906c7`, and the committed post-B4 redesign
-freeze. The current working tree now adds only the bounded C1 runtime slice
-through `src/pm_agent/data_onboarding/domain_json_source.py`,
+committed B4 workbook closure at `b5906c7`, the committed post-B4 redesign
+freeze, and the committed C1 runtime slice at `263ca23`. That committed C1
+slice is bounded to `src/pm_agent/data_onboarding/domain_json_source.py`,
 `registry.py`, `service.py`, the onboarding CLI help text, the top-level
 `README.md` operator examples, and focused `test_data_onboarding.py` coverage
-for the retained domain JSON source families. No C2/C3/C4 or Batch D code path
-is touched. The already-committed B4 runtime slice closed the authorized workbook-
+for the retained domain JSON source families. The current working tree now
+contains only this `PROGRESS.md` continuity correction after the accepted
+independent review of that committed C1 slice. No C2/C3/C4 or Batch D code
+path is touched. The already-committed B4 runtime slice closed the authorized workbook-
 only surface through the bounded files:
 `src/pm_agent/workbook_onboarding/models.py`,
 `parser.py`,
@@ -962,6 +966,34 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 C1 independent read-only review continuity correction
+
+- Re-ran the independent read-only review against committed C1 baseline
+  `263ca232b9301687d34d314f20eca63ee1214487`.
+- Corrected the `PROGRESS.md` current-state summary so it matches the actual
+  committed tree and current local working tree state:
+  - C1 is committed locally at `263ca23`;
+  - the current working tree contains only this progress-log continuity fix;
+  - no runtime scope beyond committed C1 is present.
+- Independent read-only re-review conclusion after the continuity correction:
+  - C1 remains inside the frozen scope;
+  - the four retained domain JSON source families remain routed through
+    `pm onboarding`;
+  - wrapper ownership stays with the retained domain capability owners;
+  - canonical publication / consumer behavior remains unchanged;
+  - replay, idempotency, retry/recover, and audit continuity remain explicit;
+  - no C2/C3/C4/D or broader redesign scope was introduced.
+- Validation / review evidence:
+  - `git diff --check`
+  - independent read-only re-review of the committed C1 surfaces plus
+    `README.md` / `PROGRESS.md` continuity
+- Commit / push status:
+  - committed C1 runtime baseline remains local at `263ca23` and is not pushed;
+  - this continuity correction is currently uncommitted in the working tree.
+- Exact next recommended action:
+  - use a separate authorized session to start **C2 — registry-source
+    onboarding convergence** only.
 
 ### 2026-08-05 — IP-036 Batch C1 bounded domain-source onboarding wrappers implemented locally
 
