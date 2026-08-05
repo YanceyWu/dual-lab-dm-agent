@@ -8,6 +8,8 @@ import pytest
 from typer.testing import CliRunner
 
 from pm_agent.cli import app as app_module
+from contract_coverage_test_helpers import publish_contract_coverage_from_legacy
+from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.rules.hiref import project_alignment_status
@@ -126,6 +128,14 @@ def _seed_hiref_scenario(db_path: Path) -> None:
         con.commit()
     finally:
         con.close()
+    publish_contract_coverage_from_legacy(
+        db_path,
+        package_id="package-hiref-contract-coverage-r1",
+    )
+    publish_current_state_staffing_from_legacy(
+        db_path,
+        package_id="package-hiref-current-state-r1",
+    )
 
 
 def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
@@ -135,16 +145,17 @@ def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
 
     summary = hiref_management_service.summary(days=90)
     assert summary.success is True
+    assert summary.data["freshness"]["state"] == "partial"
     assert summary.data["summary"] == {
-        "active_stfte": 3,
+        "active_stfte": None,
         "review_window_days": 90,
-        "missing_current_hiref": 1,
-        "expiring_without_next": 1,
-        "expiring_with_next": 1,
-        "project_mismatches": 1,
-        "free_slots": 1,
-        "assigned_slots": 2,
-        "reserved_slots": 1,
+        "missing_current_hiref": None,
+        "expiring_without_next": None,
+        "expiring_with_next": None,
+        "project_mismatches": None,
+        "free_slots": None,
+        "assigned_slots": None,
+        "reserved_slots": None,
         "open_placeholders": 1,
         "unregistered_placeholder_slots": 1,
     }
@@ -159,7 +170,10 @@ def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
     assert missing["urgency"] == "critical"
 
     slots = hiref_management_service.slots(free_only=True).data["rows"]
-    assert [row["id"] for row in slots] == ["HIREF-FREE-001"]
+    assert slots == []
+    all_slots = hiref_management_service.slots(free_only=False).data["rows"]
+    free_slot = next(row for row in all_slots if row["id"] == "HIREF-FREE-001")
+    assert free_slot["occupancy_status"] == "unknown"
 
     placeholders = hiref_management_service.placeholders().data["rows"]
     assert len(placeholders) == 1
@@ -197,8 +211,9 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload["next_covered_count"] == 1
-    assert payload["mismatch_count"] == 1
+    assert payload["contract_coverage_freshness_state"] == "partial"
+    assert payload["next_covered_count"] is None
+    assert payload["mismatch_count"] is None
 
     atlas_slot = next(item for item in payload["all_hiref"] if item["id"] == "HIREF-ATLAS-001")
     assert atlas_slot["project_alignment_status"] == "mismatch"
@@ -215,6 +230,43 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
 
     alex = next(item for item in payload["expiring_staff"] if item["name"] == "Alex Example")
     assert alex["project_alignment_status"] == "mismatch"
+
+
+def test_hiref_summary_keeps_missing_contract_publication_explicit(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    today = date.today()
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT INTO employees
+                (id, wd_id, name, level, status, resource_type, current_hiref, billing_end_date)
+            VALUES
+                ('990301', '990301', 'Jordan Example', 'mid', 'active', 'STFTE', 'HIREF-UNKNOWN-001', ?)
+            """,
+            [(today + timedelta(days=30)).isoformat()],
+        )
+        con.execute(
+            """
+            INSERT INTO hiref
+                (id, project, request_type, start_date, end_date, notes)
+            VALUES
+                ('HIREF-UNKNOWN-001', 'Project Unknown (990301)', 'extend', ?, ?, '')
+            """,
+            [
+                (today - timedelta(days=60)).isoformat(),
+                (today + timedelta(days=30)).isoformat(),
+            ],
+        )
+        con.commit()
+
+    summary = hiref_management_service.summary(days=90)
+    assert summary.success is True
+    assert summary.data["freshness"]["state"] == "unknown"
+    assert summary.data["summary"]["active_stfte"] is None
+    assert summary.data["summary"]["missing_current_hiref"] is None
+    assert summary.data["summary"]["free_slots"] is None
 
 
 def test_hiref_project_aliases_treat_related_project_name_as_aligned() -> None:

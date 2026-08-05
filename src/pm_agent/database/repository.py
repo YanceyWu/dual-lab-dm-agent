@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from pm_agent.config import settings
+from pm_agent.contract_coverage import read_model as contract_coverage_read_model
 from pm_agent.current_state_staffing import read_model as current_state_staffing_read_model
 from pm_agent.database import staffing_capacity
 from pm_agent.resource_intelligence.read_model import (
@@ -155,6 +156,137 @@ def get_current_state_staffing_publication_freshness() -> dict[str, Any]:
     )
 
 
+def get_contract_coverage_snapshot() -> dict[str, Any]:
+    return contract_coverage_read_model.contract_coverage_snapshot(
+        db_path=settings.database_path
+    )
+
+
+def get_contract_coverage_publication_freshness() -> dict[str, Any]:
+    return contract_coverage_read_model.current_publication_freshness(
+        db_path=settings.database_path
+    )
+
+
+def _snapshot_member_state(
+    snapshot: dict[str, Any],
+    matched_member: dict[str, Any] | None,
+    *,
+    known_reason: str,
+    missing_reason: str,
+) -> tuple[str, str]:
+    if matched_member is not None:
+        return "known", known_reason
+    snapshot_state = str(snapshot.get("state") or "unknown")
+    if snapshot_state == "known":
+        return "unknown", missing_reason
+    return snapshot_state, str(snapshot.get("state_reason") or "")
+
+
+def _identity_candidates(
+    *,
+    employee: dict[str, Any] | None = None,
+    current_member: dict[str, Any] | None = None,
+    external_ids: list[str] | None = None,
+) -> list[str]:
+    values: list[str] = []
+    if employee is not None:
+        values.extend(
+            [
+                str(employee.get("id") or ""),
+                str(employee.get("wd_id") or ""),
+            ]
+        )
+    if current_member is not None:
+        values.append(str(current_member.get("member_id") or ""))
+    if external_ids:
+        values.extend(str(value or "") for value in external_ids)
+    return [value for value in _unique_preserving_order(values) if value]
+
+
+def _match_snapshot_member(
+    snapshot_members_by_id: dict[str, dict[str, Any]],
+    *,
+    employee: dict[str, Any] | None = None,
+    current_member: dict[str, Any] | None = None,
+    external_ids: list[str] | None = None,
+) -> dict[str, Any] | None:
+    for candidate in _identity_candidates(
+        employee=employee,
+        current_member=current_member,
+        external_ids=external_ids,
+    ):
+        matched = snapshot_members_by_id.get(candidate)
+        if matched is not None:
+            return matched
+    return None
+
+
+def _load_hiref_lookup(
+    con: sqlite3.Connection,
+    hiref_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    normalized_ids = [
+        value for value in _unique_preserving_order([str(item or "") for item in hiref_ids]) if value
+    ]
+    if not normalized_ids or not _table_exists(con, "hiref"):
+        return {}
+    rows = con.execute(
+        """
+        SELECT id,project,request_type,start_date,end_date,notes
+        FROM hiref
+        WHERE id IN ({})
+        """.format(",".join("?" for _ in normalized_ids)),
+        normalized_ids,
+    ).fetchall()
+    return {str(row["id"]): dict(row) for row in rows}
+
+
+def _contract_record(
+    hiref_lookup: dict[str, dict[str, Any]],
+    hiref_id: str | None,
+    *,
+    hiref_end_date: str | None = None,
+) -> dict[str, Any] | None:
+    normalized_hiref_id = str(hiref_id or "").strip()
+    if not normalized_hiref_id:
+        return None
+    record = dict(hiref_lookup.get(normalized_hiref_id, {}))
+    record["id"] = normalized_hiref_id
+    record["project"] = record.get("project")
+    record["request_type"] = record.get("request_type")
+    record["start_date"] = record.get("start_date")
+    record["end_date"] = str(hiref_end_date or record.get("end_date") or "") or None
+    record["notes"] = record.get("notes")
+    return record
+
+
+def _member_assignment_projection(
+    member: dict[str, Any],
+) -> tuple[list[str], list[str], list[str], float | None]:
+    if str(member.get("current_state_staffing_state") or "unknown") != "known":
+        return [], [], [], None
+    assignments = list(member.get("current_state_project_details", []))
+    project_ids = [
+        str(item.get("project_id") or "")
+        for item in assignments
+        if str(item.get("project_id") or "")
+    ]
+    project_names = [
+        str(item.get("project_name") or "")
+        for item in assignments
+        if str(item.get("project_name") or "")
+    ]
+    return (
+        _unique_preserving_order(project_ids),
+        _unique_preserving_order(project_names),
+        [],
+        float(member["current_load"])
+        if isinstance(member.get("current_load"), (int, float))
+        else None,
+    )
+
+
 def _load_active_employee_rows(con: sqlite3.Connection) -> list[dict[str, Any]]:
     return [
         dict(row)
@@ -197,27 +329,33 @@ def _project_member_record(
     publication_id: str | None,
     freshness: dict[str, Any] | None = None,
     external_ids: list[str] | None = None,
+    contract_member: dict[str, Any] | None = None,
+    contract_state: str = "unknown",
+    contract_reason: str = "",
+    contract_publication_id: str | None = None,
+    contract_freshness: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if contract_member is not None:
+        resource_type = str(contract_member.get("resource_type") or "")
+        current_hiref = str(contract_member.get("current_hiref_id") or "")
+        billing_end_date = str(contract_member.get("hiref_end_date") or "")
+        hiref_id = current_hiref
+    else:
+        resource_type = ""
+        current_hiref = ""
+        billing_end_date = ""
+        hiref_id = ""
     if employee is not None:
         role = str(employee.get("role") or (current_member.get("role") if current_member else "") or "")
         level = str(
             employee.get("level") or (current_member.get("level") if current_member else "") or ""
         )
-        resource_type = str(
-            employee.get("resource_type")
-            or (current_member.get("resource_type") if current_member else "")
-            or ""
-        )
-        current_hiref = str(
-            employee.get("current_hiref")
-            or (current_member.get("current_hiref_id") if current_member else "")
-            or ""
-        )
-        billing_end_date = str(
-            employee.get("billing_end_date")
-            or (current_member.get("hiref_end_date") if current_member else "")
-            or ""
-        )
+        if not resource_type:
+            resource_type = str(
+                employee.get("resource_type")
+                or (current_member.get("resource_type") if current_member else "")
+                or ""
+            )
         result = {
             "id": str(employee["id"]),
             "wd_id": str(employee.get("wd_id") or employee["id"]),
@@ -234,12 +372,14 @@ def _project_member_record(
             "resource_type": resource_type,
             "billing_rate": employee.get("billing_rate") or "",
             "billing_end_date": billing_end_date,
-            "hiref_id": employee.get("hiref_id") or "",
+            "hiref_id": hiref_id or employee.get("hiref_id") or "",
             "current_hiref": current_hiref,
             "next_hiref": employee.get("next_hiref") or "",
         }
     else:
         assert current_member is not None
+        if not resource_type:
+            resource_type = current_member["resource_type"] or ""
         result = {
             "id": current_member["member_id"],
             "wd_id": current_member["member_id"],
@@ -253,11 +393,11 @@ def _project_member_record(
             "status": current_member["employment_status"],
             "employee_status": current_member["employment_status"],
             "notes": "",
-            "resource_type": current_member["resource_type"] or "",
+            "resource_type": resource_type,
             "billing_rate": "",
-            "billing_end_date": current_member["hiref_end_date"] or "",
-            "hiref_id": current_member["current_hiref_id"] or "",
-            "current_hiref": current_member["current_hiref_id"] or "",
+            "billing_end_date": billing_end_date,
+            "hiref_id": hiref_id or current_hiref,
+            "current_hiref": current_hiref,
             "next_hiref": "",
         }
     assignments = list(current_member["assignments"]) if current_member is not None else []
@@ -284,6 +424,24 @@ def _project_member_record(
             ),
             "current_state_staffing_refresh_sla_hours": (
                 freshness.get("refresh_sla_hours") if freshness else None
+            ),
+            "contract_coverage_state": contract_state,
+            "contract_coverage_reason": contract_reason,
+            "contract_coverage_publication_id": contract_publication_id,
+            "contract_coverage_freshness_state": (
+                contract_freshness.get("state") if contract_freshness else None
+            ),
+            "contract_coverage_freshness_reason": (
+                contract_freshness.get("state_reason") if contract_freshness else None
+            ),
+            "contract_coverage_published_at": (
+                contract_freshness.get("observed_at") if contract_freshness else None
+            ),
+            "contract_coverage_as_of_date": (
+                contract_freshness.get("as_of_date") if contract_freshness else None
+            ),
+            "contract_coverage_refresh_sla_hours": (
+                contract_freshness.get("refresh_sla_hours") if contract_freshness else None
             ),
             "current_state_assignment_state": (
                 current_member["assignment_state"] if current_member is not None else None
@@ -317,19 +475,44 @@ def get_all_members() -> list[dict]:
     current_by_id = {
         str(member["member_id"]): member for member in snapshot.get("members", [])
     }
+    contract_snapshot = get_contract_coverage_snapshot()
+    contract_freshness = contract_snapshot.get("freshness")
+    contract_publication = contract_snapshot.get("publication")
+    contract_publication_id = (
+        str(contract_publication["publication_id"])
+        if isinstance(contract_publication, dict)
+        and contract_publication.get("publication_id")
+        else None
+    )
+    contract_by_id = {
+        str(member["member_id"]): member
+        for member in contract_snapshot.get("members", [])
+    }
     matched_current_ids: set[str] = set()
     members: list[dict[str, Any]] = []
     for employee in employee_rows:
-        candidate_ids = _unique_preserving_order(
-            [
-                str(employee["id"]),
-                str(employee.get("wd_id") or ""),
-                *external_ids_by_employee.get(str(employee["id"]), []),
-            ]
+        external_ids = external_ids_by_employee.get(str(employee["id"]), [])
+        current_member = _match_snapshot_member(
+            current_by_id,
+            employee=employee,
+            external_ids=external_ids,
         )
-        current_member = next(
-            (current_by_id[candidate] for candidate in candidate_ids if candidate in current_by_id),
-            None,
+        contract_member = _match_snapshot_member(
+            contract_by_id,
+            employee=employee,
+            external_ids=external_ids,
+        )
+        current_state, current_reason = _snapshot_member_state(
+            snapshot,
+            current_member,
+            known_reason="member_load_available_from_current_state_staffing_publication",
+            missing_reason="member_not_in_current_state_staffing_publication",
+        )
+        contract_state, contract_reason = _snapshot_member_state(
+            contract_snapshot,
+            contract_member,
+            known_reason="member_contract_available_from_contract_coverage_publication",
+            missing_reason="member_not_in_contract_coverage_publication",
         )
         if current_member is not None:
             matched_current_ids.add(str(current_member["member_id"]))
@@ -337,11 +520,18 @@ def get_all_members() -> list[dict]:
                 _project_member_record(
                     employee,
                     current_member,
-                    state="known",
-                    reason="member_load_available_from_current_state_staffing_publication",
+                    state=current_state,
+                    reason=current_reason,
                     publication_id=publication_id,
                     freshness=freshness if isinstance(freshness, dict) else None,
-                    external_ids=external_ids_by_employee.get(str(employee["id"]), []),
+                    external_ids=external_ids,
+                    contract_member=contract_member,
+                    contract_state=contract_state,
+                    contract_reason=contract_reason,
+                    contract_publication_id=contract_publication_id,
+                    contract_freshness=(
+                        contract_freshness if isinstance(contract_freshness, dict) else None
+                    ),
                 )
             )
             continue
@@ -349,21 +539,34 @@ def get_all_members() -> list[dict]:
             _project_member_record(
                 employee,
                 None,
-                state="unknown" if snapshot["state"] == "known" else snapshot["state"],
-                reason=(
-                    "member_not_in_current_state_staffing_publication"
-                    if snapshot["state"] == "known"
-                    else snapshot["state_reason"]
-                ),
+                state=current_state,
+                reason=current_reason,
                 publication_id=publication_id,
                 freshness=freshness if isinstance(freshness, dict) else None,
-                external_ids=external_ids_by_employee.get(str(employee["id"]), []),
+                external_ids=external_ids,
+                contract_member=contract_member,
+                contract_state=contract_state,
+                contract_reason=contract_reason,
+                contract_publication_id=contract_publication_id,
+                contract_freshness=(
+                    contract_freshness if isinstance(contract_freshness, dict) else None
+                ),
             )
         )
 
     for member_id, current_member in current_by_id.items():
         if member_id in matched_current_ids:
             continue
+        contract_member = _match_snapshot_member(
+            contract_by_id,
+            current_member=current_member,
+        )
+        contract_state, contract_reason = _snapshot_member_state(
+            contract_snapshot,
+            contract_member,
+            known_reason="member_contract_available_from_contract_coverage_publication",
+            missing_reason="member_not_in_contract_coverage_publication",
+        )
         members.append(
             _project_member_record(
                 None,
@@ -372,6 +575,13 @@ def get_all_members() -> list[dict]:
                 reason="member_load_available_from_current_state_staffing_publication",
                 publication_id=publication_id,
                 freshness=freshness if isinstance(freshness, dict) else None,
+                contract_member=contract_member,
+                contract_state=contract_state,
+                contract_reason=contract_reason,
+                contract_publication_id=contract_publication_id,
+                contract_freshness=(
+                    contract_freshness if isinstance(contract_freshness, dict) else None
+                ),
             )
         )
     members.sort(key=lambda item: (str(item.get("name") or ""), str(item.get("id") or "")))
@@ -485,77 +695,142 @@ def get_employee_external_ids(
 # ──────────────────────────────────────────────
 
 def get_hiref_contracts() -> list[dict]:
+    members = [
+        member
+        for member in get_all_members()
+        if str(member.get("employee_status") or "") == "active"
+    ]
+    freshness = get_contract_coverage_publication_freshness()
+    freshness_state = str(freshness.get("state") or "unknown")
     with _conn() as con:
         if not _table_exists(con, "hiref"):
             return []
 
-        rows = con.execute(
-            """
-            SELECT
-                h.id,
-                h.project,
-                h.request_type,
-                h.start_date,
-                h.end_date,
-                h.notes,
-                cur.id AS assigned_employee_id,
-                cur.wd_id AS assigned_wd_id,
-                cur.name AS assigned_to,
-                cur.resource_type AS assigned_resource_type,
-                cur.next_hiref AS assigned_next_hiref,
-                nh.project AS assigned_next_hiref_project,
-                nh.start_date AS assigned_next_hiref_start_date,
-                nh.end_date AS assigned_next_hiref_end_date,
-                nxt.id AS reserved_employee_id,
-                nxt.wd_id AS reserved_wd_id,
-                nxt.name AS reserved_for_next,
-                sp.placeholder_id,
-                sp.display_name AS placeholder_name,
-                sp.status AS placeholder_status,
-                sp.linked_employee_id AS placeholder_linked_employee_id,
-                ap.actual_project_ids_joined,
-                ap.actual_project_names_joined,
-                ap.actual_project_keys_joined
-            FROM hiref h
-            LEFT JOIN employees cur
-              ON cur.current_hiref = h.id
-             AND cur.status = 'active'
-            LEFT JOIN hiref nh
-              ON nh.id = cur.next_hiref
-            LEFT JOIN employees nxt
-              ON nxt.next_hiref = h.id
-             AND nxt.status = 'active'
-            LEFT JOIN staffing_placeholders sp
-              ON sp.hiref_id = h.id
-             AND COALESCE(sp.status, 'planned') != 'closed'
-            LEFT JOIN (
-                SELECT
-                    a.employee_id,
-                    GROUP_CONCAT(p.id, '|||') AS actual_project_ids_joined,
-                    GROUP_CONCAT(p.name, '|||') AS actual_project_names_joined,
-                    GROUP_CONCAT(COALESCE(p.jira_key, ''), '|||') AS actual_project_keys_joined
-                FROM assignments a
-                LEFT JOIN projects p ON p.id = a.project_id
-                WHERE a.status = 'active'
-                GROUP BY a.employee_id
-            ) ap
-              ON ap.employee_id = cur.id
-            ORDER BY COALESCE(h.end_date, '9999-12-31'), h.id
-            """
-        ).fetchall()
+        rows = _rows_to_list(
+            con.execute(
+                """
+                SELECT id,project,request_type,start_date,end_date,notes
+                FROM hiref
+                ORDER BY COALESCE(end_date, '9999-12-31'), id
+                """
+            ).fetchall()
+        )
+        placeholder_rows = []
+        if _table_exists(con, "staffing_placeholders"):
+            placeholder_rows = _rows_to_list(
+                con.execute(
+                    """
+                    SELECT placeholder_id,display_name,status,linked_employee_id,hiref_id
+                    FROM staffing_placeholders
+                    WHERE COALESCE(status, 'planned') != 'closed'
+                    """
+                ).fetchall()
+            )
+        member_by_current_hiref = {
+            str(member.get("current_hiref") or ""): member
+            for member in members
+            if str(member.get("current_hiref") or "")
+        }
+        member_by_next_hiref = {
+            str(member.get("next_hiref") or ""): member
+            for member in members
+            if str(member.get("next_hiref") or "")
+        }
+        hiref_lookup = _load_hiref_lookup(
+            con,
+            [
+                str(row.get("id") or "")
+                for row in rows
+            ]
+            + [str(member.get("next_hiref") or "") for member in members],
+        )
+
+    placeholder_by_hiref: dict[str, dict[str, Any]] = {}
+    for placeholder in placeholder_rows:
+        hiref_id = str(placeholder.get("hiref_id") or "")
+        if hiref_id and hiref_id not in placeholder_by_hiref:
+            placeholder_by_hiref[hiref_id] = placeholder
 
     result = []
-    for item in _rows_to_list(rows):
-        actual_project_ids = _unique_preserving_order(_split_joined_values(item.pop("actual_project_ids_joined", "")))
-        actual_project_names = _unique_preserving_order(_split_joined_values(item.pop("actual_project_names_joined", "")))
-        actual_project_keys = _unique_preserving_order(_split_joined_values(item.pop("actual_project_keys_joined", "")))
-
+    for item in rows:
+        assigned_member = member_by_current_hiref.get(str(item.get("id") or ""))
+        next_member = member_by_next_hiref.get(str(item.get("id") or ""))
+        placeholder = placeholder_by_hiref.get(str(item.get("id") or ""))
+        actual_project_ids, actual_project_names, actual_project_keys, _ = (
+            _member_assignment_projection(assigned_member)
+            if assigned_member is not None
+            else ([], [], [], None)
+        )
+        next_hiref_record = (
+            hiref_lookup.get(str(assigned_member.get("next_hiref") or ""))
+            if assigned_member is not None
+            else None
+        )
+        item["assigned_employee_id"] = (
+            str(assigned_member.get("id") or "")
+            if assigned_member is not None
+            else ""
+        )
+        item["assigned_wd_id"] = (
+            str(assigned_member.get("wd_id") or "")
+            if assigned_member is not None
+            else ""
+        )
+        item["assigned_to"] = (
+            str(assigned_member.get("name") or "")
+            if assigned_member is not None
+            else ""
+        )
+        item["assigned_resource_type"] = (
+            str(assigned_member.get("resource_type") or "")
+            if assigned_member is not None
+            else ""
+        )
+        item["assigned_next_hiref"] = (
+            str(assigned_member.get("next_hiref") or "")
+            if assigned_member is not None
+            else ""
+        )
+        item["assigned_next_hiref_project"] = (
+            next_hiref_record.get("project") if next_hiref_record else None
+        )
+        item["assigned_next_hiref_start_date"] = (
+            next_hiref_record.get("start_date") if next_hiref_record else None
+        )
+        item["assigned_next_hiref_end_date"] = (
+            next_hiref_record.get("end_date") if next_hiref_record else None
+        )
+        item["reserved_employee_id"] = (
+            str(next_member.get("id") or "")
+            if next_member is not None
+            else ""
+        )
+        item["reserved_wd_id"] = (
+            str(next_member.get("wd_id") or "")
+            if next_member is not None
+            else ""
+        )
+        item["reserved_for_next"] = (
+            str(next_member.get("name") or "")
+            if next_member is not None
+            else ""
+        )
+        item["placeholder_id"] = str(placeholder.get("placeholder_id") or "") if placeholder else ""
+        item["placeholder_name"] = str(placeholder.get("display_name") or "") if placeholder else ""
+        item["placeholder_status"] = str(placeholder.get("status") or "") if placeholder else ""
+        item["placeholder_linked_employee_id"] = (
+            str(placeholder.get("linked_employee_id") or "")
+            if placeholder
+            else ""
+        )
         item["actual_project_ids"] = actual_project_ids
         item["actual_project_names"] = actual_project_names
         item["actual_project_keys"] = actual_project_keys
         item["actual_project_display"] = " / ".join(actual_project_names) if actual_project_names else "-"
         expiry_days = days_until(item.get("end_date"))
         occupancy_status = _hiref_occupancy_status(item)
+        if occupancy_status == "free" and freshness_state not in {"fresh", "stale"}:
+            occupancy_status = "unknown"
         item["days_until_expiry"] = expiry_days
         item["occupancy_status"] = occupancy_status
         item["is_free"] = occupancy_status == "free"
@@ -565,6 +840,9 @@ def get_hiref_contracts() -> list[dict]:
             "placeholder_reserved",
         }
         item["urgency"] = hiref_urgency(expiry_days, item["has_reservation"])
+        item["contract_coverage_freshness_state"] = freshness_state
+        item["contract_coverage_freshness_reason"] = freshness.get("state_reason")
+        item["contract_coverage_publication_id"] = freshness.get("publication_id")
         if item.get("assigned_to"):
             item["project_alignment_status"] = project_alignment_status(
                 item.get("project"),
@@ -579,96 +857,107 @@ def get_hiref_contracts() -> list[dict]:
 
 
 def get_hiref_staff_review(days: int | None = 180) -> list[dict]:
+    freshness = get_contract_coverage_publication_freshness()
+    if str(freshness.get("state") or "unknown") in {"unknown", "unavailable"}:
+        return []
+    members = [
+        member
+        for member in get_all_members()
+        if str(member.get("employee_status") or "") == "active"
+        and str(member.get("resource_type") or "") == "STFTE"
+    ]
     with _conn() as con:
-        if not _table_exists(con, "employees"):
-            return []
-
-        where_clauses = [
-            "e.status = 'active'",
-            "e.resource_type = 'STFTE'",
-        ]
-        params: list[Any] = []
-        if days is not None:
-            where_clauses.append(
-                "(COALESCE(e.current_hiref, '') = '' OR COALESCE(h.end_date, '') = '' OR h.end_date <= date('now', ?))"
-            )
-            params.append(f"+{days} days")
-
-        rows = con.execute(
-            f"""
-            SELECT
-                e.id AS employee_id,
-                e.wd_id,
-                e.name,
-                e.team,
-                e.level,
-                e.billing_end_date,
-                e.current_hiref,
-                e.next_hiref,
-                h.project AS hiref_project,
-                h.start_date,
-                h.end_date,
-                h.request_type,
-                h.notes AS hiref_notes,
-                nh.project AS next_hiref_project,
-                nh.start_date AS next_hiref_start_date,
-                nh.end_date AS next_hiref_end_date,
-                ap.actual_project_ids_joined,
-                ap.actual_project_names_joined,
-                ap.actual_project_keys_joined,
-                ap.current_load
-            FROM employees e
-            LEFT JOIN hiref h
-              ON e.current_hiref = h.id
-            LEFT JOIN hiref nh
-              ON e.next_hiref = nh.id
-            LEFT JOIN (
-                SELECT
-                    a.employee_id,
-                    GROUP_CONCAT(p.id, '{_GROUP_JOIN_SEPARATOR}') AS actual_project_ids_joined,
-                    GROUP_CONCAT(p.name, '{_GROUP_JOIN_SEPARATOR}') AS actual_project_names_joined,
-                    GROUP_CONCAT(COALESCE(p.jira_key, ''), '{_GROUP_JOIN_SEPARATOR}') AS actual_project_keys_joined,
-                    COALESCE(SUM(a.allocation), 0.0) AS current_load
-                FROM assignments a
-                LEFT JOIN projects p ON p.id = a.project_id
-                WHERE a.status = 'active'
-                GROUP BY a.employee_id
-            ) ap
-              ON ap.employee_id = e.id
-            WHERE {" AND ".join(where_clauses)}
-            ORDER BY
-                CASE WHEN COALESCE(h.end_date, '') = '' THEN 0 ELSE 1 END,
-                COALESCE(h.end_date, '9999-12-31'),
-                e.name
-            """,
-            params,
-        ).fetchall()
+        hiref_lookup = _load_hiref_lookup(
+            con,
+            [
+                str(member.get("current_hiref") or "")
+                for member in members
+            ]
+            + [str(member.get("next_hiref") or "") for member in members],
+        )
 
     result = []
-    for item in _rows_to_list(rows):
-        actual_project_ids = _unique_preserving_order(_split_joined_values(item.pop("actual_project_ids_joined", "")))
-        actual_project_names = _unique_preserving_order(_split_joined_values(item.pop("actual_project_names_joined", "")))
-        actual_project_keys = _unique_preserving_order(_split_joined_values(item.pop("actual_project_keys_joined", "")))
-
-        item["actual_project_ids"] = actual_project_ids
-        item["actual_project_names"] = actual_project_names
-        item["actual_project_keys"] = actual_project_keys
-        item["actual_project_display"] = " / ".join(actual_project_names) if actual_project_names else "-"
-
-        expiry_days = days_until(item.get("end_date"))
-        current_hiref_missing = not (item.get("current_hiref") or "").strip()
+    for member in members:
+        current_hiref_missing = not (str(member.get("current_hiref") or "")).strip()
+        contract_record = _contract_record(
+            hiref_lookup,
+            member.get("current_hiref"),
+            hiref_end_date=str(member.get("billing_end_date") or "") or None,
+        )
+        next_contract_record = _contract_record(
+            hiref_lookup,
+            member.get("next_hiref"),
+        )
+        hiref_end_date = (
+            contract_record.get("end_date")
+            if contract_record is not None
+            else str(member.get("billing_end_date") or "") or None
+        )
+        if days is not None and not current_hiref_missing and hiref_end_date:
+            expiry_days = days_until(hiref_end_date)
+            if expiry_days is not None and expiry_days > days:
+                continue
+        actual_project_ids, actual_project_names, actual_project_keys, current_load = (
+            _member_assignment_projection(member)
+        )
         if current_hiref_missing:
             alignment_status = "missing_current_hiref"
             urgency_value = "critical"
+            expiry_days = None
         else:
-            alignment_status = project_alignment_status(
-                item.get("hiref_project"),
-                actual_project_names=actual_project_names,
-                actual_project_ids=actual_project_ids,
-                actual_project_keys=actual_project_keys,
-            )
-            urgency_value = hiref_urgency(expiry_days, bool(item.get("next_hiref")))
-
+            expiry_days = days_until(hiref_end_date)
+            if str(member.get("current_state_staffing_state") or "unknown") != "known":
+                alignment_status = "unknown"
+            else:
+                alignment_status = project_alignment_status(
+                    contract_record.get("project") if contract_record else None,
+                    actual_project_names=actual_project_names,
+                    actual_project_ids=actual_project_ids,
+                    actual_project_keys=actual_project_keys,
+                )
+            urgency_value = hiref_urgency(expiry_days, bool(member.get("next_hiref")))
+        item = {
+            "employee_id": str(member.get("id") or ""),
+            "wd_id": str(member.get("wd_id") or member.get("id") or ""),
+            "name": str(member.get("name") or member.get("id") or ""),
+            "team": str(member.get("team") or ""),
+            "level": str(member.get("level") or ""),
+            "billing_end_date": str(member.get("billing_end_date") or ""),
+            "current_hiref": str(member.get("current_hiref") or ""),
+            "next_hiref": str(member.get("next_hiref") or ""),
+            "hiref_project": contract_record.get("project") if contract_record else None,
+            "start_date": contract_record.get("start_date") if contract_record else None,
+            "end_date": hiref_end_date,
+            "request_type": contract_record.get("request_type") if contract_record else None,
+            "hiref_notes": contract_record.get("notes") if contract_record else None,
+            "next_hiref_project": (
+                next_contract_record.get("project") if next_contract_record else None
+            ),
+            "next_hiref_start_date": (
+                next_contract_record.get("start_date") if next_contract_record else None
+            ),
+            "next_hiref_end_date": (
+                next_contract_record.get("end_date") if next_contract_record else None
+            ),
+            "actual_project_ids": actual_project_ids,
+            "actual_project_names": actual_project_names,
+            "actual_project_keys": actual_project_keys,
+            "actual_project_display": (
+                " / ".join(actual_project_names) if actual_project_names else "-"
+            ),
+            "current_load": current_load,
+            "contract_coverage_state": member.get("contract_coverage_state"),
+            "contract_coverage_reason": member.get("contract_coverage_reason"),
+            "contract_coverage_publication_id": member.get(
+                "contract_coverage_publication_id"
+            ),
+            "contract_coverage_freshness_state": member.get(
+                "contract_coverage_freshness_state"
+            ),
+            "contract_coverage_freshness_reason": member.get(
+                "contract_coverage_freshness_reason"
+            ),
+        }
         item["days_until_expiry"] = expiry_days
         item["current_hiref_missing"] = current_hiref_missing
         item["project_alignment_status"] = alignment_status
@@ -680,7 +969,14 @@ def get_hiref_staff_review(days: int | None = 180) -> list[dict]:
             or urgency_value in {"expired", "critical", "high"}
         )
         result.append(item)
-    return result
+    return sorted(
+        result,
+        key=lambda item: (
+            0 if item.get("end_date") in (None, "") else 1,
+            str(item.get("end_date") or "9999-12-31"),
+            str(item.get("name") or ""),
+        ),
+    )
 
 
 def get_staffing_placeholders(plan_version_id: str | None = None) -> list[dict]:
@@ -1680,8 +1976,33 @@ def get_staffing_facts(
 ) -> tuple[list[dict], dict | None]:
     """Return period-aware member, allocation, and contract facts for staffing rules."""
     rows, plan_version = get_capacity_rows(year, month, plan_version_id)
+    contract_snapshot = get_contract_coverage_snapshot()
+    contract_snapshot_state = str(contract_snapshot.get("state") or "unknown")
+    contract_by_id = {
+        str(member["member_id"]): member
+        for member in contract_snapshot.get("members", [])
+    }
     with _conn() as con:
+        external_ids_by_employee = _load_external_ids_by_employee(con)
         facts: list[dict] = []
+        active_hiref_rows = con.execute(
+            """
+            SELECT current_hiref,next_hiref
+            FROM employees
+            WHERE status='active'
+            """
+        ).fetchall()
+        hiref_lookup = _load_hiref_lookup(
+            con,
+            [
+                str(row["current_hiref"] or "")
+                for row in active_hiref_rows
+            ]
+            + [
+                str(row["next_hiref"] or "")
+                for row in active_hiref_rows
+            ],
+        )
         for row in rows:
             employee = con.execute(
                 "SELECT * FROM employees WHERE id = ?",
@@ -1692,21 +2013,49 @@ def get_staffing_facts(
             item = dict(employee)
             item["month_load"] = float(row.get("month_load") or 0.0)
             item["plan_version_id"] = (plan_version or {}).get("plan_version_id")
-            hiref_id = item.get("current_hiref") or ""
-            hiref = None
-            if hiref_id:
-                hiref_row = con.execute("SELECT * FROM hiref WHERE id = ?", [hiref_id]).fetchone()
-                hiref = dict(hiref_row) if hiref_row else None
-            item["contract"] = hiref
+            contract_member = _match_snapshot_member(
+                contract_by_id,
+                employee=item,
+                external_ids=external_ids_by_employee.get(str(item["id"]), []),
+            )
+            contract_fact_state = contract_snapshot_state
+            contract_fact_reason = str(contract_snapshot.get("state_reason") or "")
+            if contract_member is not None:
+                item["resource_type"] = str(contract_member.get("resource_type") or "")
+                item["current_hiref"] = str(contract_member.get("current_hiref_id") or "")
+                item["billing_end_date"] = str(contract_member.get("hiref_end_date") or "")
+                contract_fact_state = "known"
+                contract_fact_reason = (
+                    "member_contract_available_from_contract_coverage_publication"
+                )
+            elif contract_snapshot_state == "known":
+                item["current_hiref"] = ""
+                item["billing_end_date"] = ""
+                contract_fact_state = "unknown"
+                contract_fact_reason = "member_not_in_contract_coverage_publication"
+            hiref_id = str(item.get("current_hiref") or "")
+            item["contract"] = (
+                _contract_record(
+                    hiref_lookup,
+                    hiref_id,
+                    hiref_end_date=(
+                        str(contract_member.get("hiref_end_date") or "")
+                        if contract_member is not None
+                        else str(item.get("billing_end_date") or "")
+                    )
+                    or None,
+                )
+                if contract_fact_state == "known"
+                else None
+            )
             next_hiref_id = item.get("next_hiref") or ""
-            next_hiref = None
-            if next_hiref_id:
-                next_hiref_row = con.execute(
-                    "SELECT * FROM hiref WHERE id = ?",
-                    [next_hiref_id],
-                ).fetchone()
-                next_hiref = dict(next_hiref_row) if next_hiref_row else None
-            item["next_contract"] = next_hiref
+            item["next_contract"] = (
+                _contract_record(hiref_lookup, str(next_hiref_id or ""))
+                if contract_fact_state == "known"
+                else None
+            )
+            item["contract_coverage_state"] = contract_fact_state
+            item["contract_coverage_reason"] = contract_fact_reason
             facts.append(item)
     return facts, plan_version
 

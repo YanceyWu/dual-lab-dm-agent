@@ -93,6 +93,14 @@ def _current_state_publication_freshness() -> dict:
     return repository.get_current_state_staffing_publication_freshness()
 
 
+def _contract_coverage_publication_freshness() -> dict:
+    return repository.get_contract_coverage_publication_freshness()
+
+
+def _contract_counts_available(freshness_state: str) -> bool:
+    return freshness_state in {"fresh", "stale"}
+
+
 def jl(text):
     try:
         return json.loads(text or "[]")
@@ -309,6 +317,10 @@ def summary():
     member_coverage = _current_state_member_coverage(members)
     publication_freshness = _current_state_publication_freshness()
     freshness_state = str(publication_freshness.get("state") or "unknown")
+    contract_publication_freshness = _contract_coverage_publication_freshness()
+    contract_freshness_state = str(
+        contract_publication_freshness.get("state") or "unknown"
+    )
     known_members = [
         member for member in members if isinstance(member.get("current_load"), (int, float))
     ]
@@ -322,18 +334,20 @@ def summary():
         if member_coverage == "known" and freshness_state in {"fresh", "stale"}
         else None
     )
-    hiref_60d     = c.execute("""
-        SELECT COUNT(*) FROM employees e JOIN hiref h ON e.current_hiref=h.id
-        WHERE e.status='active' AND h.end_date <= date('now','+60 days')
-          AND COALESCE(e.next_hiref, '') = ''
-    """).fetchone()[0]
-    free_hiref    = c.execute("""
-        SELECT COUNT(*)
-        FROM hiref h
-        LEFT JOIN employees e
-          ON (e.current_hiref=h.id OR e.next_hiref=h.id) AND e.status='active'
-        WHERE e.id IS NULL
-    """).fetchone()[0]
+    if _contract_counts_available(contract_freshness_state):
+        hiref_60d = sum(
+            1
+            for row in repository.get_hiref_staff_review(days=60)
+            if not row.get("current_hiref_missing")
+            and not row.get("next_hiref")
+            and row.get("urgency") in {"expired", "critical", "high", "medium"}
+        )
+        free_hiref = sum(
+            1 for row in repository.get_hiref_contracts() if row.get("is_free")
+        )
+    else:
+        hiref_60d = None
+        free_hiref = None
     focus_proj    = c.execute("SELECT COUNT(*) FROM project_profiles WHERE is_focus=1").fetchone()[0]
     stfte_count   = c.execute("SELECT COUNT(*) FROM employees WHERE status='active' AND resource_type='STFTE'").fetchone()[0]
     ltfte_count   = c.execute("SELECT COUNT(*) FROM employees WHERE status='active' AND resource_type='LTFTE'").fetchone()[0]
@@ -358,6 +372,9 @@ def summary():
         "current_state_staffing_freshness_state": freshness_state,
         "current_state_staffing_freshness_reason": publication_freshness.get("state_reason"),
         "current_state_staffing_publication_id": publication_freshness.get("publication_id"),
+        "contract_coverage_freshness_state": contract_freshness_state,
+        "contract_coverage_freshness_reason": contract_publication_freshness.get("state_reason"),
+        "contract_coverage_publication_id": contract_publication_freshness.get("publication_id"),
         "hiref_alerts_60d": hiref_60d, "free_hiref_slots": free_hiref,
         "last_successful_sync": last_success_sync,
         "stale_sources_count": stale_sources,
@@ -432,6 +449,19 @@ def freshness():
 @app.route("/api/projects")
 def projects():
     c = db()
+    contract_publication_freshness = _contract_coverage_publication_freshness()
+    contract_freshness_state = str(
+        contract_publication_freshness.get("state") or "unknown"
+    )
+    member_lookup = {}
+    for member in repository.get_all_members():
+        for key in [
+            str(member.get("id") or ""),
+            str(member.get("wd_id") or ""),
+            *(str(value or "") for value in member.get("external_ids", [])),
+        ]:
+            if key:
+                member_lookup[key] = member
     plan_join = ""
     plan_fields = [
         "NULL as latest_snapshot_date",
@@ -503,11 +533,18 @@ def projects():
             if isinstance(team_snapshot.get("publication"), dict)
             else None
         )
+        p["contract_coverage_freshness_state"] = contract_freshness_state
+        p["contract_coverage_freshness_reason"] = contract_publication_freshness.get(
+            "state_reason"
+        )
+        p["contract_coverage_publication_id"] = contract_publication_freshness.get(
+            "publication_id"
+        )
         if team_snapshot["state"] == "known":
             active_members = []
             active_member_ids: list[str] = []
             for row in team_snapshot["assignments"]:
-                member_projection = repository.get_member(row["member_id"])
+                member_projection = member_lookup.get(str(row["member_id"]))
                 member_id = (
                     str(member_projection.get("id") or row["member_id"])
                     if member_projection
@@ -536,22 +573,27 @@ def projects():
             if team_snapshot.get("freshness_state") in {"fresh", "stale"}:
                 p["members"] = active_members + planned_members
                 p["team_size"] = len(p["members"])
-                member_ids = active_member_ids + [row["id"] for row in planned_members]
-                if member_ids:
-                    placeholders = ",".join("?" for _ in member_ids)
-                    hiref_risk = c.execute(
-                        f"""
-                        SELECT COUNT(*)
-                        FROM employees e
-                        JOIN hiref h ON e.current_hiref=h.id
-                        WHERE e.id IN ({placeholders})
-                          AND h.end_date <= date('now','+90 days')
-                        """,
-                        member_ids,
-                    ).fetchone()[0]
-                else:
+                if _contract_counts_available(contract_freshness_state):
+                    member_ids = list(
+                        dict.fromkeys(active_member_ids + [row["id"] for row in planned_members])
+                    )
                     hiref_risk = 0
-                p["hiref_risk"] = hiref_risk
+                    for member_id in member_ids:
+                        member_projection = member_lookup.get(str(member_id))
+                        if not member_projection or not member_projection.get("current_hiref"):
+                            continue
+                        days_remaining = days_until(
+                            member_projection.get("billing_end_date")
+                        )
+                        if (
+                            days_remaining is not None
+                            and days_remaining <= 90
+                            and not member_projection.get("next_hiref")
+                        ):
+                            hiref_risk += 1
+                    p["hiref_risk"] = hiref_risk
+                else:
+                    p["hiref_risk"] = None
             else:
                 p["members"] = planned_members
                 p["team_size"] = None
@@ -572,6 +614,9 @@ def employees():
         emp = dict(member)
         freshness_state = str(
             emp.get("current_state_staffing_freshness_state") or "unknown"
+        )
+        contract_freshness_state = str(
+            emp.get("contract_coverage_freshness_state") or "unknown"
         )
         project_details = list(emp.pop("current_state_project_details", []))
         emp.pop("current_state_projects", None)
@@ -603,7 +648,7 @@ def employees():
                 "allocation": round(next_plan["allocation"] * 100),
                 "start_date": next_plan["start_date"]
             }
-        if emp.get("current_hiref"):
+        if contract_freshness_state in {"fresh", "stale", "partial"} and emp.get("current_hiref"):
             h = c.execute("SELECT start_date, end_date, project FROM hiref WHERE id=?", [emp["current_hiref"]]).fetchone()
             if h:
                 emp["hiref_start_date"] = h["start_date"]
@@ -612,7 +657,7 @@ def employees():
                 d = days_until(h["end_date"])
                 emp["hiref_urgency"] = hiref_urgency(d, bool(emp.get("next_hiref")))
                 emp["hiref_days"]    = d
-        if emp.get("next_hiref"):
+        if contract_freshness_state in {"fresh", "stale", "partial"} and emp.get("next_hiref"):
             h = c.execute("SELECT start_date, end_date, project FROM hiref WHERE id=?", [emp["next_hiref"]]).fetchone()
             if h:
                 emp["next_hiref_start_date"] = h["start_date"]
@@ -866,6 +911,10 @@ def _attention_response(result):
 
 @app.route("/api/hiref")
 def hiref():
+    contract_publication_freshness = _contract_coverage_publication_freshness()
+    contract_freshness_state = str(
+        contract_publication_freshness.get("state") or "unknown"
+    )
     hiref_list = repository.get_hiref_contracts()
     expiring_list = repository.get_hiref_staff_review(days=180)
     for item in expiring_list:
@@ -874,11 +923,36 @@ def hiref():
         "all_hiref": hiref_list,
         "expiring_staff": expiring_list,
         "total": len(hiref_list),
-        "free_count": sum(1 for h in hiref_list if h["is_free"]),
-        "assigned_count": sum(1 for h in hiref_list if not h["is_free"]),
-        "next_covered_count": sum(1 for h in expiring_list if h.get("next_hiref")),
-        "mismatch_count": sum(
-            1 for h in expiring_list if h.get("project_alignment_status") == "mismatch"
+        "free_count": (
+            sum(1 for h in hiref_list if h["is_free"])
+            if _contract_counts_available(contract_freshness_state)
+            else None
+        ),
+        "assigned_count": (
+            sum(1 for h in hiref_list if not h["is_free"])
+            if _contract_counts_available(contract_freshness_state)
+            else None
+        ),
+        "next_covered_count": (
+            sum(1 for h in expiring_list if h.get("next_hiref"))
+            if _contract_counts_available(contract_freshness_state)
+            else None
+        ),
+        "mismatch_count": (
+            sum(
+                1
+                for h in expiring_list
+                if h.get("project_alignment_status") == "mismatch"
+            )
+            if _contract_counts_available(contract_freshness_state)
+            else None
+        ),
+        "contract_coverage_freshness_state": contract_freshness_state,
+        "contract_coverage_freshness_reason": contract_publication_freshness.get(
+            "state_reason"
+        ),
+        "contract_coverage_publication_id": contract_publication_freshness.get(
+            "publication_id"
         ),
     })
 

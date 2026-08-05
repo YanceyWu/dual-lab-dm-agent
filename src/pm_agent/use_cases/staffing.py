@@ -12,15 +12,15 @@ import secrets
 
 from pydantic import BaseModel, Field
 
+from pm_agent.contract_coverage.read_model import (
+    CONTRACT_COVERAGE_PUBLICATION_SOURCE_ID,
+)
 from pm_agent.database import repository, staffing_capacity
 from pm_agent.resource_intelligence.read_model import get_effective_capacity
 from pm_agent.rules.hiref import project_alignment_status
 
 RULE_VERSION = "staffing-feasibility-v2"
 CAPACITY_RULE_VERSION = "staffing-effective-capacity-v1"
-STAFFING_SOURCE_IDS = (
-    "import-hiref-report",
-)
 CURRENT_STATE_PUBLICATION_SOURCE_ID = "current-state-staffing-publication"
 
 
@@ -89,6 +89,8 @@ def staffing_read_model(demand: StaffingDemand) -> dict[str, Any]:
                 "contract": fact["contract"],
                 "next_contract": fact["next_contract"],
                 "status": fact["status"],
+                "contract_coverage_state": fact.get("contract_coverage_state", "unknown"),
+                "contract_coverage_reason": fact.get("contract_coverage_reason"),
             }
     plan_ids = {
         str(plan["plan_version_id"])
@@ -350,9 +352,9 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
 
 
 def _source_states() -> list[dict[str, Any]]:
-    rows = {row["id"]: row for row in repository.get_data_source_freshness(active_only=False)}
     publication = repository.get_current_state_staffing_publication_freshness()
-    result = [
+    contract_publication = repository.get_contract_coverage_publication_freshness()
+    return [
         {
             "source_id": CURRENT_STATE_PUBLICATION_SOURCE_ID,
             "state": publication.get("state", "unknown"),
@@ -361,31 +363,17 @@ def _source_states() -> list[dict[str, Any]]:
             "latest_run_id": publication.get("publication_id"),
             "overrideable": publication.get("state_reason")
             != "current_state_staffing_schema_missing",
-        }
+        },
+        {
+            "source_id": CONTRACT_COVERAGE_PUBLICATION_SOURCE_ID,
+            "state": contract_publication.get("state", "unknown"),
+            "state_reason": contract_publication.get("state_reason"),
+            "observed_at": contract_publication.get("observed_at"),
+            "latest_run_id": contract_publication.get("publication_id"),
+            "overrideable": contract_publication.get("state_reason")
+            != "contract_coverage_schema_missing",
+        },
     ]
-    for source_id in STAFFING_SOURCE_IDS:
-        row = rows.get(source_id) or {}
-        raw_state = row.get("freshness_state")
-        state = {
-            "fresh": "fresh",
-            "stale": "stale",
-            "partial": "partial",
-            "failed": "unavailable",
-            "never_synced": "unknown",
-            "inactive": "unknown",
-            "running": "partial",
-        }.get(raw_state, "unknown")
-        result.append(
-            {
-                "source_id": source_id,
-                "state": state,
-                "state_reason": f"legacy_source_freshness_{raw_state or 'unknown'}",
-                "observed_at": row.get("latest_finished_at") or row.get("latest_started_at"),
-                "latest_run_id": row.get("latest_run_id"),
-                "overrideable": True,
-            }
-        )
-    return result
 
 
 def _hiref_context(
@@ -393,6 +381,17 @@ def _hiref_context(
     periods: list[dict[str, int]],
     target_project: dict[str, Any] | None,
 ) -> dict[str, Any]:
+    demand_start = datetime(periods[0]["year"], periods[0]["month"], 1).date()
+    last_period = periods[-1]
+    demand_end = datetime(
+        last_period["year"],
+        last_period["month"],
+        monthrange(last_period["year"], last_period["month"])[1],
+    ).date()
+    contract_states = {
+        str(state.get("contract_coverage_state") or "unknown")
+        for state in member["periods"].values()
+    }
     if member.get("resource_type") != "STFTE":
         return {
             "status": "not_required",
@@ -400,6 +399,34 @@ def _hiref_context(
             "affects_eligibility": False,
             "affects_ranking": False,
             "records": [],
+            "required_period": {
+                "start_date": demand_start.isoformat(),
+                "end_date": demand_end.isoformat(),
+            },
+        }
+    if "unavailable" in contract_states:
+        return {
+            "status": "unavailable",
+            "recommended_action": "review_contract_coverage_publication",
+            "affects_eligibility": False,
+            "affects_ranking": False,
+            "records": [],
+            "required_period": {
+                "start_date": demand_start.isoformat(),
+                "end_date": demand_end.isoformat(),
+            },
+        }
+    if "unknown" in contract_states:
+        return {
+            "status": "unknown",
+            "recommended_action": "review_contract_coverage_publication",
+            "affects_eligibility": False,
+            "affects_ranking": False,
+            "records": [],
+            "required_period": {
+                "start_date": demand_start.isoformat(),
+                "end_date": demand_end.isoformat(),
+            },
         }
 
     unique_records: dict[str, dict[str, Any]] = {}
@@ -448,13 +475,6 @@ def _hiref_context(
             continue
 
     records.sort(key=lambda item: (item["start_date"] or "", item["hiref_id"]))
-    demand_start = datetime(periods[0]["year"], periods[0]["month"], 1).date()
-    last_period = periods[-1]
-    demand_end = datetime(
-        last_period["year"],
-        last_period["month"],
-        monthrange(last_period["year"], last_period["month"])[1],
-    ).date()
     if _intervals_cover(aligned_intervals, demand_start, demand_end):
         status = "covered"
         recommended_action = "none"

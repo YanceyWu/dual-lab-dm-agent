@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from contract_coverage_test_helpers import publish_contract_coverage_from_legacy
+
 import pytest
 
 from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
@@ -373,14 +375,19 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
 
 
 def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) -> None:
+    publish_contract_coverage_from_legacy(
+        demo_db,
+        package_id="package-demo-contract-coverage-r1",
+    )
     summary = HirefManagementService().summary(days=180)
     assert summary.success is True
     stats = summary.data["summary"]
-    assert stats["active_stfte"] == 3
-    assert stats["missing_current_hiref"] == 1
-    assert stats["expiring_without_next"] >= 1
-    assert stats["expiring_with_next"] >= 1
-    assert stats["free_slots"] >= 1
+    assert summary.data["freshness"]["state"] == "partial"
+    assert stats["active_stfte"] is None
+    assert stats["missing_current_hiref"] is None
+    assert stats["expiring_without_next"] is None
+    assert stats["expiring_with_next"] is None
+    assert stats["free_slots"] is None
     assert stats["open_placeholders"] >= 1
 
     review = HirefManagementService().review(days=180)
@@ -390,7 +397,7 @@ def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) 
 
     slots = HirefManagementService().slots()
     assert slots.success is True
-    assert any(row["is_free"] for row in slots.data["rows"])
+    assert any(row["occupancy_status"] == "unknown" for row in slots.data["rows"])
 
     placeholders = HirefManagementService().placeholders()
     assert placeholders.success is True
@@ -400,6 +407,7 @@ def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) 
         UseCaseRequest(use_case_id="contract-continuity-review")
     )
     assert continuity.status == "success"
+    assert continuity.freshness[0]["state"] == "partial"
     assert continuity.data["contracts"]
-    assert continuity.data["summary"]["attention_count"] >= 1
-    assert continuity.data["summary"]["reviewed_count"] >= 3
+    assert continuity.data["summary"]["attention_count"] is None
+    assert continuity.data["summary"]["reviewed_count"] is None

@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from pm_agent.contract_coverage import read_model, service
+from pm_agent.database import repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.use_cases.hiref_management import HirefManagementService
 
@@ -233,14 +234,10 @@ def test_contract_coverage_freshness_reports_stale_and_partial_states(
     assert partial["coverage"]["missing_record_count"] == 1
 
 
-def test_contract_coverage_publication_does_not_change_legacy_hiref_reader_behavior(
+def test_contract_coverage_publication_becomes_primary_for_hiref_member_reads(
     isolated_db: Path,
 ) -> None:
     _seed_legacy_hiref_state(isolated_db)
-    service_instance = HirefManagementService()
-
-    before = service_instance.summary(days=90)
-    assert before.success is True
 
     preview = service.preview_import(
         {
@@ -251,8 +248,8 @@ def test_contract_coverage_publication_does_not_change_legacy_hiref_reader_behav
                     "display_name": "Alex Example",
                     "status": "active",
                     "resource_type": "STFTE",
-                    "current_hiref_id": "HIREF-NEW-999",
-                    "hiref_end_date": "2027-01-31",
+                    "current_hiref_id": None,
+                    "hiref_end_date": None,
                 },
                 {
                     "member_id": "990102",
@@ -267,7 +264,7 @@ def test_contract_coverage_publication_does_not_change_legacy_hiref_reader_behav
                 "member_ids": ["990101", "990102"],
                 "stfte_member_ids": ["990101"],
                 "ltfte_member_ids": ["990102"],
-                "contract_member_ids": ["990101"],
+                "contract_member_ids": [],
                 "unknown_resource_type_member_ids": [],
             },
         },
@@ -275,7 +272,14 @@ def test_contract_coverage_publication_does_not_change_legacy_hiref_reader_behav
     )
     service.confirm_import(preview["session_id"], db_path=isolated_db)
 
-    after = service_instance.summary(days=90)
-    assert after.success is True
-    assert after.data["summary"] == before.data["summary"]
-    assert after.data["top_risks"] == before.data["top_risks"]
+    member = repository.get_member("990101")
+    assert member is not None
+    assert member["contract_coverage_state"] == "known"
+    assert member["current_hiref"] == ""
+    assert member["billing_end_date"] == ""
+
+    review = HirefManagementService().review(days=90)
+    assert review.success is True
+    alex = next(row for row in review.data["rows"] if row["employee_id"] == "990101")
+    assert alex["current_hiref_missing"] is True
+    assert alex["contract_coverage_freshness_state"] == "partial"

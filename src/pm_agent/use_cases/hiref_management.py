@@ -14,6 +14,8 @@ class HirefManagementService(BaseService):
         return self.summary(days=days)
 
     def summary(self, days: int = 180) -> ServiceResponse:
+        freshness = repository.get_contract_coverage_publication_freshness()
+        freshness_state = str(freshness.get("state") or "unknown")
         full_review = self._review_rows(days=None)
         review_rows = self._review_rows(days=days)
         slot_rows = self._slot_rows(free_only=False)
@@ -51,6 +53,19 @@ class HirefManagementService(BaseService):
                 if row.get("hiref_id") and not row["slot_registered"]
             ),
         }
+        if freshness_state not in {"fresh", "stale"}:
+            summary.update(
+                {
+                    "active_stfte": None,
+                    "missing_current_hiref": None,
+                    "expiring_without_next": None,
+                    "expiring_with_next": None,
+                    "project_mismatches": None,
+                    "free_slots": None,
+                    "assigned_slots": None,
+                    "reserved_slots": None,
+                }
+            )
 
         top_risks = [row for row in review_rows if row["requires_action"]][:5]
         open_placeholders = [row for row in placeholder_rows if not row["has_linked_employee"]][:5]
@@ -62,25 +77,28 @@ class HirefManagementService(BaseService):
                 "summary": summary,
                 "top_risks": top_risks,
                 "open_placeholders": open_placeholders,
+                "freshness": freshness,
             },
         )
 
     def review(self, days: int | None = 180) -> ServiceResponse:
         label = "all active STFTE staff" if days is None else f"next {days} days"
         rows = self._review_rows(days=days)
+        freshness = repository.get_contract_coverage_publication_freshness()
         return ServiceResponse(
             success=True,
             message=f"HIREF review generated for {label}.",
-            data={"rows": rows, "days": days},
+            data={"rows": rows, "days": days, "freshness": freshness},
         )
 
     def slots(self, free_only: bool = False) -> ServiceResponse:
         rows = self._slot_rows(free_only=free_only)
         label = "free slots only" if free_only else "all slots"
+        freshness = repository.get_contract_coverage_publication_freshness()
         return ServiceResponse(
             success=True,
             message=f"HIREF slot review generated ({label}).",
-            data={"rows": rows, "free_only": free_only},
+            data={"rows": rows, "free_only": free_only, "freshness": freshness},
         )
 
     def placeholders(self) -> ServiceResponse:

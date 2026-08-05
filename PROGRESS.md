@@ -2,16 +2,14 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch now carries the accepted clean A3 baseline commit
-`4a3a77588ecde07d5f75f9839105875350f4f898`, the bounded local A4
-compatibility-closure / legacy-deletion commit, the committed local B0
-post-Batch-A redesign freeze at `7eba012`, the committed local B1
-skills-retirement slice, and the committed local B2 contract-coverage skeleton
-slice. The separate aborted runtime attempt remains excluded and must not be
-inherited as partial work
+Current HEAD: this branch now carries the committed local B3
+contract-coverage reader/freshness migration on top of the required accepted B2
+contract-coverage skeleton commit
+`6b374a2895f2179e421c854166373c2d6a7e3c80`. The separate aborted runtime
+attempt remains excluded and must not be inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS NOW IMPLEMENTED AND VALIDATED LOCALLY; ONLY B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION REMAINS AS THE NEXT APPROVED GATE`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B2 IMPLEMENTED/VALIDATED LOCALLY; ANY FURTHER RUNTIME WORK MUST START IN A SEPARATE B3-ONLY SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS NOW COMMITTED LOCALLY; ONLY B4 CONTRACT-COVERAGE CLOSURE / LEGACY DELETION REMAINS AS THE NEXT APPROVED GATE`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY; ANY FURTHER RUNTIME WORK MUST START IN A SEPARATE B4-ONLY SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -30,26 +28,22 @@ current working tree now revises `architecture/16...`,
 actually frozen: coverage/dependency matrix, missing-coverage register,
 invariant checklist, end-to-end state-machine matrix, product/semantic
 decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
-self-review checklist. The current working tree now keeps the accepted A1/A2/A3
-capability family and adds only the bounded A4 closure slice: A-scope
-current-state routes now advertise canonical rather than compatibility contract
-markers, legacy `v_member_load` / `v_project_team` authority is demoted to a
-read-only projection generated from canonical current-state staffing
-publications, current-state freshness SLA no longer depends on the legacy
-`import-resource-portal` source row, and the legacy `import_from_excel.py`
-entrypoint is explicitly demoted from current-state product authority in code
-and operator docs. This closure preserves the frozen A0/A1/A2/A3 semantics:
-missing publication remains unknown/unavailable rather than numeric zero,
-partial/unknown/unavailable do not masquerade as available/current, package and
-payload identity invariants remain unchanged, replay/confirmability/duplicate-
-publication guarantees stay intact, and no writable dual-authority redesign was
-added. Post-Batch-A owner feedback now further freezes that legacy
-`import_skills.py` is not an onboarding-migration target: the unsupported
-skills feature should be retired in B1, while HIREF / contract coverage remains
-the retained B2-B4 convergence family. Multi-scope current-publication
-selection and mutable staffing-write redesign remain deferred beyond Batch A.
-Promotion is local only; every external action remains a separate owner
-decision. No push is authorized or required.
+self-review checklist. The current working tree keeps the accepted A-scope and
+committed B1/B2 slices, then adds only the bounded B3 migration surfaces:
+`src/pm_agent/database/repository.py`,
+`src/pm_agent/use_cases/staffing.py`,
+`src/pm_agent/use_cases/contract_continuity.py`,
+`src/pm_agent/use_cases/hiref_management.py`,
+`src/pm_agent/dashboard/server.py`, the focused B3 test files, and a small
+synthetic contract-coverage test helper. These changes move named staffing,
+contract-continuity, dashboard member/project/HIREF reads, and related
+freshness/evidence semantics to the canonical `contract_coverage` publication
+contract while keeping B4 deletion, skills redesign, mutable staffing-write
+redesign, and broader contract-model expansion out of scope. Partial, unknown,
+and unavailable contract coverage now stay explicit instead of collapsing to
+fake zero-risk summaries or free-slot counts. Promotion is local only; every
+external action remains a separate owner decision. No push is authorized or
+required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -222,6 +216,37 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-036 Batch B3 contract-coverage reader/freshness migration now builds locally
+on the required clean B2 baseline commit
+`6b374a2895f2179e421c854166373c2d6a7e3c80`. The working tree migrates the named
+HIREF / contract readers so staffing now gates on
+`contract-coverage-publication` freshness, contract continuity evidence/freshness
+now points at the canonical contract-coverage publication, repository member and
+HIREF review helpers consume contract coverage as the primary contract
+authority, and Dashboard summary/project/member/HIREF views suppress
+authoritative numeric contract counts whenever contract coverage is partial,
+unknown, or unavailable. The slice keeps B4 deletion out of scope and does not
+reintroduce skills, mutable staffing-write redesign, or broader contract-model
+expansion. Final focused B3 regression passed `58` tests across
+`src/tests/test_contract_coverage.py`,
+`src/tests/test_staffing_pipeline.py`,
+`src/tests/test_staffing_capacity_consumption.py`,
+`src/tests/test_hiref_workflow.py`,
+`src/tests/test_unified_use_case_contract.py`, and
+`src/tests/test_demo_characterization.py`. Final `make validate` passed all
+nine release-validation checks with `438` runtime tests plus `33`
+repository-tool tests and `19` subtests. Final `make rehearse-release` passed
+wheel install, isolated clean bootstrap, upgrade-copy rehearsal, and rollback.
+The first read-only slice reviews found free-slot masking under incomplete
+coverage, staffing fallback to legacy HIREF facts when contract coverage was
+missing, project HIREF-risk double counting, missing-current-HIREF rows dropped
+by the review window, unavailable-summary zero masking, and partial-summary
+numeric leakage. All accepted findings were corrected, focused tests were
+rerun, and the final read-only re-review reported no significant issue. B0 is
+closed, B1 is closed locally, B2 is closed locally, B3 is now closed locally,
+and the next approved gate is a separate **B4-only** session. This slice is now
+committed locally and not pushed.
 
 IP-036 Batch B1 skills retirement now builds locally on the committed B0 freeze
 at `7eba012` and the required clean baseline `e2c02b361bbd0c713a593496a58f9de6fff54225`.

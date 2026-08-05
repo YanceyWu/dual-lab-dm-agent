@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from pm_agent.contract_coverage import service as contract_coverage_service
 from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.database import repository, staffing_capacity
 from pm_agent.database.bootstrap import main as init_db
@@ -38,12 +39,71 @@ def _bootstrap_workforce(db_path: Path) -> None:
         db_path,
         package_id="package-synthetic-current-state-staffing-001",
     )
+    _publish_fresh_contract_coverage_for_capacity_tests(db_path)
     for source_id in (
         "import-resource-portal",
-        "import-hiref-report",
     ):
         run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
         repository.finish_sync_run(run_id, status="success")
+
+
+def _publish_fresh_contract_coverage_for_capacity_tests(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            """
+            SELECT id,name,status,current_hiref,billing_end_date
+            FROM employees
+            WHERE status='active'
+            ORDER BY id
+            """
+        ).fetchall()
+    members = []
+    for row in rows:
+        current_hiref_id = str(row["current_hiref"] or "") or None
+        hiref_end_date = str(row["billing_end_date"] or "") or None
+        if not current_hiref_id or not hiref_end_date:
+            current_hiref_id = None
+            hiref_end_date = None
+        members.append(
+            {
+                "member_id": str(row["id"]),
+                "display_name": str(row["name"]),
+                "status": "active" if str(row["status"]) == "active" else "inactive",
+                "resource_type": "STFTE" if current_hiref_id and hiref_end_date else "LTFTE",
+                "current_hiref_id": current_hiref_id,
+                "hiref_end_date": hiref_end_date,
+            }
+        )
+    package = {
+        "dataset_marker": "TEST_CONTRACT_COVERAGE",
+        "package_id": "package-synthetic-contract-coverage-001",
+        "schema_version": contract_coverage_service.PACKAGE_SCHEMA_VERSION,
+        "generated_at": "2026-08-15T00:00:00+00:00",
+        "source_id": "source-test-contract-coverage",
+        "publication_scope": {
+            "scope_key": "test-contract-coverage",
+            "as_of_date": "2026-08-15",
+        },
+        "manifest": {
+            "member_ids": [member["member_id"] for member in members],
+            "stfte_member_ids": [
+                member["member_id"] for member in members if member["resource_type"] == "STFTE"
+            ],
+            "ltfte_member_ids": [
+                member["member_id"] for member in members if member["resource_type"] == "LTFTE"
+            ],
+            "contract_member_ids": [
+                member["member_id"]
+                for member in members
+                if member["current_hiref_id"] and member["hiref_end_date"]
+            ],
+            "unknown_resource_type_member_ids": [],
+        },
+        "members": members,
+    }
+    preview = contract_coverage_service.preview_import(package, db_path=db_path)
+    contract_coverage_service.confirm_import(preview["session_id"], db_path=db_path)
 
 
 def _publish_capacity(db_path: Path, package: dict | None = None) -> dict:

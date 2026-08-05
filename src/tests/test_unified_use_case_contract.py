@@ -5,6 +5,7 @@ import sqlite3
 
 from typer.testing import CliRunner
 
+from contract_coverage_test_helpers import publish_contract_coverage_from_legacy
 from pm_agent.current_state_staffing import service as current_state_staffing_service
 from pm_agent.cli import app as app_module
 from pm_agent.dashboard import server as dashboard_server
@@ -504,6 +505,10 @@ def test_management_attention_and_contract_continuity_are_read_only(isolated_db)
         con.execute("INSERT INTO hiref (id, project, request_type, start_date, end_date) VALUES ('HIREF-990104', 'Project Atlas', 'extend', '2025-01-01', '2025-01-02')")
         action_count = con.execute("SELECT COUNT(*) FROM action_items").fetchone()[0]
         hiref_count = con.execute("SELECT COUNT(*) FROM hiref").fetchone()[0]
+    publish_contract_coverage_from_legacy(
+        isolated_db,
+        package_id="package-contract-continuity-read-only-r1",
+    )
 
     attention = use_case_executor.execute(UseCaseRequest(use_case_id="management-attention", parameters={"limit": 10}))
     continuity = use_case_executor.execute(UseCaseRequest(use_case_id="contract-continuity-review", parameters={"days": 180}))
@@ -513,6 +518,8 @@ def test_management_attention_and_contract_continuity_are_read_only(isolated_db)
     assert {item["reason_code"] for item in attention.data["items"]} >= {"project_health_red", "action_overdue"}
     assert continuity.data["summary"]["attention_count"] == 1
     assert continuity.data["contracts"][0]["employee_id"] == "990104"
+    assert continuity.freshness[0]["source_id"] == "contract-coverage-publication"
+    assert continuity.evidence[1]["authority"] == "canonical"
     assert cli.exit_code == 0, cli.output
     with sqlite3.connect(isolated_db) as con:
         assert con.execute("SELECT COUNT(*) FROM action_items").fetchone()[0] == action_count
@@ -740,8 +747,8 @@ def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
     with sqlite3.connect(isolated_db) as con:
         con.execute(
             """
-            INSERT INTO employees (id, wd_id, name, status, current_hiref)
-            VALUES ('employee-990201', 'WD-990201', 'Alex Example', 'active', 'HIREF-990201')
+            INSERT INTO employees (id, wd_id, name, status, resource_type, current_hiref)
+            VALUES ('employee-990201', 'WD-990201', 'Alex Example', 'active', 'STFTE', 'HIREF-990201')
             """
         )
         con.execute(
@@ -757,6 +764,10 @@ def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
             """
         )
         con.commit()
+    publish_contract_coverage_from_legacy(
+        isolated_db,
+        package_id="package-dashboard-projects-contract-coverage-r1",
+    )
 
     package = {
         "dataset_marker": "TEST_CURRENT_STATE_STAFFING",
@@ -813,6 +824,7 @@ def test_dashboard_projects_resolve_hiref_risk_from_current_state_identity(
 
     payload = dashboard_server.app.test_client().get("/api/projects").get_json()
 
+    assert payload[0]["contract_coverage_freshness_state"] == "fresh"
     assert payload[0]["hiref_risk"] == 1
     assert payload[0]["members"][0]["wd_id"] == "WD-990201"
     assert payload[0]["members"][0]["id"] == "employee-990201"

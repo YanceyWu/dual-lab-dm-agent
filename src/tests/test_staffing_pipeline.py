@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from pm_agent.cli import app as app_module
+from contract_coverage_test_helpers import publish_contract_coverage_from_legacy
 from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
 from pm_agent.database import repository
 from pm_agent.database.bootstrap import main as init_db
@@ -59,26 +60,52 @@ def _seed_staffing_facts(db_path) -> None:
         Path(db_path),
         package_id="package-staffing-current-state-r1",
     )
+    publish_contract_coverage_from_legacy(
+        Path(db_path),
+        package_id="package-staffing-contract-coverage-r1",
+    )
 
 
 def _mark_staffing_sources_fresh() -> None:
-    for source_id in (
-        "import-resource-portal",
-        "import-hiref-report",
-    ):
+    for source_id in ("import-resource-portal",):
         run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
         repository.finish_sync_run(run_id, status="success")
 
 
-def _fail_source(db_path, source_id: str) -> None:
+def _mark_contract_coverage_publication_stale(db_path) -> None:
     with sqlite3.connect(db_path) as con:
         con.execute(
-            "UPDATE sync_runs SET started_at='2000-01-01', finished_at='2000-01-01' "
-            "WHERE source_id=?",
-            [source_id],
+            """
+            UPDATE contract_coverage_publications
+            SET published_at = '2000-01-01T00:00:00+00:00'
+            WHERE is_current = 1
+            """
         )
-    run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
-    repository.fail_sync_run(run_id, "synthetic failure")
+        con.commit()
+
+
+def _mark_contract_coverage_publication_partial(db_path) -> None:
+    with sqlite3.connect(db_path) as con:
+        row = con.execute(
+            """
+            SELECT report_json
+            FROM contract_coverage_publications
+            WHERE is_current = 1
+            LIMIT 1
+            """
+        ).fetchone()
+        report = json.loads(row[0])
+        report["coverage"]["member_contract_state"] = "partial"
+        report["coverage"]["missing_record_count"] = 1
+        con.execute(
+            """
+            UPDATE contract_coverage_publications
+            SET report_json = ?
+            WHERE is_current = 1
+            """,
+            [json.dumps(report)],
+        )
+        con.commit()
 
 
 def _mark_current_state_publication_stale(db_path) -> None:
@@ -417,7 +444,7 @@ def test_non_fresh_sources_allow_assessment_but_block_proposal_by_default(
     isolated_db,
 ) -> None:
     _seed_staffing_facts(isolated_db)
-    _fail_source(isolated_db, "import-hiref-report")
+    _mark_contract_coverage_publication_stale(isolated_db)
     service = StaffingProposalService()
 
     assessment = assess_feasibility(_demand())
@@ -428,7 +455,7 @@ def test_non_fresh_sources_allow_assessment_but_block_proposal_by_default(
     assert {
         (item.get("source_id"), item.get("state"))
         for item in assessment["safety_blockers"]
-    } >= {("import-hiref-report", "unavailable")}
+    } >= {("contract-coverage-publication", "stale")}
     assert proposed["status"] == "blocked"
     with sqlite3.connect(isolated_db) as con:
         assert con.execute("SELECT COUNT(*) FROM staffing_proposals").fetchone()[0] == 0
@@ -449,7 +476,7 @@ def test_retired_skills_source_is_not_registered_or_reported(isolated_db) -> Non
     assert assessment["decision_ready"] is True
     assert {item["source_id"] for item in assessment["source_states"]} == {
         "current-state-staffing-publication",
-        "import-hiref-report",
+        "contract-coverage-publication",
     }
     assert all(
         blocker.get("source_id") != "import-skills-matrix"
@@ -508,7 +535,7 @@ def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
     isolated_db,
 ) -> None:
     _seed_staffing_facts(isolated_db)
-    _fail_source(isolated_db, "import-hiref-report")
+    _mark_contract_coverage_publication_stale(isolated_db)
     service = StaffingProposalService()
 
     proposed = service.propose(
@@ -539,7 +566,7 @@ def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
     )
     assert {
         item["state"] for item in safety["source_states"]
-    } == {"fresh", "unavailable"}
+    } == {"fresh", "stale"}
 
 
 def test_non_fresh_override_requires_both_flag_and_reason(isolated_db) -> None:
@@ -572,13 +599,29 @@ def test_partial_current_state_publication_blocks_proposal(isolated_db) -> None:
     assert proposed["status"] == "blocked"
 
 
+def test_partial_contract_coverage_publication_blocks_proposal(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    _mark_contract_coverage_publication_partial(isolated_db)
+
+    assessment = assess_feasibility(_demand())
+    proposed = StaffingProposalService().propose(_demand())
+
+    assert assessment["decision_ready"] is False
+    assert {
+        (item["source_id"], item["state"])
+        for item in assessment["safety_blockers"]
+        if item["code"] == "source_not_fresh"
+    } >= {("contract-coverage-publication", "partial")}
+    assert proposed["status"] == "blocked"
+
+
 def test_source_run_change_after_proposal_invalidates_confirmation(
     isolated_db,
 ) -> None:
     _seed_staffing_facts(isolated_db)
     service = StaffingProposalService()
     proposed = service.propose(_demand())
-    _fail_source(isolated_db, "import-hiref-report")
+    _mark_contract_coverage_publication_stale(isolated_db)
 
     result = service.confirm(
         proposed["proposal_id"],
@@ -595,7 +638,12 @@ def test_stfte_without_hiref_remains_visible_with_action_context(isolated_db) ->
     _seed_staffing_facts(isolated_db)
     with sqlite3.connect(isolated_db) as con:
         con.execute("UPDATE employees SET current_hiref='' WHERE id='990104'")
-
+        con.execute("UPDATE employees SET billing_end_date='' WHERE id='990104'")
+        con.commit()
+    publish_contract_coverage_from_legacy(
+        Path(isolated_db),
+        package_id="package-staffing-contract-coverage-missing-r1",
+    )
     result = assess_feasibility(_demand())
     candidates = {item["member_id"]: item for item in result["candidates"]}
 
