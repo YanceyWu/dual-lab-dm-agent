@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from pm_agent.rules.identity import slugify_text
 from pm_agent.workbook_onboarding.models import ValidatedWorkbook
 from pm_agent.workbook_onboarding.repository import connection
 
@@ -18,61 +19,101 @@ def build_hiref_bridge_payload(
     snapshot_present: bool,
 ) -> dict[str, Any] | None:
     if not snapshot_present and (
-        not workbook.hiref_members
-        and not workbook.hiref_slots
-        and not workbook.hiref_placeholders
-        and not workbook.hiref_placeholder_allocations
+        not any(member.next_hiref_id for member in workbook.members)
+        and not workbook.hiref_requests
+        and not workbook.hiref_demand_allocations
     ):
         return None
-    next_hiref_by_member = {
-        item.member_key: item.next_hiref_id for item in workbook.hiref_members
+    project_by_key = {
+        project.project_key: project.display_name for project in workbook.projects
     }
+    request_by_id = {request.hiref_id: request for request in workbook.hiref_requests}
     return {
         "member_next_hiref": [
             {
                 "member_id": member.member_key,
-                "next_hiref_id": next_hiref_by_member.get(member.member_key, ""),
+                "next_hiref_id": member.next_hiref_id or "",
             }
             for member in workbook.members
         ],
         "slots": [
             {
                 "id": item.hiref_id,
-                "project": item.project,
+                "project": _project_display(
+                    item.project_key,
+                    project_by_key=project_by_key,
+                ),
                 "request_type": item.request_type,
                 "start_date": item.start_date,
                 "end_date": item.end_date,
                 "notes": item.notes or "",
             }
-            for item in workbook.hiref_slots
+            for item in workbook.hiref_requests
         ],
-        "placeholders": [
-            {
-                "placeholder_id": item.placeholder_id,
-                "display_name": item.display_name,
-                "source_system": SOURCE_SYSTEM,
-                "source_employee_id": "",
-                "hiref_id": item.hiref_id or "",
-                "linked_employee_id": item.linked_member_key,
-                "resource_type": item.resource_type or "",
-                "status": item.status,
-                "notes": item.notes or "",
-                "metadata": "{}",
-            }
-            for item in workbook.hiref_placeholders
-        ],
+        "placeholders": _build_placeholder_rows(
+            workbook=workbook,
+            request_by_id=request_by_id,
+            project_by_key=project_by_key,
+        ),
         "placeholder_allocations": [
             {
-                "placeholder_id": item.placeholder_id,
+                "placeholder_id": _placeholder_id(item.hiref_id),
                 "project_id": item.project_key,
                 "year": item.year,
                 "month": item.month_number,
                 "allocation": item.allocation,
                 "plan_version_id": plan_version_id,
             }
-            for item in workbook.hiref_placeholder_allocations
+            for item in workbook.hiref_demand_allocations
         ],
     }
+
+
+def _build_placeholder_rows(
+    *,
+    workbook: ValidatedWorkbook,
+    request_by_id: dict[str, Any],
+    project_by_key: dict[str, str],
+) -> list[dict[str, Any]]:
+    placeholders: list[dict[str, Any]] = []
+    seen_hiref_ids: set[str] = set()
+    for allocation in sorted(
+        workbook.hiref_demand_allocations,
+        key=lambda item: (item.hiref_id, item.project_key, item.month),
+    ):
+        if allocation.hiref_id in seen_hiref_ids:
+            continue
+        seen_hiref_ids.add(allocation.hiref_id)
+        request = request_by_id.get(allocation.hiref_id)
+        project_display_name = project_by_key.get(allocation.project_key, allocation.project_key)
+        notes = ""
+        if request is not None and request.notes:
+            notes = request.notes
+        placeholders.append(
+            {
+                "placeholder_id": _placeholder_id(allocation.hiref_id),
+                "display_name": f"Open demand for {project_display_name}",
+                "source_system": SOURCE_SYSTEM,
+                "source_employee_id": "",
+                "hiref_id": allocation.hiref_id,
+                "linked_employee_id": None,
+                "resource_type": "STFTE",
+                "status": "planned",
+                "notes": notes,
+                "metadata": "{}",
+            }
+        )
+    return placeholders
+
+
+def _project_display(project_key: str, *, project_by_key: dict[str, str]) -> str:
+    project_name = project_by_key.get(project_key, project_key)
+    return f"{project_name} ({project_key})"
+
+
+def _placeholder_id(hiref_id: str) -> str:
+    suffix = slugify_text(hiref_id) or hiref_id.lower()
+    return f"placeholder-{suffix}"
 
 
 def persist_hiref_bridge_payload(

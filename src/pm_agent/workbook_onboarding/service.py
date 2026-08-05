@@ -468,7 +468,7 @@ def _build_candidate(
         revision=revision,
     )
     hiref_snapshot_present = any(
-        section.section_key.startswith("hiref_")
+        section.section_key == "hiref_requests"
         and section.resolved_sheet_name is not None
         for section in parsed.preset_resolution.sections
     )
@@ -513,11 +513,22 @@ def _build_candidate(
                 current_state_staffing_package["assignments"]
             ),
             "contract_coverage_member_records": len(contract_coverage_package["members"]),
-            "hiref_member_rows": len(validation.workbook.hiref_members),
-            "hiref_slot_rows": len(validation.workbook.hiref_slots),
-            "hiref_placeholder_rows": len(validation.workbook.hiref_placeholders),
+            "hiref_request_rows": len(validation.workbook.hiref_requests),
+            "hiref_next_assignment_rows": sum(
+                1 for member in validation.workbook.members if member.next_hiref_id
+            ),
+            "hiref_slot_rows": len(validation.workbook.hiref_requests),
+            "hiref_open_demand_rows": len(
+                validation.workbook.hiref_demand_allocations
+            ),
+            "hiref_placeholder_rows": len(
+                {
+                    allocation.hiref_id
+                    for allocation in validation.workbook.hiref_demand_allocations
+                }
+            ),
             "hiref_placeholder_allocation_rows": len(
-                validation.workbook.hiref_placeholder_allocations
+                validation.workbook.hiref_demand_allocations
             ),
         },
         "workforce_package": workforce_package,

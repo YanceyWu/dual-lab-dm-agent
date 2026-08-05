@@ -283,7 +283,7 @@ pm version
 | Layered Health | `pm init` → workforce planning → milestone / health evidence → project health re-import |
 | Attention | `pm init` → 基础事实齐备 → attention reconciliation |
 | Weekly Brief v2 | `pm init` → health / execution / attention 基础齐备 → weekly brief query / snapshot |
-| HIREF / Contract Continuity | `pm init` → Team/Project + Capacity workbook onboarding（发布 contract coverage；需要保留现有 HIREF slot/result feature points 时，在同一 workbook 中补充可选的 `HIREF Members` / `HIREF Slots` / `HIREF Placeholders` / `HIREF Placeholder Allocations` sections） |
+| HIREF / Contract Continuity | `pm init` → Team/Project + Capacity workbook onboarding（发布 contract coverage；需要保留现有 HIREF slot/result feature points 时，在同一 workbook 中补充可选的 `HIREF Requests` sheet，并使用 `Members.next_hiref_id` 与 `Allocations.hiref_id` 表达续签和 open-demand） |
 
 当前 workbook onboarding 的 review/template 文件位于：
 

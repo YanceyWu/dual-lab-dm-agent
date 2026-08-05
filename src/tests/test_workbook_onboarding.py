@@ -204,6 +204,7 @@ ALIAS_HEADERS = {
         "level",
         "effective_start",
         "effective_until",
+        "next_hiref",
     ],
     "Projects": [
         "project_id",
@@ -213,7 +214,13 @@ ALIAS_HEADERS = {
         "start_date",
         "target_end_date",
     ],
-    "Allocations": ["member_key", "project_id", "month", "allocation_fraction"],
+    "Allocations": [
+        "member_key",
+        "project_id",
+        "month",
+        "allocation_fraction",
+        "open_hiref_id",
+    ],
     "Capacity": [
         "member_key",
         "month",
@@ -592,8 +599,8 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
     workbook_path = _baseline_workbook(
         tmp_path / "hiref-bridge.xlsx",
         members=[
-            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None],
-            ["WD100002", "Blair Example", "STFTE", "active", "HIREF-CEDAR-001", "2026-10-31", "Engineer", 7, "2026-09-01", None],
+            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None, None],
+            ["WD100002", "Blair Example", "STFTE", "active", "HIREF-CEDAR-001", "2026-10-31", "Engineer", 7, "2026-09-01", None, "HIREF-CEDAR-NEXT"],
         ],
         projects=[
             ["RP-PROJ-001", "Project Atlas", "active", 2, "2026-09-01", "2026-12-31"],
@@ -601,32 +608,18 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
             ["RP-PROJ-003", "Project Cedar", "active", 2, "2026-09-01", "2026-12-31"],
         ],
         allocations=[
-            ["WD100001", "RP-PROJ-002", "2026-09", 0.5],
-            ["WD100002", "RP-PROJ-003", "2026-09", 0.8],
+            ["WD100001", "RP-PROJ-002", "2026-09", 0.5, None],
+            ["WD100002", "RP-PROJ-003", "2026-09", 0.8, None],
+            [None, "RP-PROJ-002", "2026-10", 0.5, "HIREF-OPEN-001"],
         ],
         start_month="2026-09",
         end_month="2026-10",
         extra_sheets={
-            "HIREF Members": [["WD100002", "HIREF-CEDAR-NEXT"]],
-            "HIREF Slots": [
-                ["HIREF-ATLAS-001", "Project Atlas (RP-PROJ-001)", "extend", "2026-01-01", "2026-10-15", ""],
-                ["HIREF-CEDAR-001", "Project Cedar (RP-PROJ-003)", "extend", "2026-03-01", "2026-10-31", ""],
-                ["HIREF-CEDAR-NEXT", "Project Cedar (RP-PROJ-003)", "extend", "2026-11-01", "2027-06-30", ""],
-                ["HIREF-OPEN-001", "Project Beacon (RP-PROJ-002)", "new", "2026-10-01", "2027-03-31", ""],
-            ],
-            "HIREF Placeholders": [
-                [
-                    "placeholder-qabi",
-                    "To Be Hired",
-                    "HIREF-OPEN-001",
-                    "",
-                    "",
-                    "planned",
-                    "",
-                ]
-            ],
-            "HIREF Placeholder Allocations": [
-                ["placeholder-qabi", "RP-PROJ-002", "2026-10", 0.5]
+            "HIREF Requests": [
+                ["HIREF-ATLAS-001", "RP-PROJ-001", "extend", "2026-01-01", "2026-10-15", ""],
+                ["HIREF-CEDAR-001", "RP-PROJ-003", "extend", "2026-03-01", "2026-10-31", ""],
+                ["HIREF-CEDAR-NEXT", "RP-PROJ-003", "extend", "2026-11-01", "2027-06-30", "Renewal already identified"],
+                ["HIREF-OPEN-001", "RP-PROJ-002", "new", "2026-10-01", "2027-03-31", "Open contractor demand"],
             ],
         },
     )
@@ -640,6 +633,7 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
         "placeholder_rows": 1,
         "placeholder_allocation_rows": 1,
     }
+    assert result["counts"]["hiref_request_rows"] == 4
     assert result["counts"]["hiref_slot_rows"] == 4
 
     with sqlite3.connect(isolated_db) as connection:
@@ -669,14 +663,14 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
         ("HIREF-OPEN-001", "Project Beacon (RP-PROJ-002)"),
     ]
     assert placeholder == (
-        "placeholder-qabi",
+        "placeholder-hiref-open-001",
         "workbook_onboarding",
         "HIREF-OPEN-001",
-        "",
+        "STFTE",
         "planned",
     )
     assert placeholder_allocation == (
-        "placeholder-qabi",
+        "placeholder-hiref-open-001",
         "RP-PROJ-002",
         2026,
         10,
@@ -704,11 +698,8 @@ def test_preview_workbook_rejects_partial_hiref_snapshot_sections(
     workbook_path = _baseline_workbook(
         tmp_path / "partial-hiref.xlsx",
         members=[
-            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None]
+            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None, "HIREF-ATLAS-NEXT"]
         ],
-        extra_sheets={
-            "HIREF Members": [["WD100001", "HIREF-ATLAS-NEXT"]],
-        },
     )
 
     result = preview_workbook_import(workbook_path, db_path=isolated_db)
@@ -717,10 +708,42 @@ def test_preview_workbook_rejects_partial_hiref_snapshot_sections(
     assert {
         blocker["code"] for blocker in result["blockers"]
     } >= {
-        "WORKBOOK_HIREF_SECTIONS_INCOMPLETE",
-        "WORKBOOK_HIREF_MEMBER_SLOT_NOT_FOUND",
-        "WORKBOOK_HIREF_CURRENT_SLOT_NOT_FOUND",
+        "WORKBOOK_HIREF_REQUESTS_REQUIRED",
+        "WORKBOOK_HIREF_NEXT_REQUEST_NOT_FOUND",
+        "WORKBOOK_HIREF_CURRENT_REQUEST_NOT_FOUND",
     }
+
+
+def test_preview_workbook_rejects_open_hiref_demand_project_mismatch(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "hiref-demand-mismatch.xlsx",
+        projects=[
+            ["RP-PROJ-001", "Project Atlas", "active", 2, "2026-09-01", "2026-12-31"],
+            ["RP-PROJ-002", "Project Beacon", "active", 3, "2026-09-01", "2026-12-31"],
+        ],
+        allocations=[
+            ["WD100001", "RP-PROJ-001", "2026-09", 0.5, None],
+            [None, "RP-PROJ-002", "2026-09", 0.3, "HIREF-ATLAS-001"],
+        ],
+        members=[
+            ["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-09-01", None, None]
+        ],
+        extra_sheets={
+            "HIREF Requests": [
+                ["HIREF-ATLAS-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", ""]
+            ]
+        },
+    )
+
+    result = preview_workbook_import(workbook_path, db_path=isolated_db)
+
+    assert result["status"] == "rejected"
+    assert {
+        blocker["code"] for blocker in result["blockers"]
+    } >= {"WORKBOOK_HIREF_OPEN_DEMAND_PROJECT_MISMATCH"}
 
 
 def test_import_workbook_empty_hiref_snapshot_clears_stale_bridge_rows(
@@ -773,10 +796,7 @@ def test_import_workbook_empty_hiref_snapshot_clears_stale_bridge_rows(
     workbook_path = _baseline_workbook(
         tmp_path / "empty-hiref-snapshot.xlsx",
         extra_sheets={
-            "HIREF Members": [],
-            "HIREF Slots": [],
-            "HIREF Placeholders": [],
-            "HIREF Placeholder Allocations": [],
+            "HIREF Requests": [],
         },
     )
 

@@ -167,6 +167,7 @@ ALIAS_HEADERS = {
         "level",
         "effective_start",
         "effective_until",
+        "next_hiref",
     ],
     "Projects": [
         "project_id",
@@ -176,7 +177,13 @@ ALIAS_HEADERS = {
         "start_date",
         "target_end_date",
     ],
-    "Allocations": ["member_key", "project_id", "month", "allocation_fraction"],
+    "Allocations": [
+        "member_key",
+        "project_id",
+        "month",
+        "allocation_fraction",
+        "open_hiref_id",
+    ],
     "Capacity": [
         "member_key",
         "month",

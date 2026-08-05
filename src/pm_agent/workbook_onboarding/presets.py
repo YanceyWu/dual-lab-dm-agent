@@ -119,6 +119,7 @@ _BASELINE_SECTIONS = (
             WorkbookPresetField("level", "level"),
             WorkbookPresetField("effective_start", "effective_start"),
             WorkbookPresetField("effective_end", "effective_end"),
+            WorkbookPresetField("next_hiref_id", "next_hiref_id"),
         ),
     ),
     _section(
@@ -141,6 +142,7 @@ _BASELINE_SECTIONS = (
             WorkbookPresetField("project_key", "project_key"),
             WorkbookPresetField("month", "month"),
             WorkbookPresetField("allocation", "allocation"),
+            WorkbookPresetField("hiref_id", "hiref_id"),
         ),
     ),
     _section(
@@ -155,50 +157,16 @@ _BASELINE_SECTIONS = (
         ),
     ),
     _section(
-        "hiref_members",
-        "HIREF Members",
-        required=False,
-        fields=(
-            WorkbookPresetField("member_key", "member_key"),
-            WorkbookPresetField("next_hiref_id", "next_hiref_id"),
-        ),
-    ),
-    _section(
-        "hiref_slots",
-        "HIREF Slots",
+        "hiref_requests",
+        "HIREF Requests",
         required=False,
         fields=(
             WorkbookPresetField("hiref_id", "hiref_id"),
-            WorkbookPresetField("project", "project"),
+            WorkbookPresetField("project_key", "project_key"),
             WorkbookPresetField("request_type", "request_type"),
             WorkbookPresetField("start_date", "start_date"),
             WorkbookPresetField("end_date", "end_date"),
             WorkbookPresetField("notes", "notes"),
-        ),
-    ),
-    _section(
-        "hiref_placeholders",
-        "HIREF Placeholders",
-        required=False,
-        fields=(
-            WorkbookPresetField("placeholder_id", "placeholder_id"),
-            WorkbookPresetField("display_name", "display_name"),
-            WorkbookPresetField("hiref_id", "hiref_id"),
-            WorkbookPresetField("linked_member_key", "linked_member_key"),
-            WorkbookPresetField("resource_type", "resource_type"),
-            WorkbookPresetField("status", "status"),
-            WorkbookPresetField("notes", "notes"),
-        ),
-    ),
-    _section(
-        "hiref_placeholder_allocations",
-        "HIREF Placeholder Allocations",
-        required=False,
-        fields=(
-            WorkbookPresetField("placeholder_id", "placeholder_id"),
-            WorkbookPresetField("project_key", "project_key"),
-            WorkbookPresetField("month", "month"),
-            WorkbookPresetField("allocation", "allocation"),
         ),
     ),
 )
@@ -230,6 +198,7 @@ _ALIAS_SECTIONS = (
             WorkbookPresetField("level", "level"),
             WorkbookPresetField("effective_start", "effective_start"),
             WorkbookPresetField("effective_end", "effective_end", ("effective_until",)),
+            WorkbookPresetField("next_hiref_id", "next_hiref_id", ("next_hiref",)),
         ),
     ),
     _section(
@@ -254,6 +223,7 @@ _ALIAS_SECTIONS = (
             WorkbookPresetField("project_key", "project_key", ("project_id",)),
             WorkbookPresetField("month", "month"),
             WorkbookPresetField("allocation", "allocation", ("allocation_fraction",)),
+            WorkbookPresetField("hiref_id", "hiref_id", ("open_hiref_id",)),
         ),
     ),
     _section(
@@ -273,50 +243,17 @@ _ALIAS_SECTIONS = (
         ),
     ),
     _section(
-        "hiref_members",
-        "HIREF Members",
+        "hiref_requests",
+        "HIREF Requests",
         required=False,
-        fields=(
-            WorkbookPresetField("member_key", "member_key"),
-            WorkbookPresetField("next_hiref_id", "next_hiref_id", ("next_hiref",)),
-        ),
-    ),
-    _section(
-        "hiref_slots",
-        "HIREF Slots",
-        required=False,
+        sheet_aliases=("Contract Requests",),
         fields=(
             WorkbookPresetField("hiref_id", "hiref_id"),
-            WorkbookPresetField("project", "project", ("project_name",)),
+            WorkbookPresetField("project_key", "project_key", ("project_id",)),
             WorkbookPresetField("request_type", "request_type"),
             WorkbookPresetField("start_date", "start_date"),
             WorkbookPresetField("end_date", "end_date"),
             WorkbookPresetField("notes", "notes"),
-        ),
-    ),
-    _section(
-        "hiref_placeholders",
-        "HIREF Placeholders",
-        required=False,
-        fields=(
-            WorkbookPresetField("placeholder_id", "placeholder_id"),
-            WorkbookPresetField("display_name", "display_name", ("placeholder_name",)),
-            WorkbookPresetField("hiref_id", "hiref_id"),
-            WorkbookPresetField("linked_member_key", "linked_member_key", ("linked_member_id",)),
-            WorkbookPresetField("resource_type", "resource_type"),
-            WorkbookPresetField("status", "status"),
-            WorkbookPresetField("notes", "notes"),
-        ),
-    ),
-    _section(
-        "hiref_placeholder_allocations",
-        "HIREF Placeholder Allocations",
-        required=False,
-        fields=(
-            WorkbookPresetField("placeholder_id", "placeholder_id"),
-            WorkbookPresetField("project_key", "project_key", ("project_id",)),
-            WorkbookPresetField("month", "month"),
-            WorkbookPresetField("allocation", "allocation", ("allocation_fraction",)),
         ),
     ),
 )
@@ -330,6 +267,7 @@ _PRESETS = (
         capacity_row_coverage_policy="missing_row_means_unknown",
         semantic_notes=(
             "Canonical workforce and capacity packages match the Batch A workbook v1 baseline.",
+            "B4 contract coverage uses Members.next_hiref_id, optional Allocations.hiref_id open-demand rows, and an optional HIREF Requests sheet instead of technical placeholder snapshot sheets.",
         ),
     ),
     WorkbookPreset(
@@ -340,6 +278,7 @@ _PRESETS = (
         capacity_row_coverage_policy="missing_row_means_unknown",
         semantic_notes=(
             "Accepted sheet/header aliases still produce the same canonical packages as workbook v1.",
+            "Alias mode keeps the same B4 HIREF simplification semantics as the primary workbook contract.",
         ),
     ),
 )

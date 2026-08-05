@@ -108,9 +108,10 @@ stable synthetic identifiers and includes an explicit zero allocation so that
 known zero remains distinguishable from a missing manifest record.
 
 `excel/team_project_capacity_workbook_hiref_sample.xlsx` is a synthetic, valid
-sample workbook for the current workbook onboarding path. It includes the full
-HIREF sheet set so reviewers can inspect the supported shape for contract
-coverage plus legacy HIREF slot/result projection inputs in one file. The
+sample workbook for the current workbook onboarding path. It demonstrates the
+B4 simplified HIREF contract: `Members.next_hiref_id`, `Allocations.hiref_id`
+for open demand, and an optional `HIREF Requests` sheet that supplies the
+minimum explicit slot facts still needed by retained HIREF consumers. The
 header-only review template for this workbook contract lives at
 `templates/team_project_capacity_workbook_template.xlsx`.
 
