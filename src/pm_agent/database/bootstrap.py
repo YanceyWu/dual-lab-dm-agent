@@ -2063,7 +2063,6 @@ def _seed_use_cases(conn: sqlite3.Connection) -> None:
             "decision_type": "allocation",
             "source_systems_json": [
                 "import-resource-portal",
-                "import-skills-matrix",
                 "import-hiref-report",
             ],
             "core_tables_json": [
@@ -2290,6 +2289,18 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
     if not _table_exists(conn, "data_sources"):
         return
 
+    conn.execute(
+        """
+        UPDATE data_sources
+        SET source_name = 'Retired Skills Matrix Import',
+            active = 0,
+            config_json = '{}',
+            notes = 'Retired legacy skills source kept only for historical sync-run integrity.',
+            updated_at = datetime('now')
+        WHERE id = 'import-skills-matrix'
+        """
+    )
+
     definitions = [
         {
             "id": "import-resource-portal",
@@ -2310,16 +2321,6 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
             "active": 1,
             "config_json": {"script": "scripts/import_hiref.py"},
             "notes": "Contract and expiry enrichment import.",
-        },
-        {
-            "id": "import-skills-matrix",
-            "source_type": "json",
-            "source_name": "Skills Matrix Import",
-            "ingestion_mode": "file",
-            "refresh_sla_hours": 720,
-            "active": 1,
-            "config_json": {"script": "scripts/import_skills.py"},
-            "notes": "Role, level, and skill enrichment import.",
         },
         {
             "id": "servicenow-change-requests",

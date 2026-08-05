@@ -34,9 +34,9 @@ def test_confirm_allocation_reuses_existing_active_assignment(isolated_db: Path)
         con.execute(
             """
             INSERT INTO employees
-                (id, wd_id, name, level, status, skills)
+                (id, wd_id, name, level, status)
             VALUES
-                ('990102', '990102', 'Alex Example', 'mid', 'active', '{"python": 0.8}')
+                ('990102', '990102', 'Alex Example', 'mid', 'active')
             """
         )
         con.execute(
@@ -106,9 +106,9 @@ def test_weekly_report_includes_confluence_and_change_request_signals(
         con.execute(
             """
             INSERT INTO employees
-                (id, wd_id, name, level, status, skills)
+                (id, wd_id, name, level, status)
             VALUES
-                ('990101', '990101', 'Blair Example', 'senior', 'active', '{"delivery": 0.9}')
+                ('990101', '990101', 'Blair Example', 'senior', 'active')
             """
         )
         con.execute(
@@ -176,9 +176,9 @@ def test_recommendation_reads_current_state_staffing_publication(
         con.execute(
             """
             INSERT INTO employees
-                (id, wd_id, name, level, status, skills)
+                (id, wd_id, name, level, status)
             VALUES
-                ('990103', '990103', 'Casey Example', 'senior', 'active', '{"python": 0.9}')
+                ('990103', '990103', 'Casey Example', 'senior', 'active')
             """
         )
         con.execute(
@@ -206,13 +206,13 @@ def test_recommendation_reads_current_state_staffing_publication(
         AllocationRequest(
             query="allocate",
             project_id="project-atlas-990001",
-            required_skills=["python"],
         )
     )
 
     assert result.success is True
     candidate = result.data["all_scores"][0]
     assert candidate["breakdown"]["availability"] == 0.4
+    assert "skill" not in candidate["breakdown"]
     assert "已在该项目组" in candidate["reason"]
 
 
@@ -225,9 +225,9 @@ def test_recommendation_omits_publication_only_members(
         con.execute(
             """
             INSERT INTO employees
-                (id, wd_id, name, level, status, skills)
+                (id, wd_id, name, level, status)
             VALUES
-                ('990104', '990104', 'Dana Example', 'senior', 'active', '{"python": 0.9}')
+                ('990104', '990104', 'Dana Example', 'senior', 'active')
             """
         )
         con.commit()
@@ -278,7 +278,6 @@ def test_recommendation_omits_publication_only_members(
         AllocationRequest(
             query="allocate",
             project_id="project-atlas-990001",
-            required_skills=["python"],
         )
     )
 

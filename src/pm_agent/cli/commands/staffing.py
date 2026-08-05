@@ -14,12 +14,11 @@ service = StaffingProposalService()
 
 
 def _demand(
-    project: str, start: str, end: str, effort: float, role: str, skills: str,
+    project: str, start: str, end: str, effort: float, role: str,
     minimum: float, maximum_people: int, splittable: bool, plan_version: Optional[str],
 ) -> StaffingDemand:
     return StaffingDemand(
         project_id=project, start_period=start, end_period=end, effort=effort, role=role,
-        required_skills=[skill.strip().lower() for skill in skills.split(",") if skill.strip()],
         minimum_allocation=minimum, maximum_people=maximum_people, splittable=splittable,
         plan_version_id=plan_version,
     )
@@ -33,19 +32,19 @@ def _emit(payload: dict) -> None:
 def assess(
     project: str = typer.Option(..., "--project"), start: str = typer.Option(..., "--start"),
     end: str = typer.Option(..., "--end"), effort: float = typer.Option(..., "--effort"),
-    role: str = typer.Option("", "--role"), skills: str = typer.Option("", "--skills"),
+    role: str = typer.Option("", "--role"),
     minimum: float = typer.Option(0.1, "--minimum"), maximum_people: int = typer.Option(1, "--maximum-people"),
     splittable: bool = typer.Option(True, "--splittable/--no-split"), plan_version: Optional[str] = typer.Option(None, "--plan-version"),
 ):
     """Assess whether a demand is feasible; does not write data."""
-    _emit(assess_feasibility(_demand(project, start, end, effort, role, skills, minimum, maximum_people, splittable, plan_version)))
+    _emit(assess_feasibility(_demand(project, start, end, effort, role, minimum, maximum_people, splittable, plan_version)))
 
 
 @staffing_app.command("propose")
 def propose(
     project: str = typer.Option(..., "--project"), start: str = typer.Option(..., "--start"),
     end: str = typer.Option(..., "--end"), effort: float = typer.Option(..., "--effort"),
-    role: str = typer.Option("", "--role"), skills: str = typer.Option("", "--skills"),
+    role: str = typer.Option("", "--role"),
     minimum: float = typer.Option(0.1, "--minimum"), maximum_people: int = typer.Option(1, "--maximum-people"),
     splittable: bool = typer.Option(True, "--splittable/--no-split"), plan_version: Optional[str] = typer.Option(None, "--plan-version"),
     expires_minutes: int = typer.Option(30, "--expires-minutes", min=1, max=1440),
@@ -79,7 +78,6 @@ def propose(
                 end,
                 effort,
                 role,
-                skills,
                 minimum,
                 maximum_people,
                 splittable,

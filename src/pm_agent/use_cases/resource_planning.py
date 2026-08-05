@@ -11,7 +11,6 @@ from pm_agent.database import decision_log, repository
 class AllocationRequest(ServiceRequest):
     project_id: str
     role: str = ""
-    required_skills: list[str] = []
     task_type: str = "general"
     count: int = 1
 
@@ -86,7 +85,6 @@ class ResourcePlanningService(BaseService):
             result = scoring.score_member(
                 member=m,
                 active_projects=active_projects,
-                required_skills=inp.required_skills,
                 target_project_id=inp.project_id,
                 task_type=inp.task_type,
                 historical_outcomes=outcomes,

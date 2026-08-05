@@ -19,7 +19,6 @@ from pm_agent.rules.hiref import project_alignment_status
 RULE_VERSION = "staffing-feasibility-v2"
 CAPACITY_RULE_VERSION = "staffing-effective-capacity-v1"
 STAFFING_SOURCE_IDS = (
-    "import-skills-matrix",
     "import-hiref-report",
 )
 CURRENT_STATE_PUBLICATION_SOURCE_ID = "current-state-staffing-publication"
@@ -40,7 +39,6 @@ class StaffingDemand(BaseModel):
     end_period: str
     effort: float = Field(gt=0)
     role: str = ""
-    required_skills: list[str] = Field(default_factory=list)
     minimum_allocation: float = Field(default=0.1, gt=0, le=1)
     maximum_people: int = Field(default=1, ge=1)
     splittable: bool = True
@@ -81,7 +79,7 @@ def staffing_read_model(demand: StaffingDemand) -> dict[str, Any]:
             member = members.setdefault(
                 fact["id"],
                 {
-                    "member_id": fact["id"], "name": fact["name"], "skills": fact["skills"],
+                    "member_id": fact["id"], "name": fact["name"],
                     "role": fact.get("role") or "",
                     "resource_type": fact.get("resource_type", ""), "periods": {},
                 },
@@ -145,9 +143,6 @@ def assess_feasibility(demand: StaffingDemand) -> dict[str, Any]:
         )
         if any(state["status"] != "active" for state in member["periods"].values()):
             reasons.append("member_not_active")
-        missing_skills = [skill for skill in demand.required_skills if member["skills"].get(skill.lower(), 0) <= 0]
-        if missing_skills:
-            reasons.append("missing_required_skills")
         capacity_evidence = []
         if model["capacity_required"]:
             expected_periods = [

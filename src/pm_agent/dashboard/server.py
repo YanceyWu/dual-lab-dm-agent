@@ -583,11 +583,6 @@ def employees():
         else None
         )
         emp["is_contractor"] = emp.get("resource_type") == "STFTE"
-        if not isinstance(emp.get("skills"), dict):
-            try:
-                emp["skills"] = json.loads(emp.get("skills") or "{}")
-            except (TypeError, json.JSONDecodeError):
-                emp["skills"] = {}
         emp["projects"] = [
             {
                 "name": item["project_name"],

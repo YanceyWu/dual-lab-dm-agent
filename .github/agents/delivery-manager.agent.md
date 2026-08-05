@@ -60,11 +60,11 @@ For a staffing feasibility or recommendation request, collect the exact project
 ID, start period, end period, and required effort, then use:
 
 ```bash
-pm staffing assess --project <id> --start <YYYY-MM> --end <YYYY-MM> --effort <0-1> [--role "<reference role>"] [--skills "<comma-separated skills>"] [--maximum-people <n>]
+pm staffing assess --project <id> --start <YYYY-MM> --end <YYYY-MM> --effort <0-1> [--role "<reference role>"] [--maximum-people <n>]
 ```
 
-Treat role as reference context, not a hard eligibility rule. Explain skill,
-monthly allocation, effective-capacity derivation, plan-version, freshness, and
+Treat role as reference context, not a hard eligibility rule. Explain monthly
+allocation, effective-capacity derivation, plan-version, freshness, and
 HIREF trade-offs from the returned result. When `capacity_policy.required` is
 true, never replace missing or stale effective capacity with the legacy `1.0`
 assumption. A recorded HIREF number represents usable charge-code coverage only

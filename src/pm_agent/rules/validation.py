@@ -44,21 +44,6 @@ def validate_member(m: dict) -> ValidationResult:
         )
         m["current_load"] = min(load, 1.0)
 
-    skills = m.get("skills", {})
-    if not isinstance(skills, dict):
-        r.add_warning(f"{m['id']}: skills is not a dict, resetting to empty")
-        m["skills"] = {}
-    else:
-        for skill, score in list(skills.items()):
-            if not isinstance(score, (int, float)):
-                r.add_warning(f"{m['id']}.skills.{skill}: invalid value, defaulting to 0")
-                skills[skill] = 0.0
-            elif not 0.0 <= score <= 1.0:
-                r.add_warning(
-                    f"{m['id']}.skills.{skill}={score} out of [0,1], clamping"
-                )
-                skills[skill] = max(0.0, min(score, 1.0))
-
     return r
 
 
@@ -83,10 +68,6 @@ def validate_allocation_request(req: dict) -> ValidationResult:
         r.add_warning("No role specified — skipping team_fit scoring")
     if req.get("count", 1) < 1:
         r.add_error("count must be >= 1")
-
-    required = req.get("required_skills", [])
-    if not required:
-        r.add_warning("No required_skills specified — skill scoring will be neutral (0.5)")
 
     return r
 

@@ -63,19 +63,15 @@ def register(app: typer.Typer) -> None:
     @app.command()
     def allocate(
         project_id: str = typer.Option(..., "--project", "-p", help="项目ID (slug)"),
-        skills: str = typer.Option("", "--skills", "-s", help="技能列表, 逗号分隔: java,aws"),
         role: str = typer.Option("", "--role", "-r", help="角色: backend_developer"),
         task_type: str = typer.Option("general", "--type", help="任务类型, 用于历史查询"),
         count: int = typer.Option(1, "--count", "-n", help="需要人数"),
     ):
         """推荐最佳人员分配方案"""
-        required_skills = [skill.strip().lower() for skill in skills.split(",") if skill.strip()]
-
         allocation_input = AllocationRequest(
             query=f"allocate for {project_id}",
             project_id=project_id,
             role=role,
-            required_skills=required_skills,
             task_type=task_type,
             count=count,
         )
@@ -100,8 +96,7 @@ def register(app: typer.Typer) -> None:
         console.print(
             Panel(
                 f"[bold]项目：[/bold]{project['name']}  "
-                f"[bold]需求：[/bold]{count}人 {role or ''}  "
-                + (f"[bold]技能：[/bold]{', '.join(required_skills)}" if required_skills else ""),
+                f"[bold]需求：[/bold]{count}人 {role or ''}",
                 title="[bold cyan]📋 资源分配推荐[/bold cyan]",
                 border_style="cyan",
             )
@@ -113,7 +108,6 @@ def register(app: typer.Typer) -> None:
             table.add_column("级别", width=8)
             table.add_column("负载", width=6)
             table.add_column("综合分", width=8)
-            table.add_column("技能", width=6)
             table.add_column("推荐原因", style="dim")
 
             for member in option["members"]:
@@ -126,7 +120,6 @@ def register(app: typer.Typer) -> None:
                     "",
                     f"[{load_color}]{load:.0%}[/{load_color}]",
                     f"[{score_color}]{member['score']:.3f}[/{score_color}]",
-                    f"{breakdown.get('skill', 0):.0%}",
                     member.get("reason", ""),
                 )
 
@@ -262,7 +255,6 @@ def register(app: typer.Typer) -> None:
         table.add_column("团队", width=12)
         table.add_column("负载", width=8)
         table.add_column("项目数", width=6)
-        table.add_column("技能", style="dim")
 
         for member_row in sorted(
             members,
@@ -282,7 +274,6 @@ def register(app: typer.Typer) -> None:
                 if isinstance(load, (int, float)) and load < 0.9
                 else "red"
             )
-            skills_preview = ", ".join(list(member_row.get("skills", {}).keys())[:4])
             table.add_row(
                 member_row["name"],
                 member_row.get("level", "-"),
@@ -293,7 +284,6 @@ def register(app: typer.Typer) -> None:
                     else "[dim]unknown[/dim]"
                 ),
                 str(proj_count) if proj_count is not None else "?",
-                skills_preview,
             )
 
         console.print(table)

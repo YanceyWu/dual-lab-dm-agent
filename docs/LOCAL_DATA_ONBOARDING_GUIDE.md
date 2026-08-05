@@ -252,7 +252,7 @@ pm version
    - JIRA board configs
    - Confluence page registry
 5. **来源事实 / 补充导入**
-   - 例如 change requests、HIREF、skills、project profiles
+   - 例如 change requests、HIREF、project profiles
 6. **canonical milestone import**
 7. **project health re-import / seven-dimension assessment**
 8. **attention reconciliation**

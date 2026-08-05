@@ -253,6 +253,10 @@ def test_legacy_member_and_project_views_are_derived_from_current_publication(
             WHERE project_id = 'RP-PROJ-001'
             """
         ).fetchone()
+        member_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(v_member_load)").fetchall()
+        }
 
     assert member_row == ("WD100001", "Alex Example", "Platform", 5, 0.6, 1)
     assert project_row == (
@@ -264,6 +268,7 @@ def test_legacy_member_and_project_views_are_derived_from_current_publication(
         "Alex Example",
         0.6,
     )
+    assert "skills" not in member_columns
 
 
 def test_current_state_publication_freshness_is_decoupled_from_legacy_source_sla(

@@ -5,11 +5,12 @@ Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this branch now carries the accepted clean A3 baseline commit
 `4a3a77588ecde07d5f75f9839105875350f4f898`, the bounded local A4
 compatibility-closure / legacy-deletion commit, and the committed local B0
-post-Batch-A redesign freeze at `7eba012`. The separate aborted runtime attempt
-remains excluded and must not be inherited as partial work
+post-Batch-A redesign freeze at `7eba012`. The current working tree now also
+implements the bounded local B1 skills-retirement slice. The separate aborted
+runtime attempt remains excluded and must not be inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; POST-BATCH-A DESIGN NOW RETIRES LEGACY SKILLS AND NARROWS FOLLOW-ON WORK TO B1 SKILLS RETIREMENT PLUS B2-B4 CONTRACT COVERAGE CONVERGENCE`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, AND THE POST-BATCH-A REDESIGN IS NOW FROZEN; NEXT WORK MUST START IN A SEPARATE B1-ONLY SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED IN THIS SESSION; ONLY B2 CONTRACT-COVERAGE SKELETON REMAINS AS THE NEXT APPROVED GATE`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, AND B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY; ANY FURTHER WORK MUST START IN A SEPARATE B2-ONLY SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -115,8 +116,13 @@ belong in Git history and must not be interpreted as current instructions.
   CLI adapters. The current A3 working tree now migrates those A-scope readers'
   freshness and evidence semantics to canonical current-state staffing
   publication authority, including stale/partial/unknown/unavailable handling
-  and compatibility-route suppression rules. Skills/HIREF source ownership,
-  mutable write paths, and legacy deletion still do not change in this slice.
+  and compatibility-route suppression rules. The current local B1 working tree
+  now closes only the approved skills-retirement follow-on slice: staffing and
+  resource-allocation runtime no longer depend on `employees.skills`, the legacy
+  `import-skills-matrix` source is no longer a staffing freshness/gating
+  authority, the direct skills script/operator surface is retired, and HIREF /
+  contract ownership plus mutable write-path redesign remain deferred to B2-B4
+  and later authorized work.
 - Phase 4 clean re-import confirmation now runs the deterministic
   seven-dimension assessment for every covered project and reports the real
   dimension states; `layered-project-health-review` reads those persisted
@@ -215,6 +221,30 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-036 Batch B1 skills retirement now builds locally on the committed B0 freeze
+at `7eba012` and the required clean baseline `e2c02b361bbd0c713a593496a58f9de6fff54225`.
+The working tree removes product runtime dependence on `employees.skills`,
+retires the legacy `import_skills.py` operator path plus its direct docs/sample
+surface, removes `import-skills-matrix` from staffing freshness/gating, and
+demotes any pre-existing skills data-source row to an inactive historical record
+so old `sync_runs` remain bootstrap-safe without reintroducing the source as a
+supported feature. Focused B1 regression passed `58` tests across
+`src/tests/test_staffing_pipeline.py`,
+`src/tests/test_allocation_and_weekly_report.py`,
+`src/tests/test_database_path_resolution.py`,
+`src/tests/test_staffing_capacity_consumption.py`,
+`src/tests/test_current_state_staffing.py`, and
+`src/tests/test_unified_use_case_contract.py::test_dashboard_employees_suppress_load_for_partial_current_state_publication`.
+Final `make validate` passed all nine release-validation checks with `430`
+runtime tests plus `33` repository-tool tests and `19` subtests. Final
+`make rehearse-release` passed wheel install, isolated clean bootstrap,
+upgrade-copy rehearsal, and rollback. The first read-only diff review found one
+high-confidence bootstrap foreign-key regression around deleting the legacy data
+source row and one remaining `v_member_load` skills projection; both were
+corrected, focused tests were rerun, and the final read-only re-review reported
+no remaining high-confidence issue. B0 is closed, B1 is now closed locally, and
+the next approved gate is a separate **B2-only** session.
 
 IP-036 Batch A3 freshness/evidence migration now builds locally on the accepted
 A2 commit `5728da0833587f69495422e0677bf0b682747ef6`. The final focused A3
@@ -814,6 +844,44 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 Batch B1 skills retirement implemented locally
+
+- Confirmed this session started from the required clean accepted baseline:
+  `git status --short` was empty and `HEAD` was exactly
+  `e2c02b361bbd0c713a593496a58f9de6fff54225` before any edit.
+- Implemented only the approved B1 skills-retirement slice:
+  - staffing/runtime decision paths no longer read `employees.skills`;
+  - `import-skills-matrix` is no longer a staffing freshness blocker,
+    proposal/confirmation override authority, or resource-allocation dependency;
+  - `pm staffing` and related operator guidance no longer advertise `--skills`;
+  - Dashboard/member-context and compatibility workload surfaces no longer
+    expose skills as a supported runtime fact;
+  - `src/scripts/import_skills.py` and its direct sample/doc/test surface were
+    retired;
+  - clean bootstrap no longer seeds a supported skills data source, and
+    pre-existing legacy rows are demoted to inactive historical records rather
+    than being deleted unsafely.
+- Preserved the frozen Batch A / B0 boundaries:
+  - current-state staffing `unknown` / `unavailable` / `partial` / `stale`
+    semantics remain explicit;
+  - HIREF / contract action semantics remain intact and continue to gate only on
+    the retained HIREF source/publication context;
+  - no B2/B3/B4 capability work, HIREF migration, or new skills capability
+    design was introduced.
+- Validation / review evidence:
+  - focused B1 regression: `58 passed`
+  - `make validate`
+  - `make rehearse-release`
+  - read-only diff review found and the working tree corrected one bootstrap FK
+    retirement bug plus one lingering `v_member_load` skills projection; final
+    re-review found no remaining high-confidence issue.
+- Commit / push status:
+  - committed locally in this session;
+  - not pushed.
+- Exact next recommended action:
+  - open a new session only for **IP-036 Batch B2 — contract coverage contract
+    skeleton**.
 
 ### 2026-08-05 — IP-036 post-Batch-A redesign updated for skills retirement
 

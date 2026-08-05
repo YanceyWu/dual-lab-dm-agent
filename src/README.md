@@ -115,7 +115,6 @@ pm staffing assess \
   --start <YYYY-MM> \
   --end <YYYY-MM> \
   --effort <0-1> \
-  --skills "<comma-separated skills>" \
   --maximum-people <count>
 ```
 

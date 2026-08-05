@@ -161,7 +161,7 @@ def _load_active_employee_rows(con: sqlite3.Connection) -> list[dict[str, Any]]:
         for row in con.execute(
             """
             SELECT id,wd_id,name,email,role,level,team,lead_id,max_parallel,status,notes,
-                   skills,resource_type,billing_rate,billing_end_date,hiref_id,
+                   resource_type,billing_rate,billing_end_date,hiref_id,
                    current_hiref,next_hiref
             FROM employees
             WHERE status='active'
@@ -199,7 +199,6 @@ def _project_member_record(
     external_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     if employee is not None:
-        skills = _json_loads_or(employee.get("skills"), {})
         role = str(employee.get("role") or (current_member.get("role") if current_member else "") or "")
         level = str(
             employee.get("level") or (current_member.get("level") if current_member else "") or ""
@@ -232,7 +231,6 @@ def _project_member_record(
             "status": str(employee.get("status") or "active"),
             "employee_status": str(employee.get("status") or "active"),
             "notes": str(employee.get("notes") or ""),
-            "skills": skills if isinstance(skills, dict) else {},
             "resource_type": resource_type,
             "billing_rate": employee.get("billing_rate") or "",
             "billing_end_date": billing_end_date,
@@ -255,7 +253,6 @@ def _project_member_record(
             "status": current_member["employment_status"],
             "employee_status": current_member["employment_status"],
             "notes": "",
-            "skills": {},
             "resource_type": current_member["resource_type"] or "",
             "billing_rate": "",
             "billing_end_date": current_member["hiref_end_date"] or "",
@@ -1693,7 +1690,6 @@ def get_staffing_facts(
             if not employee:
                 continue
             item = dict(employee)
-            item["skills"] = _json_loads_or(item.get("skills"), {})
             item["month_load"] = float(row.get("month_load") or 0.0)
             item["plan_version_id"] = (plan_version or {}).get("plan_version_id")
             hiref_id = item.get("current_hiref") or ""

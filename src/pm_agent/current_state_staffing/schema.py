@@ -140,16 +140,7 @@ SELECT
         3
     ) AS max_parallel,
     l.current_load AS current_load,
-    l.active_project_count AS active_projects,
-    COALESCE(
-        (
-            SELECT e.skills
-            FROM employees e
-            WHERE e.id = m.member_id OR COALESCE(e.wd_id, '') = m.member_id
-            LIMIT 1
-        ),
-        '{}'
-    ) AS skills
+    l.active_project_count AS active_projects
 FROM current_publication cp
 JOIN current_state_staffing_members m
   ON m.publication_id = cp.publication_id

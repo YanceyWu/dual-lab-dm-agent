@@ -53,7 +53,6 @@ def record_allocation(
                 "project_name": project_name,
                 "task_type": requirement.get("task_type", ""),
                 "role": requirement.get("role", ""),
-                "required_skills": requirement.get("required_skills", []),
                 "count": requirement.get("count", 1),
                 "recorded_at": datetime.now().isoformat(),
             },

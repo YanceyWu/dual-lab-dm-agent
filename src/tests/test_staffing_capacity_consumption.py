@@ -40,7 +40,6 @@ def _bootstrap_workforce(db_path: Path) -> None:
     )
     for source_id in (
         "import-resource-portal",
-        "import-skills-matrix",
         "import-hiref-report",
     ):
         run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")

@@ -7,7 +7,7 @@ import pytest
 from pm_agent.config import get_database_path, settings
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.sync.jira import health_sync
-from scripts import import_project_profiles, import_skills
+from scripts import import_project_profiles
 
 
 def test_database_path_is_resolved_at_call_time(
@@ -44,5 +44,4 @@ def test_dashboard_connection_honors_setting_changed_after_import(
 
 def test_database_consumers_share_call_time_resolver() -> None:
     assert health_sync.get_database_path is get_database_path
-    assert import_skills.get_database_path is get_database_path
     assert import_project_profiles.get_database_path is get_database_path

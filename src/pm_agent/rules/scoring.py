@@ -38,22 +38,6 @@ class AllocationOption:
     combined_score: float
 
 
-# ──────────────────────────────────────────────
-# Dimension calculators
-# ──────────────────────────────────────────────
-
-def calc_skill_match(member_skills: dict[str, float], required_skills: list[str]) -> float:
-    """
-    Average proficiency across all required skills.
-    Missing skill → 0.0 (not an error).
-    Empty required list → neutral 0.5.
-    """
-    if not required_skills:
-        return 0.5
-    scores = [member_skills.get(skill.lower(), 0.0) for skill in required_skills]
-    return sum(scores) / len(scores)
-
-
 def calc_availability(current_load: float) -> float:
     """Simple complement: 100% load = 0 availability."""
     return max(0.0, 1.0 - current_load)
@@ -109,7 +93,6 @@ def check_hard_rules(
 def score_member(
     member: dict,
     active_projects: list[str],
-    required_skills: list[str],
     target_project_id: str,
     task_type: str,
     historical_outcomes: list[str],       # from repository.get_decision_outcomes()
@@ -129,31 +112,23 @@ def score_member(
         )
 
     # Dimension scores
-    skill   = calc_skill_match(member.get("skills", {}), required_skills)
     avail   = calc_availability(member.get("current_load", 0.0))
     track   = calc_track_record(historical_outcomes)
     fit     = calc_team_fit(active_projects, target_project_id)
 
     # Weighted total
     total = (
-        skill * weights.skill_weight
-        + avail * weights.availability_weight
+        avail * weights.availability_weight
         + track * weights.track_record_weight
         + fit   * weights.team_fit_weight
     )
     total = round(min(total, 1.0), 3)
 
     breakdown = {
-        "skill":        round(skill, 3),
         "availability": round(avail, 3),
         "track_record": round(track, 3),
         "team_fit":     round(fit, 3),
     }
-
-    # Skill gap warning (below threshold but not excluded)
-    min_skill = rules.min_skill_threshold
-    if skill < min_skill and not blocked:
-        block_reason = f"⚠ 技能匹配较低 ({skill:.0%})"
 
     return ScoringResult(
         member_id=member["id"],
@@ -168,13 +143,6 @@ def score_member(
 
 def _build_reason(bd: dict[str, float], member: dict) -> str:
     parts: list[str] = []
-    if bd["skill"] >= 0.8:
-        parts.append(f"技能匹配高({bd['skill']:.0%})")
-    elif bd["skill"] >= 0.5:
-        parts.append(f"技能匹配中({bd['skill']:.0%})")
-    else:
-        parts.append(f"技能匹配低({bd['skill']:.0%})")
-
     avail_pct = bd["availability"]
     load_pct = 1.0 - avail_pct
     parts.append(f"当前负载{load_pct:.0%}")

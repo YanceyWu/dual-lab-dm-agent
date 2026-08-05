@@ -30,14 +30,14 @@ def _seed_staffing_facts(db_path) -> None:
         con.executemany(
             """
             INSERT INTO employees
-                (id, wd_id, name, role, status, resource_type, skills, current_hiref)
-            VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
+                (id, wd_id, name, role, status, resource_type, current_hiref)
+            VALUES (?, ?, ?, ?, 'active', ?, ?)
             """,
             [
-                ('990101', '990101', 'Alex Example', 'Back-end Engineer', 'LTFTE', '{"python": 0.9}', ''),
-                ('990102', '990102', 'Blair Example', 'Front-end Engineer', 'LTFTE', '{"python": 0.8}', ''),
-                ('990103', '990103', 'Casey Example', 'Front-end Engineer', 'LTFTE', '{"react": 0.9}', ''),
-                ('990104', '990104', 'Drew Example', 'Back-end Engineer', 'STFTE', '{"python": 0.9}', 'HIREF-990104'),
+                ('990101', '990101', 'Alex Example', 'Back-end Engineer', 'LTFTE', ''),
+                ('990102', '990102', 'Blair Example', 'Front-end Engineer', 'LTFTE', ''),
+                ('990103', '990103', 'Casey Example', 'Front-end Engineer', 'LTFTE', ''),
+                ('990104', '990104', 'Drew Example', 'Back-end Engineer', 'STFTE', 'HIREF-990104'),
             ],
         )
         con.execute(
@@ -49,7 +49,7 @@ def _seed_staffing_facts(db_path) -> None:
             INSERT INTO monthly_allocations (employee_id, project_id, year, month, allocation, plan_version_id)
             VALUES (?, 'project-atlas-990001', 2026, 8, ?, 'plan-2026-08')
             """,
-            [('990101', 0.6), ('990102', 0.8), ('990103', 0.1), ('990104', 0.0)],
+            [('990101', 0.6), ('990102', 0.8), ('990103', 0.9), ('990104', 0.0)],
         )
         con.commit()
     finally:
@@ -64,7 +64,6 @@ def _seed_staffing_facts(db_path) -> None:
 def _mark_staffing_sources_fresh() -> None:
     for source_id in (
         "import-resource-portal",
-        "import-skills-matrix",
         "import-hiref-report",
     ):
         run_id = repository.start_sync_run(source_id, triggered_by="synthetic-test")
@@ -121,7 +120,7 @@ def _mark_current_state_publication_partial(db_path) -> None:
 def _demand() -> StaffingDemand:
     return StaffingDemand(
         project_id='project-atlas-990001', start_period='2026-08', end_period='2026-08',
-        effort=0.6, role='developer', required_skills=['python'], minimum_allocation=0.2,
+        effort=0.6, role='developer', minimum_allocation=0.2,
         maximum_people=2, splittable=True, plan_version_id='plan-2026-08',
     )
 
@@ -139,7 +138,7 @@ def test_period_aware_staffing_read_model_distinguishes_contract_and_plan(isolat
     assert drew['periods']['2026-08']['contract']['end_date'] == '2026-08-15'
 
 
-def test_feasibility_accepts_capacity_and_surfaces_skill_and_hiref_context(isolated_db) -> None:
+def test_feasibility_accepts_capacity_and_surfaces_hiref_context(isolated_db) -> None:
     _seed_staffing_facts(isolated_db)
 
     result = assess_feasibility(_demand())
@@ -150,7 +149,7 @@ def test_feasibility_accepts_capacity_and_surfaces_skill_and_hiref_context(isola
         {'member_id': '990101', 'name': 'Alex Example', 'allocation': 0.4},
         {'member_id': '990102', 'name': 'Blair Example', 'allocation': 0.2},
     ]
-    assert candidates['990103']['reasons'] == ['missing_required_skills']
+    assert candidates['990103']['reasons'] == ['insufficient_capacity']
     assert candidates['990104']['reasons'] == []
     assert candidates['990104']['hiref_context']['status'] == 'partial_coverage'
     assert (
@@ -263,14 +262,11 @@ def test_expired_proposal_cannot_write(isolated_db) -> None:
         ({'effort': 0.4, 'maximum_people': 1, 'splittable': False}, True, None),
         ({'effort': 0.7}, False, None),
         ({'effort': 0.6, 'splittable': False}, False, None),
-        ({'required_skills': ['react']}, True, None),
-        ({'required_skills': ['go']}, False, 'missing_required_skills'),
         ({'minimum_allocation': 0.3}, False, 'insufficient_capacity'),
         ({'maximum_people': 1}, False, None),
         ({'effort': 1.1}, False, None),
         ({'priority': 'high'}, True, None),
         ({'role': 'architect'}, True, None),
-        ({'required_skills': ['Python']}, True, None),
         ({'start_period': '2026-09', 'end_period': '2026-09'}, True, None),
         ({'plan_version_id': None}, True, None),
     ],
@@ -312,10 +308,24 @@ def test_manager_cli_assess_is_read_only_json(isolated_db) -> None:
     result = CliRunner().invoke(
         app_module.app,
         ['staffing', 'assess', '--project', 'project-atlas-990001', '--start', '2026-08', '--end', '2026-08',
-         '--effort', '0.6', '--skills', 'python', '--maximum-people', '2', '--plan-version', 'plan-2026-08'],
+         '--effort', '0.6', '--maximum-people', '2', '--plan-version', 'plan-2026-08'],
     )
     assert result.exit_code == 0, result.output
     assert '"feasible": true' in result.output
+
+
+def test_manager_cli_rejects_retired_skills_option(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+    result = CliRunner().invoke(
+        app_module.app,
+        [
+            'staffing', 'assess', '--project', 'project-atlas-990001', '--start', '2026-08',
+            '--end', '2026-08', '--effort', '0.6', '--skills', 'python',
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "No such option: --skills" in result.output
 
 
 def test_manager_cli_records_hiref_action_for_conditional_proposal(
@@ -324,8 +334,17 @@ def test_manager_cli_records_hiref_action_for_conditional_proposal(
     _seed_staffing_facts(isolated_db)
     with sqlite3.connect(isolated_db) as con:
         con.execute(
-            "UPDATE employees SET skills='{}' WHERE id IN ('990101','990102')"
+            """
+            UPDATE monthly_allocations
+            SET allocation = 0.95
+            WHERE employee_id IN ('990101', '990102')
+              AND project_id = 'project-atlas-990001'
+              AND year = 2026
+              AND month = 8
+              AND plan_version_id = 'plan-2026-08'
+            """
         )
+        con.commit()
 
     result = CliRunner().invoke(
         app_module.app,
@@ -340,8 +359,8 @@ def test_manager_cli_records_hiref_action_for_conditional_proposal(
             "2026-08",
             "--effort",
             "0.4",
-            "--skills",
-            "python",
+            "--minimum",
+            "0.2",
             "--maximum-people",
             "1",
             "--plan-version",
@@ -398,7 +417,7 @@ def test_non_fresh_sources_allow_assessment_but_block_proposal_by_default(
     isolated_db,
 ) -> None:
     _seed_staffing_facts(isolated_db)
-    _fail_source(isolated_db, "import-skills-matrix")
+    _fail_source(isolated_db, "import-hiref-report")
     service = StaffingProposalService()
 
     assessment = assess_feasibility(_demand())
@@ -409,23 +428,93 @@ def test_non_fresh_sources_allow_assessment_but_block_proposal_by_default(
     assert {
         (item.get("source_id"), item.get("state"))
         for item in assessment["safety_blockers"]
-    } >= {("import-skills-matrix", "unavailable")}
+    } >= {("import-hiref-report", "unavailable")}
     assert proposed["status"] == "blocked"
     with sqlite3.connect(isolated_db) as con:
         assert con.execute("SELECT COUNT(*) FROM staffing_proposals").fetchone()[0] == 0
+
+
+def test_retired_skills_source_is_not_registered_or_reported(isolated_db) -> None:
+    _seed_staffing_facts(isolated_db)
+
+    with pytest.raises(ValueError, match="not registered"):
+        repository.start_sync_run(
+            "import-skills-matrix",
+            triggered_by="synthetic-test",
+        )
+
+    assessment = assess_feasibility(_demand())
+    proposed = StaffingProposalService().propose(_demand())
+
+    assert assessment["decision_ready"] is True
+    assert {item["source_id"] for item in assessment["source_states"]} == {
+        "current-state-staffing-publication",
+        "import-hiref-report",
+    }
+    assert all(
+        blocker.get("source_id") != "import-skills-matrix"
+        for blocker in assessment["safety_blockers"]
+    )
+    assert proposed["status"] == "proposed"
+    with sqlite3.connect(isolated_db) as con:
+        source_ids = {
+            row[0]
+            for row in con.execute("SELECT id FROM data_sources").fetchall()
+        }
+    assert "import-skills-matrix" not in source_ids
+
+
+def test_init_db_retires_preexisting_skills_source_without_breaking_history(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT OR REPLACE INTO data_sources
+                (id, source_type, source_name, ingestion_mode, refresh_sla_hours,
+                 active, config_json, notes)
+            VALUES
+                ('import-skills-matrix', 'json', 'Skills Matrix Import', 'file', 720,
+                 1, '{}', 'Legacy skills import')
+            """
+        )
+        con.commit()
+
+    run_id = repository.start_sync_run(
+        "import-skills-matrix",
+        triggered_by="synthetic-test",
+    )
+    repository.finish_sync_run(run_id, status="success")
+
+    init_db(quiet=True)
+
+    with sqlite3.connect(isolated_db) as con:
+        row = con.execute(
+            """
+            SELECT source_name, active, notes
+            FROM data_sources
+            WHERE id = 'import-skills-matrix'
+            """
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == "Retired Skills Matrix Import"
+    assert row[1] == 0
+    assert "historical sync-run integrity" in row[2]
 
 
 def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
     isolated_db,
 ) -> None:
     _seed_staffing_facts(isolated_db)
-    _fail_source(isolated_db, "import-skills-matrix")
+    _fail_source(isolated_db, "import-hiref-report")
     service = StaffingProposalService()
 
     proposed = service.propose(
         _demand(),
         allow_non_fresh=True,
-        freshness_override_reason="DM reviewed the current local skills evidence.",
+        freshness_override_reason="DM reviewed the current local HIREF evidence.",
     )
     confirmed = service.confirm(
         proposed["proposal_id"],
@@ -446,7 +535,7 @@ def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
     assert safety["decision_fingerprint"] == proposed["preview"]["decision_fingerprint"]
     assert (
         safety["freshness_override"]["reason"]
-        == "DM reviewed the current local skills evidence."
+        == "DM reviewed the current local HIREF evidence."
     )
     assert {
         item["state"] for item in safety["source_states"]
@@ -489,7 +578,7 @@ def test_source_run_change_after_proposal_invalidates_confirmation(
     _seed_staffing_facts(isolated_db)
     service = StaffingProposalService()
     proposed = service.propose(_demand())
-    _fail_source(isolated_db, "import-skills-matrix")
+    _fail_source(isolated_db, "import-hiref-report")
 
     result = service.confirm(
         proposed["proposal_id"],
@@ -522,8 +611,17 @@ def test_selected_stfte_hiref_gap_requires_dm_action_note(isolated_db) -> None:
     _seed_staffing_facts(isolated_db)
     with sqlite3.connect(isolated_db) as con:
         con.execute(
-            "UPDATE employees SET skills='{}' WHERE id IN ('990101','990102')"
+            """
+            UPDATE monthly_allocations
+            SET allocation = 0.95
+            WHERE employee_id IN ('990101', '990102')
+              AND project_id = 'project-atlas-990001'
+              AND year = 2026
+              AND month = 8
+              AND plan_version_id = 'plan-2026-08'
+            """
         )
+        con.commit()
     demand = _demand().model_copy(
         update={"effort": 0.4, "maximum_people": 1}
     )
