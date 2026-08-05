@@ -7,6 +7,15 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from pm_agent.contract_coverage.service import (
+    confirm_import as confirm_contract_coverage_import,
+)
+from pm_agent.contract_coverage.service import (
+    preview_import as preview_contract_coverage_import,
+)
+from pm_agent.contract_coverage.service import (
+    validate_package as validate_contract_coverage_package,
+)
 from pm_agent.resource_intelligence.service import (
     confirm_import as confirm_capacity_import,
 )
@@ -24,6 +33,9 @@ from pm_agent.current_state_staffing.service import (
 )
 from pm_agent.current_state_staffing.service import (
     validate_package as validate_current_state_staffing_package,
+)
+from pm_agent.workbook_onboarding.contract_coverage_adapter import (
+    build_contract_coverage_package,
 )
 from pm_agent.workbook_onboarding.current_state_staffing_adapter import (
     build_current_state_staffing_package,
@@ -155,6 +167,19 @@ def confirm_workbook_candidate(
             "capacity_result": None,
         }
 
+    contract_coverage_result: dict[str, Any] | None = None
+    if candidate.get("contract_coverage_package") is not None:
+        contract_coverage_result = _resolve_contract_coverage_result(candidate, db_path=db_path)
+        if contract_coverage_result["status"] != "completed":
+            return {
+                **candidate,
+                "status": "partially_completed",
+                "workforce_result": workforce_result,
+                "current_state_staffing_result": current_state_result,
+                "contract_coverage_result": contract_coverage_result,
+                "capacity_result": None,
+            }
+
     if candidate["capacity_package"] is not None:
         capacity_preview = preview_capacity_import(
             candidate["capacity_package"],
@@ -179,6 +204,7 @@ def confirm_workbook_candidate(
                 "status": "partially_completed",
                 "workforce_result": workforce_result,
                 "current_state_staffing_result": current_state_result,
+                "contract_coverage_result": contract_coverage_result,
                 "capacity_result": capacity_result,
             }
 
@@ -187,6 +213,7 @@ def confirm_workbook_candidate(
         "status": "completed",
         "workforce_result": workforce_result,
         "current_state_staffing_result": current_state_result,
+        "contract_coverage_result": contract_coverage_result,
         "capacity_result": capacity_result,
     }
 
@@ -261,6 +288,31 @@ def _resolve_current_state_staffing_result(
             "report": current_state_preview["report"],
         }
     return current_state_preview
+
+
+def _resolve_contract_coverage_result(
+    candidate: dict[str, Any],
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    contract_coverage_preview = preview_contract_coverage_import(
+        candidate["contract_coverage_package"],
+        db_path=db_path,
+    )
+    status = contract_coverage_preview["status"]
+    if status in {"previewed", "retryable"}:
+        return confirm_contract_coverage_import(
+            contract_coverage_preview["session_id"],
+            db_path=db_path,
+        )
+    if status == "already_completed":
+        return {
+            "status": "completed",
+            "session_id": contract_coverage_preview["session_id"],
+            "idempotent": True,
+            "report": contract_coverage_preview["report"],
+        }
+    return contract_coverage_preview
 
 
 def _build_candidate(
@@ -380,9 +432,16 @@ def _build_candidate(
         as_of_date=as_of_date,
         revision=revision,
     )
+    contract_coverage_package = build_contract_coverage_package(
+        validation.workbook,
+        version_name=resolved_plan["version_name"],
+        as_of_date=as_of_date,
+        revision=revision,
+    )
     try:
         validate_workforce_package(workforce_package)
         validate_current_state_staffing_package(current_state_staffing_package)
+        validate_contract_coverage_package(contract_coverage_package)
         if capacity_package is not None:
             validate_capacity_package(capacity_package)
     except ValueError as exc:
@@ -414,9 +473,11 @@ def _build_candidate(
             "current_state_assignment_records": len(
                 current_state_staffing_package["assignments"]
             ),
+            "contract_coverage_member_records": len(contract_coverage_package["members"]),
         },
         "workforce_package": workforce_package,
         "current_state_staffing_package": current_state_staffing_package,
+        "contract_coverage_package": contract_coverage_package,
         "capacity_package": capacity_package,
     }
 

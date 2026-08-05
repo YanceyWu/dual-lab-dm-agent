@@ -249,6 +249,31 @@ def planned_operations(source_preview: dict[str, Any]) -> list[dict[str, Any]]:
                 },
             }
         )
+    contract_coverage_package = source_preview.get("contract_coverage_package")
+    if isinstance(contract_coverage_package, dict):
+        scope = contract_coverage_package["publication_scope"]
+        manifest = contract_coverage_package["manifest"]
+        operations.append(
+            {
+                "capability": "contract_coverage",
+                "status": "planned",
+                "package_id": contract_coverage_package["package_id"],
+                "schema_version": contract_coverage_package["schema_version"],
+                "counts": {
+                    "members": len(contract_coverage_package["members"]),
+                    "stfte_members": len(manifest["stfte_member_ids"]),
+                    "ltfte_members": len(manifest["ltfte_member_ids"]),
+                    "contract_members": len(manifest["contract_member_ids"]),
+                    "unknown_resource_type_members": len(
+                        manifest["unknown_resource_type_member_ids"]
+                    ),
+                },
+                "publication_scope": {
+                    "scope_key": scope["scope_key"],
+                    "as_of_date": scope["as_of_date"],
+                },
+            }
+        )
     capacity_package = source_preview.get("capacity_package")
     if isinstance(capacity_package, dict):
         operations.append(
@@ -278,6 +303,7 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
         return {
             "workforce": {"state": "not_available"},
             "current_state_staffing": {"state": "not_available"},
+            "contract_coverage": {"state": "not_available"},
             "capacity": {"state": "not_available"},
         }
     workforce_period_count = len(workforce_package["manifest"]["workforce_periods"])
@@ -302,6 +328,28 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
                 "as_of_date": scope["as_of_date"],
             },
         }
+    contract_coverage_package = source_preview.get("contract_coverage_package")
+    contract_coverage = {"state": "not_available"}
+    if isinstance(contract_coverage_package, dict):
+        manifest = contract_coverage_package["manifest"]
+        missing_contract_members = len(
+            set(manifest["stfte_member_ids"]) - set(manifest["contract_member_ids"])
+        )
+        unknown_resource_type_members = len(manifest["unknown_resource_type_member_ids"])
+        contract_coverage = {
+            "state": (
+                "complete"
+                if missing_contract_members == 0 and unknown_resource_type_members == 0
+                else "partial"
+            ),
+            "member_count": len(contract_coverage_package["members"]),
+            "stfte_member_count": len(manifest["stfte_member_ids"]),
+            "ltfte_member_count": len(manifest["ltfte_member_ids"]),
+            "contract_member_count": len(manifest["contract_member_ids"]),
+            "missing_contract_member_count": missing_contract_members,
+            "unknown_resource_type_member_count": unknown_resource_type_members,
+            "as_of_date": contract_coverage_package["publication_scope"]["as_of_date"],
+        }
     capacity_package = source_preview.get("capacity_package")
     if not isinstance(capacity_package, dict):
         return {
@@ -312,6 +360,7 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
                 "missing_record_count": 0,
             },
             "current_state_staffing": current_state_coverage,
+            "contract_coverage": contract_coverage,
             "capacity": {
                 "state": "not_provided",
                 "known_member_period_count": 0,
@@ -328,6 +377,7 @@ def coverage_summary(source_preview: dict[str, Any]) -> dict[str, Any]:
             "member_period_count": workforce_period_count,
             "missing_record_count": 0,
         },
+        "contract_coverage": contract_coverage,
         "capacity": {
             "state": "complete" if unknown_member_period_count == 0 else "partial",
             "known_member_period_count": known_member_period_count,
@@ -379,6 +429,26 @@ def publication_links(source_result: dict[str, Any]) -> list[DomainLinkRecord]:
                     ),
                     "failure_code": current_state_result.get("failure_code", ""),
                     "report": current_state_result.get("report", {}),
+                },
+            )
+        )
+    contract_coverage_result = source_result.get("contract_coverage_result")
+    if isinstance(contract_coverage_result, dict):
+        links.append(
+            DomainLinkRecord(
+                capability_key="contract_coverage",
+                status=str(contract_coverage_result.get("status", "")),
+                domain_session_id=str(contract_coverage_result.get("session_id", "")),
+                domain_publication_id=str(
+                    contract_coverage_result.get("report", {}).get("publication_id", "")
+                ),
+                domain_plan_version_id="",
+                details={
+                    "package_id": source_result.get("contract_coverage_package", {}).get(
+                        "package_id", ""
+                    ),
+                    "failure_code": contract_coverage_result.get("failure_code", ""),
+                    "report": contract_coverage_result.get("report", {}),
                 },
             )
         )

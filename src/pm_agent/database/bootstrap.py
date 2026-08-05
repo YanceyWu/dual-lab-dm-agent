@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pm_agent.config import settings
+from pm_agent.contract_coverage.schema import CONTRACT_COVERAGE_DDL
 from pm_agent.data_onboarding.schema import (
     DATA_ONBOARDING_DDL,
     ensure_onboarding_profile_columns,
@@ -2804,6 +2805,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(PROJECT_HEALTH_DDL)
     conn.executescript(WORKFORCE_PLANNING_IMPORT_DDL)
     conn.executescript(CURRENT_STATE_STAFFING_DDL)
+    conn.executescript(CONTRACT_COVERAGE_DDL)
     conn.executescript(RESOURCE_INTELLIGENCE_DDL)
     conn.executescript(DATA_ONBOARDING_DDL)
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)

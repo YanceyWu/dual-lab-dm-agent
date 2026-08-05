@@ -4,13 +4,14 @@ Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this branch now carries the accepted clean A3 baseline commit
 `4a3a77588ecde07d5f75f9839105875350f4f898`, the bounded local A4
-compatibility-closure / legacy-deletion commit, and the committed local B0
-post-Batch-A redesign freeze at `7eba012`. The current working tree now also
-implements the bounded local B1 skills-retirement slice. The separate aborted
-runtime attempt remains excluded and must not be inherited as partial work
+compatibility-closure / legacy-deletion commit, the committed local B0
+post-Batch-A redesign freeze at `7eba012`, the committed local B1
+skills-retirement slice, and the committed local B2 contract-coverage skeleton
+slice. The separate aborted runtime attempt remains excluded and must not be
+inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED IN THIS SESSION; ONLY B2 CONTRACT-COVERAGE SKELETON REMAINS AS THE NEXT APPROVED GATE`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, AND B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY; ANY FURTHER WORK MUST START IN A SEPARATE B2-ONLY SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS NOW IMPLEMENTED AND VALIDATED LOCALLY; ONLY B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION REMAINS AS THE NEXT APPROVED GATE`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B2 IMPLEMENTED/VALIDATED LOCALLY; ANY FURTHER RUNTIME WORK MUST START IN A SEPARATE B3-ONLY SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -844,6 +845,44 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 Batch B2 contract-coverage skeleton implemented locally
+
+- Confirmed this session started from the required clean accepted baseline:
+  `git status --short` was empty and `HEAD` was exactly
+  `efa06e4f0eab46f4483927c50f0d9228cf161aea` before any edit.
+- Implemented only the approved B2 contract-coverage skeleton slice:
+  - added a dedicated additive `pm_agent.contract_coverage` capability module
+    family with schema, repository, preview/confirm publication service, and a
+    public read-contract skeleton;
+  - added a workbook onboarding contract-coverage adapter so
+    onboarding-managed `resource_type` / `current_hiref_id` /
+    `hiref_end_date` facts now produce a canonical contract-coverage package;
+  - extended the shared onboarding/data-onboarding flow only enough to plan,
+    publish, and link the new capability;
+  - added bootstrap composition wiring only; no legacy HIREF reader or mutable
+    write path was migrated.
+- Preserved the frozen Batch A / B0 / B1 boundaries:
+  - current-state staffing semantics remain frozen;
+  - B1 skills retirement remains intact and no `employees.skills` dependency was
+    reintroduced;
+  - `unknown` / `unavailable` / `partial` / `stale` semantics remain explicit;
+  - no B3/B4 reader migration, dashboard migration, HIREF freshness migration,
+    mutable staffing-write redesign, or broader employee cleanup was introduced.
+- Validation / review evidence:
+  - focused B2 regression: `47 passed`
+  - `make validate`
+  - `make rehearse-release`
+  - read-only diff review found one onboarding contract-coverage coverage-count
+    bug; the working tree corrected it and the final re-review found no
+    remaining high-confidence issue.
+- Commit / push status:
+  - committed locally in this session;
+  - not pushed.
+- Exact next recommended action:
+  - if the validated local B2 slice is accepted, commit it locally and stop;
+    any further runtime work must start in a separate session only for
+    **IP-036 Batch B3 — contract coverage reader and freshness migration**.
 
 ### 2026-08-05 — IP-036 Batch B1 skills retirement implemented locally
 

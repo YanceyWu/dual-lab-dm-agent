@@ -262,12 +262,39 @@ def test_onboarding_profile_save_preview_and_run_show_round_trip(
             "schema_version": "current-state-staffing-v1",
             "status": "planned",
         },
+        {
+            "capability": "contract_coverage",
+            "counts": {
+                "contract_members": 0,
+                "ltfte_members": 1,
+                "members": 1,
+                "stfte_members": 0,
+                "unknown_resource_type_members": 0,
+            },
+            "package_id": "package-workbook-contract-coverage-fy26-q4-baseline-r1",
+            "publication_scope": {
+                "as_of_date": "2026-08-15",
+                "scope_key": "workbook-contract-coverage",
+            },
+            "schema_version": "contract-coverage-v1",
+            "status": "planned",
+        },
     ]
     assert preview["coverage"]["capacity"] == {
         "state": "not_provided",
         "known_member_period_count": 0,
         "unknown_member_period_count": 1,
         "explicit_zero_observation_count": 0,
+    }
+    assert preview["coverage"]["contract_coverage"] == {
+        "state": "complete",
+        "member_count": 1,
+        "stfte_member_count": 0,
+        "ltfte_member_count": 1,
+        "contract_member_count": 0,
+        "missing_contract_member_count": 0,
+        "unknown_resource_type_member_count": 0,
+        "as_of_date": "2026-08-15",
     }
     assert preview["coverage"]["current_state_staffing"] == {
         "state": "complete",
@@ -318,6 +345,58 @@ def test_onboarding_preset_cli_inspection_lists_and_shows_packaged_presets() -> 
     )
     assert setup_section["accepted_sheet_names"] == ["Setup", "Plan Setup"]
     assert setup_section["header_aliases"]["plan_version_name"] == ["plan_name"]
+
+
+def test_onboarding_contract_coverage_summary_counts_only_uncovered_stfte_members() -> None:
+    summary = workbook_source.coverage_summary(
+        {
+            "workforce_package": {
+                "manifest": {"workforce_periods": [{"member_id": "WD100001", "month": "2026-09"}]}
+            },
+            "contract_coverage_package": {
+                "publication_scope": {
+                    "scope_key": "workbook-contract-coverage",
+                    "as_of_date": "2026-08-15",
+                },
+                "manifest": {
+                    "member_ids": ["WD100001", "WD100002"],
+                    "stfte_member_ids": ["WD100001"],
+                    "ltfte_member_ids": ["WD100002"],
+                    "contract_member_ids": ["WD100002"],
+                    "unknown_resource_type_member_ids": [],
+                },
+                "members": [
+                    {
+                        "member_id": "WD100001",
+                        "display_name": "Alex Example",
+                        "status": "active",
+                        "resource_type": "STFTE",
+                        "current_hiref_id": None,
+                        "hiref_end_date": None,
+                    },
+                    {
+                        "member_id": "WD100002",
+                        "display_name": "Blair Example",
+                        "status": "active",
+                        "resource_type": "LTFTE",
+                        "current_hiref_id": "HIREF-002",
+                        "hiref_end_date": "2026-12-31",
+                    },
+                ],
+            },
+        }
+    )
+
+    assert summary["contract_coverage"] == {
+        "state": "partial",
+        "member_count": 2,
+        "stfte_member_count": 1,
+        "ltfte_member_count": 1,
+        "contract_member_count": 1,
+        "missing_contract_member_count": 1,
+        "unknown_resource_type_member_count": 0,
+        "as_of_date": "2026-08-15",
+    }
 
 
 def test_onboarding_profile_persists_explicit_preset_selection_and_projects_metadata(
@@ -554,7 +633,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
     confirmed = _payload(confirmed_result)
     assert confirmed["status"] == "completed"
     assert confirmed["publish_summary"] == {
-        "completed_operation_count": 3,
+        "completed_operation_count": 4,
         "partial_publication": False,
         "rejected_operation_count": 0,
     }
@@ -563,6 +642,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
     }
     assert operations["workforce_planning_import"]["domain_publication_id"] is not None
     assert operations["current_state_staffing"]["domain_publication_id"] is not None
+    assert operations["contract_coverage"]["domain_publication_id"] is not None
     assert operations["resource_intelligence"]["domain_publication_id"] is not None
 
     shown_profile = _invoke(
@@ -581,7 +661,7 @@ def test_onboarding_confirm_records_linkage_and_updates_profile(
     assert shown_run.exit_code == 0, shown_run.output
     run_payload = _payload(shown_run)
     assert run_payload["run"]["state"] == "completed"
-    assert len(run_payload["run"]["domain_links"]) == 3
+    assert len(run_payload["run"]["domain_links"]) == 4
 
     repeated_confirm = _invoke("onboarding", "confirm", "--run-id", preview["run_id"])
     assert repeated_confirm.exit_code == 0, repeated_confirm.output
@@ -876,6 +956,7 @@ def test_partially_completed_onboarding_run_can_resume_same_run_id(
     }
     assert operations["workforce_planning_import"]["status"] == "completed"
     assert operations["current_state_staffing"]["status"] == "completed"
+    assert operations["contract_coverage"]["status"] == "completed"
     assert operations["resource_intelligence"]["status"] == "failed"
     assert operations["resource_intelligence"]["domain_session_id"] is not None
     assert (
@@ -891,6 +972,7 @@ def test_partially_completed_onboarding_run_can_resume_same_run_id(
         item["capability"]: item for item in completed["published_domain_operations"]
     }
     assert final_operations["current_state_staffing"]["status"] == "completed"
+    assert final_operations["contract_coverage"]["status"] == "completed"
     assert final_operations["resource_intelligence"]["status"] == "completed"
     shown_profile = _payload(
         _invoke("onboarding", "profile", "show", "--profile-key", "partial-resume")
@@ -1127,6 +1209,7 @@ def test_partial_retry_after_profile_edit_preserves_existing_partial_summary(
     }
     assert operations["workforce_planning_import"]["status"] == "completed"
     assert operations["current_state_staffing"]["status"] == "completed"
+    assert operations["contract_coverage"]["status"] == "completed"
     assert operations["resource_intelligence"]["status"] == "failed"
 
 
