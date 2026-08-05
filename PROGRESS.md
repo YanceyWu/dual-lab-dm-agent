@@ -2,18 +2,19 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: the committed local C1 runtime baseline is
-`263ca232b9301687d34d314f20eca63ee1214487` (`git status --short --branch`
-was clean and `HEAD` exactly matched that commit at the start of the
-independent read-only C1 review). Batch A, B0, B1, B2, B3, B4, the post-B4
-C/D redesign freeze, and the bounded C1 runtime slice are committed locally;
-the current local working tree now contains only this `PROGRESS.md`
-continuity correction after the independent read-only C1 review. The separate
-aborted runtime attempt remains excluded and must not be inherited as partial
-work.
+Current HEAD: this session now commits the local C2 implementation on top of
+the clean submitted post-C1 continuity baseline
+`b3c09c2a94d1d3f63c0ca72a31a010f7226e279c`; its merge-base with the required
+committed C1 runtime slice remains
+`263ca232b9301687d34d314f20eca63ee1214487`. Batch A, B0, B1, B2, B3, B4, the
+post-B4 C/D redesign freeze, and the bounded C1 runtime slice remain committed
+locally, and this session adds only the separately authorized C2 scope. After
+this local commit, the working tree is clean and the result remains unpushed.
+The separate aborted runtime attempt remains excluded and must not be inherited
+as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; THE CURRENT WORKING TREE NOW CONTAINS ONLY A PROGRESS CONTINUITY CORRECTION AFTER INDEPENDENT REVIEW`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, AND C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY; C2/C3/C4 AND BATCH D REMAIN OUT OF SCOPE UNTIL A SEPARATE AUTHORIZATION ADVANCES THE GATE`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS NOW IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY IN THIS SESSION; IT IS NOT PUSHED`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, AND C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED LOCALLY; C3/C4 AND BATCH D REMAIN OUT OF SCOPE UNTIL A SEPARATE AUTHORIZATION ADVANCES THE GATE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -28,14 +29,21 @@ operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 the original IP-036 convergence design/implementation-pack handoff at
 `5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`, the
 committed B4 workbook closure at `b5906c7`, the committed post-B4 redesign
-freeze, and the committed C1 runtime slice at `263ca23`. That committed C1
-slice is bounded to `src/pm_agent/data_onboarding/domain_json_source.py`,
-`registry.py`, `service.py`, the onboarding CLI help text, the top-level
-`README.md` operator examples, and focused `test_data_onboarding.py` coverage
-for the retained domain JSON source families. The current working tree now
-contains only this `PROGRESS.md` continuity correction after the accepted
-independent review of that committed C1 slice. No C2/C3/C4 or Batch D code
-path is touched. The already-committed B4 runtime slice closed the authorized workbook-
+freeze, the committed C1 runtime slice at `263ca23`, the clean submitted
+post-C1 continuity baseline at `b3c09c2`, and this local C2 commit. That
+committed C1 slice is bounded
+to `src/pm_agent/data_onboarding/domain_json_source.py`, `registry.py`,
+`service.py`, the onboarding CLI help text, the top-level `README.md`
+operator examples, and focused `test_data_onboarding.py` coverage for the
+retained domain JSON source families. The current working tree now adds only
+the separately authorized C2 bounded files:
+`src/pm_agent/connectors/jira/board_registry.py`,
+`src/pm_agent/connectors/confluence/page_registry.py`,
+`src/pm_agent/data_onboarding/registry_csv_source.py`,
+the thin legacy-script wrappers, focused `test_registry_importers.py`
+coverage, and matching `README.md` / `PROGRESS.md` continuity. No C3/C4 or
+Batch D code path is touched, and those C2 changes are now committed locally
+in this session. The already-committed B4 runtime slice closed the authorized workbook-
 only surface through the bounded files:
 `src/pm_agent/workbook_onboarding/models.py`,
 `parser.py`,
@@ -116,7 +124,7 @@ belong in Git history and must not be interpreted as current instructions.
   tables/views, and overlapping read/write paths to be rebuilt around one
   canonical onboarding authority model. A0/B0-B4/post-B4 freeze are already
   committed; the current working tree implements only the next authorized slice,
-  C1.
+  C2.
 - IP-036 Batch C1 is now implemented locally as bounded source-handler
   orchestration only:
   `pm_agent.data_onboarding` now registers retained JSON source types for
@@ -127,6 +135,16 @@ belong in Git history and must not be interpreted as current instructions.
   profile validation, local-file identity tracking, source-contract projection,
   publication-link/audit continuity, and explicit onboarding failure mapping
   without redesigning the underlying domain models or downstream readers.
+- IP-036 Batch C2 is now implemented locally as bounded registry-source
+  convergence only: `pm_agent.data_onboarding` now registers
+  `jira-board-registry-csv` and `confluence-page-registry-csv` under the
+  existing profile / preview / confirm / run-show envelope, while new
+  connector-owned registry modules keep the actual CSV parsing, full-sync
+  reconciliation, cleanup, JIRA evidence-config carry-forward, preserved stale
+  evidence/event cursor semantics, and page-registry cleanup behavior outside
+  onboarding. The legacy registry scripts remain thin compatibility wrappers,
+  and no Jira / Confluence consumer-facing behavior, connector design, or
+  broader Batch C/D redesign scope is changed.
 - IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2/A3 now
   build on it in the working tree:
   `pm_agent.current_state_staffing` owns an additive current-state staffing
@@ -966,6 +984,57 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 Batch C2 registry-source onboarding convergence implemented locally
+
+- Implemented only the frozen C2 slice for retained registry CSV sources:
+  - added connector-owned registry owner modules
+    `src/pm_agent/connectors/jira/board_registry.py` and
+    `src/pm_agent/connectors/confluence/page_registry.py` so the JIRA board and
+    Confluence page import semantics remain outside `pm_agent.data_onboarding`;
+  - added thin onboarding wrappers in
+    `src/pm_agent/data_onboarding/registry_csv_source.py` and registered new
+    source types `jira-board-registry-csv` and
+    `confluence-page-registry-csv` in `registry.py`;
+  - kept onboarding responsibility bounded to profile validation, local-file
+    identity, preview/confirm envelopes, audit/replay linkage, and publication
+    links while delegating CSV parsing, full-sync reconciliation, cleanup, and
+    carry-forward behavior to the retained registry owners;
+  - converted `src/scripts/import_jira_boards.py` and
+    `src/scripts/import_confluence_pages.py` into thin compatibility wrappers
+    over those owner modules rather than deleting the scripts in C2;
+  - expanded `src/tests/test_registry_importers.py` with focused onboarding
+    round-trip coverage for both registry source types, plus invalid-input and
+    retry-path checks for the JIRA registry path;
+  - updated `README.md` onboarding examples and supported-source wording so the
+    working tree matches the new C2 operator path.
+- Preserved frozen C2 semantics explicitly:
+  - JIRA board registry onboarding confirm still performs full-sync
+    reconciliation and cleanup for registry-owned board/config/cache rows;
+  - JIRA evidence local config carry-forward still preserves connector-local
+    keys such as field mappings and supported link types;
+  - stale `jira_issue_events` and `source_evidence_cursors` remain preserved
+    exactly as before;
+  - Confluence page registry onboarding confirm still removes stale non-global
+    pages, board snapshots, and page-scoped action-tracker rows while keeping
+    global pages untouched;
+  - `pm onboarding` now surfaces `already_completed` / idempotent replay for
+    registry CSV sources without redesigning downstream Jira/Confluence readers.
+- Validation / review evidence:
+  - `python3 -m compileall pm_agent/connectors/jira/board_registry.py pm_agent/connectors/confluence/page_registry.py pm_agent/data_onboarding/registry_csv_source.py pm_agent/data_onboarding/registry.py scripts/import_jira_boards.py scripts/import_confluence_pages.py`
+  - `python3 -m pytest -q tests/test_registry_importers.py tests/test_data_onboarding.py -k 'registry or jira or confluence'` (`6 passed`)
+  - `git diff --check`
+  - independent read-only self-review of the bounded C2 diff against
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` confirmed
+    no C3/C4/D, connector redesign, consumer redesign, or broader project-
+    profile / change-request scope creep.
+- Commit / push status:
+  - clean submitted baseline at `b3c09c2` remains local and unpushed;
+  - the C2 changes above are committed locally in this session and not pushed.
+- Exact next recommended action:
+  - request independent owner review of this bounded C2 slice only; do not
+    enter C3/C4/D or Batch D from this working tree before that decision.
 
 ### 2026-08-05 — IP-036 C1 independent read-only review continuity correction
 

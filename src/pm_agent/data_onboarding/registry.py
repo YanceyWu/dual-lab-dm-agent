@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from pm_agent.data_onboarding import domain_json_source
+from pm_agent.data_onboarding import registry_csv_source
 from pm_agent.data_onboarding.models import DomainLinkRecord, SourceProfileRecord, SourceProfileUpsert
 from pm_agent.data_onboarding.workbook_contract import WORKBOOK_SOURCE_TYPE
 from pm_agent.data_onboarding import workbook_source
@@ -83,6 +84,52 @@ def _json_handler(
     )
 
 
+def _csv_handler(
+    definition: registry_csv_source.CsvRegistrySourceDefinition,
+) -> SourceTypeHandler:
+    return SourceTypeHandler(
+        source_type=definition.source_type,
+        validate_profile=lambda profile: registry_csv_source.validate_profile(
+            definition, profile
+        ),
+        profile_metadata=lambda profile: registry_csv_source.profile_metadata(
+            definition, profile
+        ),
+        build_source_identity=lambda profile: registry_csv_source.build_source_identity(
+            definition, profile
+        ),
+        preview=lambda profile, *, run_id, db_path=None: registry_csv_source.preview(
+            definition,
+            profile,
+            run_id=run_id,
+            db_path=db_path,
+        ),
+        confirm=lambda profile, source_preview, *, db_path=None: registry_csv_source.confirm(
+            definition,
+            profile,
+            source_preview,
+            db_path=db_path,
+        ),
+        planned_operations=lambda source_preview: registry_csv_source.planned_operations(
+            definition,
+            source_preview,
+        ),
+        coverage_summary=lambda source_preview: registry_csv_source.coverage_summary(
+            definition,
+            source_preview,
+        ),
+        publication_links=lambda source_result: registry_csv_source.publication_links(
+            definition,
+            source_result,
+        ),
+        release_run=lambda run_id, *, db_path=None: registry_csv_source.release_run(
+            definition,
+            run_id,
+            db_path=db_path,
+        ),
+    )
+
+
 _REGISTRY = {
     WORKBOOK_SOURCE_TYPE: WORKBOOK_HANDLER,
     domain_json_source.WORKFORCE_PLANNING_JSON_SOURCE_TYPE: _json_handler(
@@ -96,6 +143,12 @@ _REGISTRY = {
     ),
     domain_json_source.PROJECT_HEALTH_REIMPORT_JSON_SOURCE_TYPE: _json_handler(
         domain_json_source.PROJECT_HEALTH_REIMPORT_JSON_DEFINITION
+    ),
+    registry_csv_source.JIRA_BOARD_REGISTRY_SOURCE_TYPE: _csv_handler(
+        registry_csv_source.JIRA_BOARD_REGISTRY_DEFINITION
+    ),
+    registry_csv_source.CONFLUENCE_PAGE_REGISTRY_SOURCE_TYPE: _csv_handler(
+        registry_csv_source.CONFLUENCE_PAGE_REGISTRY_DEFINITION
     ),
 }
 

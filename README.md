@@ -114,6 +114,8 @@ pm onboarding profile save --profile-key workforce-json --source-type workforce-
 pm onboarding profile save --profile-key capacity-json --source-type resource-capacity-json --file /approved/path/resource_capacity.json
 pm onboarding profile save --profile-key milestone-json --source-type milestone-json --file /approved/path/milestones.json
 pm onboarding profile save --profile-key health-json --source-type project-health-reimport-json --file /approved/path/project_health_reimport.json
+pm onboarding profile save --profile-key jira-registry --source-type jira-board-registry-csv --file /approved/path/jira_board_configs.csv
+pm onboarding profile save --profile-key confluence-registry --source-type confluence-page-registry-csv --file /approved/path/confluence_pages.csv
 pm onboarding preview --profile-key fy26-q4
 pm onboarding confirm --run-id <onboarding-run-id>
 pm onboarding run show --run-id <onboarding-run-id>
@@ -123,10 +125,10 @@ Run `pm staffing assess --help` before a staffing assessment. Use
 `pm connector probe <connector-name>` only for an explicitly requested live
 connector check. `pm onboarding` is now the supported profile-based entrypoint
 for the retained workbook plus workforce-planning, resource-capacity,
-milestone, and Project Health re-import file sources. The legacy source-
-specific import scripts remain available only as transitional compatibility /
-fallback entrypoints while later convergence slices close the remaining
-operator-path gaps.
+milestone, Project Health re-import, JIRA board registry CSV, and Confluence
+page registry CSV file sources. The legacy source-specific import scripts
+remain available only as transitional compatibility / fallback entrypoints
+while later convergence slices close the remaining operator-path gaps.
 
 The complete package command and configuration guide is in `src/README.md`.
 
