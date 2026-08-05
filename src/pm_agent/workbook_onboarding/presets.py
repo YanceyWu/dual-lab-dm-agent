@@ -154,6 +154,53 @@ _BASELINE_SECTIONS = (
             WorkbookPresetField("non_project_fraction", "non_project_fraction"),
         ),
     ),
+    _section(
+        "hiref_members",
+        "HIREF Members",
+        required=False,
+        fields=(
+            WorkbookPresetField("member_key", "member_key"),
+            WorkbookPresetField("next_hiref_id", "next_hiref_id"),
+        ),
+    ),
+    _section(
+        "hiref_slots",
+        "HIREF Slots",
+        required=False,
+        fields=(
+            WorkbookPresetField("hiref_id", "hiref_id"),
+            WorkbookPresetField("project", "project"),
+            WorkbookPresetField("request_type", "request_type"),
+            WorkbookPresetField("start_date", "start_date"),
+            WorkbookPresetField("end_date", "end_date"),
+            WorkbookPresetField("notes", "notes"),
+        ),
+    ),
+    _section(
+        "hiref_placeholders",
+        "HIREF Placeholders",
+        required=False,
+        fields=(
+            WorkbookPresetField("placeholder_id", "placeholder_id"),
+            WorkbookPresetField("display_name", "display_name"),
+            WorkbookPresetField("hiref_id", "hiref_id"),
+            WorkbookPresetField("linked_member_key", "linked_member_key"),
+            WorkbookPresetField("resource_type", "resource_type"),
+            WorkbookPresetField("status", "status"),
+            WorkbookPresetField("notes", "notes"),
+        ),
+    ),
+    _section(
+        "hiref_placeholder_allocations",
+        "HIREF Placeholder Allocations",
+        required=False,
+        fields=(
+            WorkbookPresetField("placeholder_id", "placeholder_id"),
+            WorkbookPresetField("project_key", "project_key"),
+            WorkbookPresetField("month", "month"),
+            WorkbookPresetField("allocation", "allocation"),
+        ),
+    ),
 )
 
 _ALIAS_SECTIONS = (
@@ -223,6 +270,53 @@ _ALIAS_SECTIONS = (
                 "non_project_fraction",
                 ("non_project_allocation",),
             ),
+        ),
+    ),
+    _section(
+        "hiref_members",
+        "HIREF Members",
+        required=False,
+        fields=(
+            WorkbookPresetField("member_key", "member_key"),
+            WorkbookPresetField("next_hiref_id", "next_hiref_id", ("next_hiref",)),
+        ),
+    ),
+    _section(
+        "hiref_slots",
+        "HIREF Slots",
+        required=False,
+        fields=(
+            WorkbookPresetField("hiref_id", "hiref_id"),
+            WorkbookPresetField("project", "project", ("project_name",)),
+            WorkbookPresetField("request_type", "request_type"),
+            WorkbookPresetField("start_date", "start_date"),
+            WorkbookPresetField("end_date", "end_date"),
+            WorkbookPresetField("notes", "notes"),
+        ),
+    ),
+    _section(
+        "hiref_placeholders",
+        "HIREF Placeholders",
+        required=False,
+        fields=(
+            WorkbookPresetField("placeholder_id", "placeholder_id"),
+            WorkbookPresetField("display_name", "display_name", ("placeholder_name",)),
+            WorkbookPresetField("hiref_id", "hiref_id"),
+            WorkbookPresetField("linked_member_key", "linked_member_key", ("linked_member_id",)),
+            WorkbookPresetField("resource_type", "resource_type"),
+            WorkbookPresetField("status", "status"),
+            WorkbookPresetField("notes", "notes"),
+        ),
+    ),
+    _section(
+        "hiref_placeholder_allocations",
+        "HIREF Placeholder Allocations",
+        required=False,
+        fields=(
+            WorkbookPresetField("placeholder_id", "placeholder_id"),
+            WorkbookPresetField("project_key", "project_key", ("project_id",)),
+            WorkbookPresetField("month", "month"),
+            WorkbookPresetField("allocation", "allocation", ("allocation_fraction",)),
         ),
     ),
 )

@@ -2064,7 +2064,7 @@ def _seed_use_cases(conn: sqlite3.Connection) -> None:
             "decision_type": "allocation",
             "source_systems_json": [
                 "import-resource-portal",
-                "import-hiref-report",
+                "contract-coverage-publication",
             ],
             "core_tables_json": [
                 "employees",
@@ -2089,7 +2089,7 @@ def _seed_use_cases(conn: sqlite3.Connection) -> None:
             "problem_statement": "Track contractor contract expiry, project compliance, and renewal readiness.",
             "decision_type": "risk",
             "source_systems_json": [
-                "import-hiref-report",
+                "contract-coverage-publication",
                 "import-resource-portal",
             ],
             "core_tables_json": [
@@ -2191,7 +2191,7 @@ def _seed_use_cases(conn: sqlite3.Connection) -> None:
             "decision_type": "budget",
             "source_systems_json": [
                 "import-resource-portal",
-                "import-hiref-report",
+                "contract-coverage-publication",
                 "manual",
             ],
             "core_tables_json": [
@@ -2301,6 +2301,17 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
         WHERE id = 'import-skills-matrix'
         """
     )
+    conn.execute(
+        """
+        UPDATE data_sources
+        SET source_name = 'Retired HIREF Status Report Import',
+            active = 0,
+            config_json = '{}',
+            notes = 'Retired legacy HIREF source kept only for historical sync-run integrity. Contract coverage member facts now publish through canonical onboarding-managed publications; remaining slot/result projection usage is legacy only.',
+            updated_at = datetime('now')
+        WHERE id = 'import-hiref-report'
+        """
+    )
 
     definitions = [
         {
@@ -2316,12 +2327,12 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
         {
             "id": "import-hiref-report",
             "source_type": "excel",
-            "source_name": "HIREF Status Report Import",
+            "source_name": "Retired HIREF Status Report Import",
             "ingestion_mode": "file",
             "refresh_sla_hours": 720,
-            "active": 1,
-            "config_json": {"script": "scripts/import_hiref.py"},
-            "notes": "Contract and expiry enrichment import.",
+            "active": 0,
+            "config_json": {},
+            "notes": "Retired legacy HIREF product entry kept only for historical sync-run integrity after workbook onboarding absorbed supported HIREF contract/slot onboarding.",
         },
         {
             "id": "servicenow-change-requests",

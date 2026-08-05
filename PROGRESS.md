@@ -2,14 +2,15 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch now carries the committed local B3
-contract-coverage reader/freshness migration on top of the required accepted B2
-contract-coverage skeleton commit
-`6b374a2895f2179e421c854166373c2d6a7e3c80`. The separate aborted runtime
-attempt remains excluded and must not be inherited as partial work
+Current HEAD: this branch is still based on the required accepted B3
+contract-coverage reader/freshness migration commit
+`8bc126a21e9b9437893527d1ae9900c9f47bbb88`. The current local working tree adds
+only the bounded B4 contract-coverage closure / legacy deletion slice on top of
+that clean baseline. The separate aborted runtime attempt remains excluded and
+must not be inherited as partial work
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS NOW COMMITTED LOCALLY; ONLY B4 CONTRACT-COVERAGE CLOSURE / LEGACY DELETION REMAINS AS THE NEXT APPROVED GATE`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY; ANY FURTHER RUNTIME WORK MUST START IN A SEPARATE B4-ONLY SESSION`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; THE CURRENT LOCAL WORKING TREE CONTAINS A TRANSITIONAL B4 RUNTIME IMPLEMENTATION PLUS A DOCS-LEVEL B4 CORRECTION THAT REQUIRES USER-FACING HIREF WORKBOOK SIMPLIFICATION BEFORE ANY C/D REDESIGN`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B4 REMAINS THE ONLY AUTHORIZED NEXT GATE IN THE WORKING TREE; BATCH C/D ARE DEFERRED UNTIL POST-B4 REDESIGN`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -29,21 +30,45 @@ actually frozen: coverage/dependency matrix, missing-coverage register,
 invariant checklist, end-to-end state-machine matrix, product/semantic
 decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
 self-review checklist. The current working tree keeps the accepted A-scope and
-committed B1/B2 slices, then adds only the bounded B3 migration surfaces:
+committed B1/B2/B3 slices, then carries a transitional B4 implementation
+through the bounded surfaces:
+`src/pm_agent/workbook_onboarding/models.py`,
+`parser.py`,
+`presets.py`,
+`validator.py`,
+`hiref_bridge.py`,
+`service.py`,
+`src/pm_agent/database/bootstrap.py`,
 `src/pm_agent/database/repository.py`,
-`src/pm_agent/use_cases/staffing.py`,
-`src/pm_agent/use_cases/contract_continuity.py`,
-`src/pm_agent/use_cases/hiref_management.py`,
-`src/pm_agent/dashboard/server.py`, the focused B3 test files, and a small
-synthetic contract-coverage test helper. These changes move named staffing,
-contract-continuity, dashboard member/project/HIREF reads, and related
-freshness/evidence semantics to the canonical `contract_coverage` publication
-contract while keeping B4 deletion, skills redesign, mutable staffing-write
-redesign, and broader contract-model expansion out of scope. Partial, unknown,
-and unavailable contract coverage now stay explicit instead of collapsing to
-fake zero-risk summaries or free-slot counts. Promotion is local only; every
-external action remains a separate owner decision. No push is authorized or
-required.
+`src/pm_agent/dashboard/server.py`,
+the focused HIREF/workbook/staffing tests,
+`docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`,
+and `docs/LOCAL_DATA_ONBOARDING_GUIDE.md`. During this session the owner clarified
+that HIREF feature points must remain and explicitly authorized the minimum extra
+gate needed to carry missing HIREF data through the current workbook onboarding
+process before retiring the old path. The transitional runtime implementation
+adds optional `HIREF Members`, `HIREF Slots`, `HIREF Placeholders`, and
+`HIREF Placeholder Allocations` workbook sections, persists a full HIREF
+snapshot through workbook onboarding into the bounded legacy slot/result tables,
+keeps `import-hiref-report` inactive for clean bootstrap data-source seeding,
+demotes pre-existing HIREF source rows to inactive historical records, repoints
+registry-facing source labels to `contract-coverage-publication`, explicitly
+downgrades `/api/hiref` and remaining `hiref`-table reads to legacy
+result-projection status, and deletes the retired `src/scripts/import_hiref.py`
+product entry. Owner review of the resulting template then found those added
+HIREF technical sheets too close to legacy projection storage for a real user
+workflow. The accepted follow-up design now requires B4 itself to simplify the
+user-facing workbook contract: extend existing sheets first, derive
+placeholder/open-demand projections from supported distribution/allocation input
+wherever possible, keep only the minimum explicit HIREF supplement facts that
+cannot be derived, and treat the current header-only workbook template at
+`templates/team_project_capacity_workbook_template.xlsx` plus the synthetic
+sample workbook
+`src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx` as
+review artifacts for the transitional shape rather than the final operator
+contract.
+Promotion is local only; every external action remains a separate owner
+decision. No push is authorized or required.
 Do not push,
 merge, tag, release, deploy, access a connector, or use real data without
 separate authorization.
@@ -216,6 +241,47 @@ belong in Git history and must not be interpreted as current instructions.
   public read contracts.
 
 ## Current validation evidence
+
+IP-036 Batch B4 contract-coverage closure / legacy deletion still builds on the
+required clean accepted B3 baseline commit
+`8bc126a21e9b9437893527d1ae9900c9f47bbb88`. The current working tree contains a
+validated transitional B4 runtime implementation that retires the legacy
+`import_hiref.py` product entry, keeps `import-hiref-report` inactive in clean
+bootstrap data-source seeding, demotes any pre-existing HIREF source row to an
+inactive historical record, relabels registry-facing HIREF capability sources
+to `contract-coverage-publication`, explicitly downgrades `/api/hiref` plus the
+remaining `hiref` table slot lookups to legacy result-projection status, and
+extends Team/Project + Capacity workbook onboarding with optional
+`HIREF Members`, `HIREF Slots`, `HIREF Placeholders`, and
+`HIREF Placeholder Allocations` sections. That transitional slice passed focused
+regression (`68` tests across `src/tests/test_workbook_onboarding.py`,
+`src/tests/test_staffing_pipeline.py`, and `src/tests/test_hiref_workflow.py`),
+final `make validate` (`443` runtime tests plus `33` repository-tool tests and
+`19` subtests), final `make rehearse-release`, and a final read-only self-review
+with no significant issue. A follow-on artifact update added the header-only
+workbook template at `templates/team_project_capacity_workbook_template.xlsx`,
+the synthetic valid sample workbook at
+`src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx`,
+corresponding doc pointers, a passing `python3 tools/check_synthetic_samples.py`
+run, and a passing dry-run preview through
+`src/scripts/import_team_project_capacity_workbook.py --dry-run`.
+
+Owner review of that template then found the user-facing HIREF workbook contract
+too technical because it exposes placeholder/projection sheets that should be
+system-derived from supported distribution/allocation input. B4 is therefore not
+yet accepted as the final operator-facing closure. The approved docs-level
+correction in this turn freezes that **B4 itself** must solve the workbook
+usability issue: extend existing sheets first, derive placeholder/open-demand
+projections where possible, keep only the minimum explicit HIREF supplement
+facts that cannot be derived, and only then treat B4 as closed. The owner also
+froze an extra B4 acceptance requirement for the follow-on code slice: once the
+simplified workbook is implemented, B4 must explicitly validate the new workbook
+across import, retained HIREF consumer/read surfaces, and workbook
+validation/error semantics before closure can be claimed. B0 is closed, B1 is
+closed locally, B2 is closed locally, B3 is closed locally, and B4 remains the
+only authorized next gate. Batch C/D planning must be redesigned only after the
+corrected B4 outcome is implemented, validated, and reviewed. This slice is not
+committed and not pushed.
 
 IP-036 Batch B3 contract-coverage reader/freshness migration now builds locally
 on the required clean B2 baseline commit

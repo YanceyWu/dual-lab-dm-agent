@@ -210,6 +210,7 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
     response = client.get("/api/hiref")
 
     assert response.status_code == 200
+    assert response.headers["X-DM-Interface-Contract"] == "legacy-result-projection"
     payload = response.get_json()
     assert payload["contract_coverage_freshness_state"] == "partial"
     assert payload["next_covered_count"] is None

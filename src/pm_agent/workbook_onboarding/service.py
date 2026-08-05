@@ -42,6 +42,10 @@ from pm_agent.workbook_onboarding.current_state_staffing_adapter import (
 )
 from pm_agent.workbook_onboarding.capacity_adapter import build_capacity_package
 from pm_agent.workbook_onboarding.confirmed_adjustments import scan_workbook_conflicts
+from pm_agent.workbook_onboarding.hiref_bridge import (
+    build_hiref_bridge_payload,
+    persist_hiref_bridge_payload,
+)
 from pm_agent.workbook_onboarding.models import ValidationIssue
 from pm_agent.workbook_onboarding.parser import WorkbookParseError, parse_workbook
 from pm_agent.workbook_onboarding.presets import (
@@ -180,6 +184,29 @@ def confirm_workbook_candidate(
                 "capacity_result": None,
             }
 
+    hiref_bridge_result: dict[str, Any] | None = None
+    if candidate.get("hiref_bridge_payload") is not None:
+        try:
+            hiref_bridge_result = persist_hiref_bridge_payload(
+                candidate["hiref_bridge_payload"],
+                db_path=db_path,
+            )
+        except Exception as exc:
+            hiref_bridge_result = {
+                "status": "failed",
+                "failure_code": str(exc),
+            }
+        if hiref_bridge_result["status"] != "completed":
+            return {
+                **candidate,
+                "status": "partially_completed",
+                "workforce_result": workforce_result,
+                "current_state_staffing_result": current_state_result,
+                "contract_coverage_result": contract_coverage_result,
+                "hiref_bridge_result": hiref_bridge_result,
+                "capacity_result": None,
+            }
+
     if candidate["capacity_package"] is not None:
         capacity_preview = preview_capacity_import(
             candidate["capacity_package"],
@@ -205,6 +232,7 @@ def confirm_workbook_candidate(
                 "workforce_result": workforce_result,
                 "current_state_staffing_result": current_state_result,
                 "contract_coverage_result": contract_coverage_result,
+                "hiref_bridge_result": hiref_bridge_result,
                 "capacity_result": capacity_result,
             }
 
@@ -214,6 +242,7 @@ def confirm_workbook_candidate(
         "workforce_result": workforce_result,
         "current_state_staffing_result": current_state_result,
         "contract_coverage_result": contract_coverage_result,
+        "hiref_bridge_result": hiref_bridge_result,
         "capacity_result": capacity_result,
     }
 
@@ -438,6 +467,16 @@ def _build_candidate(
         as_of_date=as_of_date,
         revision=revision,
     )
+    hiref_snapshot_present = any(
+        section.section_key.startswith("hiref_")
+        and section.resolved_sheet_name is not None
+        for section in parsed.preset_resolution.sections
+    )
+    hiref_bridge_payload = build_hiref_bridge_payload(
+        validation.workbook,
+        plan_version_id=resolved_plan["plan_version_id"],
+        snapshot_present=hiref_snapshot_present,
+    )
     try:
         validate_workforce_package(workforce_package)
         validate_current_state_staffing_package(current_state_staffing_package)
@@ -474,10 +513,17 @@ def _build_candidate(
                 current_state_staffing_package["assignments"]
             ),
             "contract_coverage_member_records": len(contract_coverage_package["members"]),
+            "hiref_member_rows": len(validation.workbook.hiref_members),
+            "hiref_slot_rows": len(validation.workbook.hiref_slots),
+            "hiref_placeholder_rows": len(validation.workbook.hiref_placeholders),
+            "hiref_placeholder_allocation_rows": len(
+                validation.workbook.hiref_placeholder_allocations
+            ),
         },
         "workforce_package": workforce_package,
         "current_state_staffing_package": current_state_staffing_package,
         "contract_coverage_package": contract_coverage_package,
+        "hiref_bridge_payload": hiref_bridge_payload,
         "capacity_package": capacity_package,
     }
 

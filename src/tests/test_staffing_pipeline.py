@@ -531,6 +531,58 @@ def test_init_db_retires_preexisting_skills_source_without_breaking_history(
     assert "historical sync-run integrity" in row[2]
 
 
+def test_retired_hiref_source_is_inactive_and_hidden_from_active_registry(
+    isolated_db,
+) -> None:
+    _seed_staffing_facts(isolated_db)
+
+    active_source_ids = {
+        row["id"] for row in repository.get_data_source_freshness(active_only=True)
+    }
+    all_sources = {
+        row["id"]: row for row in repository.get_data_source_freshness(active_only=False)
+    }
+
+    assert "import-hiref-report" not in active_source_ids
+    assert all_sources["import-hiref-report"]["freshness_state"] == "inactive"
+    assert all_sources["import-hiref-report"]["active"] is False
+
+
+def test_init_db_retires_preexisting_hiref_source_without_breaking_history(
+    isolated_db,
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as con:
+        con.execute(
+            """
+            INSERT OR REPLACE INTO data_sources
+                (id, source_type, source_name, ingestion_mode, refresh_sla_hours,
+                 active, config_json, notes)
+            VALUES
+                ('import-hiref-report', 'excel', 'HIREF Status Report Import', 'file', 720,
+                 1, '{"script":"scripts/import_hiref.py"}', 'Legacy HIREF import')
+            """
+        )
+        con.commit()
+
+    init_db(quiet=True)
+
+    with sqlite3.connect(isolated_db) as con:
+        row = con.execute(
+            """
+            SELECT source_name, active, notes, config_json
+            FROM data_sources
+            WHERE id = 'import-hiref-report'
+            """
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == "Retired HIREF Status Report Import"
+    assert row[1] == 0
+    assert json.loads(row[3]) == {}
+    assert "historical sync-run integrity" in row[2]
+
+
 def test_dm_can_authorize_non_fresh_proposal_with_audited_reason(
     isolated_db,
 ) -> None:

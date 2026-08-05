@@ -695,6 +695,8 @@ def get_employee_external_ids(
 # ──────────────────────────────────────────────
 
 def get_hiref_contracts() -> list[dict]:
+    # Contract-coverage publication is the authority for member coverage/freshness.
+    # The legacy hiref table now survives only as a slot/result projection.
     members = [
         member
         for member in get_all_members()

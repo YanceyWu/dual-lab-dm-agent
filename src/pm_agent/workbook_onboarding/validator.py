@@ -8,6 +8,10 @@ from pm_agent.workbook_onboarding.models import (
     ParsedWorkbook,
     ValidatedAllocation,
     ValidatedCapacityRow,
+    ValidatedHirefMember,
+    ValidatedHirefPlaceholder,
+    ValidatedHirefPlaceholderAllocation,
+    ValidatedHirefSlot,
     ValidatedMember,
     ValidatedProject,
     ValidatedSetup,
@@ -26,6 +30,23 @@ def validate_workbook(parsed: ParsedWorkbook) -> WorkbookValidationResult:
     projects = _validate_projects(parsed, blockers, warnings)
     allocations = _validate_allocations(parsed, setup, members, projects, blockers, warnings)
     capacity_rows = _validate_capacity(parsed, setup, members, blockers, warnings)
+    hiref_slots = _validate_hiref_slots(parsed, blockers, warnings)
+    hiref_members = _validate_hiref_members(parsed, members, hiref_slots, blockers, warnings)
+    hiref_placeholders = _validate_hiref_placeholders(parsed, members, hiref_slots, blockers, warnings)
+    hiref_placeholder_allocations = _validate_hiref_placeholder_allocations(
+        parsed,
+        setup,
+        projects,
+        hiref_placeholders,
+        blockers,
+        warnings,
+    )
+    _validate_hiref_bundle(
+        parsed,
+        members,
+        hiref_slots,
+        blockers,
+    )
 
     if setup and members and projects:
         _warn_inactive_allocations(members, allocations, warnings)
@@ -45,6 +66,10 @@ def validate_workbook(parsed: ParsedWorkbook) -> WorkbookValidationResult:
             projects=projects,
             allocations=allocations,
             capacity_rows=capacity_rows,
+            hiref_members=hiref_members,
+            hiref_slots=hiref_slots,
+            hiref_placeholders=hiref_placeholders,
+            hiref_placeholder_allocations=hiref_placeholder_allocations,
         ),
         blockers=blockers,
         warnings=warnings,
@@ -349,6 +374,383 @@ def _validate_capacity(
             )
         )
     return results
+
+
+def _validate_hiref_slots(
+    parsed: ParsedWorkbook,
+    blockers: list[ValidationIssue],
+    warnings: list[ValidationIssue],
+) -> list[ValidatedHirefSlot]:
+    del warnings
+    results: list[ValidatedHirefSlot] = []
+    seen: set[str] = set()
+    for row in parsed.hiref_slots:
+        if not row.hiref_id or not row.project or not row.request_type:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_SLOT_FIELDS_REQUIRED",
+                    row.row_number,
+                    "HIREF Slots",
+                    "hiref_id, project, and request_type are required.",
+                )
+            )
+            continue
+        if row.hiref_id in seen:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_SLOT_DUPLICATE",
+                    row.row_number,
+                    "HIREF Slots",
+                    "hiref_id must be unique.",
+                )
+            )
+            continue
+        seen.add(row.hiref_id)
+        start_date = _parse_date(
+            row.start_date,
+            blockers,
+            "HIREF Slots",
+            row.row_number,
+            "start_date",
+        )
+        end_date = _parse_date(
+            row.end_date,
+            blockers,
+            "HIREF Slots",
+            row.row_number,
+            "end_date",
+        )
+        if start_date is None or end_date is None:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_SLOT_DATES_REQUIRED",
+                    row.row_number,
+                    "HIREF Slots",
+                    "start_date and end_date are required.",
+                )
+            )
+            continue
+        if end_date < start_date:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_SLOT_DATE_RANGE_INVALID",
+                    row.row_number,
+                    "HIREF Slots",
+                    "end_date must not precede start_date.",
+                )
+            )
+            continue
+        results.append(
+            ValidatedHirefSlot(
+                row_number=row.row_number,
+                hiref_id=row.hiref_id,
+                project=row.project,
+                request_type=row.request_type,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                notes=row.notes,
+            )
+        )
+    return results
+
+
+def _validate_hiref_members(
+    parsed: ParsedWorkbook,
+    members: list[ValidatedMember],
+    hiref_slots: list[ValidatedHirefSlot],
+    blockers: list[ValidationIssue],
+    warnings: list[ValidationIssue],
+) -> list[ValidatedHirefMember]:
+    del warnings
+    results: list[ValidatedHirefMember] = []
+    member_keys = {member.member_key for member in members}
+    slot_ids = {slot.hiref_id for slot in hiref_slots}
+    seen: set[str] = set()
+    for row in parsed.hiref_members:
+        if not row.member_key or not row.next_hiref_id:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_MEMBER_FIELDS_REQUIRED",
+                    row.row_number,
+                    "HIREF Members",
+                    "member_key and next_hiref_id are required.",
+                )
+            )
+            continue
+        if row.member_key in seen:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_MEMBER_DUPLICATE",
+                    row.row_number,
+                    "HIREF Members",
+                    "member_key must be unique in HIREF Members.",
+                )
+            )
+            continue
+        if row.member_key not in member_keys:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_MEMBER_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Members",
+                    "member_key references a missing member.",
+                )
+            )
+            continue
+        if row.next_hiref_id not in slot_ids:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_MEMBER_SLOT_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Members",
+                    "next_hiref_id references a missing HIREF slot.",
+                )
+            )
+            continue
+        seen.add(row.member_key)
+        results.append(
+            ValidatedHirefMember(
+                row_number=row.row_number,
+                member_key=row.member_key,
+                next_hiref_id=row.next_hiref_id,
+            )
+        )
+    return results
+
+
+def _validate_hiref_placeholders(
+    parsed: ParsedWorkbook,
+    members: list[ValidatedMember],
+    hiref_slots: list[ValidatedHirefSlot],
+    blockers: list[ValidationIssue],
+    warnings: list[ValidationIssue],
+) -> list[ValidatedHirefPlaceholder]:
+    del warnings
+    results: list[ValidatedHirefPlaceholder] = []
+    member_keys = {member.member_key for member in members}
+    slot_ids = {slot.hiref_id for slot in hiref_slots}
+    seen: set[str] = set()
+    for row in parsed.hiref_placeholders:
+        if not row.placeholder_id or not row.display_name or not row.status:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_FIELDS_REQUIRED",
+                    row.row_number,
+                    "HIREF Placeholders",
+                    "placeholder_id, display_name, and status are required.",
+                )
+            )
+            continue
+        if row.placeholder_id in seen:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_DUPLICATE",
+                    row.row_number,
+                    "HIREF Placeholders",
+                    "placeholder_id must be unique.",
+                )
+            )
+            continue
+        if row.linked_member_key and row.linked_member_key not in member_keys:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_MEMBER_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Placeholders",
+                    "linked_member_key references a missing member.",
+                )
+            )
+            continue
+        if row.hiref_id and row.hiref_id not in slot_ids:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_SLOT_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Placeholders",
+                    "hiref_id references a missing HIREF slot.",
+                )
+            )
+            continue
+        seen.add(row.placeholder_id)
+        results.append(
+            ValidatedHirefPlaceholder(
+                row_number=row.row_number,
+                placeholder_id=row.placeholder_id,
+                display_name=row.display_name,
+                hiref_id=row.hiref_id,
+                linked_member_key=row.linked_member_key,
+                resource_type=row.resource_type,
+                status=row.status,
+                notes=row.notes,
+            )
+        )
+    return results
+
+
+def _validate_hiref_placeholder_allocations(
+    parsed: ParsedWorkbook,
+    setup: ValidatedSetup | None,
+    projects: list[ValidatedProject],
+    placeholders: list[ValidatedHirefPlaceholder],
+    blockers: list[ValidationIssue],
+    warnings: list[ValidationIssue],
+) -> list[ValidatedHirefPlaceholderAllocation]:
+    del warnings
+    results: list[ValidatedHirefPlaceholderAllocation] = []
+    project_keys = {project.project_key for project in projects}
+    placeholder_ids = {placeholder.placeholder_id for placeholder in placeholders}
+    covered = {month for month in setup.covered_months} if setup else set()
+    seen: set[tuple[str, str, str]] = set()
+    for row in parsed.hiref_placeholder_allocations:
+        if (
+            not row.placeholder_id
+            or not row.project_key
+            or not row.month
+            or row.allocation is None
+        ):
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_FIELDS_REQUIRED",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "placeholder_id, project_key, month, and allocation are required.",
+                )
+            )
+            continue
+        month = _parse_month(
+            row.month,
+            blockers,
+            "HIREF Placeholder Allocations",
+            row.row_number,
+            "month",
+        )
+        if month is None:
+            continue
+        if setup and month not in covered:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_MONTH_OUT_OF_RANGE",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "allocation month is outside the Setup month range.",
+                )
+            )
+            continue
+        if row.placeholder_id not in placeholder_ids:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_PLACEHOLDER_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "placeholder_id references a missing HIREF placeholder.",
+                )
+            )
+            continue
+        if row.project_key not in project_keys:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_PROJECT_NOT_FOUND",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "project_key references a missing project.",
+                )
+            )
+            continue
+        if not 0.0 <= row.allocation <= 1.0:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_RANGE_INVALID",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "allocation must be between 0 and 1.",
+                )
+            )
+            continue
+        key = (row.placeholder_id, row.project_key, row.month)
+        if key in seen:
+            blockers.append(
+                _issue(
+                    "blocker",
+                    "WORKBOOK_HIREF_PLACEHOLDER_ALLOCATION_DUPLICATE",
+                    row.row_number,
+                    "HIREF Placeholder Allocations",
+                    "placeholder_id + project_key + month must be unique.",
+                )
+            )
+            continue
+        seen.add(key)
+        results.append(
+            ValidatedHirefPlaceholderAllocation(
+                row_number=row.row_number,
+                placeholder_id=row.placeholder_id,
+                project_key=row.project_key,
+                month=row.month,
+                year=month[0],
+                month_number=month[1],
+                allocation=row.allocation,
+            )
+        )
+    return results
+
+
+def _validate_hiref_bundle(
+    parsed: ParsedWorkbook,
+    members: list[ValidatedMember],
+    hiref_slots: list[ValidatedHirefSlot],
+    blockers: list[ValidationIssue],
+) -> None:
+    present_sections = {
+        section.section_key
+        for section in parsed.preset_resolution.sections
+        if section.section_key.startswith("hiref_")
+        and section.resolved_sheet_name is not None
+    }
+    if not present_sections:
+        return
+    required_sections = {
+        "hiref_members",
+        "hiref_slots",
+        "hiref_placeholders",
+        "hiref_placeholder_allocations",
+    }
+    missing_sections = sorted(required_sections - present_sections)
+    if missing_sections:
+        blockers.append(
+            ValidationIssue(
+                "blocker",
+                "WORKBOOK_HIREF_SECTIONS_INCOMPLETE",
+                "HIREF workbook support requires a full HIREF snapshot: provide all four HIREF sheets, using header-only empty sheets when a section has no rows.",
+                "workbook",
+            )
+        )
+    slot_ids = {slot.hiref_id for slot in hiref_slots}
+    for member in members:
+        if member.current_hiref_id and member.current_hiref_id not in slot_ids:
+            blockers.append(
+                ValidationIssue(
+                    "blocker",
+                    "WORKBOOK_HIREF_CURRENT_SLOT_NOT_FOUND",
+                    "current_hiref_id references a missing HIREF slot in the workbook snapshot.",
+                    f"Members!{member.row_number}",
+                )
+            )
 
 
 def _warn_inactive_allocations(

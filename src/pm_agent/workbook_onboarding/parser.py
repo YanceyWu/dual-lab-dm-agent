@@ -14,6 +14,10 @@ from pm_agent.workbook_onboarding.models import (
     ValidationIssue,
     WorkbookAllocationRow,
     WorkbookCapacityRow,
+    WorkbookHirefMemberRow,
+    WorkbookHirefPlaceholderAllocationRow,
+    WorkbookHirefPlaceholderRow,
+    WorkbookHirefSlotRow,
     WorkbookMemberRow,
     WorkbookProjectRow,
     WorkbookSetupRow,
@@ -177,6 +181,49 @@ def parse_workbook(
             )
             for row_number, values in rows_by_section["capacity"]
             if not _is_capacity_note_row(values)
+        ],
+        hiref_members=[
+            WorkbookHirefMemberRow(
+                row_number=row_number,
+                member_key=_as_text(values[0]),
+                next_hiref_id=_as_text(values[1]),
+            )
+            for row_number, values in rows_by_section["hiref_members"]
+        ],
+        hiref_slots=[
+            WorkbookHirefSlotRow(
+                row_number=row_number,
+                hiref_id=_as_text(values[0]),
+                project=_as_text(values[1]),
+                request_type=_as_text(values[2]),
+                start_date=_as_date_text(values[3]),
+                end_date=_as_date_text(values[4]),
+                notes=_as_text(values[5]),
+            )
+            for row_number, values in rows_by_section["hiref_slots"]
+        ],
+        hiref_placeholders=[
+            WorkbookHirefPlaceholderRow(
+                row_number=row_number,
+                placeholder_id=_as_text(values[0]),
+                display_name=_as_text(values[1]),
+                hiref_id=_as_text(values[2]),
+                linked_member_key=_as_text(values[3]),
+                resource_type=_as_text(values[4]),
+                status=_as_text(values[5]),
+                notes=_as_text(values[6]),
+            )
+            for row_number, values in rows_by_section["hiref_placeholders"]
+        ],
+        hiref_placeholder_allocations=[
+            WorkbookHirefPlaceholderAllocationRow(
+                row_number=row_number,
+                placeholder_id=_as_text(values[0]),
+                project_key=_as_text(values[1]),
+                month=_as_month_text(values[2]),
+                allocation=_as_float(values[3]),
+            )
+            for row_number, values in rows_by_section["hiref_placeholder_allocations"]
         ],
         preset_resolution=preset_resolution,
         contract_warnings=tuple(contract_warnings),

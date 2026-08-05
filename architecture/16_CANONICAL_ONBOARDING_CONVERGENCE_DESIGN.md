@@ -1,6 +1,6 @@
 # Canonical Onboarding Convergence Design
 
-Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; POST-BATCH-A REDESIGN BELOW NOW RETIRES LEGACY SKILLS AND FREEZES B1-B4`
+Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; POST-BATCH-A REDESIGN BELOW RETIRES LEGACY SKILLS, KEEPS B4 AS THE FINAL HIREF ONBOARDING-CLOSURE GATE, AND DEFERS ANY C/D REDESIGN UNTIL AFTER B4 ACCEPTANCE`
 Date: 2026-08-04
 Current-state authority: `PROGRESS.md`.
 Baseline branch: `workbook-onboarding-test-20260804-1514`
@@ -16,6 +16,18 @@ feedback now further freezes that legacy `import_skills.py` is not a viable
 onboarding candidate: it must be retired rather than migrated, and any future
 skills capability requires a separate approved redesign. Contract coverage /
 HIREF convergence and mutable staffing-write redesign remain deferred.
+
+Batch-B refinement note (2026-08-05): owner review of the provisional B4 HIREF
+workbook template found that the four added HIREF technical sheets mirror legacy
+projection storage too directly and would force users to prepare data the system
+can derive. B4 therefore remains the final retained HIREF closure gate and must
+solve the user-facing onboarding contract itself: prefer extending existing
+workbook sheets, derive placeholder/open-demand projections from supported
+distribution/allocation input wherever possible, keep only the minimum explicit
+HIREF supplement facts that cannot be derived, and treat the current technical
+HIREF-sheet template as transitional rather than the final operator contract.
+Batch C and Batch D scope must be redesigned only after that corrected B4
+outcome is implemented and accepted.
 
 ## Decision supported
 
@@ -456,20 +468,38 @@ Scope:
 
 Scope:
 
+- finalize the user-facing HIREF onboarding contract so users are not required
+  to prepare technical placeholder/projection sheets merely to preserve current
+  feature points;
+- prefer extending existing workbook sheets, derive placeholder/open-demand
+  projections from supported distribution/allocation input wherever possible,
+  and keep only the minimum explicit HIREF supplement facts that cannot be
+  derived;
 - remove or demote temporary HIREF / contract compatibility shims introduced
   only for B2-B3;
-- retire the legacy `import_hiref.py` product entry once its readers and
-  freshness semantics have converged;
-- run the batch-level acceptance closure for the completed B-slices.
+- retire the legacy `import_hiref.py` product entry once the simplified
+  workbook-driven replacement fully covers the retained functionality;
+- after the code changes are complete, validate the new workbook across all
+  three B4-critical paths: onboarding import, downstream HIREF feature
+  consumption/read surfaces, and workbook validation/error semantics;
+- run the batch-level acceptance closure for the completed B-slices and freeze
+  the surviving post-B4 surface before any C/D redesign begins.
 
 ### Batch C — Registry and auxiliary onboarding convergence
 
-Converge the remaining onboarding-capable sources.
+Not yet frozen.
+
+Batch C must be redesigned only after B4 acceptance, using the surviving
+post-B4 workbook/operator surface as the authority. No pre-approved C scope from
+the earlier plan remains active.
 
 ### Batch D — Final redundancy and deprecated-code cleanup
 
-Remove old operator entrypoints, redundant storage, and deprecated runtime code
-only after the earlier slices have already replaced them.
+Not yet frozen.
+
+Batch D must also be redesigned after B4 acceptance. Only then may the program
+decide which registry/deprecated-code cleanup targets still exist and which were
+already absorbed or avoided by the corrected B4 outcome.
 
 ## Execution anti-patterns now forbidden
 

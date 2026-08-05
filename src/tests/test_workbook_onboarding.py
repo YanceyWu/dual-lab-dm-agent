@@ -12,6 +12,7 @@ from openpyxl import Workbook
 from pm_agent.database import repository as legacy_repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.resource_intelligence.read_model import get_effective_capacity
+from pm_agent.use_cases import hiref_management_service
 from pm_agent.workbook_onboarding.parser import (
     EXPECTED_HEADERS,
     WorkbookParseError,
@@ -54,6 +55,7 @@ def _write_workbook(
         "Capacity",
     ),
     header_overrides: dict[str, list[str]] | None = None,
+    extra_sheets: dict[str, list[list[object]]] | None = None,
 ) -> Path:
     workbook = Workbook()
     first = workbook.active
@@ -61,6 +63,7 @@ def _write_workbook(
     for title in sheet_names[1:]:
         workbook.create_sheet(title)
     header_overrides = header_overrides or {}
+    extra_sheets = extra_sheets or {}
     logical_sheet_names = ("Setup", "Members", "Projects", "Allocations", "Capacity")
     rows_by_sheet = {
         "Setup": setup_rows,
@@ -72,6 +75,11 @@ def _write_workbook(
     for logical_name, worksheet in zip(logical_sheet_names, workbook.worksheets, strict=True):
         worksheet.append(header_overrides.get(logical_name, EXPECTED_HEADERS[logical_name]))
         for row in rows_by_sheet[logical_name]:
+            worksheet.append(row)
+    for logical_name, rows in extra_sheets.items():
+        worksheet = workbook.create_sheet(logical_name)
+        worksheet.append(header_overrides.get(logical_name, EXPECTED_HEADERS[logical_name]))
+        for row in rows:
             worksheet.append(row)
     workbook.save(path)
     return path
@@ -96,6 +104,7 @@ def _baseline_workbook(
         "Capacity",
     ),
     header_overrides: dict[str, list[str]] | None = None,
+    extra_sheets: dict[str, list[list[object]]] | None = None,
 ) -> Path:
     return _write_workbook(
         path,
@@ -126,6 +135,7 @@ def _baseline_workbook(
         ),
         sheet_names=sheet_names,
         header_overrides=header_overrides,
+        extra_sheets=extra_sheets,
     )
 
 
@@ -573,6 +583,227 @@ def test_import_workbook_preserves_explicit_zero_and_missing_capacity_unknown(
     assert known["effective_capacity"] == 1.0
     assert known["available_capacity"] == 0.5
     assert missing["state"] == "unknown"
+
+
+def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "hiref-bridge.xlsx",
+        members=[
+            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None],
+            ["WD100002", "Blair Example", "STFTE", "active", "HIREF-CEDAR-001", "2026-10-31", "Engineer", 7, "2026-09-01", None],
+        ],
+        projects=[
+            ["RP-PROJ-001", "Project Atlas", "active", 2, "2026-09-01", "2026-12-31"],
+            ["RP-PROJ-002", "Project Beacon", "active", 3, "2026-09-01", "2026-12-31"],
+            ["RP-PROJ-003", "Project Cedar", "active", 2, "2026-09-01", "2026-12-31"],
+        ],
+        allocations=[
+            ["WD100001", "RP-PROJ-002", "2026-09", 0.5],
+            ["WD100002", "RP-PROJ-003", "2026-09", 0.8],
+        ],
+        start_month="2026-09",
+        end_month="2026-10",
+        extra_sheets={
+            "HIREF Members": [["WD100002", "HIREF-CEDAR-NEXT"]],
+            "HIREF Slots": [
+                ["HIREF-ATLAS-001", "Project Atlas (RP-PROJ-001)", "extend", "2026-01-01", "2026-10-15", ""],
+                ["HIREF-CEDAR-001", "Project Cedar (RP-PROJ-003)", "extend", "2026-03-01", "2026-10-31", ""],
+                ["HIREF-CEDAR-NEXT", "Project Cedar (RP-PROJ-003)", "extend", "2026-11-01", "2027-06-30", ""],
+                ["HIREF-OPEN-001", "Project Beacon (RP-PROJ-002)", "new", "2026-10-01", "2027-03-31", ""],
+            ],
+            "HIREF Placeholders": [
+                [
+                    "placeholder-qabi",
+                    "To Be Hired",
+                    "HIREF-OPEN-001",
+                    "",
+                    "",
+                    "planned",
+                    "",
+                ]
+            ],
+            "HIREF Placeholder Allocations": [
+                ["placeholder-qabi", "RP-PROJ-002", "2026-10", 0.5]
+            ],
+        },
+    )
+
+    result = import_workbook(workbook_path, db_path=isolated_db)
+
+    assert result["status"] == "completed"
+    assert result["hiref_bridge_result"]["report"] == {
+        "member_next_hiref_rows": 2,
+        "hiref_slot_rows": 4,
+        "placeholder_rows": 1,
+        "placeholder_allocation_rows": 1,
+    }
+    assert result["counts"]["hiref_slot_rows"] == 4
+
+    with sqlite3.connect(isolated_db) as connection:
+        next_hiref = connection.execute(
+            "SELECT next_hiref FROM employees WHERE id='WD100002'"
+        ).fetchone()
+        slots = connection.execute(
+            "SELECT id, project FROM hiref ORDER BY id"
+        ).fetchall()
+        placeholder = connection.execute(
+            """
+            SELECT placeholder_id, source_system, hiref_id, resource_type, status
+            FROM staffing_placeholders
+            """
+        ).fetchone()
+        placeholder_allocation = connection.execute(
+            """
+            SELECT placeholder_id, project_id, year, month, allocation
+            FROM placeholder_monthly_allocations
+            """
+        ).fetchone()
+    assert next_hiref == ("HIREF-CEDAR-NEXT",)
+    assert slots == [
+        ("HIREF-ATLAS-001", "Project Atlas (RP-PROJ-001)"),
+        ("HIREF-CEDAR-001", "Project Cedar (RP-PROJ-003)"),
+        ("HIREF-CEDAR-NEXT", "Project Cedar (RP-PROJ-003)"),
+        ("HIREF-OPEN-001", "Project Beacon (RP-PROJ-002)"),
+    ]
+    assert placeholder == (
+        "placeholder-qabi",
+        "workbook_onboarding",
+        "HIREF-OPEN-001",
+        "",
+        "planned",
+    )
+    assert placeholder_allocation == (
+        "placeholder-qabi",
+        "RP-PROJ-002",
+        2026,
+        10,
+        0.5,
+    )
+
+    summary = hiref_management_service.summary(days=90)
+    placeholders = hiref_management_service.placeholders()
+    review = hiref_management_service.review(days=90)
+    assert summary.success is True
+    assert placeholders.success is True
+    assert review.success is True
+    assert summary.data["summary"]["open_placeholders"] == 1
+    assert placeholders.data["rows"][0]["slot_registered"] is True
+    assert any(
+        row["name"] == "Blair Example" and row["next_hiref"] == "HIREF-CEDAR-NEXT"
+        for row in review.data["rows"]
+    )
+
+
+def test_preview_workbook_rejects_partial_hiref_snapshot_sections(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    workbook_path = _baseline_workbook(
+        tmp_path / "partial-hiref.xlsx",
+        members=[
+            ["WD100001", "Alex Example", "STFTE", "active", "HIREF-ATLAS-001", "2026-10-15", "Engineer", 7, "2026-09-01", None]
+        ],
+        extra_sheets={
+            "HIREF Members": [["WD100001", "HIREF-ATLAS-NEXT"]],
+        },
+    )
+
+    result = preview_workbook_import(workbook_path, db_path=isolated_db)
+
+    assert result["status"] == "rejected"
+    assert {
+        blocker["code"] for blocker in result["blockers"]
+    } >= {
+        "WORKBOOK_HIREF_SECTIONS_INCOMPLETE",
+        "WORKBOOK_HIREF_MEMBER_SLOT_NOT_FOUND",
+        "WORKBOOK_HIREF_CURRENT_SLOT_NOT_FOUND",
+    }
+
+
+def test_import_workbook_empty_hiref_snapshot_clears_stale_bridge_rows(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    with sqlite3.connect(isolated_db) as connection:
+        connection.execute(
+            """
+            INSERT INTO employees
+                (id, wd_id, name, level, status, resource_type, next_hiref)
+            VALUES ('WD100001', 'WD100001', 'Alex Example', '7', 'active', 'LTFTE', 'STALE-HIREF')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO projects (id, name, status, priority)
+            VALUES ('RP-PROJ-001', 'Project Atlas', 'active', 2)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO plan_versions
+                (plan_version_id, version_name, scenario_type, version_status)
+            VALUES ('legacy-plan', 'Legacy Plan', 'baseline', 'active')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO hiref (id, project, request_type, start_date, end_date, notes)
+            VALUES ('STALE-HIREF', 'Project Atlas (RP-PROJ-001)', 'extend', '2026-01-01', '2026-12-31', '')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO staffing_placeholders
+                (placeholder_id, display_name, source_system, hiref_id, status, notes)
+            VALUES ('placeholder-stale', 'Stale Placeholder', 'resource_portal', 'STALE-HIREF', 'planned', '')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO placeholder_monthly_allocations
+                (placeholder_id, project_id, year, month, allocation, plan_version_id)
+            VALUES ('placeholder-stale', 'RP-PROJ-001', 2026, 9, 0.5, 'legacy-plan')
+            """
+        )
+        connection.commit()
+
+    workbook_path = _baseline_workbook(
+        tmp_path / "empty-hiref-snapshot.xlsx",
+        extra_sheets={
+            "HIREF Members": [],
+            "HIREF Slots": [],
+            "HIREF Placeholders": [],
+            "HIREF Placeholder Allocations": [],
+        },
+    )
+
+    result = import_workbook(workbook_path, db_path=isolated_db)
+
+    assert result["status"] == "completed"
+    assert result["hiref_bridge_result"]["report"] == {
+        "member_next_hiref_rows": 1,
+        "hiref_slot_rows": 0,
+        "placeholder_rows": 0,
+        "placeholder_allocation_rows": 0,
+    }
+    with sqlite3.connect(isolated_db) as connection:
+        employee = connection.execute(
+            "SELECT next_hiref FROM employees WHERE id='WD100001'"
+        ).fetchone()
+        hiref_count = connection.execute("SELECT COUNT(*) FROM hiref").fetchone()
+        placeholder_count = connection.execute(
+            "SELECT COUNT(*) FROM staffing_placeholders"
+        ).fetchone()
+        placeholder_allocation_count = connection.execute(
+            "SELECT COUNT(*) FROM placeholder_monthly_allocations"
+        ).fetchone()
+    assert employee == ("",)
+    assert hiref_count == (0,)
+    assert placeholder_count == (0,)
+    assert placeholder_allocation_count == (0,)
 
 
 def test_import_workbook_rejects_when_workforce_preview_rejects(

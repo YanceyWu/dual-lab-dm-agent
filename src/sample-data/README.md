@@ -107,6 +107,13 @@ workforce/project/plan/monthly-allocation clean-import package. It uses only
 stable synthetic identifiers and includes an explicit zero allocation so that
 known zero remains distinguishable from a missing manifest record.
 
+`excel/team_project_capacity_workbook_hiref_sample.xlsx` is a synthetic, valid
+sample workbook for the current workbook onboarding path. It includes the full
+HIREF sheet set so reviewers can inspect the supported shape for contract
+coverage plus legacy HIREF slot/result projection inputs in one file. The
+header-only review template for this workbook contract lives at
+`templates/team_project_capacity_workbook_template.xlsx`.
+
 ## Transfer status
 
 `APPROVED_FOR_PUBLIC_TRANSFER`.

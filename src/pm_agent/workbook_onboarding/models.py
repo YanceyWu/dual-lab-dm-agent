@@ -75,12 +75,55 @@ class WorkbookCapacityRow:
 
 
 @dataclass(frozen=True)
+class WorkbookHirefMemberRow:
+    row_number: int
+    member_key: str | None
+    next_hiref_id: str | None
+
+
+@dataclass(frozen=True)
+class WorkbookHirefSlotRow:
+    row_number: int
+    hiref_id: str | None
+    project: str | None
+    request_type: str | None
+    start_date: str | None
+    end_date: str | None
+    notes: str | None
+
+
+@dataclass(frozen=True)
+class WorkbookHirefPlaceholderRow:
+    row_number: int
+    placeholder_id: str | None
+    display_name: str | None
+    hiref_id: str | None
+    linked_member_key: str | None
+    resource_type: str | None
+    status: str | None
+    notes: str | None
+
+
+@dataclass(frozen=True)
+class WorkbookHirefPlaceholderAllocationRow:
+    row_number: int
+    placeholder_id: str | None
+    project_key: str | None
+    month: str | None
+    allocation: float | None
+
+
+@dataclass(frozen=True)
 class ParsedWorkbook:
     setup_rows: list[WorkbookSetupRow]
     members: list[WorkbookMemberRow]
     projects: list[WorkbookProjectRow]
     allocations: list[WorkbookAllocationRow]
     capacity_rows: list[WorkbookCapacityRow]
+    hiref_members: list[WorkbookHirefMemberRow]
+    hiref_slots: list[WorkbookHirefSlotRow]
+    hiref_placeholders: list[WorkbookHirefPlaceholderRow]
+    hiref_placeholder_allocations: list[WorkbookHirefPlaceholderAllocationRow]
     preset_resolution: WorkbookPresetResolution
     contract_warnings: tuple[ValidationIssue, ...] = ()
 
@@ -144,12 +187,57 @@ class ValidatedCapacityRow:
 
 
 @dataclass(frozen=True)
+class ValidatedHirefMember:
+    row_number: int
+    member_key: str
+    next_hiref_id: str
+
+
+@dataclass(frozen=True)
+class ValidatedHirefSlot:
+    row_number: int
+    hiref_id: str
+    project: str
+    request_type: str
+    start_date: str
+    end_date: str
+    notes: str | None
+
+
+@dataclass(frozen=True)
+class ValidatedHirefPlaceholder:
+    row_number: int
+    placeholder_id: str
+    display_name: str
+    hiref_id: str | None
+    linked_member_key: str | None
+    resource_type: str | None
+    status: str
+    notes: str | None
+
+
+@dataclass(frozen=True)
+class ValidatedHirefPlaceholderAllocation:
+    row_number: int
+    placeholder_id: str
+    project_key: str
+    month: str
+    year: int
+    month_number: int
+    allocation: float
+
+
+@dataclass(frozen=True)
 class ValidatedWorkbook:
     setup: ValidatedSetup
     members: list[ValidatedMember]
     projects: list[ValidatedProject]
     allocations: list[ValidatedAllocation]
     capacity_rows: list[ValidatedCapacityRow]
+    hiref_members: list[ValidatedHirefMember]
+    hiref_slots: list[ValidatedHirefSlot]
+    hiref_placeholders: list[ValidatedHirefPlaceholder]
+    hiref_placeholder_allocations: list[ValidatedHirefPlaceholderAllocation]
 
 
 @dataclass(frozen=True)
