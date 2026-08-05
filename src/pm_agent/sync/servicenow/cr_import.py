@@ -17,8 +17,10 @@ import csv
 import json
 import sqlite3
 import argparse
+import hashlib
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.config import settings
@@ -164,57 +166,131 @@ def load_csv(file_path: str) -> tuple[list[dict], list[str]]:
     return records, sorted(unmapped)
 
 
-def import_cr(file_path: str, dry_run: bool = False) -> None:
-    init_db()
-
-    records, unmapped = load_csv(file_path)
-    total = len(records)
-    print(f"Parsed {total} CR records from {Path(file_path).name}")
-
+def preview_cr_import(
+    file_path: Path,
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    records, unmapped = load_csv(str(file_path))
+    counts = _plan_counts(records, db_path=db_path)
+    counts["unmapped_columns"] = len(unmapped)
+    warnings: list[dict[str, Any]] = []
     if unmapped:
-        print(f"  ℹ  Unmapped columns (stored in raw_data): {', '.join(unmapped[:8])}"
-              + (" ..." if len(unmapped) > 8 else ""))
+        warnings.append(
+            {
+                "severity": "warning",
+                "code": "SERVICENOW_CHANGE_REQUEST_UNMAPPED_COLUMNS_STORED",
+                "message": (
+                    "Unmapped CSV columns will be preserved in raw_data: "
+                    + ", ".join(unmapped[:8])
+                    + (" ..." if len(unmapped) > 8 else "")
+                ),
+                "location": "source",
+            }
+        )
+    status = (
+        "already_completed"
+        if counts["planned_inserts"] == 0 and counts["planned_updates"] == 0
+        else "previewed"
+    )
+    return {
+        "status": status,
+        "blockers": [],
+        "warnings": warnings,
+        "conflicts": [],
+        "counts": counts,
+        "payload": {
+            "publication_id": _publication_id(records, unmapped),
+            "change_request_fingerprint": _fingerprint(records, unmapped),
+            "change_request_ids": [str(record.get("id") or "") for record in records],
+            "sample_records": [
+                {
+                    "id": record.get("id"),
+                    "state": record.get("state"),
+                    "short_desc": record.get("short_desc", ""),
+                }
+                for record in records[:3]
+            ],
+        },
+        "report": {
+            "coverage": {
+                "state": "complete",
+                "change_requests": counts["change_requests"],
+                "planned_inserts": counts["planned_inserts"],
+                "planned_updates": counts["planned_updates"],
+                "unchanged_records": counts["unchanged_records"],
+                "project_codes": counts["project_codes"],
+                "unmapped_columns": len(unmapped),
+            },
+            "preserved_semantics": {
+                "newer_updated_on_required_for_updates": True,
+                "unmapped_columns_preserved_in_raw_data": bool(unmapped),
+                "audit_source_id": "servicenow-change-requests",
+            },
+        },
+    }
 
-    if dry_run:
-        print("[DRY RUN] Sample records:")
-        for r in records[:3]:
-            print(f"  {r.get('id')} | {r.get('state')} | {r.get('short_desc','')[:60]}")
-        return
 
+def apply_cr_import(
+    file_path: Path,
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    records, unmapped = load_csv(str(file_path))
+    counts = _plan_counts(records, db_path=db_path)
+    counts["unmapped_columns"] = len(unmapped)
+    total = len(records)
     run_id = repository.start_sync_run(
         "servicenow-change-requests",
         run_type="file-import",
         target_tables=["change_requests"],
-        artifact_path=str(Path(file_path).resolve()),
+        artifact_path=str(file_path.resolve()),
         triggered_by="cli",
         notes="ServiceNow CR CSV import",
     )
 
-    db_path = Path(settings.database_path)
+    database_path = Path(db_path or settings.database_path)
     con = None
     inserted = updated = skipped = 0
     try:
-        con = sqlite3.connect(db_path)
+        con = sqlite3.connect(database_path)
         con.row_factory = sqlite3.Row
 
-        for r in records:
-            cr_id = r.get("id", "")
+        for record in records:
+            cr_id = record.get("id", "")
             existing = con.execute(
-                "SELECT updated_on FROM change_requests WHERE id=?", [cr_id]
+                "SELECT updated_on FROM change_requests WHERE id=?",
+                [cr_id],
             ).fetchone()
 
             fields = {
-                k: r.get(k, "")
-                for k in ("id", "short_desc", "state", "priority", "category",
-                          "assignment_group", "assigned_to", "requested_by",
-                          "project_code", "planned_start", "planned_end",
-                          "actual_start", "actual_end", "created_on",
-                          "updated_on", "close_code", "close_notes", "raw_data")
+                key: record.get(key, "")
+                for key in (
+                    "id",
+                    "short_desc",
+                    "state",
+                    "priority",
+                    "category",
+                    "assignment_group",
+                    "assigned_to",
+                    "requested_by",
+                    "project_code",
+                    "planned_start",
+                    "planned_end",
+                    "actual_start",
+                    "actual_end",
+                    "created_on",
+                    "updated_on",
+                    "close_code",
+                    "close_notes",
+                    "raw_data",
+                )
             }
             fields["imported_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             if not existing:
-                con.execute("""
+                con.execute(
+                    """
                     INSERT INTO change_requests
                     (id, short_desc, state, priority, category,
                      assignment_group, assigned_to, requested_by,
@@ -227,29 +303,34 @@ def import_cr(file_path: str, dry_run: bool = False) -> None:
                      :project_code,:planned_start,:planned_end,
                      :actual_start,:actual_end,:created_on,:updated_on,
                      :close_code,:close_notes,:raw_data,:imported_at)
-                """, fields)
+                    """,
+                    fields,
+                )
                 inserted += 1
+                continue
+
+            existing_upd = existing["updated_on"] or ""
+            new_upd = fields.get("updated_on", "")
+            if not existing_upd or new_upd > existing_upd:
+                con.execute(
+                    """
+                    UPDATE change_requests SET
+                        short_desc=:short_desc, state=:state, priority=:priority,
+                        category=:category, assignment_group=:assignment_group,
+                        assigned_to=:assigned_to, requested_by=:requested_by,
+                        project_code=:project_code, planned_start=:planned_start,
+                        planned_end=:planned_end, actual_start=:actual_start,
+                        actual_end=:actual_end, created_on=:created_on,
+                        updated_on=:updated_on, close_code=:close_code,
+                        close_notes=:close_notes, raw_data=:raw_data,
+                        imported_at=:imported_at
+                    WHERE id=:id
+                    """,
+                    fields,
+                )
+                updated += 1
             else:
-                # Update only if SNOW record is newer
-                existing_upd = existing["updated_on"] or ""
-                new_upd = fields.get("updated_on", "")
-                if not existing_upd or new_upd > existing_upd:
-                    con.execute("""
-                        UPDATE change_requests SET
-                            short_desc=:short_desc, state=:state, priority=:priority,
-                            category=:category, assignment_group=:assignment_group,
-                            assigned_to=:assigned_to, requested_by=:requested_by,
-                            project_code=:project_code, planned_start=:planned_start,
-                            planned_end=:planned_end, actual_start=:actual_start,
-                            actual_end=:actual_end, created_on=:created_on,
-                            updated_on=:updated_on, close_code=:close_code,
-                            close_notes=:close_notes, raw_data=:raw_data,
-                            imported_at=:imported_at
-                        WHERE id=:id
-                    """, fields)
-                    updated += 1
-                else:
-                    skipped += 1
+                skipped += 1
 
         con.commit()
         repository.finish_sync_run(
@@ -265,39 +346,226 @@ def import_cr(file_path: str, dry_run: bool = False) -> None:
                 )
             ),
         )
-
-        # ── Summary ──
-        print(f"  ✓ Inserted: {inserted}  Updated: {updated}  Skipped (no change): {skipped}")
-
-        # State breakdown
-        print()
-        print("  CR状态分布:")
-        state_counts = con.execute("""
-            SELECT state, COUNT(*) as cnt
-            FROM change_requests
-            GROUP BY state ORDER BY cnt DESC
-        """).fetchall()
-        for row in state_counts:
-            bar = "█" * min(row["cnt"], 30)
-            print(f"    {(row['state'] or 'Unknown'):20s}  {row['cnt']:4d}  {bar}")
-
-        con.close()
-        print()
-        print("Done. Run `python3 -m pm_agent.cli.app cr list` to view.")
+        state_counts = [
+            {"state": row["state"] or "Unknown", "count": int(row["cnt"])}
+            for row in con.execute(
+                """
+                SELECT state, COUNT(*) as cnt
+                FROM change_requests
+                GROUP BY state ORDER BY cnt DESC
+                """
+            ).fetchall()
+        ]
     except Exception as exc:
         if con is not None:
             con.close()
-        repository.fail_sync_run(run_id, str(exc), rows_in=total, rows_changed=inserted + updated)
+        repository.fail_sync_run(
+            run_id,
+            str(exc),
+            rows_in=total,
+            rows_changed=inserted + updated,
+        )
         raise
+    finally:
+        if con is not None:
+            con.close()
+
+    warnings: list[dict[str, Any]] = []
+    if unmapped:
+        warnings.append(
+            {
+                "severity": "warning",
+                "code": "SERVICENOW_CHANGE_REQUEST_UNMAPPED_COLUMNS_STORED",
+                "message": (
+                    "Unmapped CSV columns were preserved in raw_data: "
+                    + ", ".join(unmapped[:8])
+                    + (" ..." if len(unmapped) > 8 else "")
+                ),
+                "location": "source",
+            }
+        )
+    return {
+        "status": "completed",
+        "blockers": [],
+        "warnings": warnings,
+        "conflicts": [],
+        "counts": counts,
+        "payload": {
+            "publication_id": _publication_id(records, unmapped),
+            "change_request_fingerprint": _fingerprint(records, unmapped),
+            "change_request_ids": [str(record.get("id") or "") for record in records],
+            "sync_run_id": run_id,
+        },
+        "report": {
+            "coverage": {
+                "state": "complete",
+                "change_requests": counts["change_requests"],
+                "planned_inserts": counts["planned_inserts"],
+                "planned_updates": counts["planned_updates"],
+                "unchanged_records": counts["unchanged_records"],
+                "project_codes": counts["project_codes"],
+                "unmapped_columns": counts["unmapped_columns"],
+            },
+            "result": {
+                "inserted": inserted,
+                "updated": updated,
+                "skipped": skipped,
+                "sync_run_id": run_id,
+                "state_counts": state_counts,
+                "unmapped_columns": counts["unmapped_columns"],
+            },
+            "preserved_semantics": {
+                "newer_updated_on_required_for_updates": True,
+                "unmapped_columns_preserved_in_raw_data": bool(unmapped),
+                "audit_source_id": "servicenow-change-requests",
+            },
+        },
+    }
+
+
+def import_cr(file_path: str, dry_run: bool = False) -> None:
+    init_db()
+
+    path = Path(file_path)
+    preview = preview_cr_import(path)
+    print(f"Parsed {preview['counts']['change_requests']} CR records from {path.name}")
+
+    if preview["warnings"]:
+        print(f"  ℹ  {preview['warnings'][0]['message']}")
+
+    if dry_run:
+        print("[DRY RUN] Sample records:")
+        for record in preview["payload"]["sample_records"]:
+            print(
+                f"  {record.get('id')} | {record.get('state')} | "
+                f"{str(record.get('short_desc') or '')[:60]}"
+            )
+        return
+
+    result = apply_cr_import(path)
+    summary = result["report"]["result"]
+    print(
+        "  ✓ Inserted: "
+        f"{summary['inserted']}  Updated: {summary['updated']}  "
+        f"Skipped (no change): {summary['skipped']}"
+    )
+    print()
+    print("  CR状态分布:")
+    for row in summary["state_counts"]:
+        bar = "█" * min(int(row["count"]), 30)
+        print(f"    {str(row['state']):20s}  {int(row['count']):4d}  {bar}")
+    print()
+    print("Done. Run `python3 -m pm_agent.cli.app cr list` to view.")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Import ServiceNow CR CSV into pm.db")
+    parser = argparse.ArgumentParser(    description=(
+        "Import ServiceNow CR CSV into pm.db "
+        "(compatibility wrapper; pm onboarding is the supported path)."
+    )
+    )
     parser.add_argument("--file", required=True, help="Path to downloaded CSV file")
     parser.add_argument("--dry-run", action="store_true",
                         help="Parse only, do not write to DB")
     args = parser.parse_args()
     import_cr(args.file, dry_run=args.dry_run)
+
+
+def _plan_counts(
+    records: list[dict[str, Any]],
+    *,
+    db_path: str | Path | None = None,
+) -> dict[str, int]:
+    connection = sqlite3.connect(Path(db_path or settings.database_path))
+    connection.row_factory = sqlite3.Row
+    planned_inserts = 0
+    planned_updates = 0
+    unchanged_records = 0
+    try:
+        for record in records:
+            existing = connection.execute(
+                """
+                SELECT id, short_desc, state, priority, category,
+                       assignment_group, assigned_to, requested_by,
+                       project_code, planned_start, planned_end,
+                       actual_start, actual_end, created_on, updated_on,
+                       close_code, close_notes, raw_data
+                FROM change_requests
+                WHERE id=?
+                """,
+                [record.get("id", "")],
+            ).fetchone()
+            if existing is None:
+                planned_inserts += 1
+                continue
+            if _matches_existing_record(existing, record):
+                unchanged_records += 1
+                continue
+            existing_upd = existing["updated_on"] or ""
+            new_upd = record.get("updated_on", "")
+            if not existing_upd or new_upd > existing_upd:
+                planned_updates += 1
+            else:
+                unchanged_records += 1
+    finally:
+        connection.close()
+    return {
+        "change_requests": len(records),
+        "planned_inserts": planned_inserts,
+        "planned_updates": planned_updates,
+        "unchanged_records": unchanged_records,
+        "project_codes": len(
+            {
+                str(record.get("project_code") or "")
+                for record in records
+                if record.get("project_code")
+            }
+        ),
+        "unmapped_columns": 0,
+    }
+
+
+def _fingerprint(records: list[dict[str, Any]], unmapped: list[str]) -> str:
+    digest = hashlib.sha256()
+    digest.update(
+        json.dumps(
+            {"records": records, "unmapped": unmapped},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+    return digest.hexdigest()
+
+
+def _publication_id(records: list[dict[str, Any]], unmapped: list[str]) -> str:
+    return f"servicenow-change-request-csv:{_fingerprint(records, unmapped)}"
+
+
+def _matches_existing_record(existing: sqlite3.Row, record: dict[str, Any]) -> bool:
+    return all(
+        str(existing[field] or "") == str(record.get(field, "") or "")
+        for field in (
+            "id",
+            "short_desc",
+            "state",
+            "priority",
+            "category",
+            "assignment_group",
+            "assigned_to",
+            "requested_by",
+            "project_code",
+            "planned_start",
+            "planned_end",
+            "actual_start",
+            "actual_end",
+            "created_on",
+            "updated_on",
+            "close_code",
+            "close_notes",
+            "raw_data",
+        )
+    )
 
 
 if __name__ == "__main__":

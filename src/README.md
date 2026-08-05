@@ -56,16 +56,19 @@ structured data sources:
 
 ```bash
 pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding profile save --profile-key project-profiles --source-type project-profile-workbook --file /approved/path/project_profiles.xlsx
+pm onboarding profile save --profile-key change-requests --source-type servicenow-change-request-csv --file /approved/path/servicenow_change_requests.csv
 pm onboarding profile show --profile-key fy26-q4
 pm onboarding preview --profile-key fy26-q4
 pm onboarding confirm --run-id <onboarding-run-id>
 pm onboarding run show --run-id <onboarding-run-id>
 ```
 
-Batch A registers Team/Project + Capacity workbook onboarding as the first
-shared source type. The existing source-specific workbook script remains
-available as a transitional fallback while other sources converge on the same
-framework.
+The shared onboarding surface now covers the retained Team/Project + Capacity
+workbook, project-profile workbook, and ServiceNow change-request CSV source
+families alongside the other retained JSON / registry source types. The legacy
+source-specific scripts remain available only as transitional compatibility
+wrappers while later convergence slices close the remaining operator-path gaps.
 
 ## Structured read-only interface
 

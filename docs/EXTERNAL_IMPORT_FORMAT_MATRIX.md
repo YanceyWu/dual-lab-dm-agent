@@ -47,10 +47,10 @@
 | `src/scripts/import_project_health.py` | JSON | `src/sample-data/json/project_health_reimport.sample.json` | **是（preview/confirm）** | 导入 Project Health re-import 包并触发七维评估；用于 Layered Health |
 | `src/scripts/import_jira_boards.py` | CSV | `src/sample-data/csv/jira_board_configs.sample.csv` | **部分（dry-run）** | 注册 board 与项目映射；Project Health / JIRA 相关页面需要这类基础映射 |
 | `src/scripts/import_confluence_pages.py` | CSV | `src/sample-data/csv/confluence_pages.sample.csv` | **部分（dry-run）** | 导入 Confluence 页面注册表；用于 Confluence 状态来源映射 |
-| `src/scripts/import_cr_csv.py` | CSV | `src/sample-data/csv/servicenow_change_requests.sample.csv` | **部分（dry-run）** | 导入 ServiceNow change request CSV 导出；适合已有报表导出时接入变更记录 |
+| `src/scripts/import_cr_csv.py` | CSV | `src/sample-data/csv/servicenow_change_requests.sample.csv` | **是（preview/confirm，经 `pm onboarding`）** | 导入 ServiceNow change request CSV 导出；受支持路径是 `pm onboarding` 的 `servicenow-change-request-csv` source type，脚本仅保留为兼容 wrapper |
 | **已退休：legacy HIREF Excel 入口** | Excel (`.xlsx`) | `src/sample-data/excel/hiref_status_sample.xlsx` | **否（retired）** | `src/scripts/import_hiref.py` 已退休，不再是受支持的产品入口；contract coverage 与现有 HIREF slot/result 所需数据改由 `src/scripts/import_team_project_capacity_workbook.py` 驱动的 workbook onboarding 提供。需要保留 HIREF feature point 时，请在 workbook 中补充可选的 `HIREF Requests` sheet，并使用 `Members.next_hiref_id` 与 `Allocations.hiref_id` 表达续签和 open-demand。 |
 | `src/scripts/import_team_project_capacity_workbook.py` | Excel (`.xlsx`) | `src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx` | **是（preview/confirm）** | 当前受支持的 workbook onboarding 正式入口。`templates/team_project_capacity_workbook_template.xlsx` 提供 review/template 结构，sample 文件展示 B4 简化后的 HIREF workbook 合同：基础 Members / Allocations sheet 扩展 + 可选 `HIREF Requests` sheet。 |
-| `src/scripts/import_project_profiles.py` | Excel (`.xlsx`) | `src/sample-data/excel/project_profiles_sample.xlsx` | **部分（dry-run）** | 从填写好的项目资料模板回写项目 profile；适合项目级静态资料维护 |
+| `src/scripts/import_project_profiles.py` | Excel (`.xlsx`) | `src/sample-data/excel/project_profiles_sample.xlsx` | **是（preview/confirm，经 `pm onboarding`）** | 从填写好的项目资料模板回写项目 profile；受支持路径是 `pm onboarding` 的 `project-profile-workbook` source type，脚本仅保留为兼容 wrapper |
 | `src/scripts/import_from_excel.py` | Excel (`.xlsx`) | `src/sample-data/excel/resource_portal_team_sample.xlsx` | **部分（dry-run，legacy）** | 早期的 Distribution Excel 团队导入；仅适合作为遗留桥接/镜像导入，不再是 current-state staffing 的 authoritative 产品入口。要发布 authoritative workbook current-state，请改用 `src/scripts/import_team_project_capacity_workbook.py` |
 
 ---
@@ -81,8 +81,8 @@
 
 - `import_jira_boards.py`
 - `import_confluence_pages.py`
-- `import_cr_csv.py`
-- `import_project_profiles.py`
+- `import_cr_csv.py`（支持路径已收敛到 `pm onboarding`）
+- `import_project_profiles.py`（支持路径已收敛到 `pm onboarding`）
 - `import_from_excel.py`（legacy bridge only；current-state authoritative path 已转向 workbook onboarding）
 
 这些入口的特点是：

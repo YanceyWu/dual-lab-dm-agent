@@ -2,19 +2,16 @@
 
 Last updated: 2026-08-05
 Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this session now commits the local C2 implementation on top of
-the clean submitted post-C1 continuity baseline
-`b3c09c2a94d1d3f63c0ca72a31a010f7226e279c`; its merge-base with the required
-committed C1 runtime slice remains
-`263ca232b9301687d34d314f20eca63ee1214487`. Batch A, B0, B1, B2, B3, B4, the
-post-B4 C/D redesign freeze, and the bounded C1 runtime slice remain committed
-locally, and this session adds only the separately authorized C2 scope. After
-this local commit, the working tree is clean and the result remains unpushed.
+Current HEAD: this session commits the local C3 implementation on top of the
+clean submitted C2 baseline `282c7d5868ade55635c84e9abd8af9231bbbfc0c`. Batch
+A, B0, B1, B2, B3, B4, the post-B4 C/D redesign freeze, C1, and C2 remain
+committed locally. After the local C3 commit, the working tree is clean and the
+result remains unpushed.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS NOW IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY IN THIS SESSION; IT IS NOT PUSHED`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, AND C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED LOCALLY; C3/C4 AND BATCH D REMAIN OUT OF SCOPE UNTIL A SEPARATE AUTHORIZATION ADVANCES THE GATE`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS NOW IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY IN THIS SESSION; IT IS NOT PUSHED`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, AND C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY; C4 AND BATCH D REMAIN OUT OF SCOPE UNTIL A SEPARATE AUTHORIZATION ADVANCES THE GATE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -145,6 +142,19 @@ belong in Git history and must not be interpreted as current instructions.
   onboarding. The legacy registry scripts remain thin compatibility wrappers,
   and no Jira / Confluence consumer-facing behavior, connector design, or
   broader Batch C/D redesign scope is changed.
+- IP-036 Batch C3 is now implemented locally as bounded auxiliary file-source
+  convergence only: `pm_agent.data_onboarding` now registers
+  `project-profile-workbook` and `servicenow-change-request-csv` under the
+  existing profile / preview / confirm / run-show envelope; a new extracted
+  `pm_agent.project_profile_import` owner module keeps workbook parsing and
+  project-profile table semantics outside onboarding, while
+  `pm_agent.sync.servicenow.cr_import` keeps the retained change-request CSV
+  parsing, newer-`updated_on` upsert rules, unmapped-column preservation, and
+  `sync_runs` audit continuity outside onboarding. The legacy
+  `import_project_profiles.py` and `import_cr_csv.py` paths remain thin
+  compatibility wrappers, and no project-profile model redesign, change-request
+  meaning change, connector redesign, or broader Batch C4/D cleanup is folded
+  into this working tree.
 - IP-036 Batch A1 is now implemented locally as a bounded skeleton and A2/A3 now
   build on it in the working tree:
   `pm_agent.current_state_staffing` owns an additive current-state staffing
@@ -265,12 +275,37 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
+IP-036 Batch C3 auxiliary file-source onboarding convergence is the current
+working-tree scope. It builds on the clean submitted C2 baseline commit
+`282c7d5868ade55635c84e9abd8af9231bbbfc0c` and changes only the bounded
+project-profile workbook / ServiceNow change-request CSV operator path plus the
+directly related focused docs/tests.
+
+Validation / review evidence for the current C3 working tree:
+
+- `python3 -m pytest src/tests/test_auxiliary_onboarding_importers.py src/tests/test_database_path_resolution.py src/tests/test_data_onboarding.py::test_onboarding_failed_confirm_can_retry_same_run` (`7 passed`)
+- `src/.venv/bin/python -m ruff check src/pm_agent/project_profile_import.py src/pm_agent/data_onboarding/aux_file_source.py src/pm_agent/data_onboarding/registry.py src/pm_agent/sync/servicenow/cr_import.py src/scripts/import_project_profiles.py src/tests/test_auxiliary_onboarding_importers.py src/tests/test_database_path_resolution.py`
+- `git diff --check`
+- independent read-only self-review against the frozen C3 acceptance criteria
+  found no blocking scope, behavior, or audit-continuity defect.
+
+The current C3 validation preserves the frozen boundaries:
+
+- project-profile workbook rows still keep `phase` as the gate for updates, keep
+  missing-project rows non-blocking, and preserve the existing
+  `project_profiles` consumer-facing table semantics;
+- change-request CSV confirm still keeps the retained ServiceNow column aliases,
+  preserves unmapped columns in `raw_data`, updates rows only when the incoming
+  record is newer or materially different, and records `servicenow-change-requests`
+  audit continuity through `sync_runs`;
+- replay, already-completed, preview/confirm/run-show, and focused consumer
+  continuity are now available through `pm onboarding` without broadening into
+  C4/D, connector redesign, or project-profile / change-request model redesign.
+
 IP-036 Batch B4 contract-coverage closure / legacy deletion remains the latest
 runtime/package validation baseline and builds on the required clean accepted
 transitional baseline commit `e005ab6d53ac1f50506bbf30abf2f91e847a325e`. That
-runtime slice is committed locally at `b5906c7`. The current working tree now
-adds only docs-level post-B4 Batch C/D redesign updates and does not change any
-runtime behavior.
+runtime slice is committed locally at `b5906c7`.
 
 The committed B4 runtime slice replaces the transitional technical HIREF
 workbook shape with the simplified B4 operator contract:
@@ -860,30 +895,31 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 12. Batch A scope stops at backend / CLI-first onboarding. No UI, Dashboard
     onboarding page, live connector sync, workbook v2 mapping expansion, or
     migration/removal of other legacy import scripts is implemented here.
-13. The current branch contains the clean submitted IP-036 A0 baseline commit
-    `8bfd9c8`; this session confirmed that baseline and a clean worktree before
-    doing any continuation work.
-14. The current working tree now updates the IP-036 handoff documents only so
-    A0 artifacts are explicitly frozen rather than merely requested.
+13. The current branch now treats the clean submitted C2 commit
+    `282c7d5868ade55635c84e9abd8af9231bbbfc0c` as the required continuation
+    baseline for this session; this session confirmed that exact baseline and a
+    clean worktree before starting C3.
+14. The current working tree is limited to the frozen IP-036 Batch C3 auxiliary
+    file-source onboarding convergence slice only.
 15. The separate aborted runtime attempt remains excluded and must not be
     treated as inherited partial progress.
-16. The canonical-onboarding convergence handoff is recorded in
-    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
+16. The canonical-onboarding convergence handoff remains
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` plus
     `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`.
-17. The next planned execution slice, after A0 review/acceptance, is
-    **IP-036 Batch A1 current-state staffing contract skeleton only**.
+17. The next gate after this local C3 slice is **owner review / acceptance of
+    C3 only**; this working tree does not authorize C4, Batch D, or broader
+    redesign follow-on work.
 
 ## Exact next actions
 
-1. Review and accept the local A1 current-state staffing contract skeleton
-   against the frozen A0 boundary.
-2. In the next independent session, perform **only IP-036 Batch A2 reader
-   migration**.
-3. Do not start A3/A4, Batch B/C/D, or any legacy deletion/freshness
-   replacement while A2 is the active gate.
-4. Keep A2 bounded to the readers named in the frozen matrix; preserve the A1
-   current-state staffing publication/read contract as the authority surface.
-5. Do not push, merge, tag, release, deploy, activate a connector, or use real
+1. Request owner review / acceptance of the bounded local C3 slice against the
+   frozen C3 acceptance criteria only.
+2. Do not start C4, Batch D, broader project-profile redesign, broader
+   change-request redesign, connector redesign, or cleanup/deletion work unless
+   a separate authorization advances the gate.
+3. Preserve the current local C3 diff until that decision; do not mix unrelated
+   follow-on edits into this working tree.
+4. Do not push, merge, tag, release, deploy, activate a connector, or use real
    data without separate explicit authorization.
 
 ## Decisions in force
@@ -984,6 +1020,65 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 Batch C3 auxiliary file-source onboarding convergence implemented locally
+
+- Implemented only the frozen C3 slice for the surviving auxiliary file sources:
+  - added `src/pm_agent/project_profile_import.py` as the extracted
+    project-profile workbook owner path so workbook parsing, phase-gated row
+    skips, missing-project handling, and `project_profiles` table writes stay
+    outside `pm_agent.data_onboarding`;
+  - extended `src/pm_agent/sync/servicenow/cr_import.py` with preview/apply
+    owner functions so ServiceNow CR CSV parsing, newer-`updated_on` upsert
+    rules, unmapped-column preservation, and `sync_runs` audit continuity stay
+    outside onboarding;
+  - added thin onboarding wrappers in
+    `src/pm_agent/data_onboarding/aux_file_source.py` and registered source
+    types `project-profile-workbook` and `servicenow-change-request-csv` in
+    `src/pm_agent/data_onboarding/registry.py`;
+  - converted `src/scripts/import_project_profiles.py` into a thin compatibility
+    wrapper over the extracted owner module while keeping call-time database-path
+    resolution intact; `src/scripts/import_cr_csv.py` continues to flow through
+    the retained ServiceNow owner path whose help text now marks it as a
+    compatibility wrapper;
+  - added focused onboarding / consumer regression coverage in
+    `src/tests/test_auxiliary_onboarding_importers.py` for
+    save→preview→confirm→run-show, invalid workbook input, replay /
+    already-completed, Dashboard `/api/projects`, and Weekly Report CR
+    continuity;
+  - updated `README.md`, `src/README.md`, and
+    `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md` so the documented supported path now
+    includes the retained project-profile workbook and ServiceNow change-request
+    CSV source families under `pm onboarding`.
+- Preserved frozen C3 semantics explicitly:
+  - onboarding remains responsible only for source profile validation, local-file
+    identity, preview/confirm/run audit, publication links, and replay behavior;
+  - project-profile business semantics remain with the extracted owner path:
+    `phase` still gates updates, missing-project rows remain non-blocking, and
+    consumers still read the same `project_profiles` table;
+  - change-request business semantics remain with the retained ServiceNow owner
+    path: no connector redesign, no meaning change, unmapped columns still land
+    in `raw_data`, and `servicenow-change-requests` `sync_runs` continuity is
+    preserved;
+  - the working tree does not enter C4/D, broader project-profile redesign,
+    broader change-request redesign, skills redesign, or mutable staffing-write
+    redesign.
+- Validation / review evidence:
+  - `python3 -m pytest src/tests/test_auxiliary_onboarding_importers.py src/tests/test_database_path_resolution.py src/tests/test_data_onboarding.py::test_onboarding_failed_confirm_can_retry_same_run` (`7 passed`)
+  - `src/.venv/bin/python -m ruff check src/pm_agent/project_profile_import.py src/pm_agent/data_onboarding/aux_file_source.py src/pm_agent/data_onboarding/registry.py src/pm_agent/sync/servicenow/cr_import.py src/scripts/import_project_profiles.py src/tests/test_auxiliary_onboarding_importers.py src/tests/test_database_path_resolution.py`
+  - `git diff --check`
+  - independent read-only self-review against
+    `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md` and
+    `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md` found no
+    blocking C3 scope or acceptance defect.
+- Commit / push status:
+  - required clean submitted baseline `282c7d5868ade55635c84e9abd8af9231bbbfc0c`
+    remains intact beneath this local C3 commit;
+  - the C3 changes above are committed locally in this session and not pushed.
+- Exact next recommended action:
+  - request owner review / acceptance of this bounded C3 slice only; do not
+    enter C4/D, broader redesign, or cleanup/deletion work from this working
+    tree without a separate authorization.
 
 ### 2026-08-05 — IP-036 Batch C2 registry-source onboarding convergence implemented locally
 
