@@ -1,33 +1,40 @@
 # Canonical Onboarding Convergence Design
 
-Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; POST-BATCH-A REDESIGN BELOW RETIRES LEGACY SKILLS, KEEPS B4 AS THE FINAL HIREF ONBOARDING-CLOSURE GATE, AND DEFERS ANY C/D REDESIGN UNTIL AFTER B4 ACCEPTANCE`
-Date: 2026-08-04
+Status: `BATCH A/B IMPLEMENTED LOCALLY THROUGH B4; THE POST-B4 REDESIGN BELOW FREEZES BATCH C/D AGAINST THE SURVIVING OPERATOR SURFACE WITHOUT REOPENING A/B`
+Date: 2026-08-05
 Current-state authority: `PROGRESS.md`.
 Baseline branch: `workbook-onboarding-test-20260804-1514`
 Baseline commit: `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
 Previous local baseline: `IP-035 Structured Data Onboarding Workbook Presets`
 
 Runtime closure note (2026-08-05): the frozen coverage matrix, invariants, and
-slice boundaries below remain the Batch A authority. A1, A2, and A3 were
-completed and committed before this session, and the current working tree closes
-A4 by demoting the remaining A-scope legacy current-state staffing projections
-and route markers to canonical publication authority. Post-Batch-A owner
-feedback now further freezes that legacy `import_skills.py` is not a viable
-onboarding candidate: it must be retired rather than migrated, and any future
-skills capability requires a separate approved redesign. Contract coverage /
-HIREF convergence and mutable staffing-write redesign remain deferred.
+slice boundaries below remain the Batch A authority. A1-A4 were completed and
+committed before this redesign freeze, and they already demote the remaining
+A-scope legacy current-state staffing projections and route markers to canonical
+publication authority. Post-Batch-A owner feedback now further freezes that
+legacy `import_skills.py` is not a viable onboarding candidate: it must be
+retired rather than migrated, and any future skills capability requires a
+separate approved redesign. Contract coverage / HIREF convergence and mutable
+staffing-write redesign remain deferred outside the completed A-scope work.
 
 Batch-B refinement note (2026-08-05): owner review of the provisional B4 HIREF
 workbook template found that the four added HIREF technical sheets mirror legacy
 projection storage too directly and would force users to prepare data the system
-can derive. B4 therefore remains the final retained HIREF closure gate and must
-solve the user-facing onboarding contract itself: prefer extending existing
+can derive. B4 therefore remained the final retained HIREF closure gate and had
+to solve the user-facing onboarding contract itself: prefer extending existing
 workbook sheets, derive placeholder/open-demand projections from supported
 distribution/allocation input wherever possible, keep only the minimum explicit
-HIREF supplement facts that cannot be derived, and treat the current technical
+HIREF supplement facts that cannot be derived, and treat the technical
 HIREF-sheet template as transitional rather than the final operator contract.
-Batch C and Batch D scope must be redesigned only after that corrected B4
-outcome is implemented and accepted.
+
+Post-B4 redesign note (2026-08-05): the B4 closure is now implemented locally
+and defines the surviving operator surface for the rest of IP-036. Batch C and
+Batch D are re-frozen below against that actual post-B4 surface: `pm onboarding`
+plus the simplified workbook contract are now the retained staffing/contract
+entrypoint, while the remaining standalone import scripts, registry importers,
+auxiliary file importers, explicit legacy-result-projection routes, compatibility
+views, and dormant script-name registry artifacts are the only convergence or
+cleanup targets left inside this program.
 
 ## Decision supported
 
@@ -485,21 +492,69 @@ Scope:
 - run the batch-level acceptance closure for the completed B-slices and freeze
   the surviving post-B4 surface before any C/D redesign begins.
 
-### Batch C — Registry and auxiliary onboarding convergence
+### Batch C — Remaining operator-entry onboarding convergence
 
-Not yet frozen.
+Scope:
 
-Batch C must be redesigned only after B4 acceptance, using the surviving
-post-B4 workbook/operator surface as the authority. No pre-approved C scope from
-the earlier plan remains active.
+- converge the remaining retained operator-visible import entrypoints under
+  `pm onboarding`, using the post-B4 workbook surface as the pattern and keeping
+  each business capability as the canonical owner of its own facts;
+- add new `pm_agent.data_onboarding` source handlers only for already-retained
+  source families: workforce planning JSON, resource capacity JSON, milestone
+  JSON, Project Health re-import JSON, JIRA board registry CSV, Confluence page
+  registry CSV, project profile workbook, and change request CSV;
+- preserve every source-specific side effect that still matters, including full-
+  sync reconciliation/deletion behavior, retained data-source/config carry-
+  forward, evidence cursor continuity, manual-fact preservation, replay/audit,
+  and explicit failure semantics;
+- make `pm onboarding` the sole supported operator-visible entrypoint for those
+  retained source families, while allowing temporary thin compatibility wrappers
+  only where Batch D will later delete them;
+- avoid new domain redesign: no mutable staffing-write redesign, no skills
+  reintroduction, no broader project-profile remodel, no connector redesign, and
+  no new canonical fact family beyond source-handler/orchestration work.
 
-### Batch D — Final redundancy and deprecated-code cleanup
+Recommended slices:
 
-Not yet frozen.
+1. **C1 — bounded domain-source onboarding wrappers** for workforce planning,
+   resource capacity, milestones, and Project Health re-import, reusing their
+   existing preview/confirm capability owners.
+2. **C2 — registry-source onboarding convergence** for JIRA board and
+   Confluence registry CSV paths, preserving registry reconciliation and
+   evidence-side-effect semantics.
+3. **C3 — auxiliary file-source onboarding convergence** for project profiles
+   and change request CSV, preserving their existing consumer-facing behavior.
+4. **C4 — operator-entry closure for retained sources** so docs/CLI/user
+   guidance point to `pm onboarding` as the supported path before Batch D starts
+   deleting deprecated wrappers.
 
-Batch D must also be redesigned after B4 acceptance. Only then may the program
-decide which registry/deprecated-code cleanup targets still exist and which were
-already absorbed or avoided by the corrected B4 outcome.
+### Batch D — Final compatibility and deprecated-code cleanup
+
+Scope:
+
+- remove deprecated operator scripts, bootstrap registry seeds, docs, tests,
+  and compatibility-only adapters that remain only because Batch A/B/C needed a
+  transition period;
+- retire legacy scripts and wrappers only after Batch C proves operator parity
+  for the retained source families;
+- delete compatibility views or explicit legacy read markers only when a
+  canonical executor/read contract already exists and the removal does not
+  change user-visible semantics;
+- clean up dormant script-name registry artifacts such as inactive historical
+  source rows only when no retained audit/evidence scenario still depends on
+  them;
+- avoid inventing new product behavior. Batch D is cleanup and retirement work,
+  not a second redesign wave.
+
+Recommended slices:
+
+1. **D1 — deprecated operator-path retirement** for standalone script entrypoints
+   superseded by `pm onboarding`, including the remaining `import_from_excel.py`
+   legacy workbook helper once no accepted contract still depends on it.
+2. **D2 — final compatibility/read-artifact cleanup** for explicit
+   `legacy-result-projection` / `legacy-direct-read` adapters, obsolete tests,
+   dormant bootstrap rows, and compatibility views whose authority was already
+   replaced earlier in the program.
 
 ## Execution anti-patterns now forbidden
 
@@ -599,7 +654,9 @@ The final converged state should satisfy:
 
 ## Next gate
 
-After accepting the frozen A0 artifact set, open a separate implementation
-session and perform **only Batch A1 — current-state staffing contract
-skeleton**. Do not start A2/A3/A4 in the same session, and do not resume any
-abandoned runtime attempt.
+After accepting this post-B4 redesign freeze, open a separate implementation
+session and perform **only C1 — bounded domain-source onboarding wrappers**.
+Do not reopen Batch A/B, do not skip ahead to C2/C3/C4 or D in the same
+session, and do not reinterpret this redesign as permission to change mutable
+staffing-write semantics, invent a new skills capability, or broaden the
+project-profile/change-request product model.

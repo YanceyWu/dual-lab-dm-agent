@@ -5,13 +5,14 @@ Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this session started from the required clean accepted B4
 transitional baseline commit `e005ab6d53ac1f50506bbf30abf2f91e847a325e`
 (`git status --short --branch` clean; `HEAD` exactly matched the required
-commit before any edit). The current local working tree adds only the bounded
-B4 user-facing workbook simplification / closure slice on top of that clean
-baseline. The separate aborted runtime attempt remains excluded and must not be
-inherited as partial work.
+commit before any edit). The B4 workbook-closure runtime slice is now committed
+locally at `b5906c7`, and the current local working tree adds only the
+post-B4 Batch C/D design-freeze docs on top of that accepted B4 result. The
+separate aborted runtime attempt remains excluded and must not be inherited as
+partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; THE CURRENT LOCAL WORKING TREE NOW IMPLEMENTS THE B4 USER-FACING HIREF WORKBOOK SIMPLIFICATION / CLOSURE SLICE ON TOP OF THE REQUIRED TRANSITIONAL BASELINE`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B4 IS IMPLEMENTED / VALIDATED LOCALLY IN THE WORKING TREE; BATCH C/D REMAIN DEFERRED UNTIL A SEPARATE POST-B4 REDESIGN`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; THE CURRENT WORKING TREE NOW UPDATES ONLY THE POST-B4 BATCH C/D DESIGN / PACK / PROGRESS DOCS`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, AND B4 IS CLOSED / VALIDATED / COMMITTED LOCALLY; THE NEXT IP-036 GATE IS C1 ONLY — BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS; BATCH D REMAINS BLOCKED UNTIL BATCH C PARITY IS PROVEN`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -24,15 +25,12 @@ onboarding preset projection, focused regression expansion, the new local
 operator docs (`docs/LOCAL_DATA_ONBOARDING_GUIDE.md`,
 `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`, `docs/DASHBOARD_USAGE_GUIDE.md`), and
 the original IP-036 convergence design/implementation-pack handoff at
-`5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`. The
-current working tree now revises `architecture/16...`,
-`implementation-packs/IP-036...`, and this progress log so A0 artifacts are
-actually frozen: coverage/dependency matrix, missing-coverage register,
-invariant checklist, end-to-end state-machine matrix, product/semantic
-decision log, frozen A1/A2/A3/A4 boundaries, regression-scope map, and slice
-self-review checklist. The current working tree keeps the accepted A-scope and
-committed B1/B2/B3 slices, then closes the authorized B4 workbook-only runtime
-surface through the bounded files:
+`5f13ee3`, followed by the clean submitted A0 baseline at `8bfd9c8`, and the
+committed B4 workbook closure at `b5906c7`. The current working tree now revises
+`architecture/16...`, `implementation-packs/IP-036...`, and this progress log
+only to freeze the post-B4 Batch C/D scope against the surviving operator
+surface. The already-committed B4 runtime slice closed the authorized workbook-
+only surface through the bounded files:
 `src/pm_agent/workbook_onboarding/models.py`,
 `parser.py`,
 `presets.py`,
@@ -234,11 +232,15 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-IP-036 Batch B4 contract-coverage closure / legacy deletion now builds on the
-required clean accepted transitional baseline commit
-`e005ab6d53ac1f50506bbf30abf2f91e847a325e`. The current working tree replaces
-the transitional technical HIREF workbook shape with the simplified B4 operator
-contract:
+IP-036 Batch B4 contract-coverage closure / legacy deletion remains the latest
+runtime/package validation baseline and builds on the required clean accepted
+transitional baseline commit `e005ab6d53ac1f50506bbf30abf2f91e847a325e`. That
+runtime slice is committed locally at `b5906c7`. The current working tree now
+adds only docs-level post-B4 Batch C/D redesign updates and does not change any
+runtime behavior.
+
+The committed B4 runtime slice replaces the transitional technical HIREF
+workbook shape with the simplified B4 operator contract:
 
 - `Members` now carries optional `next_hiref_id`;
 - `Allocations` now carries optional `hiref_id` for open-demand rows;
@@ -257,7 +259,8 @@ Runtime/package validation still preserves the frozen B4 boundaries:
 - `unknown` / `unavailable` / `partial` / `stale` states remain explicit; no
   silent zero/healthy fallback was added;
 - mutable staffing-write behavior, broader member/profile cleanup, broader
-  contract-model redesign, and Batch C/D work remain out of scope.
+  contract-model redesign, and Batch C/D runtime behavior remained out of scope
+  for the committed B4 slice.
 
 Validation / review evidence for the current B4 working tree:
 
@@ -284,9 +287,16 @@ Validation / review evidence for the current B4 working tree:
 - final read-only self-review found no remaining high-confidence issue.
 
 B0 is closed locally, B1 is closed locally, B2 is closed locally, B3 is closed
-locally, and B4 is now closed locally in the working tree. Batch C/D planning
-must still be redesigned in a separate post-B4 session. This slice is committed
-locally in this session and not pushed.
+locally, and B4 is closed locally and committed at `b5906c7`. The current
+working tree now freezes the post-B4 Batch C/D redesign only:
+
+- Batch C becomes the remaining operator-entry onboarding convergence program,
+  with C1 limited to bounded domain-source onboarding wrappers and later C2-C4
+  covering registry, auxiliary file sources, and operator-entry closure.
+- Batch D becomes deletion-only compatibility/deprecated-code cleanup and
+  remains blocked until Batch C proves replacement parity.
+
+This docs-only redesign is not pushed.
 
 IP-036 Batch B3 contract-coverage reader/freshness migration now builds locally
 on the required clean B2 baseline commit
@@ -941,6 +951,45 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-05 — IP-036 post-B4 Batch C/D redesign frozen locally
+
+- Re-read the accepted post-B4 runtime state and redesigned only the remaining
+  C/D plan surfaces in:
+  - `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`
+  - `implementation-packs/IP-036_CANONICAL_ONBOARDING_CONVERGENCE.md`
+  - `PROGRESS.md`
+- Froze the post-B4 remaining scope against the actual surviving operator
+  surface instead of the earlier provisional plan:
+  - `pm onboarding` plus the simplified B4 workbook contract remain the accepted
+    staffing/contract entrypoint;
+  - Batch C is now the remaining operator-entry onboarding convergence program,
+    split into:
+    - **C1** bounded domain-source onboarding wrappers
+    - **C2** registry-source onboarding convergence
+    - **C3** auxiliary file-source onboarding convergence
+    - **C4** operator-entry closure for retained sources
+  - Batch D is now deletion-only cleanup, split into:
+    - **D1** deprecated operator-path retirement
+    - **D2** final compatibility/read-artifact cleanup
+- Explicitly froze the remaining prohibitions:
+  - no reopening of Batch A/B runtime semantics;
+  - no skills redesign or reintroduction;
+  - no mutable staffing-write redesign;
+  - no broader project-profile, change-request, connector, or contract-model
+    redesign under Batch C/D.
+- Validation / review evidence:
+  - read-only post-B4 design review against the committed B4 surface
+  - `git diff --check`
+  - final read-only self-review found the docs consistent with the surviving
+    runtime state and the exact next gate.
+- Commit / push status:
+  - B4 runtime closure remains committed locally at `b5906c7`;
+  - this C/D redesign freeze is committed locally in this session and not
+    pushed.
+- Exact next recommended action:
+  - open a separate session only for **C1 — bounded domain-source onboarding
+    wrappers**; do not skip ahead to C2/C3/C4 or D, and do not reopen A/B.
 
 ### 2026-08-05 — IP-036 Batch B4 workbook simplification / closure implemented locally
 

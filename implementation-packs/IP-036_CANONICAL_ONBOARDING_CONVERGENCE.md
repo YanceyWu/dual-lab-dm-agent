@@ -1,14 +1,14 @@
 # IP-036 — Canonical Onboarding Convergence
 
-Status: `BATCH A IMPLEMENTED LOCALLY THROUGH A4; POST-BATCH-A REDESIGN BELOW RETIRES LEGACY SKILLS, KEEPS B4 AS THE FINAL HIREF ONBOARDING-CLOSURE GATE, AND DEFERS ANY C/D REDESIGN UNTIL AFTER B4 ACCEPTANCE`
+Status: `BATCH A/B IMPLEMENTED LOCALLY THROUGH B4; THE POST-B4 REDESIGN BELOW FREEZES BATCH C/D AGAINST THE SURVIVING OPERATOR SURFACE WITHOUT REOPENING A/B`
 Design: `architecture/16_CANONICAL_ONBOARDING_CONVERGENCE_DESIGN.md`
 Implementation branch: `workbook-onboarding-test-20260804-1514`
 Original A0 baseline commit: `8bfd9c8ef2a5b3857c63b9977c811c8d199574ae`
 
 Runtime closure note (2026-08-05): A0 artifacts below remain the frozen Batch A
-boundary. A1 accepted and committed, A2 accepted and committed, A3 accepted and
-committed, and the current working tree implements A4 compatibility closure /
-legacy deletion for A-scope current-state staffing readers only.
+boundary. A1, A2, A3, and A4 are all accepted and committed, so the A-scope
+current-state staffing reader closure is already fixed before this post-B4
+redesign.
 
 Post-Batch-A redesign note (2026-08-05): owner feedback further freezes that
 legacy skills import/data are not operationally usable and should be retired,
@@ -25,13 +25,20 @@ retained convergence scope to:
 Owner review refinement (2026-08-05): the provisional B4 workbook contract that
 added `HIREF Members`, `HIREF Slots`, `HIREF Placeholders`, and
 `HIREF Placeholder Allocations` as explicit user-maintained sheets is
-transitional only. The accepted B4 target must instead minimize manual HIREF
+transitional only. The accepted B4 target had to instead minimize manual HIREF
 input, prefer extending existing workbook sheets, derive placeholder/open-demand
 projections from supported distribution/allocation input wherever possible, and
 leave only the minimum explicit HIREF supplement facts that cannot be derived.
-Batch C and Batch D are therefore no longer frozen from the earlier plan; they
-must be redesigned only after that corrected B4 outcome is implemented and
-reviewed.
+
+Post-B4 redesign note (2026-08-05): that corrected B4 outcome is now
+implemented locally and becomes the authority for the rest of IP-036. The
+remaining design work below therefore re-freezes Batch C and Batch D against the
+actual post-B4 surface: `pm onboarding` plus the simplified workbook contract
+are now the retained staffing/contract entrypoint, while the remaining
+standalone import scripts, registry importers, auxiliary file importers,
+explicit legacy-result-projection routes, compatibility views, and dormant
+script-name registry artifacts are the only remaining convergence or cleanup
+targets inside this program.
 
 ## Goal
 
@@ -80,10 +87,11 @@ runtime attempt.
 | No publication-backed freshness/evidence model for current-state staffing | A-scope readers use legacy script-name freshness instead of capability publication freshness | **No for A1**, **Yes for A3** | **A3** | A1 may leave legacy freshness untouched; A3 must replace it for A-scope readers. |
 | No explicit degradation contract for missing current-state schema family or missing current publication | Current direct SQL surfaces can imply zero/available from empty joins | **No for A1**, **Yes for A2/A3** | **A2/A3** | The semantic rule is frozen now: missing current-state evidence must surface as `unknown`/`unavailable`, never numeric zero. |
 | Unsupported skills sidecar still gates staffing/runtime behavior | `import_skills.py` still updates `employees` directly, `use_cases/staffing.py` still reads `employees.skills`, and `import-skills-matrix` still appears in freshness/tests even though the source is not operationally usable | **Yes for B1** | **B1** | Retire the feature from runtime behavior; do not create a replacement onboarding source inside IP-036. |
-| HIREF / contract coverage remains a separate mutable owner | `import_hiref.py` still updates `employees` and `hiref` directly | **No for B1**, **Yes for B2/B3** | **B2/B3/B4** | Batch B preserves the explicit dependency in B1, then migrates HIREF ownership through its own bounded contract-convergence slices. |
-| No owner-approved final user-facing HIREF workbook contract exists yet | The transitional B4 implementation exposed technical `HIREF Placeholders` / `HIREF Placeholder Allocations` sheets that mirror legacy projection storage and make users prepare derivable data | **Yes for late B4 acceptance** | **B4** | Final B4 acceptance requires a simplified workbook contract: extend existing sheets first, derive placeholder/open-demand projections where possible, and keep only the minimum explicit HIREF supplement facts that cannot be derived. |
+| B4 still leaves bounded legacy HIREF projection consumers in place | The simplified workbook now bridges into retained HIREF summary/review/placeholder projection surfaces, but those remaining readers are compatibility consumers rather than a separate source owner | **No for Batch C**, **Potential D2-only cleanup if a replacement is separately approved** | **Deferred after B4 unless explicitly re-scoped** | C/D must preserve the retained HIREF consumer behavior; they may not silently redesign or delete it just because the product entrypoint moved. |
+| Final B4 workbook simplification is complete, but the remaining retained import families are still outside `pm onboarding` | B4 now uses the simplified workbook contract, but the surviving JSON/script, registry CSV, project-profile workbook, and change-request CSV entrypoints still expose separate operator paths | **Yes for Batch C** | **C1/C2/C3/C4** | Batch C must wrap the remaining retained operator-visible source families under `pm onboarding` without redesigning their fact models. |
 | Manual mutable assignment flow still exists outside onboarding convergence | `resource_planning.confirm()`, `repository.create_assignment()`, and `repository.end_assignment()` still write `assignments` directly | **No for A1**, **Potential blocker for late A4 deletion** | **Explicit defer after A4 unless separately authorized earlier** | A1-A4 may migrate read authority away from `assignments`, but they may not silently redesign manual mutable staffing flows. |
 | Legacy direct SQL dashboard contract is still user-visible | `/api/summary`, `/api/projects`, `/api/employees` remain marked `legacy-direct-read` | **No for A1**, **Yes for A2** | **A2** | A2 owns migration or explicit compatibility projection for these routes. |
+| Final deprecated-code cleanup targets are still mixed with retained compatibility evidence | `import_from_excel.py`, legacy wrapper scripts, dormant bootstrap source rows, explicit `legacy-result-projection` route markers, and compatibility views still remain for transition or audit reasons | **Yes for Batch D** | **D1/D2** | Batch D may delete them only after Batch C proves replacement parity and no retained evidence contract still depends on them. |
 
 ## 3. Invariant checklist
 
@@ -140,6 +148,10 @@ runtime attempt.
 | D-13 | **Manual mutable assignment convergence is deferred.** Legacy write paths such as `create_assignment()` and `end_assignment()` are outside A1-A4 unless later explicitly authorized. | Deferred after A4 |
 | D-14 | **Unsupported skills feature is retired, not migrated.** Owner feedback freezes `import_skills.py`, `employees.skills`, and `import-skills-matrix` as removal targets for Batch B1. Any future skills capability must begin from a new approved design/pack with a new source contract. | Frozen |
 | D-15 | **Final B4 HIREF onboarding must minimize manual facts.** Extend existing workbook sheets first; derive placeholder/open-demand projections from supported distribution/allocation input wherever possible; keep only the minimum explicit HIREF supplement facts that cannot be derived; treat the current four HIREF technical sheets as transitional, not the final operator contract. | Frozen |
+| D-16 | **Post-B4 surface is now the C/D authority.** Batch C and Batch D must build on the committed B4 workbook closure exactly as shipped; they may not reopen the workbook contract, reintroduce technical HIREF sheets, or treat legacy `import_hiref.py` as a supported product path again. | Frozen |
+| D-17 | **Batch C is source-handler/orchestration convergence, not domain redesign.** Remaining retained operator entrypoints move under `pm onboarding` by wrapping existing capability owners and preserving source-specific replay/cleanup/evidence semantics. Batch C may not redesign mutable staffing writes, skills, project-profile behavior, change-request meaning, or connector contracts. | Frozen |
+| D-18 | **Batch D is deletion-only cleanup.** Deprecated scripts, bootstrap rows, docs/tests, and compatibility adapters may be removed only after Batch C proves operator parity for the retained source families. Batch D must not invent a new canonical model or second migration wave. | Frozen |
+| D-19 | **Legacy read markers and compatibility artifacts are conditional cleanup targets.** Explicit `legacy-result-projection` / `legacy-direct-read` markers, dormant script-name source rows, and compatibility views may be removed only when a canonical executor/read contract already exists and removal preserves current user-visible semantics and audit evidence. | Frozen |
 
 ## 6. Frozen slice plan
 
@@ -154,6 +166,12 @@ runtime attempt.
 | **B2 — contract coverage contract skeleton** | Create the minimal canonical contract-coverage capability boundary, preview/confirm/publication identity model, and public read-contract skeleton for onboarding-managed HIREF / contract facts | New dedicated contract-coverage capability module family under `src/pm_agent/`; minimal `pm_agent.data_onboarding` wiring needed to plan/publish that capability; bootstrap composition wiring only; focused tests under `src/tests/` | New contract-coverage preview/confirm/publication tests; focused onboarding replay/idempotency tests; no reader migration tests yet | A dedicated contract-coverage publication/read contract exists and can be previewed/confirmed in isolation, but legacy readers still own runtime behavior | Reader migration; broad employee-field cleanup; skills reintroduction; Batch C/D |
 | **B3 — contract coverage reader and freshness migration** | Move explicitly mapped HIREF / contract readers and freshness semantics from direct `employees` / `hiref` authority to the B2 contract | `pm_agent/use_cases/staffing.py` HIREF context; `contract_continuity.py`; Dashboard contract/member/project views; repository read helpers needed by those surfaces; focused tests | `test_staffing_pipeline.py`; contract continuity tests; dashboard/user-visible contract-context tests; new contract-coverage publication-state tests | Named B-scope readers no longer treat `employees.current_hiref` / `hiref` sidecar rows or `import-hiref-report` freshness as their primary authority | Mutable staffing writes; broader workload cleanup; resurrecting skills sidecar semantics; Batch C/D |
 | **B4 — contract coverage closure, user-facing workbook simplification, and legacy deletion** | Finish HIREF closure by simplifying the user-facing workbook contract, deriving placeholder/open-demand projections where possible, retiring the legacy HIREF product entry once B2-B3 are accepted, and explicitly validating the resulting workbook import/validation/consumer path | Contract-coverage capability module family; `pm_agent.workbook_onboarding` contract/parser/validator/service surfaces; read-only compatibility shims if any; `import_hiref.py` product path; focused docs/tests tied to B-scope migration | `test_workbook_onboarding.py`; `test_staffing_pipeline.py`; `test_hiref_workflow.py`; focused docs/template review; focused end-to-end checks that the new workbook (1) imports through onboarding, (2) rejects invalid/missing required workbook facts with explicit validation semantics, and (3) remains consumable by retained HIREF review/slot/placeholder read surfaces | No retained B-scope reader depends on direct HIREF sidecar authority; users are not required to maintain technical placeholder/projection sheets; any retained explicit HIREF supplement facts are minimal and justified; the new workbook path is proven for import, consumer/read behavior, and validation failure semantics; every surviving compatibility artifact is either deleted or explicitly reclassified as a deferred blocker | New skills capability work; Batch C/D redesign; broad legacy cleanup outside the named B-scope; silent redesign of mutable staffing writes |
+| **C1 — bounded domain-source onboarding wrappers** | Wrap the remaining retained structured domain importers under `pm onboarding` without changing their domain ownership: workforce planning JSON, resource capacity JSON, milestone JSON, and Project Health re-import JSON | `pm_agent.data_onboarding` source registry/handlers; thin adapters around the existing domain importer services; publication-link wiring; focused docs/tests | `test_data_onboarding.py`; focused importer replay/idempotency tests for the four source families; contract-continuity checks that their existing publications/consumers stay unchanged | The four retained domain source families can be saved, previewed, confirmed, retried, and audited through `pm onboarding`; any legacy script still present is at most a thin compatibility wrapper | Registry CSV importers; project-profile/change-request behavior; deprecated-script deletion; mutable staffing writes; Batch D |
+| **C2 — registry-source onboarding convergence** | Move the JIRA board registry and Confluence page registry operator paths under `pm onboarding` while preserving their full-sync reconciliation and evidence semantics | `pm_agent.data_onboarding`; existing registry importer modules and related registry-owned capability code; focused docs/tests | `test_registry_importers.py`; new onboarding-source profile/preview/confirm tests for registry CSV paths | Registry imports can run through `pm onboarding` with the same cleanup, carry-forward, and failure semantics as the legacy operator path; users no longer need a separate supported registry import command | Connector redesign; broader Jira/Confluence consumer redesign; deprecated-script deletion; Batch D |
+| **C3 — auxiliary file-source onboarding convergence** | Move the surviving project-profile workbook and change-request CSV operator paths under `pm onboarding` without altering their product semantics | `pm_agent.data_onboarding`; `import_project_profiles.py` owner path or extracted equivalent; `pm_agent.sync.servicenow.cr_import`; related docs/tests | New onboarding tests plus focused project-profile/change-request consumer regressions | Project profile and change request imports can be previewed/confirmed/audited through `pm onboarding`, and their existing dashboard/report/consumer behavior remains unchanged | Project-profile model redesign; change-request meaning changes; connector automation redesign; Batch D |
+| **C4 — operator-entry closure for retained sources** | Make `pm onboarding` the sole supported operator-visible import entrypoint for all retained IP-036 source families after C1-C3 prove parity | `pm onboarding` CLI/docs/help surfaces; thin legacy wrappers if required temporarily; focused docs/tests | CLI/help/docs contract review; focused smoke tests across the retained source-family profiles | User guidance and supported CLI/documented flows point only to `pm onboarding` for the retained source families, while any remaining standalone script exists only as an explicitly deprecated wrapper awaiting D | Runtime cleanup/deletion beyond wrapper demotion; legacy-read cleanup; Batch D |
+| **D1 — deprecated operator-path retirement** | Delete superseded standalone import scripts and bootstrap artifacts once C1-C4 have proven replacement parity, including the remaining `import_from_excel.py` helper when no accepted contract still depends on it | Deprecated scripts under `src/scripts/`; onboarding docs/help; bootstrap source-registration cleanup; focused tests | `test_database_path_resolution.py` and any remaining import-contract tests touched by script retirement; focused docs/help review | No retained supported operator flow depends on the deleted scripts; any historical/evidence requirement has an explicit replacement or documented defer | New onboarding source design; consumer redesign; legacy-read cleanup without a replacement contract |
+| **D2 — final compatibility/read-artifact cleanup** | Remove the remaining compatibility-only adapters, dormant bootstrap source rows, and explicit legacy read markers whose authority was already replaced earlier in the program | Compatibility views or adapters; dashboard/header markers; dormant script-name source rows; obsolete docs/tests; focused tests | Focused read-contract regressions, source-evidence regressions, and docs/tests cleanup review | Every remaining compatibility/read artifact targeted by D2 is either deleted or explicitly documented as a separate deferred concern because a canonical replacement is not yet ready | New product behavior; mutable staffing-write redesign; skills redesign; broader model cleanup outside the named artifacts |
 
 ## 7. Regression-scope map
 
@@ -170,6 +188,10 @@ runtime attempt.
 | `test_database_path_resolution.py`, `src/scripts/import_skills.py`, and docs that still advertise skills import | These prove whether the legacy script is still treated as a supported operator path | **B1** |
 | `contract_continuity.py` and HIREF review/display | Coupled to HIREF ownership and active-assignment display | **Deferred to Batch B** unless a later owner narrows a separate bridge slice |
 | `staffing` HIREF context, contract freshness blockers, and Dashboard contract/member/project context | These are the named read surfaces that must migrate once contract coverage has its own publication/read contract | **B3/B4** |
+| `pm_agent.data_onboarding.registry`, `service.py`, and the remaining structured domain importer entrypoints | Batch C must add source handlers and preview/confirm parity for the retained non-workbook source families without moving their domain ownership | **C1/C4** |
+| `src/tests/test_registry_importers.py` and the surviving board/page registry scripts | These freeze the cleanup/carry-forward/evidence semantics that registry onboarding must preserve when the operator path moves under `pm onboarding` | **C2** |
+| `src/scripts/import_project_profiles.py`, `pm_agent.sync.servicenow.cr_import`, and consumers such as weekly report/dashboard project status | These bound the auxiliary file-source semantics that C3 may wrap but not redesign | **C3** |
+| `src/scripts/import_from_excel.py`, `src/tests/test_sample_import_contracts.py`, dormant `import-resource-portal` / `import-hiref-report` bootstrap artifacts, and explicit `legacy-result-projection` markers | These are the main surviving deprecated/compatibility surfaces that D1/D2 must either delete or explicitly defer after Batch C parity is proven | **D1/D2** |
 | Manual `resource_planning.confirm()`, `repository.create_assignment()`, `repository.end_assignment()` | Mutable legacy assignment writes are not onboarding replay/read migration work | **Deferred after A4** |
 
 ## 8. Slice self-review checklist
@@ -198,12 +220,11 @@ documentation-appropriate:
 `make validate` and `make rehearse-release` remain explicitly out of scope for
 this docs-only redesign.
 
-## Next gate after the B4 design correction
+## Next gate after the post-B4 redesign freeze
 
-The next implementation/design session may do **only the remaining B4
-user-facing HIREF onboarding simplification and closure work**.
-It must not reopen Batch A or B1-B3, must not start Batch C or Batch D, and
-must not reinterpret this correction as permission to redesign mutable staffing
-writes or invent a new skills capability. Batch C/D planning must be redesigned
-only after the corrected B4 outcome is implemented, validated for workbook
-import/consumer/validation behavior, and reviewed.
+The next implementation/design session may do **only C1 — bounded domain-source
+onboarding wrappers**.
+It must not reopen Batch A/B, must not skip ahead to C2/C3/C4 or D, and must
+not reinterpret this redesign as permission to change mutable staffing-write
+semantics, invent a new skills capability, or broaden project-profile/change-
+request product behavior.
