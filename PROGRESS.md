@@ -4,36 +4,37 @@ Last updated: 2026-08-06
 Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this session started from the clean submitted C3 baseline
 `695c8ec9d2153ceb2a684200ef647522ef1249e9`, the required clean local C4
-commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, and the required clean local
-D1 commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`. Batch A, B0, B1, B2, B3,
-B4, the post-B4 C/D redesign freeze, C1, C2, C3, C4, and D1 remain committed
-locally.
-The current working tree now carries only the separately authorized D2 final
-compatibility/read-artifact cleanup slice; focused validation and independent
-read-only self-review are complete, and the D2 result is not yet committed or
-pushed in this session.
+commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, the required clean local D1
+commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`, and the required clean local
+D2 commit `f1ed9557f99d054480cb379fe2f1d41b38504049`. Batch A, B0, B1, B2, B3,
+B4, the post-B4 C/D redesign freeze, C1, C2, C3, C4, D1, and D2 remain
+committed locally.
+The current working tree now carries only this `PROGRESS.md` status update
+recording owner acceptance of IP-036 Batch D; no new runtime/package behavior
+change is present, and nothing is pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 695c8ec; C4 OPERATOR-ENTRY CLOSURE FOR RETAINED SOURCES IS COMMITTED LOCALLY AT 0f6108e; D1 DEPRECATED OPERATOR-PATH RETIREMENT IS COMMITTED LOCALLY AT a3eea27; THE CURRENT WORKING TREE NOW IMPLEMENTS ONLY THE SEPARATELY AUTHORIZED D2 FINAL COMPATIBILITY/READ-ARTIFACT CLEANUP SLICE; IT IS NOT COMMITTED OR PUSHED`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C4 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, D1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED / COMMITTED LOCALLY, AND D2 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENT REVIEW PASSED LOCALLY; D3 REMAINS OUT OF SCOPE`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 695c8ec; C4 OPERATOR-ENTRY CLOSURE FOR RETAINED SOURCES IS COMMITTED LOCALLY AT 0f6108e; D1 DEPRECATED OPERATOR-PATH RETIREMENT IS COMMITTED LOCALLY AT a3eea27; D2 FINAL COMPATIBILITY/READ-ARTIFACT CLEANUP IS COMMITTED LOCALLY AT f1ed955; BATCH D IS OWNER-ACCEPTED; THE CURRENT WORKING TREE CARRIES ONLY THIS STATUS UPDATE AND IS NOT PUSHED`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C4 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, D1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED / COMMITTED LOCALLY, D2 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENT REVIEW PASSED / COMMITTED LOCALLY, AND BATCH D IS OWNER-ACCEPTED; NO D3 SLICE IS CURRENTLY FROZEN OR AUTHORIZED`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
 handoff is committed locally at `40141b4`. This branch also includes the
 committed A0/B0-B4/post-B4/C1/C2/C3 IP-036 sequence through the clean
 submitted C3 baseline `695c8ec9d2153ceb2a684200ef647522ef1249e9`. The current
-local D2 working tree is bounded only to: removal of the A4-replaced
-`v_member_load` / `v_project_team` compatibility views in
-`src/pm_agent/current_state_staffing/schema.py`; remarking the already-canonical
-`/api/project-snapshots` dashboard projection in
+working tree is bounded only to this status update recording owner acceptance
+of Batch D. The accepted D2 runtime/package slice was bounded only to: removal
+of the A4-replaced `v_member_load` / `v_project_team` compatibility views in
+`src/pm_agent/current_state_staffing/schema.py`; remarking the
+already-canonical `/api/project-snapshots` dashboard projection in
 `src/pm_agent/dashboard/server.py`; focused continuity updates in
 `src/tests/test_current_state_staffing.py`,
 `src/tests/test_unified_use_case_contract.py`,
 `src/tests/test_data_integrity_concurrency.py`,
 `tools/rehearse_release.py`, `tools/tests/test_rehearse_release.py`,
-`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, and this `PROGRESS.md` update. D2 does
-not delete `/api/hiref` legacy-result-projection status or the dormant
+`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, and `PROGRESS.md`. D2 did not delete
+`/api/hiref` legacy-result-projection status or the dormant
 `import-resource-portal` / `import-hiref-report` source rows because retained
 B4 slot/result behavior and historical sync-run audit continuity still depend
 on them. No D3, consumer redesign, dormant-source-row deletion, legacy-read
@@ -289,20 +290,21 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-IP-036 Batch D2 final compatibility/read-artifact cleanup is the current local
-working tree scope. It builds on the clean submitted C3 baseline commit
+IP-036 Batch D is now owner-accepted at the local repository baseline. The
+accepted Batch D result builds on the clean submitted C3 baseline commit
 `695c8ec9d2153ceb2a684200ef647522ef1249e9`, the required clean local C4 commit
-`0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, and the required clean local D1
-commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`.
+`0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, the committed D1 slice
+`a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`, and the committed D2 slice
+`f1ed9557f99d054480cb379fe2f1d41b38504049`.
 
-Validation / review evidence for the current local D2 working tree:
+Validation / review evidence for the accepted Batch D baseline:
 
 - `src/.venv/bin/python -m pytest src/tests/test_current_state_staffing.py src/tests/test_unified_use_case_contract.py src/tests/test_data_integrity_concurrency.py tools/tests/test_rehearse_release.py -q` (`44 passed`)
 - `src/.venv/bin/python -m ruff check src/pm_agent/dashboard/server.py src/pm_agent/current_state_staffing/schema.py src/tests/test_current_state_staffing.py src/tests/test_data_integrity_concurrency.py src/tests/test_unified_use_case_contract.py tools/rehearse_release.py tools/tests/test_rehearse_release.py`
 - `git diff --check`
 - independent read-only self-review: `D2 independent review passed`
 
-The current D2 working tree preserves the frozen boundaries:
+The accepted Batch D baseline preserves the frozen boundaries:
 
 - only the stale project-snapshot legacy marker and the now-unneeded
   current-state compatibility views are removed;
@@ -312,9 +314,9 @@ The current D2 working tree preserves the frozen boundaries:
   B4 retained HIREF slot/result behavior still survives there;
 - dormant `import-resource-portal` / `import-hiref-report` source rows remain in
   place because historical sync-run audit continuity still depends on them;
-- D3, consumer redesign, broader bootstrap cleanup, runtime redesign, connector
-  redesign, skills redesign, and mutable staffing-write redesign remain out of
-  scope.
+- no D3 slice is currently frozen or authorized; consumer redesign, broader
+  bootstrap cleanup, runtime redesign, connector redesign, skills redesign, and
+  mutable staffing-write redesign remain out of scope.
 
 IP-036 Batch B4 contract-coverage closure / legacy deletion remains the latest
 runtime/package validation baseline and builds on the required clean accepted
@@ -1034,6 +1036,28 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-06 — Owner accepted IP-036 Batch D
+
+- The owner accepted the validated, independently reviewed Batch D result at
+  local commits `a3eea27` (D1 deprecated operator-path retirement) and
+  `f1ed955` (D2 final compatibility/read-artifact cleanup).
+- Acceptance covers only the frozen Batch D scope: retired superseded retained-
+  source operator paths, deletion of the A4-replaced current-state
+  compatibility views, and correction of the stale `/api/project-snapshots`
+  legacy marker plus the focused rehearsal/UAT/test continuity updates tied to
+  those changes.
+- `/api/hiref` legacy-result-projection status and the dormant
+  `import-resource-portal` / `import-hiref-report` source rows remain deferred
+  compatibility/audit surfaces rather than accepted cleanup targets. No D3,
+  broader redesign, runtime redesign, connector redesign, skills redesign, or
+  mutable staffing-write redesign is authorized by this decision.
+- Commit / push status: the accepted D1 and D2 runtime changes remain committed
+  locally; this working tree carries only the acceptance log update in
+  `PROGRESS.md`. No push, merge, tag, release, deployment, connector access, or
+  real-data action was performed.
+- Exact next action: if further IP-036 work is desired, freeze and explicitly
+  authorize a new bounded post-Batch-D slice first; do not infer a D3.
 
 ### 2026-08-06 — IP-036 Batch D2 final compatibility/read-artifact cleanup implemented locally
 
