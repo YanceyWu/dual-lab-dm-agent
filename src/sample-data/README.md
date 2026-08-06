@@ -45,7 +45,8 @@ Health re-import (canonical derivation plus seven-dimension assessment through
 the IP-033 entry), Delivery Attention reconciliation, and a confirmed Weekly
 Brief v2 snapshot. Milestone and evidence data precede the assessment so the
 demo shows real dimension states, and the resulting raw sample DB is directly
-usable by the merged Dashboard staffing / HIREF readers.
+usable by the merged Dashboard staffing / HIREF readers without any post-build
+helper publication.
 
 After a build, these commands return non-empty, contract-compliant results
 for the same synthetic demo database:
@@ -82,6 +83,14 @@ Known demo states (deliberate mix, all honest):
 - `dependency` is `unknown`: Phase 3 proves an active link only, without
   readiness semantics.
 
+The supported build intentionally mixes `complete` and `partial` authorities.
+Current-state staffing is published as Dashboard-ready `fresh` / `complete`
+data, while contract coverage remains intentionally `partial` because member
+003 still represents a real missing-current-contract synthetic case. That
+partial state does **not** mean the HIREF surfaces have no usable data: it
+means the sample preserves the missing-contract evidence instead of pretending
+coverage is complete.
+
 The Delivery Attention Center demonstrates five rules (project health red,
 critical milestone overdue, resource overload, overdue action, source
 freshness) with eight items across both projects, the Resource Capacity
@@ -93,10 +102,15 @@ snapshot date, per the event-window contract.
 HIREF / contract-continuity demo states: member 001 has a current contract
 plus a registered renewal, member 002 is expiring within 60 days without a
 renewal (critical), member 003 has no current contract (missing), and one
-HIREF slot is free with an open staffing placeholder.  The supported readers
-now keep those as two distinct states: the missing member remains a HIREF alert,
+HIREF slot is free with an open staffing placeholder. The supported readers
+keep those as two distinct states: the missing member remains a HIREF alert,
 while the free slot still counts as reusable capacity because its end date does
-not match the missing member's known contract end date. `pm hiref summary`,
+not match the missing member's known contract end date. In that bounded
+partial-coverage shape, the system can still prove `hiref_alerts_60d = 2` and
+`free_hiref_slots = 1`. If an unassigned slot cannot be excluded from a missing
+member's claim, the slot/free counts stay `unknown` instead of being guessed.
+This is a conservative read-side inference only; it does not introduce a new
+canonical slot-occupancy publication model. `pm hiref summary`,
 `pm hiref review`, `pm hiref slots`, `pm hiref placeholders`, and
 `contract-continuity-review` all return non-empty, contract-compliant results.
 

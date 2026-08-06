@@ -9,8 +9,8 @@ branch for local review. Nothing is pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS COMMITTED LOCALLY AT 3fc1154; IP-037 BATCH B NULL-SAFE LEGACY DASHBOARD RENDERING REMAINS IMPLEMENTED LOCALLY IN THE WORKING TREE; A BOUNDED FOLLOW-ON HIREF PARTIAL-COVERAGE ALERT/FREE-SLOT COUNT FIX IS NOW ALSO IMPLEMENTED LOCALLY IN THE WORKING TREE; BATCH C HAS NOT STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B RENDERING PLUS THE FOLLOW-ON HIREF PARTIAL-COUNT FIX PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY AND AWAIT OWNER REVIEW / COMMIT DECISION; NOTHING IS PUSHED`
+Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS COMMITTED LOCALLY AT 3fc1154; IP-037 BATCH B NULL-SAFE LEGACY DASHBOARD RENDERING PLUS THE BOUNDED HIREF PARTIAL-COVERAGE ALERT/FREE-SLOT COUNT FOLLOW-ON ARE COMMITTED LOCALLY AT 1395f17; IP-037 BATCH C DOCUMENTATION/CONSISTENCY CLEANUP IS COMMITTED LOCALLY IN THIS SESSION; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B, THE BOUNDED HIREF FOLLOW-ON, AND BATCH C DOCS CLEANUP HAVE PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY; THE COMBINED IP-037 RESULT NOW AWAITS OWNER REVIEW / ACCEPTANCE; NOTHING IS PUSHED`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1034,6 +1034,73 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-06 — IP-037 Batch C documentation/consistency cleanup implemented locally
+
+- Implemented only the frozen Batch C documentation closeout for the already
+  landed dashboard synthetic-demo fixes:
+  - updated `src/sample-data/README.md` so the supported demo build is described
+    as directly publishing the canonical current-state staffing and
+    contract-coverage artifacts required by the merged Dashboard, without any
+    post-build helper publication;
+  - clarified in that same sample-data guide that the synthetic demo
+    intentionally mixes `fresh` / `complete` staffing with `partial` contract
+    coverage, and that `partial` does not mean "no HIREF data" when the bounded
+    rule can still prove missing-current alerts and an independently free slot;
+  - clarified there and in `README.md` that some Project Health
+    `unknown` / `not_available` states remain intentional sample design rather
+    than defects;
+  - updated `implementation-packs/IP-037_DASHBOARD_SYNTHETIC_DEMO_ALIGNMENT.md`
+    minimally so its status, Batch C scope, and next gate now match the current
+    post-Batch-A/B plus bounded-HIREF-fix local state, without rewriting the
+    approved pack into a new design;
+  - updated `PROGRESS.md` current-state tracking to record this documentation
+    closeout and the remaining uncommitted local status accurately.
+- Behavior/result:
+  - documentation now consistently states that the supported synthetic demo
+    build directly emits the Dashboard-facing canonical publications;
+  - documentation no longer implies that `partial` contract coverage must force
+    HIREF counts to `unknown`, and it no longer suggests that all
+    `unknown` / `not_available` sample states are defects to eliminate;
+  - documentation explicitly records that the current free-slot inference is
+    conservative read-side behavior only, not a new canonical slot-occupancy
+    model.
+- Retained architecture/work boundary:
+  - no business logic, test semantics, dashboard/server architecture, sample
+    data content, schema, or connector behavior changed in this batch;
+  - broader HIREF authority-model redesign and any future architectural cleanup
+    remain separate follow-on work, not part of IP-037 Batch C.
+- Validation evidence:
+  - focused regression passed:
+    `src/.venv/bin/python -m pytest src/tests/test_demo_characterization.py src/tests/test_hiref_workflow.py`
+    → `20 passed`;
+  - attempted complementary dashboard-rendering regression
+    `src/.venv/bin/python -m pytest src/tests/test_dashboard_web_rendering.py`,
+    but the current environment does not provide `node` (`node: command not found`);
+    this Batch C turn changed no dashboard JS, so the prior recorded Batch B
+    rendering validation remains the current renderer-specific evidence;
+  - targeted documentation consistency check completed across `README.md`,
+    `src/sample-data/README.md`,
+    `implementation-packs/IP-037_DASHBOARD_SYNTHETIC_DEMO_ALIGNMENT.md`, and
+    `PROGRESS.md`.
+- Read-only review evidence:
+  - an independent read-only diff review first found two accepted documentation
+    gaps: the IP-037 pack still described the resolved pre-Batch-A/B mismatch as
+    current behavior, and this new progress entry left placeholder validation /
+    review text that contradicted the top-level gate summary;
+  - both gaps were corrected in the documentation, and the final read-only diff
+    review found no remaining significant issues in the Batch C closeout.
+- Exact next recommended action:
+  - owner-review the combined local IP-037 state (Batch A, Batch B, bounded
+    HIREF fix, and Batch C docs closeout now all committed locally), and do not
+    widen scope into a new dashboard or HIREF architecture batch from this
+    session state.
+- Commit / push status:
+  - Batch A remains committed locally as `3fc1154` (`Implement Batch A demo alignment`);
+  - Batch B rendering plus the bounded HIREF partial-count fix are already
+    committed locally together as `1395f17` (`Improve dashboard HIREF demo behavior`);
+  - this Batch C documentation closeout is committed locally in this session;
+  - nothing is pushed.
+
 ### 2026-08-06 — HIREF partial-coverage alert/count fix implemented locally
 
 - Implemented a bounded HIREF continuity/dashboard follow-on after the committed
@@ -1111,13 +1178,13 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
     user-owned and was not overwritten.
 - Exact next recommended action:
-  - owner-review this bounded follow-on together with the already-uncommitted
-    Batch B rendering slice, then decide whether to commit the combined local
-    working-tree changes; do not start Batch C from this session state.
+  - owner-review this bounded follow-on together with the now-committed Batch B
+    rendering slice as part of the combined IP-037 result; do not widen scope
+    from this session state.
 - Commit / push status:
   - Batch A remains committed locally as `3fc1154` (`Implement Batch A demo alignment`);
-  - Batch B rendering plus this HIREF partial-count fix are uncommitted local
-    working-tree changes;
+  - Batch B rendering plus this HIREF partial-count fix are committed locally as
+    `1395f17` (`Improve dashboard HIREF demo behavior`);
   - nothing is pushed.
 
 ### 2026-08-06 — IP-037 Batch B null-safe legacy dashboard rendering implemented locally
@@ -1164,7 +1231,7 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
     issues in the reviewed changes.
 - Commit / push status:
   - Batch A was committed locally as `3fc1154` (`Implement Batch A demo alignment`);
-  - Batch B is implemented locally in the working tree but not yet committed;
+  - Batch B is committed locally as part of `1395f17` (`Improve dashboard HIREF demo behavior`);
   - nothing is pushed.
 
 ### 2026-08-06 — IP-037 Batch A synthetic demo pipeline alignment implemented locally

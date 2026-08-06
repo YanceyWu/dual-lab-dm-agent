@@ -182,7 +182,13 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay  # 
 ```
 
 See `src/sample-data/README.md` for the full command sequence and the five
-verification commands with expected non-empty results.
+verification commands with expected non-empty results. That guide is also the
+current source of truth for the synthetic demo's mixed states: the supported
+build now emits the Dashboard-facing canonical staffing and contract-coverage
+publications directly, contract coverage intentionally remains `partial`,
+bounded HIREF alert/free-slot counts still stay available in that supported
+partial mode, and some Project Health fields intentionally remain
+`unknown` / `not_available`.
 
 Read:
 

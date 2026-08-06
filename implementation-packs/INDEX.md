@@ -1,7 +1,7 @@
 # Current Implementation Pack Index
 
 Status: `HISTORICAL PACK INDEX — CURRENT STATE AUTHORITY IS PROGRESS.md`
-Last updated: 2026-08-02
+Last updated: 2026-08-06
 
 This checkout intentionally contains only implementation material that remains
 useful as validated-baseline reference. Completed IP-000 through IP-023 and
@@ -27,6 +27,7 @@ recoverable from Git history.
 | IP-031 | Phase 5 Resource Intelligence | Promoted as the local Phase 5 development baseline on 2026-08-01 | `implementation-packs/IP-031_PHASE_5_RESOURCE_INTELLIGENCE.md` | `implementation-reports/IP-031_IMPLEMENTATION_REPORT.md` |
 | IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
 | IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Owner-accepted on 2026-08-02 as a local development-baseline fix | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
+| IP-037 | Dashboard synthetic demo alignment: canonical sample publication readiness plus null-safe legacy rendering | Owner-approved on 2026-08-06 for phased local follow-on work; runtime unchanged until Batch A starts | `implementation-packs/IP-037_DASHBOARD_SYNTHETIC_DEMO_ALIGNMENT.md` | none yet |
 
 ## Usability handoff (2026-08-02)
 
