@@ -8,16 +8,11 @@ Workflow:
   4. Run preview → confirm through `pm onboarding`
 
 The script auto-detects column names (SNOW exports vary by report config).
-
-Deprecated compatibility wrapper usage:
-    python3 scripts/import_cr_csv.py --file ~/Downloads/sys_report_template.csv
-    python3 scripts/import_cr_csv.py --file data-feed/cr_2026-05-31.csv --dry-run
 """
 
 import csv
 import json
 import sqlite3
-import argparse
 import hashlib
 from datetime import datetime
 from pathlib import Path
@@ -460,18 +455,10 @@ def import_cr(file_path: str, dry_run: bool = False) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Import ServiceNow CR CSV into pm.db "
-            "(deprecated compatibility wrapper awaiting Batch D; "
-            "pm onboarding is the supported path)."
-        )
+    raise SystemExit(
+        "This direct ServiceNow CR import entrypoint is retired. "
+        "Use `pm onboarding` with source type `servicenow-change-request-csv`."
     )
-    parser.add_argument("--file", required=True, help="Path to downloaded CSV file")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Parse only, do not write to DB")
-    args = parser.parse_args()
-    import_cr(args.file, dry_run=args.dry_run)
 
 
 def _plan_counts(

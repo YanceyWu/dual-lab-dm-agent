@@ -8,12 +8,11 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from pm_agent.cli.app import app
+from pm_agent.connectors.confluence import page_registry as confluence_page_registry
 from pm_agent.connectors.jira import board_registry as jira_board_registry
 from pm_agent.database import source_evidence
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.sync.jira.evidence_sync import load_evidence_config
-from scripts.import_confluence_pages import import_confluence_pages
-from scripts.import_jira_boards import import_jira_boards
 
 runner = CliRunner()
 
@@ -174,7 +173,7 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
         ],
     )
 
-    import_jira_boards(csv_path)
+    jira_board_registry.apply_registry_import(csv_path, db_path=isolated_db)
     evidence_config = load_evidence_config("keep-board", db_path=isolated_db)
     assert evidence_config.source_id == "jira-evidence-keep-board"
     assert evidence_config.bootstrap_days == 90
@@ -200,7 +199,7 @@ def test_import_jira_boards_reconciles_removed_registry_rows(isolated_db: Path, 
             [json.dumps(configured)],
         )
         connection.commit()
-    import_jira_boards(csv_path)
+    jira_board_registry.apply_registry_import(csv_path, db_path=isolated_db)
     preserved_config = load_evidence_config("keep-board", db_path=isolated_db)
     assert preserved_config.field_mappings == {"status": "status"}
     assert preserved_config.supported_link_types == ("Blocks",)
@@ -831,7 +830,7 @@ def test_onboarding_confluence_page_registry_round_trip_preserves_cleanup(
         ],
     )
 
-    import_confluence_pages(csv_path)
+    confluence_page_registry.apply_registry_import(csv_path, db_path=isolated_db)
 
     con = sqlite3.connect(isolated_db)
     try:

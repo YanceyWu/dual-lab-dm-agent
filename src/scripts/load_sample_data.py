@@ -20,6 +20,7 @@ import argparse
 import os
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -35,48 +36,80 @@ def _run(command: list[str], env: dict[str, str]) -> None:
     subprocess.run(command, cwd=ROOT, env=env, check=True)
 
 
-def _chain_commands() -> list[list[str]]:
-    """Versioned structured imports plus the demo board prerequisite."""
-    return [
-        [
-            sys.executable,
-            "scripts/import_workforce_planning.py",
-            "--file",
-            str((SAMPLE_ROOT / "json" / "workforce_planning_import.sample.json").resolve()),
-            "--confirm",
-        ],
-        [
-            sys.executable,
-            "scripts/import_resource_capacity.py",
-            "--file",
-            str((SAMPLE_ROOT / "json" / "resource_capacity_import.sample.json").resolve()),
-            "--confirm",
-        ],
-        [
-            sys.executable,
-            "scripts/import_jira_boards.py",
-            "--file",
-            str((SAMPLE_ROOT / "csv" / "jira_board_configs.sample.csv").resolve()),
-        ],
-        [
-            sys.executable,
-            "scripts/seed_demo_evidence.py",
-        ],
-        [
-            sys.executable,
-            "scripts/import_milestones.py",
-            "--file",
-            str((SAMPLE_ROOT / "json" / "milestone_import.sample.json").resolve()),
-            "--confirm",
-        ],
-        [
-            sys.executable,
-            "scripts/import_project_health.py",
-            "--file",
-            str((SAMPLE_ROOT / "json" / "project_health_reimport.sample.json").resolve()),
-            "--confirm",
-        ],
-    ]
+@contextmanager
+def _database_path_override(db_path: Path):
+    from pm_agent.config import settings
+
+    original_database_path = settings.database_path
+    settings.database_path = str(db_path)
+    try:
+        yield
+    finally:
+        settings.database_path = original_database_path
+
+
+ONBOARDING_CHAIN = (
+    (
+        "demo-workforce",
+        "workforce-planning-json",
+        SAMPLE_ROOT / "json" / "workforce_planning_import.sample.json",
+    ),
+    (
+        "demo-capacity",
+        "resource-capacity-json",
+        SAMPLE_ROOT / "json" / "resource_capacity_import.sample.json",
+    ),
+    (
+        "demo-jira-registry",
+        "jira-board-registry-csv",
+        SAMPLE_ROOT / "csv" / "jira_board_configs.sample.csv",
+    ),
+    (
+        "demo-milestones",
+        "milestone-json",
+        SAMPLE_ROOT / "json" / "milestone_import.sample.json",
+    ),
+    (
+        "demo-project-health",
+        "project-health-reimport-json",
+        SAMPLE_ROOT / "json" / "project_health_reimport.sample.json",
+    ),
+)
+
+
+def _run_onboarding_import(
+    db_path: Path,
+    *,
+    profile_key: str,
+    source_type: str,
+    file_path: Path,
+) -> None:
+    from pm_agent.data_onboarding import service as onboarding_service
+    from pm_agent.database.bootstrap import main as bootstrap
+
+    resolved_path = file_path.resolve()
+    print(f"Running: pm onboarding [{source_type}] {resolved_path.name}")
+    with _database_path_override(db_path):
+        bootstrap(quiet=True)
+    onboarding_service.save_source_profile(
+        profile_key=profile_key,
+        source_type=source_type,
+        source_locator=str(resolved_path),
+        db_path=db_path,
+    )
+    preview = onboarding_service.preview_source_profile(profile_key, db_path=db_path)
+    if preview["status"] not in {"previewed", "already_completed"}:
+        raise SystemExit(
+            f"Onboarding preview failed for {source_type}: {preview['status']}"
+        )
+    confirmed = onboarding_service.confirm_onboarding_run(
+        preview["run_id"],
+        db_path=db_path,
+    )
+    if confirmed["status"] != "completed":
+        raise SystemExit(
+            f"Onboarding confirm failed for {source_type}: {confirmed['status']}"
+        )
 
 
 def _reconcile_attention(db_path: Path) -> None:
@@ -197,9 +230,22 @@ def main() -> None:
         print("Running: scripts/init_db.py")
         _run([sys.executable, "scripts/init_db.py"], env)
 
-    for command in _chain_commands():
-        print(f"Running: {' '.join(command[1:])}")
-        _run(command, env)
+    for profile_key, source_type, file_path in ONBOARDING_CHAIN[:3]:
+        _run_onboarding_import(
+            db_path,
+            profile_key=profile_key,
+            source_type=source_type,
+            file_path=file_path,
+        )
+    print("Running: scripts/seed_demo_evidence.py")
+    _run([sys.executable, "scripts/seed_demo_evidence.py"], env)
+    for profile_key, source_type, file_path in ONBOARDING_CHAIN[3:]:
+        _run_onboarding_import(
+            db_path,
+            profile_key=profile_key,
+            source_type=source_type,
+            file_path=file_path,
+        )
 
     _reconcile_attention(db_path)
     _capture_weekly_brief(db_path)

@@ -120,6 +120,32 @@ def test_clean_demo_build_has_expected_clean_import_counts(demo_db: Path) -> Non
     assert _count(demo_db, "staffing_placeholders") == 1
 
 
+def test_load_sample_data_honors_db_argument_without_database_path_env(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "argument-only-demo.db"
+    environment = {
+        "PATH": os.environ.get("PATH", ""),
+        "PYTHONPATH": str(ROOT),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "load_sample_data.py"),
+            "--db",
+            str(db_path),
+            "--force",
+        ],
+        cwd=ROOT,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert _count(db_path, "plan_versions") == 2
+
+
 def test_demo_identity_is_explicitly_synthetic(demo_db: Path) -> None:
     with sqlite3.connect(demo_db) as connection:
         people = connection.execute("SELECT id, name FROM employees ORDER BY id").fetchall()

@@ -380,19 +380,65 @@ def test_preview_confirm_accepts_business_keys_and_non_synthetic_source_referenc
     assert capacity["evidence"]["commitment_observation_fingerprints"]
 
 
-def test_non_interactive_command_requires_dry_run_or_explicit_confirmation(isolated_db: Path) -> None:
+def test_supported_onboarding_cli_can_preview_and_confirm_capacity_import(isolated_db: Path) -> None:
     _bootstrap_dependencies(isolated_db)
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(ROOT)
     environment["DATABASE_PATH"] = str(isolated_db)
-    command = [sys.executable, str(ROOT / "scripts/import_resource_capacity.py"),
-               "--file", str(CAPACITY_SAMPLE)]
-    missing = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True)
-    assert missing.returncode == 2
-    assert "--dry-run | --confirm" in missing.stderr
-    dry_run = subprocess.run([*command, "--dry-run"], cwd=ROOT, env=environment,
-                             capture_output=True, text=True, check=True)
-    assert json.loads(dry_run.stdout)["status"] == "previewed"
-    confirmed = subprocess.run([*command, "--confirm"], cwd=ROOT, env=environment,
-                               capture_output=True, text=True, check=True)
+    save = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pm_agent.cli.app",
+            "onboarding",
+            "profile",
+            "save",
+            "--profile-key",
+            "capacity-cli",
+            "--source-type",
+            "resource-capacity-json",
+            "--file",
+            str(CAPACITY_SAMPLE),
+        ],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(save.stdout)["status"] == "saved"
+    dry_run = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pm_agent.cli.app",
+            "onboarding",
+            "preview",
+            "--profile-key",
+            "capacity-cli",
+        ],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    preview_payload = json.loads(dry_run.stdout)
+    assert preview_payload["status"] == "previewed"
+    confirmed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pm_agent.cli.app",
+            "onboarding",
+            "confirm",
+            "--run-id",
+            preview_payload["run_id"],
+        ],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     assert json.loads(confirmed.stdout)["status"] == "completed"

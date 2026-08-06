@@ -56,7 +56,7 @@ def download_change_request_csv(save_path: Path) -> int:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
         raise RuntimeError(
-            "Playwright is required for `pm cr sync`. Install it with "
+            "Playwright is required for ServiceNow browser-session download. Install it with "
             "`pip install playwright && python3 -m playwright install chromium`."
         ) from exc
 

@@ -28,25 +28,32 @@ src/.venv/bin/python --version
 PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
 ```
 
-该命令从**空库**依次执行（每步都是既有导入/派生入口，无新增业务能力）：
+该命令从**空库**依次执行（每步都是既有受支持导入/派生入口，无新增业务能力）：
 
 1. `bootstrap`（`scripts/init_db.py`）——建全部表；
 2. workforce planning 版本化导入
-   （`scripts/import_workforce_planning.py --confirm`）——预期输出
-   `"status": "completed"`，`employees: 3, projects: 2, monthly_allocations: 6`
+   ——脚本内部通过 `pm onboarding` 的 `workforce-planning-json` source profile
+   执行 profile save → preview → confirm；控制台会打印
+   `Running: pm onboarding [workforce-planning-json] ...`，数据库结果应为
+   `employees: 3, projects: 2, monthly_allocations: 6`
    （member-003 跨 Atlas/Beacon 合计 1.2，为一致性超载样例）；
 3. resource capacity 版本化导入
-   （`scripts/import_resource_capacity.py --confirm`）——预期
-   `"derivations": 3, "observations": 9`，`derivation_states.known: 3`；
-4. board 注册（`scripts/import_jira_boards.py`）——`Loaded 2 JIRA board rows`，
+   ——脚本内部通过 `pm onboarding` 的 `resource-capacity-json` source profile
+   执行 profile save → preview → confirm；数据库结果应为
+   `derivations: 3`、`observations: 9`、`derivation_states.known: 3`；
+4. board 注册——脚本内部通过 `pm onboarding` 的
+   `jira-board-registry-csv` source profile 执行 profile save → preview →
+   confirm；数据库结果应导入 2 条 board 配置，
    `atlas-board`/`beacon-board` 分别映射两个活动项目（IP-033 入口的数据前提）；
 5. 合成证据种子（`scripts/seed_demo_evidence.py`）——写入权威 source-evidence
    runs、JIRA 风格问题/发布/Sprint、健康快照、一条逾期行动项与一个超载成员，
    全部为 `SYNTHETIC_DATASET_V1` 合成行；
-6. Milestone 版本化导入（`scripts/import_milestones.py --confirm`）——预期
-   `"milestone_count": 6`（Atlas 4 + Beacon 2）；
-7. Project Health re-import（`scripts/import_project_health.py --confirm`，
-   IP-033 入口）——预期 `"assessment_state": "completed"`，
+6. Milestone 版本化导入——脚本内部通过 `pm onboarding` 的 `milestone-json`
+   source profile 执行 profile save → preview → confirm；数据库结果应为
+   `milestone_count: 6`（Atlas 4 + Beacon 2）；
+7. Project Health re-import——脚本内部通过 `pm onboarding` 的
+   `project-health-reimport-json` source profile 执行 profile save → preview →
+   confirm（IP-033 入口）；数据库结果应为 `assessment_state: completed`，
    两个项目各 1 条评估：Atlas `overall red`（schedule red、scope amber），
    Beacon `overall unknown`（无权威证据，诚实 partial）；
 8. Attention 对账（preview → confirm）——预期

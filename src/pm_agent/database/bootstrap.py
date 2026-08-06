@@ -2312,17 +2312,37 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
         WHERE id = 'import-hiref-report'
         """
     )
+    conn.execute(
+        """
+        UPDATE data_sources
+        SET source_name = 'Retired Resource Portal Distribution Import',
+            active = 0,
+            config_json = '{}',
+            notes = 'Retired legacy resource-portal operator path kept only for historical sync-run integrity. Supported workbook onboarding now publishes canonical workforce/current-state facts through onboarding-managed publications.',
+            updated_at = datetime('now')
+        WHERE id = 'import-resource-portal'
+        """
+    )
+    conn.execute(
+        """
+        UPDATE data_sources
+        SET config_json = '{"entrypoint":"pm onboarding","source_type":"servicenow-change-request-csv"}',
+            notes = 'Change request status import from ServiceNow CSV exports through pm onboarding.',
+            updated_at = datetime('now')
+        WHERE id = 'servicenow-change-requests'
+        """
+    )
 
     definitions = [
         {
             "id": "import-resource-portal",
             "source_type": "excel",
-            "source_name": "Resource Portal Distribution Import",
+            "source_name": "Retired Resource Portal Distribution Import",
             "ingestion_mode": "file",
             "refresh_sla_hours": 720,
-            "active": 1,
-            "config_json": {"script": "scripts/import_from_excel.py"},
-            "notes": "Legacy workbook mirror import; current-state staffing authority now lives in canonical publications.",
+            "active": 0,
+            "config_json": {},
+            "notes": "Retired legacy resource-portal operator path kept only for historical sync-run integrity. Supported workbook onboarding now publishes canonical workforce/current-state facts through onboarding-managed publications.",
         },
         {
             "id": "import-hiref-report",
@@ -2341,8 +2361,11 @@ def _seed_data_sources(conn: sqlite3.Connection) -> None:
             "ingestion_mode": "file",
             "refresh_sla_hours": 168,
             "active": 1,
-            "config_json": {"script": "scripts/import_cr_csv.py"},
-            "notes": "Change request status import from ServiceNow CSV exports.",
+            "config_json": {
+                "entrypoint": "pm onboarding",
+                "source_type": "servicenow-change-request-csv",
+            },
+            "notes": "Change request status import from ServiceNow CSV exports through pm onboarding.",
         },
         {
             "id": "confluence-status-batch",

@@ -73,8 +73,8 @@ pm onboarding run show --run-id <onboarding-run-id>
 The shared onboarding surface is now the sole supported operator-visible
 entrypoint for the retained Team/Project + Capacity workbook, the retained JSON
 families, the retained registry CSV families, the project-profile workbook, and
-the ServiceNow change-request CSV import. Any surviving source-specific import
-script is only a deprecated compatibility wrapper awaiting Batch D.
+the ServiceNow change-request CSV import. No standalone retained-source import
+script remains supported or shipped as a product entrypoint.
 
 ## Structured read-only interface
 

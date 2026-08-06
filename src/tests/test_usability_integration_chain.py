@@ -20,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
 ATLAS = "project-synthetic-atlas"
 SNAPSHOT_KEY = "r5-integration-brief-001"
+WORKFORCE_SAMPLE = ROOT / "sample-data/json/workforce_planning_import.sample.json"
+CAPACITY_SAMPLE = ROOT / "sample-data/json/resource_capacity_import.sample.json"
+JIRA_REGISTRY_SAMPLE = ROOT / "sample-data/csv/jira_board_configs.sample.csv"
+MILESTONE_SAMPLE = ROOT / "sample-data/json/milestone_import.sample.json"
+PROJECT_HEALTH_SAMPLE = ROOT / "sample-data/json/project_health_reimport.sample.json"
 CHANGE_KEYS = (
     "created_count",
     "updated_count",
@@ -60,49 +65,84 @@ def _cli_json(db_path: Path, *arguments: str) -> dict:
     return json.loads(_script(db_path, "-m", "pm_agent.cli.app", *arguments))
 
 
+def _onboarding_confirm(
+    db_path: Path,
+    *,
+    profile_key: str,
+    source_type: str,
+    file_path: Path,
+) -> dict:
+    saved = _cli_json(
+        db_path,
+        "onboarding",
+        "profile",
+        "save",
+        "--profile-key",
+        profile_key,
+        "--source-type",
+        source_type,
+        "--file",
+        str(file_path),
+    )
+    assert saved["status"] == "saved"
+    preview = _cli_json(
+        db_path,
+        "onboarding",
+        "preview",
+        "--profile-key",
+        profile_key,
+    )
+    assert preview["status"] in {"previewed", "already_completed"}
+    if preview["status"] == "already_completed":
+        return preview
+    confirmed = _cli_json(
+        db_path,
+        "onboarding",
+        "confirm",
+        "--run-id",
+        preview["run_id"],
+    )
+    assert confirmed["status"] == "completed"
+    return confirmed
+
+
 @pytest.fixture(scope="module")
 def chain_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """Build the complete R2 chain on an empty temporary database."""
     db_path = tmp_path_factory.mktemp("usability-chain") / "chain.db"
     _script(db_path, "scripts/init_db.py")
-    _script(
+    _onboarding_confirm(
         db_path,
-        "scripts/import_workforce_planning.py",
-        "--file",
-        str(ROOT / "sample-data/json/workforce_planning_import.sample.json"),
-        "--confirm",
+        profile_key="chain-workforce",
+        source_type="workforce-planning-json",
+        file_path=WORKFORCE_SAMPLE,
     )
-    _script(
+    _onboarding_confirm(
         db_path,
-        "scripts/import_resource_capacity.py",
-        "--file",
-        str(ROOT / "sample-data/json/resource_capacity_import.sample.json"),
-        "--confirm",
+        profile_key="chain-capacity",
+        source_type="resource-capacity-json",
+        file_path=CAPACITY_SAMPLE,
     )
-    _script(
+    _onboarding_confirm(
         db_path,
-        "scripts/import_jira_boards.py",
-        "--file",
-        str(ROOT / "sample-data/csv/jira_board_configs.sample.csv"),
+        profile_key="chain-jira",
+        source_type="jira-board-registry-csv",
+        file_path=JIRA_REGISTRY_SAMPLE,
     )
     _script(db_path, "scripts/seed_demo_evidence.py")
-    _script(
+    _onboarding_confirm(
         db_path,
-        "scripts/import_milestones.py",
-        "--file",
-        str(ROOT / "sample-data/json/milestone_import.sample.json"),
-        "--confirm",
+        profile_key="chain-milestones",
+        source_type="milestone-json",
+        file_path=MILESTONE_SAMPLE,
     )
-    health = json.loads(
-        _script(
-            db_path,
-            "scripts/import_project_health.py",
-            "--file",
-            str(ROOT / "sample-data/json/project_health_reimport.sample.json"),
-            "--confirm",
-        )
+    health = _onboarding_confirm(
+        db_path,
+        profile_key="chain-project-health",
+        source_type="project-health-reimport-json",
+        file_path=PROJECT_HEALTH_SAMPLE,
     )
-    assert health["report"]["assessment_state"] == "completed"
+    assert health["status"] == "completed"
     preview = _cli_json(db_path, "attention", "reconcile-preview")
     assert preview["status"] == "proposed"
     confirmed = _cli_json(
@@ -326,45 +366,33 @@ def test_chain_import_replay_is_idempotent(chain_db_copy: Path) -> None:
         "hiref",
     )
     before = {table: _count(chain_db_copy, table) for table in tables}
-    workforce = json.loads(
-        _script(
-            chain_db_copy,
-            "scripts/import_workforce_planning.py",
-            "--file",
-            str(ROOT / "sample-data/json/workforce_planning_import.sample.json"),
-            "--confirm",
-        )
+    workforce = _onboarding_confirm(
+        chain_db_copy,
+        profile_key="chain-workforce",
+        source_type="workforce-planning-json",
+        file_path=WORKFORCE_SAMPLE,
     )
-    capacity = json.loads(
-        _script(
-            chain_db_copy,
-            "scripts/import_resource_capacity.py",
-            "--file",
-            str(ROOT / "sample-data/json/resource_capacity_import.sample.json"),
-            "--confirm",
-        )
+    capacity = _onboarding_confirm(
+        chain_db_copy,
+        profile_key="chain-capacity",
+        source_type="resource-capacity-json",
+        file_path=CAPACITY_SAMPLE,
     )
-    health = json.loads(
-        _script(
-            chain_db_copy,
-            "scripts/import_project_health.py",
-            "--file",
-            str(ROOT / "sample-data/json/project_health_reimport.sample.json"),
-            "--confirm",
-        )
+    health = _onboarding_confirm(
+        chain_db_copy,
+        profile_key="chain-project-health",
+        source_type="project-health-reimport-json",
+        file_path=PROJECT_HEALTH_SAMPLE,
     )
-    milestones = json.loads(
-        _script(
-            chain_db_copy,
-            "scripts/import_milestones.py",
-            "--file",
-            str(ROOT / "sample-data/json/milestone_import.sample.json"),
-            "--confirm",
-        )
+    milestones = _onboarding_confirm(
+        chain_db_copy,
+        profile_key="chain-milestones",
+        source_type="milestone-json",
+        file_path=MILESTONE_SAMPLE,
     )
     assert workforce["status"] == "already_completed"
     assert capacity["status"] == "already_completed"
     assert health["status"] == "already_completed"
-    assert milestones["status"] == "no_op"
+    assert milestones["status"] == "already_completed"
     after = {table: _count(chain_db_copy, table) for table in tables}
     assert before == after

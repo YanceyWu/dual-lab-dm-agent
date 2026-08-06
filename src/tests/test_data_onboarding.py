@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sqlite3
+import subprocess
 import sys
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
@@ -259,7 +259,7 @@ def test_onboarding_help_marks_pm_onboarding_as_supported_retained_entrypoint() 
     assert "servicenow-change-request-csv" in normalized_save_help
 
 
-def test_retained_import_scripts_only_expose_deprecated_pm_onboarding_help() -> None:
+def test_d1_retained_import_scripts_are_removed() -> None:
     scripts = [
         "import_team_project_capacity_workbook.py",
         "import_workforce_planning.py",
@@ -270,29 +270,20 @@ def test_retained_import_scripts_only_expose_deprecated_pm_onboarding_help() -> 
         "import_confluence_pages.py",
         "import_project_profiles.py",
         "import_cr_csv.py",
+        "import_from_excel.py",
     ]
     for script_name in scripts:
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / script_name), "--help"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert result.returncode == 0, script_name
-        normalized_stdout = _normalize_whitespace(result.stdout)
-        assert "deprecated compatibility wrapper awaiting Batch D" in normalized_stdout
-        assert "pm onboarding is the supported path" in normalized_stdout
+        assert not (ROOT / "scripts" / script_name).exists(), script_name
 
 
-def test_c4_docs_point_supported_retained_import_guidance_to_pm_onboarding() -> None:
+def test_d1_docs_point_supported_retained_import_guidance_only_to_pm_onboarding() -> None:
     readme = _read_repo_file("README.md")
     assert "sole supported operator-visible" in readme
-    assert "deprecated thin" in readme
+    assert "No standalone retained-source import script remains" in readme
 
     src_readme = _read_repo_file("src/README.md")
     assert "sole supported operator-visible" in src_readme
-    assert "deprecated compatibility wrapper awaiting Batch D" in src_readme
+    assert "No standalone retained-source import" in _normalize_whitespace(src_readme)
 
     onboarding_guide = _read_repo_file("docs/LOCAL_DATA_ONBOARDING_GUIDE.md")
     assert "pm_agent.cli.app onboarding profile save" in onboarding_guide
@@ -302,12 +293,62 @@ def test_c4_docs_point_supported_retained_import_guidance_to_pm_onboarding() -> 
 
     import_matrix = _read_repo_file("docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md")
     assert "`pm onboarding` (`workforce-planning-json`)" in import_matrix
-    assert "deprecated compatibility wrapper awaiting Batch D" in import_matrix
+    assert "已在 D1 退役" in import_matrix
+    assert "src/scripts/import_workforce_planning.py" not in import_matrix
 
     uat_runbook = _read_repo_file("docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md")
     assert "pm_agent.cli.app onboarding profile save" in uat_runbook
     assert "pm_agent.cli.app onboarding preview --profile-key workforce-uat" in uat_runbook
     assert "src/scripts/import_workforce_planning.py" not in uat_runbook
+
+    walkthrough = _read_repo_file("docs/SYNTHETIC_DEMO_WALKTHROUGH.md")
+    assert "workforce-planning-json" in walkthrough
+    assert "jira-board-registry-csv" in walkthrough
+    assert "scripts/import_workforce_planning.py" not in walkthrough
+
+
+def test_d1_retires_import_resource_portal_from_active_operator_registry(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    active_sources = {
+        row["id"] for row in legacy_repository.get_data_source_freshness(active_only=True)
+    }
+    with sqlite3.connect(isolated_db) as connection:
+        row = connection.execute(
+            """
+            SELECT source_name, active, config_json, notes
+            FROM data_sources
+            WHERE id = 'import-resource-portal'
+            """
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == "Retired Resource Portal Distribution Import"
+    assert row[1] == 0
+    assert json.loads(row[2]) == {}
+    assert "historical sync-run integrity" in row[3]
+    assert "import-resource-portal" not in active_sources
+
+
+def test_d1_retired_servicenow_change_request_direct_entrypoints_are_hidden_or_blocked() -> None:
+    cr_help = _invoke("cr", "--help")
+    assert cr_help.exit_code == 0, cr_help.output
+    normalized_help = _normalize_whitespace(cr_help.output)
+    assert "import" not in normalized_help
+    assert "sync" not in normalized_help
+
+    result = subprocess.run(
+        [sys.executable, "-m", "pm_agent.sync.servicenow.cr_import"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    combined = result.stderr + result.stdout
+    assert "retired" in combined.lower()
+    assert "servicenow-change-request-csv" in combined
 
 
 def test_onboarding_profile_save_preview_and_run_show_round_trip(

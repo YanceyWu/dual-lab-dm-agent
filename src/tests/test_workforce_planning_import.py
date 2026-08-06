@@ -502,39 +502,64 @@ def test_phase4_read_contract_remains_usable_as_software_rollback_target(
     ]
 
 
-def test_non_interactive_command_requires_preview_or_explicit_confirm(
+def test_supported_onboarding_cli_can_preview_and_confirm_workforce_import(
     isolated_db: Path,
 ) -> None:
+    init_db(quiet=True)
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(ROOT)
     environment["DATABASE_PATH"] = str(isolated_db)
-    command = [
-        sys.executable,
-        str(ROOT / "scripts" / "import_workforce_planning.py"),
-        "--file",
-        str(SAMPLE),
-    ]
-    missing_action = subprocess.run(
-        command,
+    save = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pm_agent.cli.app",
+            "onboarding",
+            "profile",
+            "save",
+            "--profile-key",
+            "workforce-cli",
+            "--source-type",
+            "workforce-planning-json",
+            "--file",
+            str(SAMPLE),
+        ],
         cwd=ROOT,
         env=environment,
         capture_output=True,
         text=True,
+        check=True,
     )
-    assert missing_action.returncode == 2
-    assert "--dry-run | --confirm" in missing_action.stderr
-
+    assert json.loads(save.stdout)["status"] == "saved"
+    preview_command = [
+        sys.executable,
+        "-m",
+        "pm_agent.cli.app",
+        "onboarding",
+        "preview",
+        "--profile-key",
+        "workforce-cli",
+    ]
     preview = subprocess.run(
-        [*command, "--dry-run"],
+        preview_command,
         cwd=ROOT,
         env=environment,
         check=True,
         capture_output=True,
         text=True,
     )
-    assert json.loads(preview.stdout)["status"] == "previewed"
+    preview_payload = json.loads(preview.stdout)
+    assert preview_payload["status"] == "previewed"
     confirmed = subprocess.run(
-        [*command, "--confirm"],
+        [
+            sys.executable,
+            "-m",
+            "pm_agent.cli.app",
+            "onboarding",
+            "confirm",
+            "--run-id",
+            preview_payload["run_id"],
+        ],
         cwd=ROOT,
         env=environment,
         check=True,

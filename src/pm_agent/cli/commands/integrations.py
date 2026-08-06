@@ -41,37 +41,6 @@ def _progress_bar(pct: float, width: int = 20) -> str:
     return f"[{color}]{bar}[/{color}] {pct:.0f}%"
 
 
-@cr_app.command("sync")
-def cr_sync(
-    dry_run: bool = typer.Option(False, "--dry-run", help="下载后不写入 DB"),
-):
-    """从 ServiceNow 自动下载最新 CR 列表并导入 (需要 Edge 已登录)"""
-    from pm_agent.connectors import servicenow as servicenow_connector
-
-    try:
-        with console.status("[cyan]正在从 ServiceNow 下载 CR 数据...[/cyan]"):
-            save_path = servicenow_connector.sync_change_requests(dry_run=dry_run)
-    except Exception as exc:
-        console.print(f"[red]❌ 下载失败: {exc}[/red]")
-        console.print("[yellow]请确认：1) Microsoft Edge 已安装  2) 已登录 ServiceNow  3) Session 未过期[/yellow]")
-        raise typer.Exit(1)
-
-    console.print(f"[green]✅ CR 数据已下载到 {save_path.name}[/green]")
-    if dry_run:
-        console.print("[dim]--dry-run 模式，不写入数据库[/dim]")
-
-
-@cr_app.command("import")
-def cr_import(
-    file: str = typer.Argument(..., help="Path to SNOW CSV file"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Parse only, do not write to DB"),
-):
-    """从本地 CSV 文件导入 CR 列表"""
-    from pm_agent.connectors import servicenow as servicenow_connector
-
-    servicenow_connector.import_change_requests(file, dry_run=dry_run)
-
-
 @cr_app.command("list")
 def cr_list(
     state: Optional[str] = typer.Option(None, "--state", "-s", help="Filter by state (partial match)"),
@@ -106,7 +75,9 @@ def cr_list(
     con.close()
 
     if not rows:
-        console.print("[dim]没有符合条件的 CR 记录。先运行 `pm cr import <file>` 导入数据。[/dim]")
+        console.print(
+            "[dim]没有符合条件的 CR 记录。请先通过 `pm onboarding` 导入 ServiceNow change request CSV。[/dim]"
+        )
         return
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold", title=f"Change Requests ({len(rows)} 条)")
