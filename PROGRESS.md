@@ -5,12 +5,14 @@ Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this branch includes the accepted local IP-036 sequence through
 D2 (`f1ed9557f99d054480cb379fe2f1d41b38504049`) and now also carries the
 previously committed dashboard rollout from `f773d84` merged into the workbook
-branch for local review. Nothing is pushed in this session.
+branch for local review. The current branch state is now intended for a single
+remote push from this session; user-owned uncommitted artifacts remain local
+only.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
 Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS COMMITTED LOCALLY AT 3fc1154; IP-037 BATCH B NULL-SAFE LEGACY DASHBOARD RENDERING PLUS THE BOUNDED HIREF PARTIAL-COVERAGE ALERT/FREE-SLOT COUNT FOLLOW-ON ARE COMMITTED LOCALLY AT 1395f17; IP-037 BATCH C DOCUMENTATION/CONSISTENCY CLEANUP IS COMMITTED LOCALLY IN THIS SESSION; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B, THE BOUNDED HIREF FOLLOW-ON, AND BATCH C DOCS CLEANUP HAVE PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY; THE COMBINED IP-037 RESULT NOW AWAITS OWNER REVIEW / ACCEPTANCE; NOTHING IS PUSHED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B, THE BOUNDED HIREF FOLLOW-ON, AND BATCH C DOCS CLEANUP HAVE PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY; THE COMBINED IP-037 RESULT NOW AWAITS OWNER REVIEW / ACCEPTANCE AND IS INTENDED TO BE PUSHED TO THE REMOTE BRANCH FROM THIS SESSION`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1033,6 +1035,24 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-06 — Pushing current IP-037 branch state to remote
+
+- Updated `PROGRESS.md` so the current-state summary records the remote-action
+  intent accurately before the push: the committed IP-037 Batch A/B/C branch
+  state is the material being sent to the remote branch, while the pre-existing
+  dirty `src/sample-data/demo/sample_pm.db` artifact remains user-owned local
+  working-tree state and is not part of the committed branch.
+- No runtime, schema, sample-data-content, or connector behavior changed in this
+  record-only step.
+- Exact next recommended action:
+  - push the current branch once to `origin`, then treat owner review /
+    acceptance as the next gate rather than starting a new implementation batch.
+- Commit / push status:
+  - this progress-only status correction is committed locally in the current
+    session before the push;
+  - the branch push itself is the next immediate action;
+  - nothing else in the user-owned dirty working tree is included.
 
 ### 2026-08-06 — IP-037 Batch C documentation/consistency cleanup implemented locally
 
