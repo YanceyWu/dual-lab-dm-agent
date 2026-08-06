@@ -17,7 +17,13 @@ from pm_agent.resource_intelligence.service import confirm_import, preview_impor
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Preview or explicitly confirm capacity import")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Preview or explicitly confirm capacity import "
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
+        )
+    )
     parser.add_argument("--file", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--dry-run", action="store_true")

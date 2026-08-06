@@ -48,7 +48,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Import Confluence page registry from CSV "
-            "(compatibility wrapper; pm onboarding is the supported path)."
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
         )
     )
     parser.add_argument("--file", required=True, help="Path to confluence_pages CSV")

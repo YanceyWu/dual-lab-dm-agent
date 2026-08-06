@@ -56,6 +56,12 @@ structured data sources:
 
 ```bash
 pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding profile save --profile-key workforce-json --source-type workforce-planning-json --file /approved/path/workforce_planning.json
+pm onboarding profile save --profile-key capacity-json --source-type resource-capacity-json --file /approved/path/resource_capacity.json
+pm onboarding profile save --profile-key milestone-json --source-type milestone-json --file /approved/path/milestones.json
+pm onboarding profile save --profile-key health-json --source-type project-health-reimport-json --file /approved/path/project_health_reimport.json
+pm onboarding profile save --profile-key jira-registry --source-type jira-board-registry-csv --file /approved/path/jira_board_configs.csv
+pm onboarding profile save --profile-key confluence-registry --source-type confluence-page-registry-csv --file /approved/path/confluence_pages.csv
 pm onboarding profile save --profile-key project-profiles --source-type project-profile-workbook --file /approved/path/project_profiles.xlsx
 pm onboarding profile save --profile-key change-requests --source-type servicenow-change-request-csv --file /approved/path/servicenow_change_requests.csv
 pm onboarding profile show --profile-key fy26-q4
@@ -64,11 +70,11 @@ pm onboarding confirm --run-id <onboarding-run-id>
 pm onboarding run show --run-id <onboarding-run-id>
 ```
 
-The shared onboarding surface now covers the retained Team/Project + Capacity
-workbook, project-profile workbook, and ServiceNow change-request CSV source
-families alongside the other retained JSON / registry source types. The legacy
-source-specific scripts remain available only as transitional compatibility
-wrappers while later convergence slices close the remaining operator-path gaps.
+The shared onboarding surface is now the sole supported operator-visible
+entrypoint for the retained Team/Project + Capacity workbook, the retained JSON
+families, the retained registry CSV families, the project-profile workbook, and
+the ServiceNow change-request CSV import. Any surviving source-specific import
+script is only a deprecated compatibility wrapper awaiting Batch D.
 
 ## Structured read-only interface
 

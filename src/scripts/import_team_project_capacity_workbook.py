@@ -21,7 +21,11 @@ from pm_agent.workbook_onboarding.service import (
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Preview or confirm Team/Project + Capacity workbook onboarding v1"
+        description=(
+            "Preview or confirm Team/Project + Capacity workbook onboarding v1 "
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
+        )
     )
     parser.add_argument("--file", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)

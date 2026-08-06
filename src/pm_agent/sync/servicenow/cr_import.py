@@ -4,11 +4,12 @@ pm_agent.sync.servicenow.cr_import — Import Change Requests from ServiceNow CS
 Workflow:
   1. Log into ServiceNow in your browser
   2. Visit the report URL — CSV will auto-download
-  3. Run: python3 scripts/import_cr_csv.py --file <path_to_csv>
+  3. Save a `servicenow-change-request-csv` source profile under `pm onboarding`
+  4. Run preview → confirm through `pm onboarding`
 
 The script auto-detects column names (SNOW exports vary by report config).
 
-Usage:
+Deprecated compatibility wrapper usage:
     python3 scripts/import_cr_csv.py --file ~/Downloads/sys_report_template.csv
     python3 scripts/import_cr_csv.py --file data-feed/cr_2026-05-31.csv --dry-run
 """
@@ -459,10 +460,12 @@ def import_cr(file_path: str, dry_run: bool = False) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(    description=(
-        "Import ServiceNow CR CSV into pm.db "
-        "(compatibility wrapper; pm onboarding is the supported path)."
-    )
+    parser = argparse.ArgumentParser(
+        description=(
+            "Import ServiceNow CR CSV into pm.db "
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
+        )
     )
     parser.add_argument("--file", required=True, help="Path to downloaded CSV file")
     parser.add_argument("--dry-run", action="store_true",

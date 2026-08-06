@@ -1,4 +1,4 @@
-"""Thin wrapper for package-native ServiceNow CR CSV import."""
+"""Deprecated compatibility wrapper for the retained ServiceNow CR CSV import."""
 
 import sys
 from pathlib import Path

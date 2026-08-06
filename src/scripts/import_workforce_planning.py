@@ -18,7 +18,11 @@ from pm_agent.workforce_planning_import.service import confirm_import, preview_i
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Preview or explicitly confirm a versioned workforce/planning clean import"
+        description=(
+            "Preview or explicitly confirm a versioned workforce/planning clean import "
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
+        )
     )
     parser.add_argument("--file", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)

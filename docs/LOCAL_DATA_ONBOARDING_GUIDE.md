@@ -560,18 +560,26 @@ pm init
 - 先 dry-run
 - 再 confirm
 - 同一包可重放时应返回 `already_completed` 或 `no_op`
+- 对保留 source family，受支持路径统一是 `pm onboarding` 的
+  `profile save → preview → confirm`
 
 例如：
 
 ```bash
 DATABASE_PATH=/approved/temp/dm-local-onboarding.db \
-python3 src/scripts/import_workforce_planning.py --file /approved/path/workforce.json --dry-run
+python3 -m pm_agent.cli.app onboarding profile save \
+  --profile-key workforce-json \
+  --source-type workforce-planning-json \
+  --file /approved/path/workforce.json
 
 DATABASE_PATH=/approved/temp/dm-local-onboarding.db \
-python3 src/scripts/import_workforce_planning.py --file /approved/path/workforce.json --confirm
+python3 -m pm_agent.cli.app onboarding preview --profile-key workforce-json
+
+DATABASE_PATH=/approved/temp/dm-local-onboarding.db \
+python3 -m pm_agent.cli.app onboarding confirm --run-id <onboarding-run-id>
 ```
 
-其他导入也遵循同样模式。
+其他保留导入也遵循同样模式，只是 `--source-type` 和文件路径不同。
 
 ### 什么时候才算这一步成功
 
@@ -695,8 +703,9 @@ source .venv/bin/activate
 
 export DATABASE_PATH=/approved/temp/dm-local-onboarding.db
 pm init
-python3 scripts/import_workforce_planning.py --file /approved/path/workforce.json --dry-run
-python3 scripts/import_workforce_planning.py --file /approved/path/workforce.json --confirm
+python3 -m pm_agent.cli.app onboarding profile save --profile-key workforce-json --source-type workforce-planning-json --file /approved/path/workforce.json
+python3 -m pm_agent.cli.app onboarding preview --profile-key workforce-json
+python3 -m pm_agent.cli.app onboarding confirm --run-id <onboarding-run-id>
 pm tool query team-workload-overview
 pm dashboard serve
 ```

@@ -69,15 +69,20 @@ preservation of current records. Rehearse on isolated copies only:
 cp /approved/path/from-backup-manifest.db /approved/temp/dm-uat-rehearsal.db
 DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db pm init
 DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db \
-  python3 src/scripts/import_workforce_planning.py \
-  --file src/sample-data/json/workforce_planning_import.sample.json --dry-run
+  python3 -m pm_agent.cli.app onboarding profile save \
+  --profile-key workforce-uat \
+  --source-type workforce-planning-json \
+  --file src/sample-data/json/workforce_planning_import.sample.json
 DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db \
-  python3 src/scripts/import_workforce_planning.py \
-  --file src/sample-data/json/workforce_planning_import.sample.json --confirm
+  python3 -m pm_agent.cli.app onboarding preview --profile-key workforce-uat
+DATABASE_PATH=/approved/temp/dm-uat-rehearsal.db \
+  python3 -m pm_agent.cli.app onboarding confirm --run-id <onboarding-run-id-from-preview>
 ```
 
-Repeat the same dry-run → confirm pattern for resource capacity, Project
-Health re-import (IP-033 entry), and canonical Milestone import, then verify:
+Repeat the same `profile save → preview → confirm` pattern for resource
+capacity (`resource-capacity-json`), Project Health re-import
+(`project-health-reimport-json`), and canonical Milestone import
+(`milestone-json`), then verify:
 
 ```bash
 sqlite3 "$DM_UAT_DATABASE_PATH" "PRAGMA integrity_check;"

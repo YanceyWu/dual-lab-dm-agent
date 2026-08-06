@@ -125,13 +125,13 @@ pm onboarding run show --run-id <onboarding-run-id>
 
 Run `pm staffing assess --help` before a staffing assessment. Use
 `pm connector probe <connector-name>` only for an explicitly requested live
-connector check. `pm onboarding` is now the supported profile-based entrypoint
-for the retained workbook plus workforce-planning, resource-capacity,
+connector check. `pm onboarding` is now the sole supported operator-visible
+profile-based entrypoint for the retained workbook plus workforce-planning, resource-capacity,
 milestone, Project Health re-import, JIRA board registry CSV, Confluence page
 registry CSV, project-profile workbook, and ServiceNow change-request CSV file
-sources. The legacy source-specific import scripts remain available only as
-transitional compatibility / fallback entrypoints while later convergence
-slices close the remaining operator-path gaps.
+sources. Any surviving source-specific import script is a deprecated thin
+compatibility wrapper awaiting Batch D; it is no longer a supported product
+entrypoint.
 
 The complete package command and configuration guide is in `src/README.md`.
 

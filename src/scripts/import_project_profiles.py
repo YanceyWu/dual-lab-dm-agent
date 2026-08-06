@@ -26,7 +26,8 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Import project profiles from workbook "
-            "(compatibility wrapper; pm onboarding is the supported path)."
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
         )
     )
     parser.add_argument("--file", default=str(DEFAULT_FILE))

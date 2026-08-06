@@ -17,7 +17,13 @@ from pm_agent.project_health.service import confirm_reimport, preview_reimport
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Preview or explicitly confirm Project Health re-import "
+            "(deprecated compatibility wrapper awaiting Batch D; "
+            "pm onboarding is the supported path)."
+        )
+    )
     parser.add_argument("--file", required=True, type=Path)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--confirm", action="store_true")

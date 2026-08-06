@@ -30,7 +30,7 @@
 
 ### 1.2 推荐使用原则
 
-1. **能用受控 JSON 导入的，优先用受控 JSON 导入。**
+1. **保留来源族统一优先走 `pm onboarding`；source-specific 脚本只保留为 deprecated compatibility wrapper。**
 2. **能先把你们现有数据转换成 sample 对应格式的，不要先改产品。**
 3. **Excel / CSV 导入比版本化 JSON 更依赖列名、sheet 名、模板结构。**
 4. **真实数据接入时，先在批准副本上 rehearsal，不要先碰活动库。**
@@ -39,18 +39,18 @@
 
 ## 2. 外部导入格式矩阵
 
-| Importer | 文件类型 | Sample 路径 | 是否受控 | 推荐使用场景 |
+| 受支持入口 | 文件类型 | Sample 路径 | 是否受控 | 推荐使用场景 |
 | --- | --- | --- | --- | --- |
-| `src/scripts/import_workforce_planning.py` | JSON | `src/sample-data/json/workforce_planning_import.sample.json` | **是（preview/confirm）** | 导入人员、项目、plan version、monthly allocation；这是团队/项目/月度计划的推荐正式入口 |
-| `src/scripts/import_resource_capacity.py` | JSON | `src/sample-data/json/resource_capacity_import.sample.json` | **是（preview/confirm）** | 导入 capacity / commitment 相关输入；用于 Capacity Heatmap 和 capacity-aware 判断 |
-| `src/scripts/import_milestones.py` | JSON | `src/sample-data/json/milestone_import.sample.json` | **是（preview/confirm）** | 导入 canonical milestones；用于 Delivery Execution、部分健康与 attention 规则 |
-| `src/scripts/import_project_health.py` | JSON | `src/sample-data/json/project_health_reimport.sample.json` | **是（preview/confirm）** | 导入 Project Health re-import 包并触发七维评估；用于 Layered Health |
-| `src/scripts/import_jira_boards.py` | CSV | `src/sample-data/csv/jira_board_configs.sample.csv` | **部分（dry-run）** | 注册 board 与项目映射；Project Health / JIRA 相关页面需要这类基础映射 |
-| `src/scripts/import_confluence_pages.py` | CSV | `src/sample-data/csv/confluence_pages.sample.csv` | **部分（dry-run）** | 导入 Confluence 页面注册表；用于 Confluence 状态来源映射 |
-| `src/scripts/import_cr_csv.py` | CSV | `src/sample-data/csv/servicenow_change_requests.sample.csv` | **是（preview/confirm，经 `pm onboarding`）** | 导入 ServiceNow change request CSV 导出；受支持路径是 `pm onboarding` 的 `servicenow-change-request-csv` source type，脚本仅保留为兼容 wrapper |
+| `pm onboarding` (`workforce-planning-json`) | JSON | `src/sample-data/json/workforce_planning_import.sample.json` | **是（preview/confirm）** | 导入人员、项目、plan version、monthly allocation；这是团队/项目/月度计划的唯一受支持 operator-visible 入口。旧 `src/scripts/import_workforce_planning.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`resource-capacity-json`) | JSON | `src/sample-data/json/resource_capacity_import.sample.json` | **是（preview/confirm）** | 导入 capacity / commitment 相关输入；用于 Capacity Heatmap 和 capacity-aware 判断。旧 `src/scripts/import_resource_capacity.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`milestone-json`) | JSON | `src/sample-data/json/milestone_import.sample.json` | **是（preview/confirm）** | 导入 canonical milestones；用于 Delivery Execution、部分健康与 attention 规则。旧 `src/scripts/import_milestones.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`project-health-reimport-json`) | JSON | `src/sample-data/json/project_health_reimport.sample.json` | **是（preview/confirm）** | 导入 Project Health re-import 包并触发七维评估；用于 Layered Health。旧 `src/scripts/import_project_health.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`jira-board-registry-csv`) | CSV | `src/sample-data/csv/jira_board_configs.sample.csv` | **是（preview/confirm）** | 注册 board 与项目映射；Project Health / JIRA 相关页面需要这类基础映射。旧 `src/scripts/import_jira_boards.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`confluence-page-registry-csv`) | CSV | `src/sample-data/csv/confluence_pages.sample.csv` | **是（preview/confirm）** | 导入 Confluence 页面注册表；用于 Confluence 状态来源映射。旧 `src/scripts/import_confluence_pages.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`servicenow-change-request-csv`) | CSV | `src/sample-data/csv/servicenow_change_requests.sample.csv` | **是（preview/confirm）** | 导入 ServiceNow change request CSV 导出；旧 `src/scripts/import_cr_csv.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
 | **已退休：legacy HIREF Excel 入口** | Excel (`.xlsx`) | `src/sample-data/excel/hiref_status_sample.xlsx` | **否（retired）** | `src/scripts/import_hiref.py` 已退休，不再是受支持的产品入口；contract coverage 与现有 HIREF slot/result 所需数据改由 `src/scripts/import_team_project_capacity_workbook.py` 驱动的 workbook onboarding 提供。需要保留 HIREF feature point 时，请在 workbook 中补充可选的 `HIREF Requests` sheet，并使用 `Members.next_hiref_id` 与 `Allocations.hiref_id` 表达续签和 open-demand。 |
-| `src/scripts/import_team_project_capacity_workbook.py` | Excel (`.xlsx`) | `src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx` | **是（preview/confirm）** | 当前受支持的 workbook onboarding 正式入口。`templates/team_project_capacity_workbook_template.xlsx` 提供 review/template 结构，sample 文件展示 B4 简化后的 HIREF workbook 合同：基础 Members / Allocations sheet 扩展 + 可选 `HIREF Requests` sheet。 |
-| `src/scripts/import_project_profiles.py` | Excel (`.xlsx`) | `src/sample-data/excel/project_profiles_sample.xlsx` | **是（preview/confirm，经 `pm onboarding`）** | 从填写好的项目资料模板回写项目 profile；受支持路径是 `pm onboarding` 的 `project-profile-workbook` source type，脚本仅保留为兼容 wrapper |
+| `pm onboarding` (`workbook`) | Excel (`.xlsx`) | `src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx` | **是（preview/confirm）** | 当前受支持的 workbook onboarding 正式入口。`templates/team_project_capacity_workbook_template.xlsx` 提供 review/template 结构，sample 文件展示 B4 简化后的 HIREF workbook 合同：基础 Members / Allocations sheet 扩展 + 可选 `HIREF Requests` sheet。旧 `src/scripts/import_team_project_capacity_workbook.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
+| `pm onboarding` (`project-profile-workbook`) | Excel (`.xlsx`) | `src/sample-data/excel/project_profiles_sample.xlsx` | **是（preview/confirm）** | 从填写好的项目资料模板回写项目 profile；旧 `src/scripts/import_project_profiles.py` 仅保留为 deprecated compatibility wrapper awaiting Batch D |
 | `src/scripts/import_from_excel.py` | Excel (`.xlsx`) | `src/sample-data/excel/resource_portal_team_sample.xlsx` | **部分（dry-run，legacy）** | 早期的 Distribution Excel 团队导入；仅适合作为遗留桥接/镜像导入，不再是 current-state staffing 的 authoritative 产品入口。要发布 authoritative workbook current-state，请改用 `src/scripts/import_team_project_capacity_workbook.py` |
 
 ---
@@ -59,12 +59,12 @@
 
 ## 3.1 推荐优先使用的“正式入口”
 
-这四个是最值得优先围绕其格式做数据映射的：
+这四个 retained JSON source type 最值得优先围绕其格式做数据映射：
 
-1. `import_workforce_planning.py`
-2. `import_resource_capacity.py`
-3. `import_milestones.py`
-4. `import_project_health.py`
+1. `workforce-planning-json`
+2. `resource-capacity-json`
+3. `milestone-json`
+4. `project-health-reimport-json`
 
 原因：
 
@@ -77,12 +77,12 @@
 
 ## 3.2 适合作为“映射桥接”的 importer
 
-这些 importer 更适合在“你们已经有导出报表/模板”的前提下做本地桥接：
+这些 retained source family 更适合在“你们已经有导出报表/模板”的前提下做本地桥接：
 
-- `import_jira_boards.py`
-- `import_confluence_pages.py`
-- `import_cr_csv.py`（支持路径已收敛到 `pm onboarding`）
-- `import_project_profiles.py`（支持路径已收敛到 `pm onboarding`）
+- `jira-board-registry-csv`
+- `confluence-page-registry-csv`
+- `servicenow-change-request-csv`
+- `project-profile-workbook`
 - `import_from_excel.py`（legacy bridge only；current-state authoritative path 已转向 workbook onboarding）
 
 这些入口的特点是：
@@ -115,7 +115,7 @@ CSV 导入通常要求：
 - 数据值可被脚本解析；
 - 特定列必须存在。
 
-其中 `import_cr_csv.py` 相对宽松一些，因为它有列名映射表，会自动识别一批 ServiceNow 常见列名变体。  
+其中 `servicenow-change-request-csv` 底层沿用的 retained CSV parser 相对宽松一些，因为它有列名映射表，会自动识别一批 ServiceNow 常见列名变体。
 但“相对宽松”不等于“任意 CSV 都可以”。
 
 ### 4.3 Excel 导入

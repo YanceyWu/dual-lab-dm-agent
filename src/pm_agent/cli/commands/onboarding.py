@@ -7,6 +7,7 @@ import json
 import typer
 
 from pm_agent.data_onboarding import service
+from pm_agent.data_onboarding.registry import list_source_types
 from pm_agent.workbook_onboarding.presets import (
     get_workbook_preset,
     list_workbook_presets,
@@ -14,16 +15,23 @@ from pm_agent.workbook_onboarding.presets import (
     serialize_workbook_preset_summary,
 )
 
+_SUPPORTED_SOURCE_TYPES_HELP = ", ".join(list_source_types())
+
 onboarding_app = typer.Typer(
-    help="Structured data onboarding profiles and runs",
+    help=(
+        "Structured data onboarding profiles and runs. "
+        "This is the sole supported operator-visible import entrypoint for retained "
+        "structured sources; standalone import scripts are deprecated compatibility "
+        "wrappers awaiting Batch D."
+    ),
     no_args_is_help=True,
 )
 profile_app = typer.Typer(
-    help="Saved source profiles",
+    help="Saved source profiles for the supported `pm onboarding` entrypoint.",
     no_args_is_help=True,
 )
 run_app = typer.Typer(
-    help="Onboarding run inspection",
+    help="Onboarding run inspection and retained-source publication linkage.",
     no_args_is_help=True,
 )
 preset_app = typer.Typer(
@@ -60,12 +68,19 @@ def _failed(code: str) -> dict[str, object]:
 @profile_app.command("save")
 def profile_save(
     profile_key: str = typer.Option(..., "--profile-key", help="Stable source-profile key."),
-    source_type: str = typer.Option("workbook", "--source-type", help="Registered source type."),
+    source_type: str = typer.Option(
+        "workbook",
+        "--source-type",
+        help=f"Supported retained source type: {_SUPPORTED_SOURCE_TYPES_HELP}.",
+    ),
     source_locator: str = typer.Option(
         ...,
         "--source-locator",
         "--file",
-        help="Approved local source locator (for example a workbook or JSON file path).",
+        help=(
+            "Approved local source locator for the supported `pm onboarding` path "
+            "(for example a workbook, JSON file, or CSV file path)."
+        ),
     ),
     display_name: str = typer.Option("", "--display-name", help="Human-readable profile name."),
     mapping_preset_id: str = typer.Option("", "--mapping-preset", help="Optional mapping preset identifier."),
@@ -77,7 +92,7 @@ def profile_save(
     plan_naming_policy: str = typer.Option("", "--plan-naming-policy", help="Optional plan naming policy override."),
     status: str = typer.Option("active", "--status", help="active / inactive"),
 ) -> None:
-    """Create or update one saved source profile."""
+    """Create or update one saved source profile for the supported onboarding path."""
 
     try:
         result = service.save_source_profile(

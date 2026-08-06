@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sqlite3
+import sys
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -34,6 +36,7 @@ from pm_agent.workforce_planning_import.service import (
 
 runner = CliRunner()
 ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = ROOT.parent
 
 
 def _invoke(*args: str):
@@ -51,6 +54,14 @@ def _sample_json(name: str) -> dict:
 def _write_json(path: Path, payload: dict) -> Path:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
+
+
+def _read_repo_file(relative_path: str) -> str:
+    return (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def _normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
 
 
 def _seed_workforce_publication(db_path: Path) -> None:
@@ -231,6 +242,72 @@ ALIAS_HEADERS = {
         "non_project_allocation",
     ],
 }
+
+
+def test_onboarding_help_marks_pm_onboarding_as_supported_retained_entrypoint() -> None:
+    result = _invoke("onboarding", "--help")
+    assert result.exit_code == 0, result.output
+    normalized_help = _normalize_whitespace(result.output)
+    assert "sole supported operator-visible import entrypoint" in normalized_help
+
+    save_help = _invoke("onboarding", "profile", "save", "--help")
+    assert save_help.exit_code == 0, save_help.output
+    normalized_save_help = _normalize_whitespace(save_help.output)
+    assert "Supported retained source type:" in normalized_save_help
+    assert "workforce-planning-json" in normalized_save_help
+    assert "jira-board-registry-csv" in normalized_save_help
+    assert "servicenow-change-request-csv" in normalized_save_help
+
+
+def test_retained_import_scripts_only_expose_deprecated_pm_onboarding_help() -> None:
+    scripts = [
+        "import_team_project_capacity_workbook.py",
+        "import_workforce_planning.py",
+        "import_resource_capacity.py",
+        "import_milestones.py",
+        "import_project_health.py",
+        "import_jira_boards.py",
+        "import_confluence_pages.py",
+        "import_project_profiles.py",
+        "import_cr_csv.py",
+    ]
+    for script_name in scripts:
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / script_name), "--help"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, script_name
+        normalized_stdout = _normalize_whitespace(result.stdout)
+        assert "deprecated compatibility wrapper awaiting Batch D" in normalized_stdout
+        assert "pm onboarding is the supported path" in normalized_stdout
+
+
+def test_c4_docs_point_supported_retained_import_guidance_to_pm_onboarding() -> None:
+    readme = _read_repo_file("README.md")
+    assert "sole supported operator-visible" in readme
+    assert "deprecated thin" in readme
+
+    src_readme = _read_repo_file("src/README.md")
+    assert "sole supported operator-visible" in src_readme
+    assert "deprecated compatibility wrapper awaiting Batch D" in src_readme
+
+    onboarding_guide = _read_repo_file("docs/LOCAL_DATA_ONBOARDING_GUIDE.md")
+    assert "pm_agent.cli.app onboarding profile save" in onboarding_guide
+    assert "pm_agent.cli.app onboarding preview --profile-key workforce-json" in onboarding_guide
+    assert "python3 src/scripts/import_workforce_planning.py" not in onboarding_guide
+    assert "python3 scripts/import_workforce_planning.py" not in onboarding_guide
+
+    import_matrix = _read_repo_file("docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md")
+    assert "`pm onboarding` (`workforce-planning-json`)" in import_matrix
+    assert "deprecated compatibility wrapper awaiting Batch D" in import_matrix
+
+    uat_runbook = _read_repo_file("docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md")
+    assert "pm_agent.cli.app onboarding profile save" in uat_runbook
+    assert "pm_agent.cli.app onboarding preview --profile-key workforce-uat" in uat_runbook
+    assert "src/scripts/import_workforce_planning.py" not in uat_runbook
 
 
 def test_onboarding_profile_save_preview_and_run_show_round_trip(
