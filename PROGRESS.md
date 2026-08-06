@@ -3,36 +3,42 @@
 Last updated: 2026-08-06
 Current branch: `workbook-onboarding-test-20260804-1514`
 Current HEAD: this session started from the clean submitted C3 baseline
-`695c8ec9d2153ceb2a684200ef647522ef1249e9` and the required clean local C4
-commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`. Batch A, B0, B1, B2, B3, B4,
-the post-B4 C/D redesign freeze, C1, C2, C3, and C4 remain committed locally.
-The current working tree now carries only the separately authorized D1
-deprecated-operator-path retirement slice; focused validation and independent
-read-only self-review are required before acceptance, and the D1 result is not
-yet committed or pushed in this session.
+`695c8ec9d2153ceb2a684200ef647522ef1249e9`, the required clean local C4
+commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, and the required clean local
+D1 commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`. Batch A, B0, B1, B2, B3,
+B4, the post-B4 C/D redesign freeze, C1, C2, C3, C4, and D1 remain committed
+locally.
+The current working tree now carries only the separately authorized D2 final
+compatibility/read-artifact cleanup slice; focused validation and independent
+read-only self-review are complete, and the D2 result is not yet committed or
+pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 695c8ec; C4 OPERATOR-ENTRY CLOSURE FOR RETAINED SOURCES IS COMMITTED LOCALLY AT 0f6108e; THE CURRENT WORKING TREE NOW IMPLEMENTS ONLY THE SEPARATELY AUTHORIZED D1 DEPRECATED OPERATOR-PATH RETIREMENT SLICE; IT IS NOT COMMITTED OR PUSHED`
-Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C4 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, AND D1 IS THE ONLY CURRENTLY AUTHORIZED BATCH D SLICE IN THIS SESSION; D2 REMAINS OUT OF SCOPE`
+Current implementation item: `IP-036 BATCH A IS CLOSED LOCALLY; B0 REDESIGN FREEZE IS COMMITTED; B1 SKILLS RETIREMENT IS COMMITTED; B2 CONTRACT-COVERAGE SKELETON IS COMMITTED; B3 CONTRACT-COVERAGE READER/FRESHNESS MIGRATION IS COMMITTED; B4 USER-FACING HIREF WORKBOOK CLOSURE IS COMMITTED LOCALLY AT b5906c7; POST-B4 C/D REDESIGN FREEZE IS COMMITTED; C1 BOUNDED DOMAIN-SOURCE ONBOARDING WRAPPERS IS COMMITTED LOCALLY AT 263ca23; C2 REGISTRY-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 282c7d5; C3 AUXILIARY FILE-SOURCE ONBOARDING CONVERGENCE IS COMMITTED LOCALLY AT 695c8ec; C4 OPERATOR-ENTRY CLOSURE FOR RETAINED SOURCES IS COMMITTED LOCALLY AT 0f6108e; D1 DEPRECATED OPERATOR-PATH RETIREMENT IS COMMITTED LOCALLY AT a3eea27; THE CURRENT WORKING TREE NOW IMPLEMENTS ONLY THE SEPARATELY AUTHORIZED D2 FINAL COMPATIBILITY/READ-ARTIFACT CLEANUP SLICE; IT IS NOT COMMITTED OR PUSHED`
+Gate status: `A0 ARTIFACTS FROZEN, A1/A2/A3 COMPLETED AND COMMITTED, A4 IMPLEMENTED AND VALIDATED LOCALLY, B0 FROZEN AND COMMITTED, B1 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B2 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B3 IMPLEMENTED/VALIDATED/COMMITTED LOCALLY, B4 CLOSED / VALIDATED / COMMITTED LOCALLY, THE POST-B4 C/D REDESIGN FREEZE IS COMMITTED, C1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED LOCALLY, C2 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C3 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, C4 IS IMPLEMENTED / FOCUSED-VALIDATED / SELF-REVIEWED / COMMITTED LOCALLY, D1 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENTLY REVIEWED / COMMITTED LOCALLY, AND D2 IS IMPLEMENTED / FOCUSED-VALIDATED / INDEPENDENT REVIEW PASSED LOCALLY; D3 REMAINS OUT OF SCOPE`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
 handoff is committed locally at `40141b4`. This branch also includes the
 committed A0/B0-B4/post-B4/C1/C2/C3 IP-036 sequence through the clean
 submitted C3 baseline `695c8ec9d2153ceb2a684200ef647522ef1249e9`. The current
-local D1 working tree is bounded only to: retirement of the superseded retained
-source-family standalone scripts under `src/scripts/`; focused continuity
-updates in `src/scripts/load_sample_data.py`, `src/pm_agent/database/bootstrap.py`,
-`src/pm_agent/cli/commands/integrations.py`,
-`src/pm_agent/connectors/servicenow/__init__.py`,
-`src/pm_agent/connectors/servicenow/browser_client.py`,
-`src/pm_agent/sync/servicenow/cr_import.py`, focused operator docs
-(`README.md`, `src/README.md`, `docs/EXTERNAL_IMPORT_FORMAT_MATRIX.md`,
-`docs/SYNTHETIC_DEMO_WALKTHROUGH.md`), focused tests directly touched by script
-retirement, usage-bundle continuity, and this `PROGRESS.md` update. No D2,
-consumer redesign, legacy-read cleanup, runtime redesign, connector redesign,
-or mutable staffing-write redesign is present. The
+local D2 working tree is bounded only to: removal of the A4-replaced
+`v_member_load` / `v_project_team` compatibility views in
+`src/pm_agent/current_state_staffing/schema.py`; remarking the already-canonical
+`/api/project-snapshots` dashboard projection in
+`src/pm_agent/dashboard/server.py`; focused continuity updates in
+`src/tests/test_current_state_staffing.py`,
+`src/tests/test_unified_use_case_contract.py`,
+`src/tests/test_data_integrity_concurrency.py`,
+`tools/rehearse_release.py`, `tools/tests/test_rehearse_release.py`,
+`docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, and this `PROGRESS.md` update. D2 does
+not delete `/api/hiref` legacy-result-projection status or the dormant
+`import-resource-portal` / `import-hiref-report` source rows because retained
+B4 slot/result behavior and historical sync-run audit continuity still depend
+on them. No D3, consumer redesign, dormant-source-row deletion, legacy-read
+cleanup beyond the named artifacts, runtime redesign, connector redesign, or
+mutable staffing-write redesign is present. The
 already-committed B4 runtime slice closed the authorized workbook-
 only surface through the bounded files:
 `src/pm_agent/workbook_onboarding/models.py`,
@@ -283,33 +289,32 @@ belong in Git history and must not be interpreted as current instructions.
 
 ## Current validation evidence
 
-IP-036 Batch D1 deprecated operator-path retirement is the current local working
-tree scope. It builds on the clean submitted C3 baseline commit
-`695c8ec9d2153ceb2a684200ef647522ef1249e9` and the required clean local C4
-commit `0f6108eddba77b0675573c02ef1b0559eb0ddfb9`.
+IP-036 Batch D2 final compatibility/read-artifact cleanup is the current local
+working tree scope. It builds on the clean submitted C3 baseline commit
+`695c8ec9d2153ceb2a684200ef647522ef1249e9`, the required clean local C4 commit
+`0f6108eddba77b0675573c02ef1b0559eb0ddfb9`, and the required clean local D1
+commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`.
 
-Validation / review evidence for the current local D1 working tree:
+Validation / review evidence for the current local D2 working tree:
 
-- `src/.venv/bin/python -m pytest src/tests/test_data_onboarding.py src/tests/test_registry_importers.py src/tests/test_database_path_resolution.py src/tests/test_workforce_planning_import.py src/tests/test_resource_capacity_import.py src/tests/test_sample_import_contracts.py src/tests/test_usability_integration_chain.py tools/tests/test_build_usage_bundle.py` (`85 passed`)
-- `src/.venv/bin/python -m pytest src/tests/test_data_onboarding.py::test_d1_retires_import_resource_portal_from_active_operator_registry src/tests/test_data_onboarding.py::test_d1_retained_import_scripts_are_removed src/tests/test_data_onboarding.py::test_d1_docs_point_supported_retained_import_guidance_only_to_pm_onboarding` (`3 passed`)
-- `src/.venv/bin/python -m pytest src/tests/test_current_state_staffing.py -k current_state_publication_freshness_is_decoupled_from_legacy_source_sla` (`1 passed`)
-- `src/.venv/bin/python -m pytest src/tests/test_demo_characterization.py` (`9 passed`)
-- `src/.venv/bin/python -m ruff check src/pm_agent/cli/commands/integrations.py src/pm_agent/connectors/servicenow/__init__.py src/pm_agent/connectors/servicenow/browser_client.py src/pm_agent/database/bootstrap.py src/pm_agent/sync/servicenow/cr_import.py src/scripts/load_sample_data.py src/tests/test_data_onboarding.py src/tests/test_registry_importers.py src/tests/test_database_path_resolution.py src/tests/test_workforce_planning_import.py src/tests/test_resource_capacity_import.py src/tests/test_sample_import_contracts.py src/tests/test_usability_integration_chain.py tools/tests/test_build_usage_bundle.py`
+- `src/.venv/bin/python -m pytest src/tests/test_current_state_staffing.py src/tests/test_unified_use_case_contract.py src/tests/test_data_integrity_concurrency.py tools/tests/test_rehearse_release.py -q` (`44 passed`)
+- `src/.venv/bin/python -m ruff check src/pm_agent/dashboard/server.py src/pm_agent/current_state_staffing/schema.py src/tests/test_current_state_staffing.py src/tests/test_data_integrity_concurrency.py src/tests/test_unified_use_case_contract.py tools/rehearse_release.py tools/tests/test_rehearse_release.py`
 - `git diff --check`
-- independent read-only self-review: `D1 independent review passed`
+- independent read-only self-review: `D2 independent review passed`
 
-The current D1 working tree preserves the frozen boundaries:
+The current D2 working tree preserves the frozen boundaries:
 
-- `pm onboarding` remains the sole supported operator-visible import/onboarding
-  path for the retained workbook, retained JSON, retained registry CSV,
-  project-profile workbook, and ServiceNow change-request CSV source families;
-- the superseded retained-source standalone scripts are removed rather than
-  replaced by a new operator path;
-- domain capability owners, preview/confirm/run behavior, publication links,
-  and consumer-facing semantics remain unchanged;
-- D2, consumer redesign, legacy-read cleanup, broader bootstrap cleanup,
-  runtime redesign, connector redesign, skills redesign, and mutable staffing-
-  write redesign remain out of scope.
+- only the stale project-snapshot legacy marker and the now-unneeded
+  current-state compatibility views are removed;
+- release-rehearsal / UAT continuity checks now point to canonical
+  `current_state_staffing_*` publication tables rather than deleted views;
+- `/api/hiref` remains an explicit `legacy-result-projection` surface because
+  B4 retained HIREF slot/result behavior still survives there;
+- dormant `import-resource-portal` / `import-hiref-report` source rows remain in
+  place because historical sync-run audit continuity still depends on them;
+- D3, consumer redesign, broader bootstrap cleanup, runtime redesign, connector
+  redesign, skills redesign, and mutable staffing-write redesign remain out of
+  scope.
 
 IP-036 Batch B4 contract-coverage closure / legacy deletion remains the latest
 runtime/package validation baseline and builds on the required clean accepted
@@ -1029,6 +1034,50 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-06 — IP-036 Batch D2 final compatibility/read-artifact cleanup implemented locally
+
+- Confirmed this session started from the required clean D1 commit
+  `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`; `git status --short` was empty
+  before applying the D2 diff, and D3 remained explicitly unauthorized.
+- Implemented only the frozen D2 slice:
+  - removed the A4-replaced `v_member_load` / `v_project_team` compatibility
+    views from `src/pm_agent/current_state_staffing/schema.py`, leaving the
+    canonical `current_state_staffing_*` publication tables as the only retained
+    current-state staffing storage/read authority inside the product runtime;
+  - updated `src/pm_agent/dashboard/server.py` so `/api/project-snapshots` no
+    longer advertises `legacy-result-projection` and instead declares the new
+    non-legacy projection contract `project-snapshot-list-projection-v1`,
+    matching the route's existing delegation to the canonical
+    `project-snapshot-list` use case;
+  - moved the focused continuity checks from the deleted views to canonical
+    current-state publication tables in `src/tests/test_current_state_staffing.py`,
+    `src/tests/test_data_integrity_concurrency.py`,
+    `tools/rehearse_release.py`, `tools/tests/test_rehearse_release.py`, and
+    `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`;
+  - updated `src/tests/test_unified_use_case_contract.py` so the dashboard
+    project-snapshot projection now proves the new non-legacy contract instead
+    of the stale legacy marker.
+- Preserved the frozen D2 semantics explicitly:
+  - `/api/hiref` remains an explicit `legacy-result-projection` surface because
+    the retained B4 slot/result projection is still the serving artifact there;
+  - dormant `import-resource-portal` / `import-hiref-report` source rows remain
+    registered because historical sync-run/audit continuity still depends on
+    them;
+  - no D3 work, no broader redesign, no runtime redesign, no connector redesign,
+    no skills redesign, and no mutable staffing-write redesign were introduced.
+- Validation / review evidence:
+  - `src/.venv/bin/python -m pytest src/tests/test_current_state_staffing.py src/tests/test_unified_use_case_contract.py src/tests/test_data_integrity_concurrency.py tools/tests/test_rehearse_release.py -q`
+    (`44 passed`)
+  - `src/.venv/bin/python -m ruff check src/pm_agent/dashboard/server.py src/pm_agent/current_state_staffing/schema.py src/tests/test_current_state_staffing.py src/tests/test_data_integrity_concurrency.py src/tests/test_unified_use_case_contract.py tools/rehearse_release.py tools/tests/test_rehearse_release.py`
+  - `git diff --check`
+  - independent read-only self-review: `D2 independent review passed`
+- Commit / push status:
+  - required clean local D1 commit `a3eea2762e29ee5494b7f8b5b278b8750f9ec6a7`
+    remained at HEAD before applying this D2 diff;
+  - the D2 changes are not committed and not pushed.
+- Exact next recommended action:
+  - stop for owner review or explicit commit/push instruction; do not enter D3.
 
 ### 2026-08-06 — IP-036 Batch D1 deprecated operator-path retirement implemented locally
 

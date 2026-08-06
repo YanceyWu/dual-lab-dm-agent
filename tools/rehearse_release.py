@@ -56,8 +56,6 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                 """
                 SELECT name FROM sqlite_master
                 WHERE name IN (
-                    'v_member_load',
-                    'v_project_team',
                     'staffing_proposals',
                     'dashboard_operations',
                     'source_evidence_runs',
@@ -84,6 +82,14 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                     'execution_derivation_inputs',
                     'execution_facts',
                     'milestone_import_operations',
+                    'current_state_staffing_import_sessions',
+                    'current_state_staffing_import_attempts',
+                    'current_state_staffing_import_runs',
+                    'current_state_staffing_publications',
+                    'current_state_staffing_members',
+                    'current_state_staffing_projects',
+                    'current_state_staffing_assignments',
+                    'current_state_staffing_member_loads',
                     'workforce_planning_import_sessions',
                     'workforce_planning_import_attempts',
                     'workforce_planning_import_runs',
@@ -103,8 +109,21 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
                 """
             )
         }
-        connection.execute("SELECT COUNT(*) FROM v_member_load").fetchone()
-        connection.execute("SELECT COUNT(*) FROM v_project_team").fetchone()
+        connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_publications"
+        ).fetchone()
+        connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_members"
+        ).fetchone()
+        connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_projects"
+        ).fetchone()
+        connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_assignments"
+        ).fetchone()
+        connection.execute(
+            "SELECT COUNT(*) FROM current_state_staffing_member_loads"
+        ).fetchone()
         token_columns = {
             row[1]
             for row in connection.execute(
@@ -118,8 +137,6 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
     if foreign_keys:
         raise RuntimeError("DATABASE_FOREIGN_KEY_CHECK_FAILED")
     if names != {
-        "v_member_load",
-        "v_project_team",
         "staffing_proposals",
         "dashboard_operations",
         "source_evidence_runs",
@@ -146,6 +163,14 @@ def verify_upgraded_database(path: Path, expected_counts: dict[str, int]) -> Non
         "execution_derivation_inputs",
         "execution_facts",
         "milestone_import_operations",
+        "current_state_staffing_import_sessions",
+        "current_state_staffing_import_attempts",
+        "current_state_staffing_import_runs",
+        "current_state_staffing_publications",
+        "current_state_staffing_members",
+        "current_state_staffing_projects",
+        "current_state_staffing_assignments",
+        "current_state_staffing_member_loads",
         "workforce_planning_import_sessions",
         "workforce_planning_import_attempts",
         "workforce_planning_import_runs",

@@ -55,6 +55,8 @@ LEGACY_DIRECT_SQL_ROUTES = {
 }
 LEGACY_RESULT_PROJECTION_ROUTES = {
     "/api/hiref",
+}
+CANONICAL_RESULT_PROJECTION_ROUTES = {
     "/api/project-snapshots",
 }
 CURRENT_STATE_CANONICAL_ROUTES = {
@@ -68,6 +70,8 @@ CURRENT_STATE_CANONICAL_ROUTES = {
 def _mark_legacy_interface(response):
     if request.path in CURRENT_STATE_CANONICAL_ROUTES:
         response.headers["X-DM-Interface-Contract"] = "current-state-staffing-canonical-read"
+    elif request.path in CANONICAL_RESULT_PROJECTION_ROUTES:
+        response.headers["X-DM-Interface-Contract"] = "project-snapshot-list-projection-v1"
     elif request.path in LEGACY_DIRECT_SQL_ROUTES:
         response.headers["X-DM-Interface-Contract"] = "legacy-direct-read"
     elif request.path in LEGACY_RESULT_PROJECTION_ROUTES:

@@ -236,8 +236,6 @@ def test_integrity_migration_rejects_dirty_legacy_rows_without_rewriting(
 def test_assignment_migration_preserves_dependent_views(isolated_db) -> None:
     _seed_integrity_entities(isolated_db)
     with sqlite3.connect(isolated_db) as connection:
-        connection.execute("DROP VIEW v_member_load")
-        connection.execute("DROP VIEW v_project_team")
         connection.execute("DROP TABLE assignments")
         connection.execute(
             """

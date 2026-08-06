@@ -204,7 +204,7 @@ def test_current_state_staffing_freshness_reports_stale_and_partial_states(
     assert partial["state"] == "partial"
 
 
-def test_legacy_member_and_project_views_are_derived_from_current_publication(
+def test_current_state_publication_tables_replace_legacy_member_and_project_views(
     isolated_db: Path,
 ) -> None:
     init_db(quiet=True)
@@ -239,36 +239,62 @@ def test_legacy_member_and_project_views_are_derived_from_current_publication(
     service.confirm_import(preview["session_id"], db_path=isolated_db)
 
     with sqlite3.connect(isolated_db) as connection:
+        publication_row = connection.execute(
+            """
+            SELECT publication_id
+            FROM current_state_staffing_publications
+            WHERE is_current = 1
+            """
+        ).fetchone()
+        assert publication_row is not None
+        publication_id = publication_row[0]
         member_row = connection.execute(
             """
-            SELECT id, name, team, max_parallel, current_load, active_projects
-            FROM v_member_load
-            WHERE id = 'WD100001'
-            """
+            SELECT m.member_id, m.display_name, m.role, m.level,
+                   l.current_load, l.active_project_count
+            FROM current_state_staffing_members m
+            JOIN current_state_staffing_member_loads l
+              ON l.publication_id = m.publication_id
+             AND l.member_id = m.member_id
+            WHERE m.publication_id = ?
+              AND m.member_id = 'WD100001'
+            """,
+            [publication_id],
         ).fetchone()
         project_row = connection.execute(
             """
-            SELECT project_id, project_name, jira_key, target_end, member_id, member_name, allocation
-            FROM v_project_team
-            WHERE project_id = 'RP-PROJ-001'
-            """
+            SELECT p.project_id, p.display_name, p.project_status, p.priority,
+                   a.member_id, a.allocation
+            FROM current_state_staffing_projects p
+            JOIN current_state_staffing_assignments a
+              ON a.publication_id = p.publication_id
+             AND a.project_id = p.project_id
+            WHERE p.publication_id = ?
+              AND p.project_id = 'RP-PROJ-001'
+            """,
+            [publication_id],
         ).fetchone()
-        member_columns = {
-            row[1]
-            for row in connection.execute("PRAGMA table_info(v_member_load)").fetchall()
+        legacy_views = {
+            row[0]
+            for row in connection.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'view' AND name IN ('v_member_load', 'v_project_team')
+                """
+            ).fetchall()
         }
 
-    assert member_row == ("WD100001", "Alex Example", "Platform", 5, 0.6, 1)
+    assert member_row == ("WD100001", "Alex Example", "Engineer", "7", 0.6, 1)
     assert project_row == (
         "RP-PROJ-001",
         "Project Atlas",
-        "ATLAS",
-        "2026-12-31",
+        "active",
+        2,
         "WD100001",
-        "Alex Example",
         0.6,
     )
-    assert "skills" not in member_columns
+    assert legacy_views == set()
 
 
 def test_current_state_publication_freshness_is_decoupled_from_legacy_source_sla(

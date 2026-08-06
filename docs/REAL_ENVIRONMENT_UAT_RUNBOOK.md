@@ -98,8 +98,11 @@ the rehearsal passes and the operator explicitly approves the live `pm init`.
 
 For upgrade-compatibility checks on the existing local database, follow the
 same isolated-copy rules (copy from the backup manifest, run `pm init` on the
-copy, check views `v_member_load`/`v_project_team`, operation tables, token
-columns, and aggregate counts before/after).
+copy, check the canonical current-state staffing publication tables
+`current_state_staffing_publications`, `current_state_staffing_members`,
+`current_state_staffing_projects`, `current_state_staffing_assignments`, and
+`current_state_staffing_member_loads`, plus operation tables, token columns,
+and aggregate counts before/after).
 
 ## Validate before connector access
 

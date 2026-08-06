@@ -556,7 +556,10 @@ def test_dashboard_project_snapshots_uses_shared_executor(isolated_db) -> None:
     response = client.get("/api/project-snapshots?project_id=project-atlas-990001&health=amber")
 
     assert response.status_code == 200
-    assert response.headers["X-DM-Interface-Contract"] == "legacy-result-projection"
+    assert (
+        response.headers["X-DM-Interface-Contract"]
+        == "project-snapshot-list-projection-v1"
+    )
     payload = response.get_json()
     assert payload[0]["id"] == "snapshot-1"
 
