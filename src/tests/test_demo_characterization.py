@@ -7,15 +7,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from contract_coverage_test_helpers import publish_contract_coverage_from_legacy
-
 import pytest
 
-from current_state_staffing_test_helpers import publish_current_state_staffing_from_legacy
-from pm_agent.attention import AttentionService
 from pm_agent.config import settings
+from pm_agent.contract_coverage import read_model as contract_coverage_read_model
+from pm_agent.current_state_staffing import read_model as current_state_staffing_read_model
 from pm_agent.dashboard import server as dashboard_server
 from pm_agent.database import repository
+from pm_agent.sample_data.demo_publications import (
+    publish_current_state_staffing_from_legacy_snapshot,
+)
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.hiref_management import HirefManagementService
 from pm_agent.use_cases.service import UseCaseRequest
@@ -68,15 +69,6 @@ def demo_db(
     shutil.copy2(built_demo_db, db_path)
     monkeypatch.setattr(settings, "database_path", str(db_path))
     monkeypatch.setattr(dashboard_server, "DB", str(db_path))
-    publish_current_state_staffing_from_legacy(
-        db_path,
-        package_id="package-demo-current-state-r1",
-    )
-    attention_preview = AttentionService().preview_reconciliation(actor="demo-fixture")
-    AttentionService().confirm(
-        operation_id=attention_preview["operation_id"],
-        confirmation_token=attention_preview["confirmation_token"],
-    )
     return db_path
 
 
@@ -144,6 +136,76 @@ def test_load_sample_data_honors_db_argument_without_database_path_env(
         text=True,
     )
     assert _count(db_path, "plan_versions") == 2
+
+
+def test_raw_demo_build_publishes_dashboard_canonical_artifacts(
+    built_demo_db: Path,
+) -> None:
+    staffing = current_state_staffing_read_model.current_publication_freshness(
+        db_path=built_demo_db
+    )
+    contract = contract_coverage_read_model.current_publication_freshness(
+        db_path=built_demo_db
+    )
+
+    assert staffing["state"] == "fresh"
+    assert staffing["coverage_state"] == "complete"
+    assert staffing["publication_id"]
+    assert staffing["effective_year"] == 2026
+    assert staffing["effective_month"] == 8
+
+    assert contract["state"] == "partial"
+    assert contract["coverage_state"] == "partial"
+    assert contract["publication_id"]
+    assert contract["coverage"]["missing_record_count"] == 1
+
+
+def test_current_state_demo_publication_helper_recovers_retryable_session(
+    built_demo_db: Path,
+    tmp_path: Path,
+) -> None:
+    recovery_db = tmp_path / "retryable-publication.db"
+    shutil.copy2(built_demo_db, recovery_db)
+    with sqlite3.connect(recovery_db) as connection:
+        session_id = connection.execute(
+            """
+            SELECT session_id
+            FROM current_state_staffing_import_sessions
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ).fetchone()[0]
+        for table in (
+            "current_state_staffing_member_loads",
+            "current_state_staffing_assignments",
+            "current_state_staffing_projects",
+            "current_state_staffing_members",
+            "current_state_staffing_publications",
+        ):
+            connection.execute(f'DELETE FROM "{table}"')
+        connection.execute(
+            """
+            UPDATE current_state_staffing_import_sessions
+            SET status = 'previewed',
+                completed_at = '',
+                failure_code = '',
+                report_json = '{}'
+            WHERE session_id = ?
+            """,
+            [session_id],
+        )
+        connection.commit()
+
+    result = publish_current_state_staffing_from_legacy_snapshot(recovery_db)
+
+    assert result["status"] == "completed"
+    assert _count(recovery_db, "current_state_staffing_publications") == 1
+    assert (
+        current_state_staffing_read_model.current_publication_freshness(db_path=recovery_db)[
+            "state"
+        ]
+        == "fresh"
+    )
 
 
 def test_demo_identity_is_explicitly_synthetic(demo_db: Path) -> None:
@@ -330,6 +392,19 @@ def test_demo_replay_is_idempotent(built_demo_db: Path, tmp_path: Path) -> None:
         "weekly_brief_snapshot_operations",
         "workforce_planning_import_sessions",
         "resource_capacity_import_sessions",
+        "current_state_staffing_import_sessions",
+        "current_state_staffing_import_attempts",
+        "current_state_staffing_import_runs",
+        "current_state_staffing_publications",
+        "current_state_staffing_members",
+        "current_state_staffing_projects",
+        "current_state_staffing_assignments",
+        "current_state_staffing_member_loads",
+        "contract_coverage_import_sessions",
+        "contract_coverage_import_attempts",
+        "contract_coverage_import_runs",
+        "contract_coverage_publications",
+        "contract_coverage_members",
         "project_health_reimport_sessions",
         "milestone_import_operations",
         "source_evidence_runs",
@@ -382,15 +457,41 @@ def test_demo_use_case_catalog_and_project_list_semantics(demo_db: Path) -> None
     } <= use_case_ids
 
 
-def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
+def test_demo_dashboard_staffing_routes_are_ready_without_helper(
+    demo_db: Path,
+) -> None:
     client = dashboard_server.app.test_client()
     summary = client.get("/api/summary")
+    projects = client.get("/api/projects")
+    employees = client.get("/api/employees")
     health = client.get("/api/project-health")
     assert summary.status_code == 200
+    assert projects.status_code == 200
+    assert employees.status_code == 200
     assert health.status_code == 200
     assert summary.get_json()["total_staff"] == 3
     assert summary.get_json()["current_state_staffing_state"] == "known"
     assert summary.get_json()["current_state_staffing_freshness_state"] == "fresh"
+    assert summary.get_json()["contract_coverage_freshness_state"] == "partial"
+    project_payload = projects.get_json()
+    assert [item["id"] for item in project_payload] == [
+        "project-synthetic-atlas",
+        "project-synthetic-beacon",
+    ]
+    assert all(item["current_state_staffing_state"] == "known" for item in project_payload)
+    assert all(item["current_state_staffing_freshness_state"] == "fresh" for item in project_payload)
+    assert {item["id"]: item["team_size"] for item in project_payload} == {
+        "project-synthetic-atlas": 2,
+        "project-synthetic-beacon": 1,
+    }
+    employee_payload = employees.get_json()
+    assert [item["id"] for item in employee_payload] == [
+        "member-synthetic-001",
+        "member-synthetic-002",
+        "member-synthetic-003",
+    ]
+    assert all(item["current_state_staffing_state"] == "known" for item in employee_payload)
+    assert all(item["current_state_staffing_freshness_state"] == "fresh" for item in employee_payload)
     health_payload = health.get_json()
     assert isinstance(health_payload, list)
     assert health_payload
@@ -401,10 +502,6 @@ def test_demo_dashboard_summary_and_health_are_offline(demo_db: Path) -> None:
 
 
 def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) -> None:
-    publish_contract_coverage_from_legacy(
-        demo_db,
-        package_id="package-demo-contract-coverage-r1",
-    )
     summary = HirefManagementService().summary(days=180)
     assert summary.success is True
     stats = summary.data["summary"]

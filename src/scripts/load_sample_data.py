@@ -4,14 +4,17 @@
 The default build follows the versioned clean re-import path from an empty
 database: bootstrap, workforce planning import, resource capacity import,
 board registration (data prerequisite of the IP-033 entry), deterministic
-synthetic evidence seeding, canonical Milestone import, Project Health
-re-import (derivation + seven-dimension assessment), Delivery Attention
-reconciliation, and a confirmed Weekly Brief v2 snapshot.  Milestone and
+synthetic evidence seeding, canonical current-state staffing publication,
+canonical contract-coverage publication, canonical Milestone import, Project
+Health re-import (derivation + seven-dimension assessment), Delivery Attention
+reconciliation, and a confirmed Weekly Brief v2 snapshot. Milestone and
 evidence data precede the assessment so the demo shows real dimension states
-instead of an all-`unknown`/`not_available` database.
+instead of an all-`unknown`/`not_available` database, and the published demo DB
+is directly usable by the merged Dashboard staffing / HIREF readers.
 
 ``--replay`` re-runs only the idempotent chain on an existing database and
-must not create duplicate assessments, attention items, or snapshots.
+must not create duplicate publications, assessments, attention items, or
+snapshots.
 """
 
 from __future__ import annotations
@@ -180,6 +183,22 @@ def _capture_weekly_brief(db_path: Path) -> None:
         print(f"Weekly Brief v2 snapshot: {preview['status']}")
 
 
+def _publish_dashboard_publications(db_path: Path) -> None:
+    from pm_agent.sample_data.demo_publications import (
+        publish_demo_dashboard_publications,
+    )
+
+    results = publish_demo_dashboard_publications(db_path)
+    print(
+        "Current-state staffing publication:"
+        f" {results['current_state_staffing']['status']}"
+    )
+    print(
+        "Contract-coverage publication:"
+        f" {results['contract_coverage']['status']}"
+    )
+
+
 def _next_steps(db_path: Path) -> None:
     print()
     print(f"Demo DB ready: {db_path}")
@@ -247,6 +266,7 @@ def main() -> None:
             file_path=file_path,
         )
 
+    _publish_dashboard_publications(db_path)
     _reconcile_attention(db_path)
     _capture_weekly_brief(db_path)
     _next_steps(db_path)

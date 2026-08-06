@@ -9,8 +9,8 @@ branch for local review. Nothing is pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-036 BATCH D IS OWNER-ACCEPTED LOCALLY; THE PREVIOUSLY COMMITTED DASHBOARD CAPABILITY ROLLOUT FROM f773d84 IS NOW MERGED INTO THIS WORKBOOK BRANCH FOR LOCAL REVIEW; NOTHING IS PUSHED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE DASHBOARD ROLLOUT IS NOW MERGED LOCALLY INTO THIS WORKBOOK BRANCH AND REQUIRES BRANCH-LOCAL VALIDATION / REVIEW BEFORE ANY PUSH OR FOLLOW-ON SLICE`
+Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS NOW IMPLEMENTED LOCALLY SO THE SUPPORTED demo build publishes canonical current-state staffing and contract-coverage artifacts; BATCH B / C HAVE NOT STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT WAS LEFT UNCHANGED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A FOCUSED VALIDATION AND READ-ONLY REVIEW ARE COMPLETE LOCALLY; STOP FOR OWNER REVIEW BEFORE ANY BATCH B / C WORK; NOTHING IS PUSHED`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1034,6 +1034,104 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-06 — IP-037 Batch A synthetic demo pipeline alignment implemented locally
+
+- Implemented only the approved Batch A runtime/test slice for the synthetic
+  demo pipeline:
+  - added `src/pm_agent/sample_data/demo_publications.py` plus
+    `src/pm_agent/sample_data/__init__.py` as the supported sample-data/demo
+    helper boundary that builds canonical current-state staffing and canonical
+    contract-coverage packages from the already-seeded synthetic demo tables and
+    publishes them through the owning capability preview/confirm contracts;
+  - updated `src/scripts/load_sample_data.py` so the supported demo build path
+    now publishes those two canonical artifacts before Attention reconciliation
+    and Weekly Brief capture, keeping the runtime on approved capability
+    contracts instead of test-only patch-up behavior;
+  - updated `src/tests/test_demo_characterization.py` so raw-demo
+    characterization no longer patches the built DB with post-build helper
+    publications, now proves `/api/summary`, `/api/projects`, and
+    `/api/employees` work directly from the supported build output, extends
+    replay idempotency coverage to the canonical publication tables, and adds a
+    focused retryable-session recovery regression for the new publication helper;
+  - repointed `src/current_state_staffing_test_helpers.py` and
+    `src/contract_coverage_test_helpers.py` to the shared sample-data helper so
+    tests reuse the same package-building logic without making the test fixture
+    itself the runtime source of truth;
+  - made the minimal directly related operator/demo note update in
+    `src/sample-data/README.md` so the documented Batch A pipeline order now
+    includes canonical staffing/contract-coverage publication and states that a
+    freshly built raw demo DB is directly usable by the merged Dashboard
+    staffing / HIREF readers.
+- Behavior/result:
+  - a sample DB generated through the supported `load_sample_data.py` build path
+    now publishes current-state staffing as `known` / `fresh` for the merged
+    Dashboard staffing summary/team/project readers without a test helper patch;
+  - the same raw build now publishes canonical contract-coverage facts for the
+    merged Dashboard HIREF/continuity readers, while intentionally preserving
+    the synthetic partial-coverage semantics (for example, member 003 remains a
+    real missing-contract demo case, so contract freshness stays `partial`
+    rather than being guessed complete);
+  - intentionally retained Project Health `unknown` / `not_available` demo
+    states remain unchanged.
+- Validation evidence:
+  - focused Batch A regression passed:
+    `src/.venv/bin/python -m pytest src/tests/test_demo_characterization.py src/tests/test_attention_center.py src/tests/test_hiref_workflow.py`
+    → `26 passed`;
+  - targeted lint passed:
+    `src/.venv/bin/python -m ruff check src/pm_agent/sample_data/demo_publications.py src/current_state_staffing_test_helpers.py src/contract_coverage_test_helpers.py src/scripts/load_sample_data.py src/tests/test_demo_characterization.py`
+    → `All checks passed!`.
+- Read-only review evidence:
+  - an independent code-review pass first found one accepted Batch A defect: the
+    new demo publication helper rejected `retryable` preview sessions, which
+    would have blocked replay recovery after an interrupted preview/failed
+    publication;
+  - corrected that recovery gap in the helper and added focused regression
+    coverage;
+  - a second independent code-review pass reported no remaining significant
+    issues in the code changes themselves.
+- Working-tree/data boundary decision:
+  - `src/sample-data/demo/sample_pm.db` was already a user-owned dirty working
+    tree artifact at the start of this turn and was intentionally not
+    overwritten; Batch A validation used freshly built temporary DB targets
+    instead of mutating that file.
+- Commit / push status: no commit and no push were performed. Exact next
+  recommended action: owner review this bounded Batch A working tree; if
+  accepted, decide separately whether to regenerate the tracked sample DB
+  artifact and/or authorize IP-037 Batch B. Do not start Batch B / C
+  automatically.
+
+### 2026-08-06 — Owner approved phased dashboard synthetic demo alignment plan
+
+- Investigated the sample DB-backed Dashboard and confirmed two distinct issues:
+  - the raw synthetic demo build does not publish the canonical
+    current-state-staffing or contract-coverage artifacts that the merged
+    Dashboard legacy surfaces now read, so `/api/summary`, `/api/projects`,
+    `/api/employees`, and HIREF-derived rollups legitimately return
+    `*_publication_not_found`, `unknown`, or `null` even though the underlying
+    demo tables contain data;
+  - the Dashboard presentation layer currently renders some `null` values
+    directly instead of converting them to a display-safe placeholder such as
+    `—` or `Unknown`.
+- The investigation also confirmed that not every `unknown` in the synthetic
+  demo is a defect: the retained Project Health sample intentionally keeps some
+  dimensions at `unknown` / `not_available`, and that evidence-preserving
+  semantics must remain unchanged.
+- Recorded the owner-approved follow-on implementation pack
+  `implementation-packs/IP-037_DASHBOARD_SYNTHETIC_DEMO_ALIGNMENT.md`. It
+  freezes three ordered batches only:
+  - Batch A: synthetic demo pipeline alignment plus raw-demo characterization;
+  - Batch B: legacy Dashboard null-safe rendering without changing backend
+    freshness/partial semantics;
+  - Batch C: documentation and consistency cleanup after A/B land.
+- The approved pack explicitly excludes a dashboard architecture split, live
+  connector activity, new business semantics, Project Health backfill, broad
+  HIREF redesign, or any push/release/deployment action.
+- Commit / push status: this session adds documentation only (`PROGRESS.md`,
+  `implementation-packs/INDEX.md`, and the new IP-037 pack). No runtime, data,
+  schema, or connector behavior changed, and nothing was pushed.
+- Exact next recommended action: begin Batch A only from the approved IP-037
+  pack; do not combine Batch B/C or infer a broader dashboard redesign.
+
 ### 2026-08-06 — Dashboard rollout merged into workbook branch locally
 
 - Cherry-picked the committed dashboard rollout `f773d84` from
@@ -1051,7 +1149,12 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   `src/tests/test_dashboard_capability_rollout.py`,
   `src/tests/test_weekly_brief_shared_interface.py`, and
   `src/tests/test_unified_use_case_contract.py`.
-- Commit status: the cherry-pick is being completed locally on this workbook
+- Post-merge full validation also passed on this workbook branch: `make validate`
+  completed successfully with repository-boundary, synthetic-sample,
+  documented-use-case, runtime, repository-tool, Ruff, compile, diff-check, and
+  package-build checks; runtime tests passed `464`, repository-tool tests passed
+  `34` with `19` subtests, and release validation reported `PASSED`.
+- Commit status: the dashboard rollout is now committed locally on this workbook
   branch; no push has been performed.
 
 ### 2026-08-06 — Owner accepted IP-036 Batch D

@@ -30,8 +30,8 @@ Build the demo database from a clean database:
 PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --force
 ```
 
-An idempotent re-run on an existing demo database (no duplicate assessments,
-attention items, or snapshots):
+An idempotent re-run on an existing demo database (no duplicate publications,
+assessments, attention items, or snapshots):
 
 ```bash
 PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay
@@ -39,11 +39,13 @@ PYTHONPATH=src src/.venv/bin/python src/scripts/load_sample_data.py --replay
 
 The pipeline runs, in order: bootstrap, versioned workforce planning import,
 versioned resource capacity import, board registration, deterministic
-synthetic evidence seeding, canonical Milestone import, Project Health
-re-import (canonical derivation plus seven-dimension assessment through the
-IP-033 entry), Delivery Attention reconciliation, and a confirmed Weekly
-Brief v2 snapshot.  Milestone and evidence data precede the assessment so the
-demo shows real dimension states.
+synthetic evidence seeding, canonical current-state staffing publication,
+canonical contract-coverage publication, canonical Milestone import, Project
+Health re-import (canonical derivation plus seven-dimension assessment through
+the IP-033 entry), Delivery Attention reconciliation, and a confirmed Weekly
+Brief v2 snapshot. Milestone and evidence data precede the assessment so the
+demo shows real dimension states, and the resulting raw sample DB is directly
+usable by the merged Dashboard staffing / HIREF readers.
 
 After a build, these commands return non-empty, contract-compliant results
 for the same synthetic demo database:
