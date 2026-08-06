@@ -93,7 +93,10 @@ snapshot date, per the event-window contract.
 HIREF / contract-continuity demo states: member 001 has a current contract
 plus a registered renewal, member 002 is expiring within 60 days without a
 renewal (critical), member 003 has no current contract (missing), and one
-HIREF slot is free with an open staffing placeholder.  `pm hiref summary`,
+HIREF slot is free with an open staffing placeholder.  The supported readers
+now keep those as two distinct states: the missing member remains a HIREF alert,
+while the free slot still counts as reusable capacity because its end date does
+not match the missing member's known contract end date. `pm hiref summary`,
 `pm hiref review`, `pm hiref slots`, `pm hiref placeholders`, and
 `contract-continuity-review` all return non-empty, contract-compliant results.
 

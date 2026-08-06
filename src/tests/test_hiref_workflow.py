@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
@@ -55,7 +56,7 @@ def _seed_hiref_scenario(db_path: Path) -> None:
             [
                 ("990101", "990101", "Alex Example", "STFTE", "HIREF-ATLAS-001", "", (today + timedelta(days=30)).isoformat()),
                 ("990102", "990102", "Blair Example", "STFTE", "HIREF-CEDAR-001", "HIREF-CEDAR-NEXT", (today + timedelta(days=50)).isoformat()),
-                ("990103", "990103", "Casey Example", "STFTE", "", "", ""),
+                ("990103", "990103", "Casey Example", "STFTE", "", "", (today + timedelta(days=10)).isoformat()),
             ],
         )
         con.executemany(
@@ -138,6 +139,43 @@ def _seed_hiref_scenario(db_path: Path) -> None:
     )
 
 
+def _mark_contract_coverage_resource_type_partial(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as con:
+        report = json.loads(
+            con.execute(
+                """
+                SELECT report_json
+                FROM contract_coverage_publications
+                WHERE is_current = 1
+                LIMIT 1
+                """
+            ).fetchone()[0]
+        )
+        report["coverage"]["member_resource_type_state"] = "partial"
+        report["coverage"]["missing_record_count"] = 2
+        con.execute(
+            """
+            UPDATE contract_coverage_publications
+            SET report_json = ?
+            WHERE is_current = 1
+            """,
+            [json.dumps(report)],
+        )
+        con.commit()
+
+
+def _mark_contract_coverage_timestamp_invalid(db_path: Path) -> None:
+    with sqlite3.connect(db_path) as con:
+        con.execute(
+            """
+            UPDATE contract_coverage_publications
+            SET published_at = ''
+            WHERE is_current = 1
+            """
+        )
+        con.commit()
+
+
 def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
     isolated_db: Path,
 ) -> None:
@@ -147,15 +185,15 @@ def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
     assert summary.success is True
     assert summary.data["freshness"]["state"] == "partial"
     assert summary.data["summary"] == {
-        "active_stfte": None,
+        "active_stfte": 3,
         "review_window_days": 90,
-        "missing_current_hiref": None,
-        "expiring_without_next": None,
-        "expiring_with_next": None,
-        "project_mismatches": None,
-        "free_slots": None,
-        "assigned_slots": None,
-        "reserved_slots": None,
+        "missing_current_hiref": 1,
+        "expiring_without_next": 1,
+        "expiring_with_next": 1,
+        "project_mismatches": 1,
+        "free_slots": 1,
+        "assigned_slots": 2,
+        "reserved_slots": 1,
         "open_placeholders": 1,
         "unregistered_placeholder_slots": 1,
     }
@@ -170,10 +208,14 @@ def test_hiref_management_service_surfaces_expiry_slot_and_placeholder_risks(
     assert missing["urgency"] == "critical"
 
     slots = hiref_management_service.slots(free_only=True).data["rows"]
-    assert slots == []
+    assert [row["id"] for row in slots] == ["HIREF-FREE-001"]
     all_slots = hiref_management_service.slots(free_only=False).data["rows"]
     free_slot = next(row for row in all_slots if row["id"] == "HIREF-FREE-001")
-    assert free_slot["occupancy_status"] == "unknown"
+    assert free_slot["occupancy_status"] == "free"
+    assert free_slot["occupancy_status_reason"] == (
+        "hiref_slot_unassigned_and_excluded_from_missing_current_hiref_candidates"
+    )
+    assert free_slot["missing_current_hiref_candidate_count"] == 0
 
     placeholders = hiref_management_service.placeholders().data["rows"]
     assert len(placeholders) == 1
@@ -213,8 +255,15 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
     assert response.headers["X-DM-Interface-Contract"] == "legacy-result-projection"
     payload = response.get_json()
     assert payload["contract_coverage_freshness_state"] == "partial"
-    assert payload["next_covered_count"] is None
-    assert payload["mismatch_count"] is None
+    assert payload["free_count"] == 1
+    assert payload["assigned_count"] == 3
+    assert payload["next_covered_count"] == 1
+    assert payload["mismatch_count"] == 1
+
+    summary_response = client.get("/api/summary")
+    summary_payload = summary_response.get_json()
+    assert summary_payload["hiref_alerts_60d"] == 2
+    assert summary_payload["free_hiref_slots"] == 1
 
     atlas_slot = next(item for item in payload["all_hiref"] if item["id"] == "HIREF-ATLAS-001")
     assert atlas_slot["project_alignment_status"] == "mismatch"
@@ -231,6 +280,112 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
 
     alex = next(item for item in payload["expiring_staff"] if item["name"] == "Alex Example")
     assert alex["project_alignment_status"] == "mismatch"
+
+
+def test_hiref_counts_stay_suppressed_for_non_contract_partial_coverage(
+    isolated_db: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_hiref_scenario(isolated_db)
+    _mark_contract_coverage_resource_type_partial(isolated_db)
+    monkeypatch.setattr(dashboard_server, "DB", str(isolated_db))
+
+    summary = hiref_management_service.summary(days=90)
+    assert summary.success is True
+    assert summary.data["freshness"]["state"] == "partial"
+    assert summary.data["summary"]["active_stfte"] is None
+    assert summary.data["summary"]["missing_current_hiref"] is None
+    assert summary.data["summary"]["free_slots"] is None
+
+    slots = hiref_management_service.slots(free_only=True).data["rows"]
+    assert slots == []
+
+    continuity = dashboard_server.app.test_client().post(
+        "/api/tool/query/contract-continuity-review",
+        json={"parameters": {}},
+    )
+    assert continuity.status_code == 200
+    continuity_payload = continuity.get_json()
+    assert continuity_payload["data"]["summary"]["reviewed_count"] is None
+    assert continuity_payload["data"]["summary"]["attention_count"] is None
+
+    summary_response = dashboard_server.app.test_client().get("/api/summary")
+    assert summary_response.get_json()["hiref_alerts_60d"] is None
+    assert summary_response.get_json()["free_hiref_slots"] is None
+
+
+def test_hiref_counts_stay_suppressed_for_timestamp_invalid_partial_coverage(
+    isolated_db: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_hiref_scenario(isolated_db)
+    _mark_contract_coverage_timestamp_invalid(isolated_db)
+    monkeypatch.setattr(dashboard_server, "DB", str(isolated_db))
+
+    summary = hiref_management_service.summary(days=90)
+    assert summary.success is True
+    assert summary.data["freshness"]["state"] == "partial"
+    assert summary.data["freshness"]["observed_at"] == ""
+    assert summary.data["summary"]["active_stfte"] is None
+    assert summary.data["summary"]["missing_current_hiref"] is None
+    assert summary.data["summary"]["free_slots"] is None
+
+    slots = hiref_management_service.slots(free_only=True).data["rows"]
+    assert slots == []
+
+    summary_response = dashboard_server.app.test_client().get("/api/summary")
+    assert summary_response.get_json()["hiref_alerts_60d"] is None
+    assert summary_response.get_json()["free_hiref_slots"] is None
+
+
+def test_hiref_slot_counts_stay_unknown_when_missing_member_can_claim_free_slot(
+    isolated_db: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_hiref_scenario(isolated_db)
+    with sqlite3.connect(isolated_db) as con:
+        slot_end_date = con.execute(
+            """
+            SELECT end_date
+            FROM hiref
+            WHERE id = 'HIREF-FREE-001'
+            """
+        ).fetchone()[0]
+        con.execute(
+            """
+            UPDATE employees
+            SET billing_end_date = ?
+            WHERE id = '990103'
+            """,
+            [slot_end_date],
+        )
+        con.commit()
+    monkeypatch.setattr(dashboard_server, "DB", str(isolated_db))
+
+    summary = hiref_management_service.summary(days=90)
+    assert summary.success is True
+    assert summary.data["freshness"]["state"] == "partial"
+    assert summary.data["summary"]["missing_current_hiref"] == 1
+    assert summary.data["summary"]["free_slots"] is None
+    assert summary.data["summary"]["assigned_slots"] is None
+    assert summary.data["summary"]["reserved_slots"] is None
+
+    slots = hiref_management_service.slots(free_only=False).data["rows"]
+    free_slot = next(row for row in slots if row["id"] == "HIREF-FREE-001")
+    assert free_slot["occupancy_status"] == "unknown"
+    assert free_slot["occupancy_status_reason"] == (
+        "hiref_slot_unassigned_but_missing_current_hiref_candidate_exists"
+    )
+    assert free_slot["missing_current_hiref_candidate_member_ids"] == ["990103"]
+
+    free_only = hiref_management_service.slots(free_only=True).data["rows"]
+    assert free_only == []
+
+    client = dashboard_server.app.test_client()
+    assert client.get("/api/summary").get_json()["free_hiref_slots"] is None
+    hiref_payload = client.get("/api/hiref").get_json()
+    assert hiref_payload["free_count"] is None
+    assert hiref_payload["assigned_count"] is None
 
 
 def test_hiref_summary_keeps_missing_contract_publication_explicit(

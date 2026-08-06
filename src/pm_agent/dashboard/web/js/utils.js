@@ -32,6 +32,10 @@ function fmtNumber(value, digits) {
   var places = digits == null ? 0 : digits;
   return num.toFixed(places).replace(/\.0+$|(\.\d*[1-9])0+$/, '$1');
 }
+function displayValue(value, placeholder) {
+  if (value == null || value === '') return placeholder == null ? '—' : String(placeholder);
+  return String(value);
+}
 function humanizeKey(key) {
   if (!key) return '';
   return String(key)

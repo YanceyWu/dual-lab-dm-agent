@@ -68,10 +68,12 @@ var C = {
     + '</div>';
   },
   kpiCard: function(label, value, sub, variant) {
+    var renderedValue = displayValue(value, '—');
+    var renderedSub = displayValue(sub, '—');
     return '<div class="kpi-card ' + (variant||'') + '">'
-      + '<div class="kpi-label">' + label + '</div>'
-      + '<div class="kpi-val">' + value + '</div>'
-      + '<div class="kpi-sub">' + sub + '</div>'
+      + '<div class="kpi-label">' + esc(displayValue(label, '')) + '</div>'
+      + '<div class="kpi-val">' + esc(renderedValue) + '</div>'
+      + '<div class="kpi-sub">' + esc(renderedSub) + '</div>'
     + '</div>';
   },
   alertStrip: function(icon, msg, type) {

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, datetime
+from typing import Any
 
 from pm_agent.config import settings
 from pm_agent.rules.identity import slugify_text
@@ -15,6 +16,75 @@ def days_until(date_text: str | None) -> int | None:
         return (date.fromisoformat(value) - date.today()).days
     except ValueError:
         return None
+
+
+def _has_valid_publication_timestamp(freshness: dict[str, Any] | None) -> bool:
+    if not isinstance(freshness, dict):
+        return False
+    observed_at = freshness.get("observed_at")
+    if not observed_at:
+        return False
+    try:
+        datetime.fromisoformat(str(observed_at))
+    except ValueError:
+        return False
+    return True
+
+
+def contract_review_counts_available(freshness: dict[str, Any] | None) -> bool:
+    if not isinstance(freshness, dict):
+        return False
+    freshness_state = str(freshness.get("state") or "unknown")
+    if not _has_valid_publication_timestamp(freshness):
+        return False
+    if freshness_state in {"fresh", "stale"}:
+        return True
+    if freshness_state != "partial":
+        return False
+    coverage = freshness.get("coverage")
+    if not isinstance(coverage, dict):
+        return False
+    try:
+        missing_record_count = int(coverage.get("missing_record_count") or 0)
+    except (TypeError, ValueError):
+        return False
+    return (
+        str(coverage.get("member_roster_state") or "") == "complete"
+        and str(coverage.get("member_resource_type_state") or "") == "complete"
+        and str(coverage.get("member_contract_state") or "") == "partial"
+        and missing_record_count > 0
+    )
+
+
+def contract_slot_counts_available(
+    freshness: dict[str, Any] | None,
+    slot_rows: list[dict[str, Any]] | None = None,
+) -> bool:
+    if not contract_review_counts_available(freshness):
+        return False
+    freshness_state = str((freshness or {}).get("state") or "unknown")
+    if freshness_state in {"fresh", "stale"}:
+        return True
+    if freshness_state != "partial" or slot_rows is None:
+        return False
+    return not any(str(row.get("occupancy_status") or "") == "unknown" for row in slot_rows)
+
+
+def missing_current_hiref_member_can_claim_slot(
+    member: dict[str, Any],
+    slot: dict[str, Any],
+) -> bool:
+    if str(member.get("employee_status") or "") != "active":
+        return False
+    if str(member.get("resource_type") or "") != "STFTE":
+        return False
+    if str(member.get("current_hiref") or "").strip():
+        return False
+    member_end_date = str(member.get("billing_end_date") or "").strip()
+    slot_end_date = str(slot.get("end_date") or "").strip()
+    if not member_end_date or not slot_end_date:
+        return True
+    return member_end_date == slot_end_date
 
 
 def urgency(days: int | None) -> str:

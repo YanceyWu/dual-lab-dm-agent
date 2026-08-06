@@ -1,4 +1,8 @@
 var SectionOverview = {
+  _freshnessSubtitle: function(state, prefix) {
+    var normalized = state || 'unknown';
+    return prefix + ' ' + humanizeKey(normalized).toLowerCase();
+  },
   load: function() {
     var el = document.getElementById('overview-content');
     el.innerHTML = C.skeleton();
@@ -41,7 +45,24 @@ var SectionOverview = {
       var avgLoadHeadline = s.avg_load != null ? s.avg_load + '%' : 'Unknown';
       var avgLoadSubtitle = s.overloaded != null
         ? s.overloaded + ' staff overloaded'
-        : 'Current-state staffing ' + (s.current_state_staffing_freshness_state || 'unknown');
+        : SectionOverview._freshnessSubtitle(
+            s.current_state_staffing_freshness_state,
+            'Current-state staffing'
+          );
+      var hirefAlertsHeadline = s.hiref_alerts_60d != null ? s.hiref_alerts_60d : 'Unknown';
+      var hirefAlertsSubtitle = s.hiref_alerts_60d != null
+        ? 'expiring within 60 days'
+        : SectionOverview._freshnessSubtitle(
+            s.contract_coverage_freshness_state,
+            'Contract coverage'
+          );
+      var freeHirefHeadline = s.free_hiref_slots != null ? s.free_hiref_slots : 'Unknown';
+      var freeHirefSubtitle = s.free_hiref_slots != null
+        ? 'slots available'
+        : SectionOverview._freshnessSubtitle(
+            s.contract_coverage_freshness_state,
+            'Contract coverage'
+          );
       function distBar(count, color, label) {
         var w = total > 0 ? Math.round(count / total * 160) : 0;
         return '<div class="load-dist-row">'
@@ -57,8 +78,8 @@ var SectionOverview = {
           + C.kpiCard('Total Staff',     s.total_staff,        s.ltfte + ' LTFTE / ' + s.stfte + ' STFTE')
           + C.kpiCard('Active Projects', s.active_projects,    s.focus_projects + ' focus project(s)', 'blue')
           + C.kpiCard('Avg Team Load',   avgLoadHeadline,      avgLoadSubtitle, s.overloaded > 0 ? 'coral' : '')
-          + C.kpiCard('HIREF Alerts',    s.hiref_alerts_60d,   'expiring within 60 days', s.hiref_alerts_60d > 0 ? 'amber' : '')
-          + C.kpiCard('Free HIREF',      s.free_hiref_slots,   'slots available', 'info')
+          + C.kpiCard('HIREF Alerts',    hirefAlertsHeadline,  hirefAlertsSubtitle, s.hiref_alerts_60d > 0 ? 'amber' : '')
+          + C.kpiCard('Free HIREF',      freeHirefHeadline,    freeHirefSubtitle, 'info')
         + '</div>'
         + (alerts ? '<div class="card mb-4">' + alerts + '</div>' : '')
         + '<div class="two-col">'

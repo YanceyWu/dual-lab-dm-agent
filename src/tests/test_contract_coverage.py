@@ -238,6 +238,7 @@ def test_contract_coverage_publication_becomes_primary_for_hiref_member_reads(
     isolated_db: Path,
 ) -> None:
     _seed_legacy_hiref_state(isolated_db)
+    today = date.today()
 
     preview = service.preview_import(
         {
@@ -276,7 +277,7 @@ def test_contract_coverage_publication_becomes_primary_for_hiref_member_reads(
     assert member is not None
     assert member["contract_coverage_state"] == "known"
     assert member["current_hiref"] == ""
-    assert member["billing_end_date"] == ""
+    assert member["billing_end_date"] == (today + timedelta(days=30)).isoformat()
 
     review = HirefManagementService().review(days=90)
     assert review.success is True

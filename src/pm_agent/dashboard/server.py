@@ -27,6 +27,12 @@ from pm_agent.dashboard.write_operations import (
     create_sync_preview,
     finish_sync_operation,
 )
+from pm_agent.rules.hiref import (
+    contract_review_counts_available,
+    contract_slot_counts_available,
+    days_until,
+    hiref_urgency,
+)
 from pm_agent.use_cases import use_case_executor
 from pm_agent.use_cases.service import UseCaseRequest
 from pm_agent.weekly_brief.operations import confirm_capture, preview_capture
@@ -106,6 +112,26 @@ def _contract_coverage_publication_freshness() -> dict:
 
 def _contract_counts_available(freshness_state: str) -> bool:
     return freshness_state in {"fresh", "stale"}
+
+
+def _contract_review_counts_available_from_publication(
+    publication_freshness: dict,
+) -> bool:
+    return contract_review_counts_available(publication_freshness)
+
+
+def _contract_slot_counts_available_from_publication(
+    publication_freshness: dict,
+    slot_rows: list[dict] | None = None,
+) -> bool:
+    return contract_slot_counts_available(publication_freshness, slot_rows)
+
+
+def _is_hiref_alert(row: dict) -> bool:
+    return bool(row.get("current_hiref_missing")) or (
+        not row.get("next_hiref")
+        and row.get("urgency") in {"expired", "critical", "high", "medium"}
+    )
 
 
 def jl(text):
@@ -341,19 +367,26 @@ def summary():
         if member_coverage == "known" and freshness_state in {"fresh", "stale"}
         else None
     )
-    if _contract_counts_available(contract_freshness_state):
+    hiref_slots = repository.get_hiref_contracts()
+    if _contract_review_counts_available_from_publication(
+        contract_publication_freshness
+    ):
+        hiref_review_rows = repository.get_hiref_staff_review(days=60)
         hiref_60d = sum(
             1
-            for row in repository.get_hiref_staff_review(days=60)
-            if not row.get("current_hiref_missing")
-            and not row.get("next_hiref")
-            and row.get("urgency") in {"expired", "critical", "high", "medium"}
-        )
-        free_hiref = sum(
-            1 for row in repository.get_hiref_contracts() if row.get("is_free")
+            for row in hiref_review_rows
+            if _is_hiref_alert(row)
         )
     else:
         hiref_60d = None
+    if _contract_slot_counts_available_from_publication(
+        contract_publication_freshness,
+        hiref_slots,
+    ):
+        free_hiref = sum(
+            1 for row in hiref_slots if row.get("is_free")
+        )
+    else:
         free_hiref = None
     focus_proj    = c.execute("SELECT COUNT(*) FROM project_profiles WHERE is_focus=1").fetchone()[0]
     stfte_count   = c.execute("SELECT COUNT(*) FROM employees WHERE status='active' AND resource_type='STFTE'").fetchone()[0]
@@ -923,6 +956,10 @@ def hiref():
         contract_publication_freshness.get("state") or "unknown"
     )
     hiref_list = repository.get_hiref_contracts()
+    slot_counts_available = _contract_slot_counts_available_from_publication(
+        contract_publication_freshness,
+        hiref_list,
+    )
     expiring_list = repository.get_hiref_staff_review(days=180)
     for item in expiring_list:
         item["actual_project"] = item.get("actual_project_display") or "-"
@@ -932,17 +969,19 @@ def hiref():
         "total": len(hiref_list),
         "free_count": (
             sum(1 for h in hiref_list if h["is_free"])
-            if _contract_counts_available(contract_freshness_state)
+            if slot_counts_available
             else None
         ),
         "assigned_count": (
             sum(1 for h in hiref_list if not h["is_free"])
-            if _contract_counts_available(contract_freshness_state)
+            if slot_counts_available
             else None
         ),
         "next_covered_count": (
             sum(1 for h in expiring_list if h.get("next_hiref"))
-            if _contract_counts_available(contract_freshness_state)
+            if _contract_review_counts_available_from_publication(
+                contract_publication_freshness
+            )
             else None
         ),
         "mismatch_count": (
@@ -951,7 +990,9 @@ def hiref():
                 for h in expiring_list
                 if h.get("project_alignment_status") == "mismatch"
             )
-            if _contract_counts_available(contract_freshness_state)
+            if _contract_review_counts_available_from_publication(
+                contract_publication_freshness
+            )
             else None
         ),
         "contract_coverage_freshness_state": contract_freshness_state,

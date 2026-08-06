@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from pm_agent.database import repository
+from pm_agent.rules.hiref import (
+    contract_review_counts_available,
+    contract_slot_counts_available,
+)
 from pm_agent.use_cases.service import BaseService, ServiceRequest, ServiceResponse
 
 
@@ -15,7 +19,6 @@ class HirefManagementService(BaseService):
 
     def summary(self, days: int = 180) -> ServiceResponse:
         freshness = repository.get_contract_coverage_publication_freshness()
-        freshness_state = str(freshness.get("state") or "unknown")
         full_review = self._review_rows(days=None)
         review_rows = self._review_rows(days=days)
         slot_rows = self._slot_rows(free_only=False)
@@ -53,7 +56,7 @@ class HirefManagementService(BaseService):
                 if row.get("hiref_id") and not row["slot_registered"]
             ),
         }
-        if freshness_state not in {"fresh", "stale"}:
+        if not contract_review_counts_available(freshness):
             summary.update(
                 {
                     "active_stfte": None,
@@ -61,6 +64,11 @@ class HirefManagementService(BaseService):
                     "expiring_without_next": None,
                     "expiring_with_next": None,
                     "project_mismatches": None,
+                }
+            )
+        if not contract_slot_counts_available(freshness, slot_rows):
+            summary.update(
+                {
                     "free_slots": None,
                     "assigned_slots": None,
                     "reserved_slots": None,

@@ -473,6 +473,8 @@ def test_demo_dashboard_staffing_routes_are_ready_without_helper(
     assert summary.get_json()["current_state_staffing_state"] == "known"
     assert summary.get_json()["current_state_staffing_freshness_state"] == "fresh"
     assert summary.get_json()["contract_coverage_freshness_state"] == "partial"
+    assert summary.get_json()["hiref_alerts_60d"] == 2
+    assert summary.get_json()["free_hiref_slots"] == 1
     project_payload = projects.get_json()
     assert [item["id"] for item in project_payload] == [
         "project-synthetic-atlas",
@@ -506,11 +508,11 @@ def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) 
     assert summary.success is True
     stats = summary.data["summary"]
     assert summary.data["freshness"]["state"] == "partial"
-    assert stats["active_stfte"] is None
-    assert stats["missing_current_hiref"] is None
-    assert stats["expiring_without_next"] is None
-    assert stats["expiring_with_next"] is None
-    assert stats["free_slots"] is None
+    assert stats["active_stfte"] == 3
+    assert stats["missing_current_hiref"] == 1
+    assert stats["expiring_without_next"] == 1
+    assert stats["expiring_with_next"] == 1
+    assert stats["free_slots"] == 1
     assert stats["open_placeholders"] >= 1
 
     review = HirefManagementService().review(days=180)
@@ -520,7 +522,7 @@ def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) 
 
     slots = HirefManagementService().slots()
     assert slots.success is True
-    assert any(row["occupancy_status"] == "unknown" for row in slots.data["rows"])
+    assert any(row["occupancy_status"] == "free" for row in slots.data["rows"])
 
     placeholders = HirefManagementService().placeholders()
     assert placeholders.success is True
@@ -532,5 +534,6 @@ def test_demo_hiref_and_contract_continuity_show_multiple_states(demo_db: Path) 
     assert continuity.status == "success"
     assert continuity.freshness[0]["state"] == "partial"
     assert continuity.data["contracts"]
-    assert continuity.data["summary"]["attention_count"] is None
-    assert continuity.data["summary"]["reviewed_count"] is None
+    assert continuity.data["summary"]["reviewed_count"] == 3
+    assert continuity.data["summary"]["attention_count"] == 2
+    assert continuity.data["summary"]["critical_count"] == 2

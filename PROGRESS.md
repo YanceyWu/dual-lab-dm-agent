@@ -9,8 +9,8 @@ branch for local review. Nothing is pushed in this session.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS NOW IMPLEMENTED LOCALLY SO THE SUPPORTED demo build publishes canonical current-state staffing and contract-coverage artifacts; BATCH B / C HAVE NOT STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT WAS LEFT UNCHANGED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A FOCUSED VALIDATION AND READ-ONLY REVIEW ARE COMPLETE LOCALLY; STOP FOR OWNER REVIEW BEFORE ANY BATCH B / C WORK; NOTHING IS PUSHED`
+Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS COMMITTED LOCALLY AT 3fc1154; IP-037 BATCH B NULL-SAFE LEGACY DASHBOARD RENDERING REMAINS IMPLEMENTED LOCALLY IN THE WORKING TREE; A BOUNDED FOLLOW-ON HIREF PARTIAL-COVERAGE ALERT/FREE-SLOT COUNT FIX IS NOW ALSO IMPLEMENTED LOCALLY IN THE WORKING TREE; BATCH C HAS NOT STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B RENDERING PLUS THE FOLLOW-ON HIREF PARTIAL-COUNT FIX PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY AND AWAIT OWNER REVIEW / COMMIT DECISION; NOTHING IS PUSHED`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1033,6 +1033,139 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-06 — HIREF partial-coverage alert/count fix implemented locally
+
+- Implemented a bounded HIREF continuity/dashboard follow-on after the committed
+  Batch A demo alignment and the uncommitted Batch B rendering slice:
+  - updated `src/pm_agent/use_cases/hiref_management.py` so
+    `HirefManagementService.summary(...)` keeps **review-based** HIREF counts
+    available when contract-coverage freshness is `partial` **only** when the
+    roster and resource-type coverage remain complete, the publication timestamp
+    is valid, and the partial mode is an actual missing-contract gap on known
+    STFTE members;
+  - updated `src/pm_agent/use_cases/contract_continuity.py` so the structured
+    contract-continuity summary no longer suppresses `reviewed_count`,
+    `attention_count`, or `critical_count` for that supported partial-coverage
+    mode;
+  - updated `src/pm_agent/rules/hiref.py` and
+    `src/pm_agent/database/repository.py` so legacy HIREF slot occupancy can be
+    proven under the supported partial mode on a row-by-row basis: an unassigned
+    slot remains `free` only when no active STFTE member with missing
+    `current_hiref` can plausibly claim it, using the member-side known contract
+    end date as the exclusion fact; unresolved rows stay `unknown`;
+  - updated `src/pm_agent/dashboard/server.py` so `/api/summary` now counts
+    missing current HIREF as a real HIREF alert under the supported
+    partial-coverage mode, and `/api/hiref` plus the Overview free-slot KPI now
+    expose exact slot/free-capacity counts only when every legacy HIREF row has
+    a resolved occupancy state;
+  - extended `src/tests/test_hiref_workflow.py` and
+    `src/tests/test_demo_characterization.py`, plus
+    `src/tests/test_contract_coverage.py`, to prove the rebuilt synthetic demo
+    returns `hiref_alerts_60d = 2` and `free_hiref_slots = 1`, while still
+    suppressing slot counts for unsupported partial coverage or for unresolved
+    orphan-candidate rows.
+- Behavior/result:
+  - the canonical contract-coverage publication for the synthetic demo remains
+    explicitly `partial`;
+  - missing current HIREF on a known STFTE member is now treated as a real alert
+    in overview/continuity counts rather than a reason to blank the count;
+  - the system can now distinguish two partial-coverage outcomes:
+    independently provable free slots remain countable, while unresolved
+    orphan-candidate rows still suppress aggregate slot counts;
+  - broader partial states that could undercount the review population remain
+    suppressed and still surface as partial/unknown rather than precise-looking
+    numbers.
+- Validation evidence:
+  - focused regression passed:
+    `src/.venv/bin/python -m pytest src/tests/test_hiref_workflow.py src/tests/test_demo_characterization.py src/tests/test_unified_use_case_contract.py src/tests/test_contract_coverage.py`
+    → `54 passed`;
+  - changed Python files passed targeted Ruff:
+    `src/.venv/bin/python -m ruff check src/pm_agent/rules/hiref.py src/pm_agent/use_cases/hiref_management.py src/pm_agent/use_cases/contract_continuity.py src/pm_agent/database/repository.py src/pm_agent/dashboard/server.py src/tests/test_hiref_workflow.py src/tests/test_demo_characterization.py src/tests/test_contract_coverage.py`
+    → passed;
+  - the local dashboard server on port `5001` was restarted against
+    `/Users/yanceywu/.copilot/session-state/7a26b7e2-d1e5-432f-b11f-ecd37b72b96c/files/sample_pm.batch-a.db`
+    and verified live:
+    `/api/summary` → `contract_coverage_freshness_state=partial`,
+    `hiref_alerts_60d=2`, `free_hiref_slots=1`;
+    `/api/hiref` → `free_count=1`, `assigned_count=3`, `next_covered_count=1`.
+- Read-only review evidence:
+  - an independent code-review pass first identified an accepted gap: the initial
+    `partial` gate was too broad and could undercount when partial coverage came
+    from unknown resource types rather than missing current HIREF;
+  - follow-up reviews then identified two more accepted gaps: invalid timestamps
+    could still leak review counts, and free-slot counts could become
+    overconfident under partial coverage unless unresolved orphan-candidate rows
+    stayed explicit;
+  - the final fix now requires complete roster/resource-type coverage, a valid
+    publication timestamp, and an actual contract-gap shape before exposing
+    review-based counts; slot/free-capacity counts are re-enabled only when each
+    unassigned legacy HIREF row can be resolved as either provably free or still
+    unknown, and the new regressions passed for resource-type partial,
+    timestamp-invalid partial, and same-end-date orphan-candidate scenarios.
+- Retained risk / boundary:
+  - the synthetic demo still intentionally reports `contract_coverage_freshness_state=partial`;
+    this change does not convert partial coverage into `fresh`/`complete`, and it
+    does not widen into Batch C documentation cleanup or a broader dashboard
+    redesign;
+  - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
+    user-owned and was not overwritten.
+- Exact next recommended action:
+  - owner-review this bounded follow-on together with the already-uncommitted
+    Batch B rendering slice, then decide whether to commit the combined local
+    working-tree changes; do not start Batch C from this session state.
+- Commit / push status:
+  - Batch A remains committed locally as `3fc1154` (`Implement Batch A demo alignment`);
+  - Batch B rendering plus this HIREF partial-count fix are uncommitted local
+    working-tree changes;
+  - nothing is pushed.
+
+### 2026-08-06 — IP-037 Batch B null-safe legacy dashboard rendering implemented locally
+
+- Implemented only the approved Batch B legacy Dashboard rendering slice:
+  - added `displayValue(...)` in
+    `src/pm_agent/dashboard/web/js/utils.js` as the shared null/empty display
+    helper for legacy dashboard text rendering;
+  - updated `src/pm_agent/dashboard/web/js/components.js` so `C.kpiCard(...)`
+    no longer renders literal `null` / empty values and still preserves real
+    numeric zero values;
+  - updated `src/pm_agent/dashboard/web/js/section-overview.js` so the Overview
+    KPI cards render `Unknown` instead of literal `null` when Batch A/Bounded
+    backend freshness suppresses counts, while keeping explicit freshness context
+    such as `Current-state staffing unknown` or `Contract coverage partial`;
+  - updated `src/pm_agent/dashboard/web/js/section-hiref.js` so HIREF KPI cards
+    no longer render values such as `null`, `null assigned / null free`, or
+    other raw null strings when contract-coverage partial semantics suppress
+    summary counts; the page now shows `Unknown` plus the explicit
+    `Contract coverage partial` explanation instead of inventing numeric values;
+  - added focused dashboard rendering regression coverage in
+    `src/tests/test_dashboard_web_rendering.py` using a small Node-driven
+    browserless harness that loads the shipped dashboard JS and proves the
+    Overview / HIREF legacy renderers do not emit literal `null`, while still
+    preserving `0` as a meaningful displayed value.
+- Behavior/result:
+  - literal `null` values are now suppressed in the affected legacy KPI cards
+    and replaced with display-safe placeholders (`Unknown` or `—`);
+  - meaningful zero values remain visible as `0`;
+  - contract/staffing suppression still stays explicit through freshness and
+    coverage subtitles rather than being converted to guessed counts.
+- Validation evidence:
+  - focused Batch B regression plus Batch A guardrail passed:
+    `src/.venv/bin/python -m pytest src/tests/test_dashboard_web_rendering.py src/tests/test_demo_characterization.py`
+    → `13 passed`;
+  - changed JS files passed syntax validation:
+    `node --check src/pm_agent/dashboard/web/js/utils.js && node --check src/pm_agent/dashboard/web/js/components.js && node --check src/pm_agent/dashboard/web/js/section-overview.js && node --check src/pm_agent/dashboard/web/js/section-hiref.js`
+    → `All checks passed!`;
+  - new pytest file passed targeted Ruff:
+    `src/.venv/bin/python -m ruff check src/tests/test_dashboard_web_rendering.py`
+    → passed.
+- Read-only review evidence:
+  - independent review of the current Batch B diff reported no significant
+    issues in the reviewed changes.
+- Commit / push status:
+  - Batch A was committed locally as `3fc1154` (`Implement Batch A demo alignment`);
+  - Batch B is implemented locally in the working tree but not yet committed;
+  - nothing is pushed.
 
 ### 2026-08-06 — IP-037 Batch A synthetic demo pipeline alignment implemented locally
 

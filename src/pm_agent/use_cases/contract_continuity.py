@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pm_agent.database import repository
+from pm_agent.rules.hiref import contract_review_counts_available
 from pm_agent.use_cases.service import UseCaseRequest, UseCaseResult, new_execution_metadata
 
 RULE_VERSION = "contract-continuity-v1"
@@ -15,16 +16,15 @@ def execute_contract_continuity_review(request: UseCaseRequest) -> UseCaseResult
     publication = repository.get_contract_coverage_publication_freshness()
     freshness = [publication]
     risks = [row for row in rows if row.get("requires_action")]
-    freshness_state = str(publication.get("state") or "unknown")
     summary = {
-        "reviewed_count": len(rows) if freshness_state in {"fresh", "stale"} else None,
-        "attention_count": len(risks) if freshness_state in {"fresh", "stale"} else None,
+        "reviewed_count": len(rows) if contract_review_counts_available(publication) else None,
+        "attention_count": len(risks) if contract_review_counts_available(publication) else None,
         "critical_count": (
             sum(
                 row.get("urgency") in {"expired", "critical"} or row.get("current_hiref_missing")
                 for row in risks
             )
-            if freshness_state in {"fresh", "stale"}
+            if contract_review_counts_available(publication)
             else None
         ),
     }

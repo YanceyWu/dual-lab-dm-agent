@@ -27,6 +27,10 @@ from pm_agent.resource_intelligence.read_model import (
     get_effective_capacity_in_transaction,
 )
 from pm_agent.rules.hiref import days_until, hiref_urgency, project_alignment_status
+from pm_agent.rules.hiref import (
+    contract_review_counts_available,
+    missing_current_hiref_member_can_claim_slot,
+)
 from pm_agent.rules.identity import slugify_text
 
 
@@ -356,6 +360,8 @@ def _project_member_record(
                 or (current_member.get("resource_type") if current_member else "")
                 or ""
             )
+        if not billing_end_date:
+            billing_end_date = str(employee.get("billing_end_date") or "")
         result = {
             "id": str(employee["id"]),
             "wd_id": str(employee.get("wd_id") or employee["id"]),
@@ -704,6 +710,13 @@ def get_hiref_contracts() -> list[dict]:
     ]
     freshness = get_contract_coverage_publication_freshness()
     freshness_state = str(freshness.get("state") or "unknown")
+    missing_current_hiref_members = [
+        member
+        for member in members
+        if str(member.get("employee_status") or "") == "active"
+        and str(member.get("resource_type") or "") == "STFTE"
+        and not str(member.get("current_hiref") or "").strip()
+    ]
     with _conn() as con:
         if not _table_exists(con, "hiref"):
             return []
@@ -831,10 +844,36 @@ def get_hiref_contracts() -> list[dict]:
         item["actual_project_display"] = " / ".join(actual_project_names) if actual_project_names else "-"
         expiry_days = days_until(item.get("end_date"))
         occupancy_status = _hiref_occupancy_status(item)
-        if occupancy_status == "free" and freshness_state not in {"fresh", "stale"}:
-            occupancy_status = "unknown"
+        candidate_member_ids: list[str] = []
+        occupancy_reason = ""
+        if occupancy_status == "assigned":
+            occupancy_reason = "hiref_slot_claimed_by_current_hiref_link"
+        elif occupancy_status == "reserved_for_next":
+            occupancy_reason = "hiref_slot_claimed_by_next_hiref_link"
+        elif occupancy_status == "placeholder_reserved":
+            occupancy_reason = "hiref_slot_claimed_by_placeholder_link"
+        else:
+            if freshness_state in {"fresh", "stale"}:
+                occupancy_reason = "hiref_slot_unassigned_with_complete_contract_coverage"
+            elif contract_review_counts_available(freshness):
+                candidate_member_ids = [
+                    str(member.get("id") or "")
+                    for member in missing_current_hiref_members
+                    if missing_current_hiref_member_can_claim_slot(member, item)
+                ]
+                if candidate_member_ids:
+                    occupancy_status = "unknown"
+                    occupancy_reason = "hiref_slot_unassigned_but_missing_current_hiref_candidate_exists"
+                else:
+                    occupancy_reason = "hiref_slot_unassigned_and_excluded_from_missing_current_hiref_candidates"
+            else:
+                occupancy_status = "unknown"
+                occupancy_reason = "hiref_slot_unassigned_without_trusted_contract_coverage"
         item["days_until_expiry"] = expiry_days
         item["occupancy_status"] = occupancy_status
+        item["occupancy_status_reason"] = occupancy_reason
+        item["missing_current_hiref_candidate_member_ids"] = candidate_member_ids
+        item["missing_current_hiref_candidate_count"] = len(candidate_member_ids)
         item["is_free"] = occupancy_status == "free"
         item["has_next_hiref"] = bool(item.get("assigned_next_hiref"))
         item["has_reservation"] = item["has_next_hiref"] or occupancy_status in {
