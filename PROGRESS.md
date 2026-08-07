@@ -1039,6 +1039,36 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-07 — Copilot Chat interaction-memory design spec drafted and independently reviewed
+
+- Added `docs/superpowers/specs/2026-08-07-copilot-chat-memory-design.md` as a
+  bounded design-only spec for repo-scoped Copilot Chat interaction memory.
+- The approved design keeps GitHub Copilot Chat as the main entry and adds only
+  local preference, context, follow-up, and dialogue-strategy memory. It does
+  not authorize raw business-fact retention, cross-repo memory, arbitrary
+  prompt/rule scripting, or a second agent runtime.
+- The spec now explicitly defines:
+  - execution placement in the Copilot-facing interaction adapter rather than
+    the deterministic business executor;
+  - deterministic repo/project scope resolution and the explicit
+    `interaction_memory_scope_unknown` boundary;
+  - write-path dependence on stable host `project_id` / `conversation_id` /
+    `turn_id` identity, with a fail-closed no-write gate when that identity is
+    unavailable;
+  - sanitized storage rules, follow-up boundaries versus domain
+    `Action`/`Decision` memory, disabled/reset semantics, retention/expiry, and
+    clear/reset audit tombstoning.
+- Ran the required independent spec-review loop to approval after bounded
+  corrections for execution placement, scope identity, memory sanitization,
+  follow-up normalization, state semantics, and audit behavior. No TODO/TBD
+  placeholders remain.
+- No runtime, schema, test, package, connector, or real-data action was
+  performed for this batch. The next gate is user review of the written spec,
+  then a planning-only Slice A implementation plan if separately approved.
+- Other pre-existing working-tree changes remain user-owned and are outside this
+  design-doc batch. This batch is committed locally only and not pushed.
+
+
 ### 2026-08-07 — Owner accepted IP-038 Slice 1 and this session records the local batch commit
 
 - The owner completed review and accepted the bounded IP-038 Slice 1 result on
