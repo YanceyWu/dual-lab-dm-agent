@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 import textwrap
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB_JS = ROOT / "pm_agent" / "dashboard" / "web" / "js"
+
+
+def _node_executable_or_skip() -> str:
+    executable = shutil.which("node") or shutil.which("nodejs")
+    if executable is None:
+        pytest.skip("node runtime is required for dashboard web rendering checks")
+    return executable
 
 
 def test_legacy_dashboard_rendering_replaces_null_with_placeholders() -> None:
@@ -117,4 +127,4 @@ def test_legacy_dashboard_rendering_replaces_null_with_placeholders() -> None:
         }});
         """
     )
-    subprocess.run(["node", "-e", script], check=True, cwd=ROOT)
+    subprocess.run([_node_executable_or_skip(), "-e", script], check=True, cwd=ROOT)

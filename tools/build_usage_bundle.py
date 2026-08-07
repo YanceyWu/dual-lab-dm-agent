@@ -16,11 +16,17 @@ from typing import Iterable
 
 from validate_release import REPO_ROOT, build_package, package_version
 
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from pm_agent.dashboard.surface_manifest import (  # noqa: E402
+    PHASE1_LEGACY_DASHBOARD_TRIAL,
+    visible_tab_labels,
+)
+
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "dist" / "dm-usage-bundles"
 BUNDLE_MANIFEST = "bundle-manifest.json"
 
 ROOT_SOURCE_FILES = (
-    Path(".github/agents/delivery-manager.agent.md"),
     Path(".github/prompts/dm-workload.prompt.md"),
 )
 SRC_SOURCE_FILES = (
@@ -55,6 +61,8 @@ PROHIBITED_SRC_ENTRIES = {
     "tests",
     "sample-data",
 }
+PHASE1_LEGACY_PAGES = visible_tab_labels(PHASE1_LEGACY_DASHBOARD_TRIAL)
+PHASE1_LEGACY_PAGES_TEXT = ", ".join(PHASE1_LEGACY_PAGES)
 
 
 @dataclass(frozen=True)
@@ -270,6 +278,9 @@ This package is the **end-user local workspace** for Delivery Managers. It is
 trimmed for operation, not for development: no tests, architecture packs, or
 developer tooling are included.
 
+This bundle currently ships the **Phase 1 legacy Dashboard trial surface**. The
+dashboard intentionally exposes only these default pages: {PHASE1_LEGACY_PAGES_TEXT}.
+
 ## Included
 
 - the `Delivery Manager` Copilot workspace agent and instructions;
@@ -309,14 +320,17 @@ agent named `Delivery Manager`.
 
 1. `pm config validate`
 2. `pm connector validate --portable`
-3. Ask Copilot business questions through the `Delivery Manager` agent.
+3. `pm dashboard serve`
+4. Review the legacy Dashboard pages only: {PHASE1_LEGACY_PAGES_TEXT}
+5. Ask Copilot business questions through the `Delivery Manager` agent when
+   needed.
 
 Example prompts:
 
-- “下个月哪些同事还有容量？”
-- “项目 Atlas 当前有哪些需要管理层关注的问题？”
-- “未来 90 天有哪些 STFTE 的 HIREF 需要处理？”
-- “生成本周 DM brief。”
+- “当前哪些同事比较满载？”
+- “当前哪些同事还有可用容量？”
+- “项目 Atlas 当前状态如何？”
+- “未来 90 天哪些同事的 HIREF 即将到期？”
 
 ## Boundary
 
@@ -333,6 +347,9 @@ def build_bundle_runtime_readme(target: BundleTarget) -> str:
 This is the trimmed runtime workspace included in the {target.platform_label}
 Delivery Manager usage bundle. It is intended for **local operation**, not
 feature development.
+
+The default Dashboard trial surface is limited to the legacy pages:
+{PHASE1_LEGACY_PAGES_TEXT}.
 
 ## Install from the bundle root
 
@@ -353,8 +370,6 @@ pm version
 pm init
 pm config validate
 pm connector validate --portable
-pm tool list
-pm weekly-brief query
 pm dashboard serve
 ```
 
@@ -401,10 +416,12 @@ src/pm_agent/**/*.pyc
 
 
 def build_bundle_copilot_instructions() -> str:
-    return """# Delivery Manager usage workspace instructions
+    return f"""# Delivery Manager usage workspace instructions
 
 Use the workspace `Delivery Manager` custom agent for normal Delivery Manager
 operations. This bundle is an operator workspace, not a development repository.
+The bundled Phase 1 trial surface is the legacy Dashboard pages only:
+{PHASE1_LEGACY_PAGES_TEXT}.
 
 For DM operations:
 
@@ -423,6 +440,89 @@ For repository or source-code changes:
 - do not modify the runtime inside this bundle;
 - escalate the change back to the maintained development repository instead of
   editing this workspace as if it were a dev checkout.
+"""
+
+
+def build_bundle_delivery_manager_agent() -> str:
+    return f"""---
+name: Delivery Manager
+description: Operate the local Delivery Manager legacy Dashboard trial through approved deterministic commands.
+argument-hint: Ask about team workload, project status, HIREF, or the legacy dashboard.
+tools:
+  - execute/runInTerminal
+agents: []
+user-invocable: true
+disable-model-invocation: true
+target: vscode
+---
+
+# Delivery Manager operating agent
+
+Act as the user's Delivery Manager decision-support assistant for the bundled
+**Phase 1 legacy Dashboard trial**.
+
+The legacy Dashboard is the primary UI in this bundle. It currently exposes:
+{PHASE1_LEGACY_PAGES_TEXT}.
+
+Use the local `pm` commands as the authoritative source of facts. Deterministic
+code owns filtering, calculations, validation, freshness, and persistence. Do
+not inspect SQLite, configuration, credentials, raw exports, connector payloads,
+or human-formatted legacy CLI output.
+
+## Direct routing
+
+Route known requests directly. Do not run `pm tool list` or `describe` first
+when the mapping and required parameters are already clear.
+
+| User intent | Approved command |
+| --- | --- |
+| Current workload, current team capacity, or who may have room | `pm tool query team-workload-overview [--team "<exact team>"]` |
+| Legacy project status or project health | `pm tool query project-health-review [--project <exact-project-id>]` |
+| HIREF expiry or continuity risk | `pm tool query contract-continuity-review [--days <1-365>]` |
+| Validate bundle setup before using the dashboard | `pm config validate` then `pm connector validate --portable` |
+| Start or reopen the legacy Dashboard trial UI | `pm dashboard serve` |
+
+Ask only for missing decision-critical parameters. Do not invent an exact team,
+project ID, or time period. If a safe unfiltered query is supported and useful,
+run it instead of asking unnecessarily.
+
+## Legacy Dashboard workflow
+
+Use the dashboard itself as the primary operator surface for the full Phase 1
+legacy experience. In particular:
+
+- use the Overview, Projects, Team, HIREF, Monthly Plan, and Project Health
+  pages for the supported trial workflow;
+- if a user asks about the Projects list or Monthly Plan page specifically,
+  direct them back to the legacy Dashboard rather than inventing a hidden CLI
+  route;
+- if the dashboard appears empty or stale, use `pm config validate`,
+  `pm connector validate --portable`, and `pm dashboard serve` as the minimum
+  troubleshooting path before discussing unsupported surfaces.
+
+## Trial-surface boundary
+
+The bundled trial surface does **not** promote experimental or later-phase
+features. If the user asks about Management Attention, Action Follow-up, legacy
+Weekly DM brief, Weekly Brief v2, Attention Center, capacity heatmaps,
+execution review, layered health, connector review, or snapshots, state that
+those surfaces are outside the current Phase 1 bundle scope and return to the
+legacy Dashboard trial workflows.
+
+## Result handling
+
+Use the structured JSON result as the sole factual basis. State the conclusion
+first, then cite the material evidence, freshness, assumptions, warnings, and
+execution ID when returned.
+
+If status is `partial`, `unknown`, `unavailable`, `invalid`, or `failed`, say so
+plainly. Never reinterpret missing data as zero, healthy, available, or safe.
+Do not calculate authoritative availability, HIREF coverage, rankings, or
+health in prose.
+
+This agent is for operating the bundled trial product. If the user asks to
+modify source code, architecture, tests, or repository configuration, explain
+that they should switch to the maintained development repository.
 """
 
 
@@ -725,6 +825,10 @@ def stage_bundle_tree(
 
     write_text(bundle_dir / "README.md", build_bundle_root_readme(target))
     write_text(bundle_dir / ".gitignore", build_bundle_gitignore())
+    write_text(
+        bundle_dir / ".github/agents/delivery-manager.agent.md",
+        build_bundle_delivery_manager_agent(),
+    )
     write_text(
         bundle_dir / ".github/copilot-instructions.md",
         build_bundle_copilot_instructions(),

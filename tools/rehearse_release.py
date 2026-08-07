@@ -19,6 +19,7 @@ from pathlib import Path
 from validate_release import REPO_ROOT, build_package, package_version
 
 SAMPLE_DB = REPO_ROOT / "src/sample-data/demo/sample_pm.db"
+PRIOR_RUNTIME_BASELINE = "f1ed9557f99d054480cb379fe2f1d41b38504049"
 CORE_TABLES = (
     "employees",
     "projects",
@@ -208,7 +209,7 @@ def rehearse() -> None:
         workspace = Path(temp_dir)
         prior_runtime = workspace / "prior-runtime"
         archive = subprocess.run(
-            ["git", "archive", "8cb5f69dadb9b6653d82d0ad6d3b7c3585ed24eb"],
+            ["git", "archive", PRIOR_RUNTIME_BASELINE],
             check=True,
             cwd=REPO_ROOT,
             capture_output=True,

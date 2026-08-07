@@ -28,6 +28,7 @@ recoverable from Git history.
 | IP-032 | Phase 6 Weekly Brief v2 | Promoted as the local Phase 6 development baseline on 2026-08-01 | `implementation-packs/IP-032_PHASE_6_WEEKLY_BRIEF_V2.md` | `implementation-reports/IP-032_IMPLEMENTATION_REPORT.md` |
 | IP-033 | Phase 4 controlled assessment entry: import confirm runs the seven-dimension assessment and links it to the import audit | Owner-accepted on 2026-08-02 as a local development-baseline fix | `implementation-packs/IP-033_PHASE_4_ASSESSMENT_ENTRY.md` | none yet |
 | IP-037 | Dashboard synthetic demo alignment: canonical sample publication readiness plus null-safe legacy rendering | Owner-approved on 2026-08-06 for phased local follow-on work; runtime unchanged until Batch A starts | `implementation-packs/IP-037_DASHBOARD_SYNTHETIC_DEMO_ALIGNMENT.md` | none yet |
+| IP-038 | Phase 1 legacy Dashboard productization: stable external trial surface, visibility gating, later shell separation, and trial-bundle story narrowing | Owner-approved on 2026-08-07; current working tree limited to Slice 1 stable-surface implementation on `phase1-legacy-dashboard` | `implementation-packs/IP-038_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION.md` | none yet |
 
 ## Usability handoff (2026-08-02)
 

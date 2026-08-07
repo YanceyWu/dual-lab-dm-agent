@@ -13,15 +13,16 @@ import json
 import os
 import sqlite3
 from contextlib import redirect_stdout
-from datetime import datetime, date
+from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 from pm_agent.attention import AttentionService
 from pm_agent.config import get_database_path
 from pm_agent.connectors import jira as jira_connector
 from pm_agent.database import repository
+from pm_agent.dashboard.surface_manifest import surface_config_payload
 from pm_agent.dashboard.write_operations import (
     claim_sync_operation,
     create_sync_preview,
@@ -312,34 +313,18 @@ def int_arg(name, default=20, minimum=1, maximum=200):
         value = default
     return max(minimum, min(maximum, value))
 
-
-def days_until(date_str):
-    try:
-        return (date.fromisoformat(date_str) - date.today()).days
-    except (TypeError, ValueError):
-        return 9999
-
-
-def urgency(days):
-    if days <= 0:
-        return "expired"
-    if days <= 60:
-        return "critical"
-    if days <= 90:
-        return "high"
-    if days <= 180:
-        return "medium"
-    return "ok"
-
-
-def hiref_urgency(days, has_next_hiref=False):
-    if has_next_hiref:
-        return "ok"
-    return urgency(days)
-
 @app.route("/")
 def index():
     return send_from_directory(str(WEB_DIR), "index.html")
+
+
+@app.route("/dashboard-config.js")
+def dashboard_config():
+    payload = json.dumps(surface_config_payload(), ensure_ascii=False, sort_keys=True)
+    return Response(
+        f"CONFIG.PRODUCT_SURFACE = {payload};\n",
+        mimetype="application/javascript",
+    )
 
 @app.route("/api/summary")
 def summary():

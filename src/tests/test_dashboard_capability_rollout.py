@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import json
+import re
 import sqlite3
 from pathlib import Path
 
 from pm_agent.dashboard import server as dashboard_server
+from pm_agent.dashboard.surface_manifest import (
+    EXPERIMENTAL_TAB_IDS,
+    PHASE1_LEGACY_DASHBOARD_TRIAL,
+    surface_config_payload,
+    visible_tab_labels,
+)
 from pm_agent.database.bootstrap import main as init_db
 
 
-def test_dashboard_shell_lists_promoted_capability_sections() -> None:
+def test_dashboard_shell_marks_phase1_legacy_surface_as_the_default_trial() -> None:
     index_path = (
         Path(__file__).resolve().parents[1]
         / "pm_agent"
@@ -16,19 +24,58 @@ def test_dashboard_shell_lists_promoted_capability_sections() -> None:
         / "index.html"
     )
     html = index_path.read_text(encoding="utf-8")
+    config_js = (
+        Path(__file__).resolve().parents[1]
+        / "pm_agent"
+        / "dashboard"
+        / "web"
+        / "js"
+        / "config.js"
+    ).read_text(encoding="utf-8")
+    app_js = (
+        Path(__file__).resolve().parents[1]
+        / "pm_agent"
+        / "dashboard"
+        / "web"
+        / "js"
+        / "app.js"
+    ).read_text(encoding="utf-8")
 
-    for token in (
-        "section-attention",
-        "section-weekly-brief",
-        "section-capacity",
-        "section-execution",
-        "section-layered-health",
-        "section-connectors",
-        "section-snapshots",
-        "/js/usecase-components.js",
-        "/js/section-intelligence.js",
-    ):
-        assert token in html
+    assert "PRODUCT_SURFACE" not in config_js
+    assert "/dashboard-config.js" in html
+    for tab_id in PHASE1_LEGACY_DASHBOARD_TRIAL.visible_tab_ids:
+        assert f'data-tab="{tab_id}"' in html
+    for label in visible_tab_labels():
+        assert f">{label}<" in html
+    for tab_id in EXPERIMENTAL_TAB_IDS:
+        assert f'data-tab="{tab_id}"' in html
+        assert re.search(
+            rf'data-tab="{re.escape(tab_id)}"[^>]*hidden',
+            html,
+        )
+        assert re.search(
+            rf'id="section-{re.escape(tab_id)}"[^>]*hidden',
+            html,
+        )
+    assert 'data-surface-group="experimental"' in html
+    assert 'data-surface-group="experimental" hidden' in html
+    assert "/js/section-intelligence.js" in html
+    assert "if (!App._visibleTabs.has(tab)) return false;" in app_js
+    assert 'el.hidden = !visible;' in app_js
+    assert 'App._applySurface();' in app_js
+    assert 'document.querySelectorAll(".nav-group-label")' in app_js
+
+
+def test_dashboard_surface_config_route_uses_phase1_manifest() -> None:
+    response = dashboard_server.app.test_client().get("/dashboard-config.js")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/javascript"
+    expected_payload = surface_config_payload()
+    assert PHASE1_LEGACY_DASHBOARD_TRIAL.surface_id in response.get_data(as_text=True)
+    assert json.dumps(expected_payload, ensure_ascii=False, sort_keys=True) in response.get_data(
+        as_text=True
+    )
 
 
 def test_allocations_route_includes_plan_version_id_for_capacity_defaults(

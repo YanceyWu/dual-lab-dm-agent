@@ -1,18 +1,21 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-06
-Current branch: `workbook-onboarding-test-20260804-1514`
-Current HEAD: this branch includes the accepted local IP-036 sequence through
-D2 (`f1ed9557f99d054480cb379fe2f1d41b38504049`) and now also carries the
-previously committed dashboard rollout from `f773d84` merged into the workbook
-branch for local review. The current branch state is now intended for a single
-remote push from this session; user-owned uncommitted artifacts remain local
+Last updated: 2026-08-07
+Current branch: `phase1-legacy-dashboard`
+Current HEAD: this branch is an independent local design-review fork created
+from the pushed workbook baseline at
+`a6d654a0d2ead6027c1da673fef6d2a2ebcd6e80` (`Record remote push status`). It
+inherits the accepted local IP-036 sequence through D2
+(`f1ed9557f99d054480cb379fe2f1d41b38504049`), the merged dashboard rollout from
+`f773d84`, and the committed IP-037 Batch A/B/C state already pushed on the
+workbook branch. This session now records the owner-accepted IP-038 Slice 1
+local commit described below. User-owned uncommitted artifacts remain local
 only.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `THE DASHBOARD ROLLOUT FROM f773d84 IS MERGED LOCALLY; IP-037 BATCH A SYNTHETIC DEMO PIPELINE ALIGNMENT IS COMMITTED LOCALLY AT 3fc1154; IP-037 BATCH B NULL-SAFE LEGACY DASHBOARD RENDERING PLUS THE BOUNDED HIREF PARTIAL-COVERAGE ALERT/FREE-SLOT COUNT FOLLOW-ON ARE COMMITTED LOCALLY AT 1395f17; IP-037 BATCH C DOCUMENTATION/CONSISTENCY CLEANUP IS COMMITTED LOCALLY IN THIS SESSION; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; IP-037 BATCH A IS COMMITTED LOCALLY AND VERIFIED; IP-037 BATCH B, THE BOUNDED HIREF FOLLOW-ON, AND BATCH C DOCS CLEANUP HAVE PASSED FOCUSED VALIDATION AND READ-ONLY REVIEW LOCALLY; THE COMBINED IP-037 RESULT NOW AWAITS OWNER REVIEW / ACCEPTANCE AND IS INTENDED TO BE PUSHED TO THE REMOTE BRANCH FROM THIS SESSION`
+Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 1 IS IMPLEMENTED LOCALLY ON phase1-legacy-dashboard: CODE-OWNED PHASE 1 SURFACE DECLARATION, FAIL-CLOSED LEGACY-ONLY DEFAULT DASHBOARD SHELL, BUNDLE-SCOPED PHASE 1 AGENT / README GUIDANCE, AND A COUPLED REHEARSE-RELEASE BASELINE FIX REQUIRED TO KEEP THE D2-COMPATIBLE TOOLING GREEN; NO SLICE 2/3/4 WORK HAS STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 HAS PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND INDEPENDENT READ-ONLY REVIEW LOCALLY; THE OWNER HAS NOW ACCEPTED SLICE 1 AND THIS SESSION COMMITS IT LOCALLY; NOTHING IS PUSHED; THE NEXT GATE IS A SEPARATE DECISION ON WHETHER TO AUTHORIZE IP-038 SLICE 2`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1036,22 +1039,144 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
-### 2026-08-06 — Pushing current IP-037 branch state to remote
+### 2026-08-07 — Owner accepted IP-038 Slice 1 and this session records the local batch commit
 
-- Updated `PROGRESS.md` so the current-state summary records the remote-action
-  intent accurately before the push: the committed IP-037 Batch A/B/C branch
-  state is the material being sent to the remote branch, while the pre-existing
-  dirty `src/sample-data/demo/sample_pm.db` artifact remains user-owned local
+- The owner completed review and accepted the bounded IP-038 Slice 1 result on
+  `phase1-legacy-dashboard`.
+- This state change does not alter the accepted Slice 1 runtime scope itself:
+  the batch remains limited to the code-owned Phase 1 surface declaration, the
+  fail-closed legacy-only default Dashboard shell, the narrowed Phase 1 usage
+  bundle guidance/agent, and the coupled rehearse-release baseline fix required
+  to keep the D2-compatible tooling green.
+- Validation / review evidence remains the same accepted Slice 1 evidence:
+  focused Slice 1 regression, `make validate`, `make rehearse-release`, and the
+  final independent read-only review with no significant findings.
+- Commit / push status:
+  - this session now records the Slice 1 batch as committed locally on
+    `phase1-legacy-dashboard`;
+  - nothing is pushed;
+  - the user-owned `src/sample-data/demo/sample_pm.db` diff remains outside the
+    commit scope.
+- Exact next recommended action:
+  - decide separately whether to authorize IP-038 Slice 2; do not enter Slice 2
+    by implication from Slice 1 acceptance alone.
+
+### 2026-08-07 — IP-038 Slice 1 stable surface declaration and visibility gating implemented locally
+
+- Added the approved implementation pack
+  `implementation-packs/IP-038_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION.md`
+  and marked the design artifact
+  `architecture/17_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION_DESIGN.md` as
+  owner-approved with implementation delegated to the separate pack only.
+- Implemented only the authorized Slice 1 stable-surface work:
+  - added `src/pm_agent/dashboard/surface_manifest.py` as the code-owned Phase 1
+    legacy Dashboard surface declaration;
+  - wired the shipped dashboard shell to that declaration through the new
+    generated `/dashboard-config.js` route in
+    `src/pm_agent/dashboard/server.py`, while `src/pm_agent/dashboard/web/js/app.js`
+    continues to enforce hidden-tab rejection in the browser;
+  - changed `src/pm_agent/dashboard/web/index.html` so experimental tabs,
+    labels, and sections fail closed in the static markup and only the legacy
+    pages are visible by default in the operator shell;
+  - narrowed bundle/distribution guidance in `tools/build_usage_bundle.py` so
+    the generated usage bundle now emits a Phase 1-specific `Delivery Manager`
+    agent plus legacy-surface-only README / Copilot guidance instead of copying
+    the broader development agent unchanged;
+  - made `src/pm_agent/dashboard/__init__.py` lazy so the usage-bundle builder
+    can import the Phase 1 surface declaration without requiring Flask at tool
+    startup.
+- Corrected one coupled validation/tooling defect discovered while validating
+  this slice:
+  - `tools/rehearse_release.py` now archives the D2-compatible prior-runtime
+    baseline `f1ed9557f99d054480cb379fe2f1d41b38504049` instead of the older
+    `8cb5f69dadb9b6653d82d0ad6d3b7c3585ed24eb`, restoring the intended additive
+    rollback rehearsal after the accepted removal of the old `v_member_load`
+    compatibility view family.
+- Focused validation / review evidence:
+  - `src/.venv/bin/python -m pytest src/tests/test_dashboard_capability_rollout.py src/tests/test_dashboard_web_rendering.py tools/tests/test_build_usage_bundle.py tools/tests/test_rehearse_release.py`
+    → `10 passed, 1 skipped`; the remaining skip is the
+    pre-existing Node-dependent legacy null-rendering harness, while Phase 1
+    surface gating now also has non-skipped Python-side regression coverage;
+  - `src/.venv/bin/python -m ruff check src/pm_agent/dashboard/__init__.py src/pm_agent/dashboard/server.py src/pm_agent/dashboard/surface_manifest.py src/tests/test_dashboard_capability_rollout.py src/tests/test_dashboard_web_rendering.py tools/build_usage_bundle.py tools/rehearse_release.py tools/tests/test_build_usage_bundle.py tools/tests/test_rehearse_release.py`
+    → passed;
+  - `python3 tools/build_usage_bundle.py --help` → passed in the documented
+    tool-only environment after the lazy dashboard import change;
+  - `make validate` → `470 passed, 1 skipped`;
+  - `make rehearse-release` → passed;
+  - independent read-only review via the code-review agent reported no
+    significant issues in the final Slice 1 diff.
+- Scope boundaries preserved:
+  - no Slice 2 stable/experimental assembly split, no Slice 3 legacy
+    page-provider extraction, and no Slice 4 config/onboarding flattening was
+    started;
+  - no business-capability addition, connector activity, schema redesign, or
+    real-data action was introduced;
+  - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
+    user-owned and unchanged by this slice.
+- Commit / push status:
+  - all Slice 1 changes are committed locally on `phase1-legacy-dashboard`;
+  - the previously pushed workbook-branch baseline remains the last committed
+    remote state;
+  - the user-owned `src/sample-data/demo/sample_pm.db` diff is still outside any
+    commit scope.
+- Exact next recommended action:
+  - decide separately whether to authorize IP-038 Slice 2; do not enter Slice 2
+    automatically from this accepted Slice 1 state.
+
+### 2026-08-06 — Drafted Phase 1 legacy Dashboard productization design on an independent branch
+
+- Created the independent local branch `phase1-legacy-dashboard` from the
+  pushed workbook baseline so the Phase 1 minimization/productization question
+  can be reviewed separately from the current workbook branch history.
+- Added the design-only review artifact
+  `architecture/17_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION_DESIGN.md`. The draft
+  records:
+  - the first-principles trial objective: prove that a Delivery Manager can use
+    the legacy Dashboard with low support cost and explicit degraded-state
+    semantics;
+  - the adversarial assumption that any visible surface becomes an implicit
+    product promise during external trial use;
+  - the proposed Phase 1 operator contract: legacy Dashboard pages only plus one
+    narrow setup/onboarding/distribution story;
+  - the four ordered refactor/productization slices discussed for review:
+    stable-surface declaration, stable/experimental dashboard assembly split,
+    legacy page-provider extraction, and Phase 1 config/bundle flattening.
+- This is intentionally design-only:
+  - no runtime, schema, package, bundle, connector, or dashboard behavior changed;
+  - no new implementation pack was created;
+  - the pushed IP-037 workbook-branch result remains the implemented product
+    baseline.
+- Validation / review evidence:
+  - design-only document review against `AGENTS.md`, `README.md`,
+    `docs/REAL_ENVIRONMENT_UAT_RUNBOOK.md`, `docs/RELEASE_ENGINEERING.md`, and
+    the retained onboarding/dashboard architecture context;
+  - no runtime validation was required because no executable behavior changed.
+- Commit / push status:
+  - the design draft and this progress update are uncommitted and unpushed on
+    `phase1-legacy-dashboard`;
+  - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
+    user-owned and unchanged by this design step.
+- Exact next recommended action:
+  - owner-review the design draft only; if accepted, authorize a separate
+    bounded implementation pack for the ordered productization slices rather
+    than starting refactor work directly from the draft.
+
+### 2026-08-06 — Pushed current IP-037 branch state to remote
+
+- Updated `PROGRESS.md` so the current-state summary records the actual remote
+  state: the committed IP-037 Batch A/B/C branch state has now been pushed to
+  `origin/workbook-onboarding-test-20260804-1514`, while the pre-existing dirty
+  `src/sample-data/demo/sample_pm.db` artifact remains user-owned local
   working-tree state and is not part of the committed branch.
 - No runtime, schema, sample-data-content, or connector behavior changed in this
   record-only step.
 - Exact next recommended action:
-  - push the current branch once to `origin`, then treat owner review /
-    acceptance as the next gate rather than starting a new implementation batch.
+  - treat owner review / acceptance as the next gate rather than starting a new
+    implementation batch.
 - Commit / push status:
   - this progress-only status correction is committed locally in the current
-    session before the push;
-  - the branch push itself is the next immediate action;
+    session as `a6d654a` (`Record remote push status`);
+  - the branch state is pushed to `origin/workbook-onboarding-test-20260804-1514`;
   - nothing else in the user-owned dirty working tree is included.
 
 ### 2026-08-06 — IP-037 Batch C documentation/consistency cleanup implemented locally

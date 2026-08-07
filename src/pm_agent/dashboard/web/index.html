@@ -20,10 +20,11 @@
         </div>
 
         <div class="sidebar-nav">
-          <div class="nav-group-label">Legacy views</div>
+          <div class="nav-group-label" data-surface-group="legacy">Legacy views</div>
           <div
             class="nav-item active"
             data-tab="overview"
+            data-surface-group="legacy"
             onclick="App.navigate('overview')"
           >
             <svg
@@ -46,6 +47,7 @@
           <div
             class="nav-item"
             data-tab="projects"
+            data-surface-group="legacy"
             onclick="App.navigate('projects')"
           >
             <svg
@@ -65,7 +67,7 @@
             <span class="nav-badge green" id="badge-projects">--</span>
           </div>
 
-          <div class="nav-item" data-tab="team" onclick="App.navigate('team')">
+          <div class="nav-item" data-tab="team" data-surface-group="legacy" onclick="App.navigate('team')">
             <svg
               class="nav-item-icon"
               viewBox="0 0 20 20"
@@ -87,6 +89,7 @@
           <div
             class="nav-item"
             data-tab="hiref"
+            data-surface-group="legacy"
             onclick="App.navigate('hiref')"
           >
             <svg
@@ -112,6 +115,7 @@
           <div
             class="nav-item"
             data-tab="allocation"
+            data-surface-group="legacy"
             onclick="App.navigate('allocation')"
           >
             <svg
@@ -136,6 +140,7 @@
           <div
             class="nav-item"
             data-tab="health"
+            data-surface-group="legacy"
             onclick="App.navigate('health')"
           >
             <svg
@@ -152,11 +157,13 @@
             <span class="nav-item-label">Project Health</span>
           </div>
 
-          <div class="nav-group-label">Delivery intelligence</div>
+          <div class="nav-group-label" data-surface-group="experimental" hidden>Delivery intelligence</div>
 
           <div
             class="nav-item"
             data-tab="attention"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('attention')"
           >
             <svg
@@ -178,6 +185,8 @@
           <div
             class="nav-item"
             data-tab="weekly-brief"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('weekly-brief')"
           >
             <svg
@@ -200,6 +209,8 @@
           <div
             class="nav-item"
             data-tab="capacity"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('capacity')"
           >
             <svg
@@ -222,6 +233,8 @@
           <div
             class="nav-item"
             data-tab="execution"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('execution')"
           >
             <svg
@@ -245,6 +258,8 @@
           <div
             class="nav-item"
             data-tab="layered-health"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('layered-health')"
           >
             <svg
@@ -266,6 +281,8 @@
           <div
             class="nav-item"
             data-tab="connectors"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('connectors')"
           >
             <svg
@@ -289,6 +306,8 @@
           <div
             class="nav-item"
             data-tab="snapshots"
+            data-surface-group="experimental"
+            hidden
             onclick="App.navigate('snapshots')"
           >
             <svg
@@ -333,7 +352,7 @@
 
       <!-- MAIN CONTENT -->
       <main class="main-wrap">
-        <section id="section-overview" class="section active">
+        <section id="section-overview" class="section active" data-tab="overview" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">Overview</div>
             <div class="section-sub">
@@ -343,7 +362,7 @@
           <div class="section-body" id="overview-content"></div>
         </section>
 
-        <section id="section-projects" class="section">
+        <section id="section-projects" class="section" data-tab="projects" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">Projects</div>
             <div class="section-sub">
@@ -353,7 +372,7 @@
           <div class="section-body" id="projects-content"></div>
         </section>
 
-        <section id="section-team" class="section">
+        <section id="section-team" class="section" data-tab="team" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">Team</div>
             <div class="section-sub">
@@ -363,7 +382,7 @@
           <div class="section-body" id="team-content"></div>
         </section>
 
-        <section id="section-hiref" class="section">
+        <section id="section-hiref" class="section" data-tab="hiref" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">HIREF Contract Management</div>
             <div class="section-sub">
@@ -373,7 +392,7 @@
           <div class="section-body" id="hiref-content"></div>
         </section>
 
-        <section id="section-allocation" class="section">
+        <section id="section-allocation" class="section" data-tab="allocation" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">Monthly Allocation Plan</div>
             <div class="section-sub">
@@ -383,7 +402,7 @@
           <div class="section-body" id="allocation-content"></div>
         </section>
 
-        <section id="section-health" class="section">
+        <section id="section-health" class="section" data-tab="health" data-surface-group="legacy">
           <div class="section-header">
             <div class="section-title">Project Health</div>
             <div class="section-sub">
@@ -393,7 +412,7 @@
           <div class="section-body" id="health-content"></div>
         </section>
 
-        <section id="section-attention" class="section">
+        <section id="section-attention" class="section" data-tab="attention" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Attention &amp; Follow-up</div>
             <div class="section-sub">
@@ -403,7 +422,7 @@
           <div class="section-body" id="attention-content"></div>
         </section>
 
-        <section id="section-weekly-brief" class="section">
+        <section id="section-weekly-brief" class="section" data-tab="weekly-brief" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Weekly Brief v2</div>
             <div class="section-sub">
@@ -413,7 +432,7 @@
           <div class="section-body" id="weekly-brief-content"></div>
         </section>
 
-        <section id="section-capacity" class="section">
+        <section id="section-capacity" class="section" data-tab="capacity" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Resource Capacity Heatmap</div>
             <div class="section-sub">
@@ -423,7 +442,7 @@
           <div class="section-body" id="capacity-content"></div>
         </section>
 
-        <section id="section-execution" class="section">
+        <section id="section-execution" class="section" data-tab="execution" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Delivery Execution Review</div>
             <div class="section-sub">
@@ -433,7 +452,7 @@
           <div class="section-body" id="execution-content"></div>
         </section>
 
-        <section id="section-layered-health" class="section">
+        <section id="section-layered-health" class="section" data-tab="layered-health" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Layered Project Health Review</div>
             <div class="section-sub">
@@ -443,7 +462,7 @@
           <div class="section-body" id="layered-health-content"></div>
         </section>
 
-        <section id="section-connectors" class="section">
+        <section id="section-connectors" class="section" data-tab="connectors" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Connector Reviews</div>
             <div class="section-sub">
@@ -453,7 +472,7 @@
           <div class="section-body" id="connectors-content"></div>
         </section>
 
-        <section id="section-snapshots" class="section">
+        <section id="section-snapshots" class="section" data-tab="snapshots" data-surface-group="experimental" hidden>
           <div class="section-header">
             <div class="section-title">Project Snapshots</div>
             <div class="section-sub">
@@ -466,6 +485,7 @@
     </div>
 
     <script src="/js/config.js"></script>
+    <script src="/dashboard-config.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/data.js"></script>
     <script src="/js/components.js"></script>

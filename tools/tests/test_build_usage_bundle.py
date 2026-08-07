@@ -52,6 +52,43 @@ def test_stage_bundle_tree_builds_trimmed_workspace(tmp_path: Path) -> None:
     assert not (bundle_dir / "src/scripts/load_sample_data.py").exists()
     assert not (bundle_dir / "src/scripts/seed_demo_evidence.py").exists()
 
+    root_readme = (bundle_dir / "README.md").read_text(encoding="utf-8")
+    runtime_readme = (bundle_dir / "src/README.md").read_text(encoding="utf-8")
+    bundle_agent = (
+        bundle_dir / ".github/agents/delivery-manager.agent.md"
+    ).read_text(encoding="utf-8")
+    copilot_instructions = (
+        bundle_dir / ".github/copilot-instructions.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Phase 1 legacy Dashboard trial surface" in root_readme
+    assert build_usage_bundle.PHASE1_LEGACY_PAGES_TEXT in root_readme
+    assert build_usage_bundle.PHASE1_LEGACY_PAGES_TEXT in runtime_readme
+    assert build_usage_bundle.PHASE1_LEGACY_PAGES_TEXT in bundle_agent
+    assert build_usage_bundle.PHASE1_LEGACY_PAGES_TEXT in copilot_instructions
+    assert "pm weekly-brief query" not in runtime_readme
+    assert "DM brief" not in root_readme
+    assert "下个月哪些同事还有容量" not in root_readme
+    assert "这个月团队在各项目上的分配情况如何" not in root_readme
+    for out_of_scope_label in (
+        "Management Attention",
+        "Action Follow-up",
+        "Weekly DM brief",
+    ):
+        assert out_of_scope_label in bundle_agent
+    for experimental_token in (
+        "delivery-attention-center",
+        "management-attention",
+        "resource-capacity-heatmap",
+        "weekly-dm-brief",
+        "weekly-brief-v2",
+        "delivery-execution-review",
+        "layered-project-health-review",
+        "connector-status-review",
+        "project-snapshot-list",
+    ):
+        assert experimental_token not in bundle_agent
+
 
 def test_stage_bundle_tree_writes_manifest_and_runtime_metadata(tmp_path: Path) -> None:
     bundle_dir = tmp_path / "windows-bundle"
