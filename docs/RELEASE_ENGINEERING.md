@@ -54,7 +54,11 @@ make build-usage-bundles
 The builder assembles separate **macOS** and **Windows** offline usage bundles
 under `dist/dm-usage-bundles/`. Each bundle contains only the DM runtime
 workspace, Copilot agent files, starter config templates, offline dependency
-wheelhouse, and platform-specific install/open scripts. Bundle names and
+wheelhouse, one read-only bundled synthetic demo DB generated from the
+committed synthetic loader path, and platform-specific install/open scripts.
+The generated landing page keeps one default operator entry
+(`install → open in VS Code → use the Delivery Manager agent`) while exposing
+equal `Try demo` and `Use local data` first-run paths. Bundle names and
 installers are specific to the configured Python version and architecture (for
 example the default macOS bundle is arm64-targeted). These bundles are local
 distribution artifacts and are not committed or tagged as repository source.

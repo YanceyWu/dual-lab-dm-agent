@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+import sqlite3
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,11 @@ from pm_agent.dashboard.surface_manifest import (  # noqa: E402
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "dist" / "dm-usage-bundles"
 BUNDLE_MANIFEST = "bundle-manifest.json"
+DEMO_DB_SOURCE = "generated_from_synthetic_loader"
+SHIPPED_DEMO_DB = Path("demo/sample_pm.db")
+WRITABLE_DEMO_DB = Path("src/.dm-demo/sample_pm.db")
+ENV_PATH = Path("src/.env")
+CANONICAL_DEMO_DATABASE_PATH = ".dm-demo/sample_pm.db"
 
 ROOT_SOURCE_FILES = (
     Path(".github/prompts/dm-workload.prompt.md"),
@@ -63,6 +69,13 @@ PROHIBITED_SRC_ENTRIES = {
 }
 PHASE1_LEGACY_PAGES = visible_tab_labels(PHASE1_LEGACY_DASHBOARD_TRIAL)
 PHASE1_LEGACY_PAGES_TEXT = ", ".join(PHASE1_LEGACY_PAGES)
+
+
+@dataclass(frozen=True)
+class BundleArtifacts:
+    wheel: Path
+    sdist: Path
+    demo_db: Path
 
 
 @dataclass(frozen=True)
@@ -257,6 +270,7 @@ def copy_file(source: Path, destination: Path) -> None:
 
 
 def copy_directory(source: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
     for path in source.rglob("*"):
         if "__pycache__" in path.parts:
             continue
@@ -272,72 +286,89 @@ def copy_directory(source: Path, destination: Path) -> None:
 
 
 def build_bundle_root_readme(target: BundleTarget) -> str:
-    return f"""# Delivery Manager Usage Bundle ({target.platform_label})
+    install_command = target.install_script
+    open_command = target.open_script
+    return f"""# Delivery Manager Trial Bundle ({target.platform_label})
 
-This package is the **end-user local workspace** for Delivery Managers. It is
-trimmed for operation, not for development: no tests, architecture packs, or
-developer tooling are included.
-
-This bundle currently ships the **Phase 1 legacy Dashboard trial surface**. The
-dashboard intentionally exposes only these default pages: {PHASE1_LEGACY_PAGES_TEXT}.
-
-## Included
-
-- the `Delivery Manager` Copilot workspace agent and instructions;
-- the `src/` runtime workspace and starter configuration templates;
-- an offline `wheelhouse/` for **{target.platform_label} + Python {target.python_version}**;
-- one-click install and VS Code open scripts for this platform.
+This bundle is the **Phase 1 local Delivery Manager trial**: install it, open it
+in VS Code, and use the `Delivery Manager` workspace agent. The supported
+Dashboard UI in this bundle remains the legacy Phase 1 surface:
+{PHASE1_LEGACY_PAGES_TEXT}.
 
 ## Before first use
 
 1. Install **Python {target.python_version}** for **{target.platform_label}**.
 2. Install **VS Code** plus **GitHub Copilot / Copilot Chat**.
-3. If you want the open script to work, make sure the `code` command is available.
+3. If you want the open script to work, make sure the `code` command is
+   available.
 
 ## Install locally
 
 Run:
 
 ```text
-{target.install_script}
+{install_command}
 ```
 
-The script creates `.venv`, performs an **offline** install from `wheelhouse/`,
-and runs `pm init` to scaffold local runtime files.
+The install script creates `.venv`, performs an **offline** install from
+`wheelhouse/`, scaffolds `src/.env` on first install, and prepares the bundled
+demo DB at `src/.dm-demo/sample_pm.db`.
 
 ## Open in VS Code
 
 Run:
 
 ```text
-{target.open_script}
+{open_command}
 ```
 
 After VS Code opens this folder, open Copilot Chat and select the workspace
 agent named `Delivery Manager`.
 
-## Normal operator flow
+## Choose your first run path
 
-1. `pm config validate`
-2. `pm connector validate --portable`
-3. `pm dashboard serve`
-4. Review the legacy Dashboard pages only: {PHASE1_LEGACY_PAGES_TEXT}
-5. Ask Copilot business questions through the `Delivery Manager` agent when
-   needed.
+Choose **Try demo** for the fastest synthetic first run, or choose **Use local
+data** when you are ready to point the runtime at an approved local database.
 
-Example prompts:
+### Try demo
 
-- “当前哪些同事比较满载？”
-- “当前哪些同事还有可用容量？”
-- “项目 Atlas 当前状态如何？”
-- “未来 90 天哪些同事的 HIREF 即将到期？”
+**When to choose it:** you want a working trial immediately with the bundled
+synthetic database.
+
+**Do this:** install the bundle, open it in VS Code, keep
+`DATABASE_PATH=.dm-demo/sample_pm.db` in `src/.env`, and optionally run:
+
+```bash
+pm dashboard serve
+```
+
+**Then:** ask the `Delivery Manager` agent questions such as “当前哪些同事还有可用容量？”
+or “未来 90 天哪些同事的 HIREF 即将到期？”. To reset demo mode while you are still
+using it, delete `src/.dm-demo/sample_pm.db` and rerun `{install_command}`.
+
+### Use local data
+
+**When to choose it:** you want the trial workspace to use an approved local
+database instead of the bundled synthetic demo.
+
+**Do this:** edit `src/.env` so it says `DATABASE_PATH=data/pm.db`, then run:
+
+```bash
+pm init
+pm config validate
+pm connector validate --portable
+```
+
+**Then:** continue with the `Structured data onboarding` section in
+`src/README.md`, use the approved `pm onboarding profile save → preview →
+confirm` flow, and return to the `Delivery Manager` agent for runtime guidance.
 
 ## Boundary
 
 - Keep real configuration, credentials, local databases, exports, and logs only
   on the approved work computer.
-- Do not develop new features inside this bundle workspace. Source changes
-  belong in the development repository.
+- Do not treat this bundle as a development repository; source, test, and
+  release changes belong in the maintained development checkout.
 """
 
 
@@ -360,14 +391,31 @@ Run the bundle install script instead of manual package commands:
 ```
 
 The install script creates a local virtual environment, installs dependencies
-offline from `../wheelhouse/`, installs this runtime in editable mode, and runs
-`pm init`.
+offline from `../wheelhouse/`, scaffolds `src/.env` on first install with
+`pm init --skip-db`, copies the bundled read-only demo DB into
+`src/.dm-demo/sample_pm.db`, and sets demo mode in `src/.env` as:
+
+```dotenv
+DATABASE_PATH={CANONICAL_DEMO_DATABASE_PATH}
+```
+
+Re-running install preserves an existing writable demo DB copy and never
+silently switches a non-demo `DATABASE_PATH` back to demo mode.
+
+## Switch from demo to local data
+
+To stop using the bundled demo and move into approved local-data onboarding:
+
+1. Edit `src/.env` so it contains `DATABASE_PATH=data/pm.db`.
+2. Run `pm init`.
+3. Run `pm config validate`.
+4. Run `pm connector validate --portable`.
+5. Continue with `Structured data onboarding` below.
 
 ## Operator commands
 
 ```bash
 pm version
-pm init
 pm config validate
 pm connector validate --portable
 pm dashboard serve
@@ -375,6 +423,29 @@ pm dashboard serve
 
 Read-only and controlled-write behavior is still governed by the workspace
 Copilot instructions and the `Delivery Manager` custom agent.
+
+## Structured data onboarding
+
+After you have switched `DATABASE_PATH` to `data/pm.db`, initialized it with
+`pm init`, and passed `pm config validate` plus
+`pm connector validate --portable`, onboard approved local sources through the
+supported profile flow:
+
+1. save an approved source file with `pm onboarding profile save ...`;
+2. inspect it with `pm onboarding profile show --profile-key <profile-key>` when
+   needed;
+3. preview it with `pm onboarding preview --profile-key <profile-key>`;
+4. confirm it with `pm onboarding confirm --run-id <run-id>`;
+5. inspect the completed run with `pm onboarding run show --run-id <run-id>`.
+
+Example commands:
+
+```bash
+pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
+pm onboarding preview --profile-key fy26-q4
+pm onboarding confirm --run-id <onboarding-run-id>
+pm onboarding run show --run-id <onboarding-run-id>
+```
 
 ## Runtime contents
 
@@ -405,6 +476,7 @@ src/.env
 src/.auth/
 src/backups/
 src/data/
+src/.dm-demo/
 src/data-feed/
 src/exports/
 src/logs/
@@ -420,7 +492,9 @@ def build_bundle_copilot_instructions() -> str:
 
 Use the workspace `Delivery Manager` custom agent for normal Delivery Manager
 operations. This bundle is an operator workspace, not a development repository.
-The bundled Phase 1 trial surface is the legacy Dashboard pages only:
+The default operator entry is: install from the bundle root, open this workspace
+in VS Code, and use the `Delivery Manager` agent. The bundled Phase 1 trial
+surface is the legacy Dashboard pages only:
 {PHASE1_LEGACY_PAGES_TEXT}.
 
 For DM operations:
@@ -458,10 +532,12 @@ target: vscode
 
 # Delivery Manager operating agent
 
-Act as the user's Delivery Manager decision-support assistant for the bundled
-**Phase 1 legacy Dashboard trial**.
+Act as the user's Delivery Manager decision-support assistant after they install
+this bundle, open it in VS Code, and select the bundled `Delivery Manager`
+workspace agent.
 
-The legacy Dashboard is the primary UI in this bundle. It currently exposes:
+The supported Phase 1 Dashboard UI in this bundle is the legacy Dashboard. It
+currently exposes:
 {PHASE1_LEGACY_PAGES_TEXT}.
 
 Use the local `pm` commands as the authoritative source of facts. Deterministic
@@ -526,6 +602,184 @@ that they should switch to the maintained development repository.
 """
 
 
+def build_install_helper() -> str:
+    return f"""#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import shutil
+from pathlib import Path
+
+CANONICAL_DEMO_DATABASE_PATH = {CANONICAL_DEMO_DATABASE_PATH!r}
+ENV_RELATIVE_PATH = {ENV_PATH.as_posix()!r}
+SHIPPED_DEMO_DB = {SHIPPED_DEMO_DB.as_posix()!r}
+WRITABLE_DEMO_DB = {WRITABLE_DEMO_DB.as_posix()!r}
+
+
+class InstallHelperError(RuntimeError):
+    pass
+
+
+def _remove_path(path: Path) -> None:
+    if not path.exists():
+        return
+    if path.is_dir():
+        shutil.rmtree(path)
+        return
+    path.unlink()
+
+
+def _normalize_database_path(raw_value: str) -> str:
+    value = raw_value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {{'"', "'"}}:
+        value = value[1:-1]
+    return value.strip()
+
+
+def _read_env(env_path: Path) -> tuple[str, list[str], int, str]:
+    try:
+        content = env_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise InstallHelperError(f"INSTALL_HELPER_ENV_READ_FAILED: {{env_path}}: {{exc}}") from exc
+
+    lines = content.splitlines(keepends=True)
+    matches: list[tuple[int, str]] = []
+    for index, line in enumerate(lines):
+        candidate = line.lstrip()
+        if candidate.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.strip() == "DATABASE_PATH":
+            matches.append((index, value))
+    if not matches:
+        raise InstallHelperError(
+            "INSTALL_HELPER_DATABASE_PATH_MISSING: src/.env must contain exactly one DATABASE_PATH entry."
+        )
+    if len(matches) != 1:
+        raise InstallHelperError(
+            "INSTALL_HELPER_DATABASE_PATH_DUPLICATE: src/.env contains duplicate DATABASE_PATH entries."
+        )
+    index, value = matches[0]
+    return content, lines, index, value
+
+
+def _resolve_database_path(src_root: Path, raw_value: str) -> Path:
+    normalized = _normalize_database_path(raw_value)
+    candidate = Path(normalized)
+    if not candidate.is_absolute():
+        candidate = src_root / candidate
+    return candidate.resolve(strict=False)
+
+
+def _copy_demo_db(source: Path, destination: Path) -> bool:
+    if destination.exists():
+        return False
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = destination.with_name(destination.name + ".tmp")
+        if temp_path.exists():
+            _remove_path(temp_path)
+        shutil.copyfile(source, temp_path)
+        temp_path.replace(destination)
+        return True
+    except OSError as exc:
+        temp_path = destination.with_name(destination.name + ".tmp")
+        if temp_path.exists():
+            _remove_path(temp_path)
+        raise InstallHelperError(
+            f"INSTALL_HELPER_DEMO_COPY_FAILED: could not copy {{source}} to {{destination}}: {{exc}}"
+        ) from exc
+
+
+def _write_env(env_path: Path, original_content: str, lines: list[str], line_index: int, new_value: str) -> None:
+    line_ending = "\\r\\n" if "\\r\\n" in original_content else "\\n"
+    updated_lines = list(lines)
+    updated_lines[line_index] = f"DATABASE_PATH={{new_value}}{{line_ending}}"
+    updated_content = "".join(updated_lines)
+    if updated_content and not updated_content.endswith(("\\n", "\\r\\n")):
+        updated_content += line_ending
+    temp_path = env_path.with_name(env_path.name + ".tmp")
+    try:
+        temp_path.write_text(updated_content, encoding="utf-8")
+        temp_path.replace(env_path)
+    except OSError as exc:
+        if temp_path.exists():
+            _remove_path(temp_path)
+        raise InstallHelperError(
+            f"INSTALL_HELPER_ENV_WRITE_FAILED: could not update {{env_path}}: {{exc}}"
+        ) from exc
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Finalize Delivery Manager bundle install state.")
+    parser.add_argument("--bundle-root", required=True, help="Absolute path to the installed bundle root.")
+    parser.add_argument(
+        "--first-install",
+        action="store_true",
+        help="Allow the helper to rewrite the freshly scaffolded starter DATABASE_PATH to demo mode.",
+    )
+    args = parser.parse_args()
+
+    bundle_root = Path(args.bundle_root).resolve()
+    env_path = bundle_root / ENV_RELATIVE_PATH
+    shipped_demo_db = bundle_root / SHIPPED_DEMO_DB
+    writable_demo_db = bundle_root / WRITABLE_DEMO_DB
+    src_root = bundle_root / "src"
+
+    if not shipped_demo_db.is_file():
+        raise SystemExit(
+            f"INSTALL_HELPER_DEMO_SOURCE_MISSING: bundled demo DB is missing at {{shipped_demo_db}}."
+        )
+    try:
+        with shipped_demo_db.open("rb"):
+            pass
+    except OSError as exc:
+        raise SystemExit(
+            f"INSTALL_HELPER_DEMO_SOURCE_UNREADABLE: could not read {{shipped_demo_db}}: {{exc}}"
+        )
+
+    created_demo_copy = False
+    try:
+        original_content, lines, line_index, raw_database_path = _read_env(env_path)
+        current_database_path = _resolve_database_path(src_root, raw_database_path)
+        canonical_demo_path = writable_demo_db.resolve(strict=False)
+        should_set_demo_mode = args.first_install or current_database_path == canonical_demo_path
+        created_demo_copy = _copy_demo_db(shipped_demo_db, writable_demo_db)
+        if should_set_demo_mode:
+            _write_env(
+                env_path,
+                original_content,
+                lines,
+                line_index,
+                CANONICAL_DEMO_DATABASE_PATH,
+            )
+            print(
+                "Install helper: writable demo DB "
+                f"{{'created' if created_demo_copy else 'preserved'}} at {{writable_demo_db}}."
+            )
+            print(
+                f"Install helper: src/.env now uses DATABASE_PATH={{CANONICAL_DEMO_DATABASE_PATH}}."
+            )
+            return
+        print(
+            "Install helper: writable demo DB "
+            f"{{'created' if created_demo_copy else 'preserved'}} at {{writable_demo_db}}."
+        )
+        print(
+            "Install helper: preserved existing non-demo DATABASE_PATH in src/.env; "
+            "the workspace stays in local-data mode."
+        )
+    except InstallHelperError as exc:
+        if created_demo_copy and writable_demo_db.exists():
+            writable_demo_db.unlink()
+        raise SystemExit(str(exc)) from exc
+
+
+if __name__ == "__main__":
+    main()
+"""
+
+
 def build_install_script(target: BundleTarget) -> str:
     if target.key == "macos":
         return f"""#!/bin/bash
@@ -569,7 +823,21 @@ PY
   --find-links "$ROOT/wheelhouse" \
   --no-build-isolation \
   --editable "$ROOT/src"
-"$ROOT/.venv/bin/pm" init
+
+FIRST_INSTALL=0
+if [ ! -f "$ROOT/src/.env" ]; then
+  "$ROOT/.venv/bin/pm" init --skip-db
+  FIRST_INSTALL=1
+fi
+
+HELPER_ARGS=(
+  "$ROOT/scripts/install-helper.py"
+  --bundle-root "$ROOT"
+)
+if [ "$FIRST_INSTALL" -eq 1 ]; then
+  HELPER_ARGS+=(--first-install)
+fi
+"$ROOT/.venv/bin/python" "${{HELPER_ARGS[@]}}"
 
 echo
 echo "Installation complete."
@@ -605,7 +873,12 @@ exit /b 1
 %PYTHON% -m venv "%ROOT%\\.venv" || exit /b 1
 "%ROOT%\\.venv\\Scripts\\python.exe" -m pip install --no-index --find-links "%ROOT%\\wheelhouse" {' '.join(BUILD_REQUIREMENTS)} || exit /b 1
 "%ROOT%\\.venv\\Scripts\\python.exe" -m pip install --no-index --find-links "%ROOT%\\wheelhouse" --no-build-isolation --editable "%ROOT%\\src" || exit /b 1
-"%ROOT%\\.venv\\Scripts\\pm.exe" init || exit /b 1
+set "HELPER_FLAG="
+if not exist "%ROOT%\\src\\.env" (
+  "%ROOT%\\.venv\\Scripts\\pm.exe" init --skip-db || exit /b 1
+  set "HELPER_FLAG=--first-install"
+)
+"%ROOT%\\.venv\\Scripts\\python.exe" "%ROOT%\\scripts\\install-helper.py" --bundle-root "%ROOT%" %HELPER_FLAG% || exit /b 1
 
 echo.
 echo Installation complete.
@@ -663,9 +936,37 @@ def write_text(path: Path, content: str, executable: bool = False) -> None:
         path.chmod(0o755)
 
 
-def build_artifacts(artifact_dir: Path) -> tuple[Path, Path]:
+def make_read_only(path: Path) -> None:
+    path.chmod(path.stat().st_mode & ~0o222)
+
+
+def build_artifacts(artifact_dir: Path) -> BundleArtifacts:
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    return build_package(artifact_dir)
+    wheel, sdist = build_package(artifact_dir)
+    demo_dir = artifact_dir / "demo-db"
+    demo_dir.mkdir(parents=True, exist_ok=True)
+    demo_db = demo_dir / "sample_pm.db"
+    subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "src" / "scripts" / "load_sample_data.py"),
+            "--db",
+            str(demo_db),
+            "--force",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+    )
+    if not demo_db.is_file():
+        raise RuntimeError("BUNDLE_DEMO_DB_NOT_CREATED")
+    with demo_db.open("rb") as handle:
+        if handle.read(16) != b"SQLite format 3\x00":
+            raise RuntimeError("BUNDLE_DEMO_DB_INVALID_HEADER")
+    with sqlite3.connect(demo_db) as connection:
+        integrity = connection.execute("PRAGMA integrity_check;").fetchone()
+    if integrity != ("ok",):
+        raise RuntimeError("BUNDLE_DEMO_DB_INTEGRITY_FAILED")
+    return BundleArtifacts(wheel=wheel, sdist=sdist, demo_db=demo_db)
 
 
 def download_wheelhouse(
@@ -743,8 +1044,10 @@ def validate_bundle_tree(
         Path("src/README.md"),
         Path("src/pyproject.toml"),
         Path("src/.env.example"),
+        Path("demo/sample_pm.db"),
         Path(target.install_script),
         Path(target.open_script),
+        Path("scripts/install-helper.py"),
         Path("artifacts"),
         Path("src/pm_agent"),
         Path("src/configs"),
@@ -775,7 +1078,12 @@ def validate_bundle_tree(
         raise RuntimeError("BUNDLE_WHEELHOUSE_EMPTY")
 
     install_script = (bundle_dir / target.install_script).read_text(encoding="utf-8")
-    if "--editable" not in install_script or "wheelhouse" not in install_script:
+    if (
+        "--editable" not in install_script
+        or "wheelhouse" not in install_script
+        or "install-helper.py" not in install_script
+        or "--skip-db" not in install_script
+    ):
         raise RuntimeError("BUNDLE_INSTALL_SCRIPT_INVALID")
 
     open_script = (bundle_dir / target.open_script).read_text(encoding="utf-8")
@@ -792,6 +1100,7 @@ def write_manifest(
     payload = {
         "bundle_name": bundle_dir.name,
         "product_version": package_version(),
+        "demo_db_source": DEMO_DB_SOURCE,
         "platform": {
             "key": target.key,
             "display_name": target.display_name,
@@ -812,7 +1121,7 @@ def write_manifest(
 def stage_bundle_tree(
     bundle_dir: Path,
     target: BundleTarget,
-    artifacts: tuple[Path, Path],
+    artifacts: BundleArtifacts,
 ) -> None:
     ensure_clean_dir(bundle_dir)
 
@@ -837,6 +1146,8 @@ def stage_bundle_tree(
         bundle_dir / "src/README.md",
         build_bundle_runtime_readme(target),
     )
+    copy_file(artifacts.demo_db, bundle_dir / SHIPPED_DEMO_DB)
+    make_read_only(bundle_dir / SHIPPED_DEMO_DB)
     write_text(
         bundle_dir / target.install_script,
         build_install_script(target),
@@ -847,11 +1158,16 @@ def stage_bundle_tree(
         build_open_script(target),
         executable=target.key == "macos",
     )
+    write_text(
+        bundle_dir / "scripts/install-helper.py",
+        build_install_helper(),
+        executable=target.key == "macos",
+    )
     (bundle_dir / "wheelhouse").mkdir(parents=True, exist_ok=True)
 
     artifact_dir = bundle_dir / "artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    for artifact in artifacts:
+    for artifact in (artifacts.wheel, artifacts.sdist):
         copy_file(artifact, artifact_dir / artifact.name)
 
     validate_bundle_tree(
@@ -903,7 +1219,7 @@ def build_bundles(args: argparse.Namespace) -> list[Path]:
         if not args.skip_wheelhouse:
             print("   downloading offline wheelhouse", flush=True)
             download_wheelhouse(
-                artifacts[0],
+                artifacts.wheel,
                 bundle_dir / "wheelhouse",
                 target,
                 BUILD_REQUIREMENTS,

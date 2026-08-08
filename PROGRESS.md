@@ -1,20 +1,19 @@
 # DM Agent Evolution Progress
 
 Last updated: 2026-08-08
-Current branch: `copilot-chat-memory-plan`
-Current HEAD: this branch is a local planning fork created after moving the
-Copilot Chat interaction-memory design commit and the current uncommitted
-working tree off `phase1-legacy-dashboard`. The original
-`phase1-legacy-dashboard` pointer now sits at `4530aa0` (`Implement IP-038
-Slice 1`). This planning branch carries the committed design-spec commit
-`56007f2` plus the uncommitted IP-038 Slice 2/Slice 3 dashboard working-tree batch and the
-uncommitted Copilot Chat interaction-memory MVP batch described below.
+Current branch: `yanceywu-manulife-ip-038-slice-4-flattening`
+Current HEAD: this worktree branch was renamed from the earlier planning fork
+that carried the accepted local state on top of `copilot-chat-memory-plan`.
+That accepted base already included the owner-accepted IP-038 Slice 2/Slice 3
+dashboard batch plus the separate uncommitted Copilot Chat interaction-memory
+MVP batch described below. This branch now also includes the committed
+IP-038 Slice 4 config/bundle flattening batch described in this log.
 User-owned uncommitted artifacts remain local only.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 3 IS OWNER-ACCEPTED AND COMMITTED LOCALLY ON copilot-chat-memory-plan, AND SLICE 4 PHASE 1 CONFIG/BUNDLE FLATTENING DESIGN NOW HAS A REVIEW-PASSED SPEC: THE APPROVED DIRECTION IS ONE USAGE BUNDLE, ONE DEFAULT OPEN-IN-VS-CODE ENTRY, AND ONE LANDING PAGE THAT PRESENTS TRY DEMO PLUS USE LOCAL DATA AS EQUAL FIRST-RUN PATHS; THE SPEC NOW DEFINES DEMO DB BUNDLING, INSTALL-TIME COPY/ENV RULES, MANIFEST PROVENANCE, AND BUNDLE ENTRY-SURFACE CONTRACTS; NO SLICE 4 RUNTIME CODE CHANGE HAS STARTED YET; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED; THE COPILOT CHAT INTERACTION-MEMORY MVP IS ALSO IMPLEMENTED LOCALLY: ADDITIVE REPO-SCOPED INTERACTION-MEMORY TABLES, A READ-ONLY interaction-memory-context USE CASE, AND pm interaction-memory DEMO/CONTROL COMMANDS NOW COMPOSE BOUNDED TURN CONTEXT WITHOUT CHANGING AUTHORITATIVE PM FACTS; THE Delivery Manager CUSTOM AGENT NOW PRE-READS interaction-memory-context THROUGH A SHELL-SAFE STDIN TRANSPORT BEFORE ROUTING NATURAL-LANGUAGE REQUESTS`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL INDEPENDENT READ-ONLY REVIEW, ARE OWNER-ACCEPTED, AND ARE COMMITTED LOCALLY; SLICE 4 IS NOW THE ACTIVE AUTHORIZED GATE, ITS SPEC REVIEW LOOP HAS PASSED, AND THE NEXT GATE IS OWNER REVIEW OF THE WRITTEN SPEC BEFORE IMPLEMENTATION PLANNING; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE OWNER REVIEW OF THE SLICE 4 SPEC THEN IMPLEMENTATION PLANNING, PLUS OWNER TEST/REVIEW OF THE Delivery Manager AGENT PERSONALIZATION PATH`
+Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 4 CONFIG/BUNDLE FLATTENING IS NOW IMPLEMENTED LOCALLY IN A BOUNDED BATCH: tools/build_usage_bundle.py NOW EMITS ONE TRIAL LANDING PAGE WITH EQUAL TRY DEMO / USE LOCAL DATA PATHS, BUILDS A READ-ONLY demo/sample_pm.db FROM THE COMMITTED SYNTHETIC LOADER PATH, COPIES IT TO src/.dm-demo/sample_pm.db DURING INSTALL, MUTATES/PRESERVES src/.env THROUGH A GENERATED INSTALL HELPER, AND RECORDS bundle-manifest.json PROVENANCE WITH demo_db_source=generated_from_synthetic_loader; README / RELEASE bundle guidance and focused bundle tests now match that contract; NO DASHBOARD RUNTIME FEATURE OR INTERACTION-MEMORY CODE CHANGE WAS MADE IN THIS BATCH; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED AND EXCLUDED FROM THIS SCOPE; THE SEPARATE COPILOT CHAT INTERACTION-MEMORY MVP DESCRIBED BELOW REMAINS LOCAL AND UNCHANGED`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 ARE OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 4 IMPLEMENTATION HAS PASSED FOCUSED BUNDLE TESTS, A TARGETED REAL BUNDLE BUILD, make validate, make rehearse-release, AND A FINAL INDEPENDENT READ-ONLY REVIEW WITH NO REMAINING SIGNIFICANT FINDINGS, AND IS NOW COMMITTED LOCALLY ON THIS BRANCH; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE OWNER DECISION ON WHETHER TO MERGE/PUSH THE SLICE 4 BATCH, THEN A SEPARATE OWNER DECISION ON THE INTERACTION-MEMORY / PERSONALIZATION PATH`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1185,6 +1184,71 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   then a planning-only Slice A implementation plan if separately approved.
 - Other pre-existing working-tree changes remain user-owned and are outside this
   design-doc batch. This batch is committed locally only and not pushed.
+
+### 2026-08-08 — IP-038 Slice 4 config/bundle flattening implemented locally
+
+- Implemented the approved bounded Slice 4 contract in bundle/install surfaces
+  only:
+  - rewrote the generated usage-bundle landing page to one default
+    install → open-in-VS-Code → `Delivery Manager` agent story with equal
+    `Try demo` and `Use local data` first-run paths;
+  - added build-time generation of the shipped bundle demo DB from the committed
+    synthetic loader path and staged it as a read-only bundle asset at
+    `demo/sample_pm.db`;
+  - added a generated cross-platform install helper that copies the shipped demo
+    DB to `src/.dm-demo/sample_pm.db`, uses `pm init --skip-db` on first install,
+    writes demo mode to `src/.env` as `DATABASE_PATH=.dm-demo/sample_pm.db`,
+    preserves a non-demo `DATABASE_PATH`, and fails closed on `.env` / copy
+    contract violations;
+  - updated the generated runtime README handoff so the local-data path is
+    standardized to `DATABASE_PATH=data/pm.db`, then `pm init`, then
+    `pm config validate`, then `pm connector validate --portable`, then the
+    retained structured onboarding flow;
+  - emitted `bundle-manifest.json` provenance field
+    `demo_db_source=generated_from_synthetic_loader`;
+  - kept the bundled `.github/agents/delivery-manager.agent.md` and
+    `.github/copilot-instructions.md` aligned to the single-entry bundle story
+    without widening their capability boundary.
+- Focused regression coverage now verifies:
+  - root README section order and equal Try demo / Use local data structure;
+  - runtime README onboarding handoff;
+  - manifest provenance and demo asset inventory;
+  - generated install-helper copy / preserve / rollback behavior;
+  - shipped `demo/sample_pm.db` read-only permission.
+- Independent read-only review found two accepted defects during implementation
+  and both were corrected before final handoff:
+  - `build_bundles()` incorrectly indexed the `BundleArtifacts` dataclass when
+    downloading the wheelhouse;
+  - the shipped `demo/sample_pm.db` was initially writable instead of
+    read-only.
+- Validation / review evidence on the final diff:
+  - focused bundle regressions:
+    `python312-venv/bin/python -m pytest -q tools/tests/test_build_usage_bundle.py tools/tests/test_release_engineering.py`
+    → `11 passed`;
+  - targeted real bundle build exercised the non-`--skip-wheelhouse` path:
+    `python312-venv/bin/python tools/build_usage_bundle.py --platform macos --skip-archive --output-dir <temp>`
+    → passed;
+  - `make validate PYTHON=python312-venv/bin/python` → passed
+    (`477 passed` runtime tests; `38 passed, 19 subtests passed` repository-tool
+    tests);
+  - `make rehearse-release PYTHON=python312-venv/bin/python` → passed;
+  - final independent read-only review of the Slice 4 diff reported no
+    significant remaining issues.
+- Scope/compatibility notes:
+  - no dashboard runtime behavior, page contract, business capability, or
+    interaction-memory code changed in this batch;
+  - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
+    user-owned local state and was not used as the shipped bundle source;
+  - bundle build validation on this machine required a local Python 3.12
+    validation venv under session artifacts because the host-default `python3`
+    is 3.9.
+- Commit / push status:
+  - the Slice 4 implementation batch is committed locally on this branch;
+  - nothing is pushed.
+- Next recommended action:
+  - decide whether to merge/push this bounded Slice 4 batch before any later
+    gate, then handle the separate interaction-memory / personalization path as
+    its own owner decision.
 
 ### 2026-08-08 — Started IP-038 Slice 4 design/scoping after Slice 3 acceptance
 

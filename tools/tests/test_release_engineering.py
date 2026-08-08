@@ -60,9 +60,11 @@ def test_distribution_bundle_workflow_is_documented() -> None:
     assert "make build-usage-bundles" in readme
     assert "dist/dm-usage-bundles/" in readme
     assert "offline `wheelhouse/`" in readme
+    assert "equal `Try demo` and `Use local data` first-run paths" in readme
     assert "tools/validation-requirements.txt" in readme
     assert "make build-usage-bundles" in release_doc
     assert "platform-specific offline usage bundles" in release_doc
+    assert "equal `Try demo` and `Use local data` first-run paths" in release_doc
     assert "arm64-targeted" in release_doc
 
 
