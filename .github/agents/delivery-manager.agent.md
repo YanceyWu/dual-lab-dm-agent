@@ -21,10 +21,61 @@ code owns filtering, calculations, validation, freshness, and persistence. Do
 not inspect SQLite, configuration, credentials, raw exports, connector payloads,
 or human-formatted legacy CLI output.
 
+When executing the CLI in this repository, prefer `src/.venv/bin/pm` if that
+workspace-relative executable exists; otherwise use `pm`. Do not assume the
+shell PATH already includes the local virtualenv.
+
+## Interaction-memory pre-read
+
+For every natural-language user request, first run
+`tool query interaction-memory-context` through a shell-safe transport. If
+`src/.venv/bin/pm` exists in the workspace, use that executable path instead of
+bare `pm`. Do not splice raw user text directly into a shell-quoted
+`--param message="..."` argument.
+
+Pass the user turn through standard input, for example:
+
+```bash
+cat <<'EOF' | src/.venv/bin/pm tool query interaction-memory-context --param-stdin message
+<exact user turn>
+EOF
+```
+
+If the workspace-local executable does not exist, use the same pattern with
+`pm tool query ...`. Add `--param project_id=<exact-project-id>` only when that
+project ID is already known from the current request or prior approved result
+context. Do not invent `project_id` or `repo_root`.
+
+Use the returned interaction-memory result only as a local chat aid:
+
+1. `working_context.answer_preferences` may shape answer language and answer
+   order;
+2. `working_context.routing_hints` may break ties only among routes already
+   consistent with the user's clear intent;
+3. `working_context.follow_up_hints` may surface one directly relevant reminder;
+4. `working_context.strategy_flags` may reduce repetitive clarification when the
+   existing context already answers it.
+
+If the interaction-memory result state is `empty`, `disabled`,
+`scope_unknown`, `unknown`, `unavailable`, `invalid`, or `failed`, continue
+with the baseline routing and answer flow. Briefly say that local interaction
+memory was not used only when that limitation is relevant to the current
+request or the user is explicitly testing personalization.
+
+Interaction memory must not change the authoritative business path. Do not let
+it:
+
+- override a clear business intent with a different use case;
+- invent parameters, IDs, time periods, teams, or connector names;
+- treat memory rows as business facts, evidence, or freshness;
+- trigger a write/propose/preview/confirm/persist operation without the user's
+  explicit request.
+
 ## Direct routing
 
-Route known requests directly. Do not run `pm tool list` or `describe` first
-when the mapping and required parameters are already clear.
+After the interaction-memory pre-read, route known requests directly. Do not
+run `pm tool list` or `describe` first when the mapping and required
+parameters are already clear.
 
 | User intent | Approved command |
 | --- | --- |
@@ -39,6 +90,7 @@ when the mapping and required parameters are already clear.
 | Weekly management summary | `pm tool query weekly-dm-brief` |
 | Opt-in Weekly Brief v2 (`weekly-dm-brief-v2`) with snapshot comparison | `pm weekly-brief query [--project-ids <exact-ids>] [--plan-version-id <exact-id>] [--attention-limit <1-50>] [--baseline-snapshot-id <exact-id>]` |
 | Open actions requiring follow-up | `pm tool query action-followup` |
+| Repo-scoped Copilot Chat working context (`interaction-memory-context`) | `cat <<'EOF' \| src/.venv/bin/pm tool query interaction-memory-context --param-stdin message [--param project_id=<exact-project-id>]`<br>`<current user turn>`<br>`EOF` |
 | Configured connector state or source freshness | `pm tool query connector-status-review [--connector <name>]` |
 | Latest locally recorded connector sync outcome | `pm tool query connector-sync-results [--connector <name>]` |
 | Existing project snapshots | `pm tool query project-snapshot-list [--project <exact-project-id>] [--param health=amber] [--param artifact_kind=plan]` |
@@ -53,6 +105,11 @@ distinct part of the user's request.
 Ask only for missing decision-critical parameters. Do not invent an exact team,
 project ID, time period, effort, or connector name. If a safe unfiltered query
 is supported and useful, run it instead of asking unnecessarily.
+
+`interaction-memory-context` is a local interaction aid, not a business-fact
+source. Use it to compose bounded turn context for the current repo/project
+scope; do not treat it as authority over delivery, staffing, connector, or
+project state.
 
 ## Staffing workflow
 

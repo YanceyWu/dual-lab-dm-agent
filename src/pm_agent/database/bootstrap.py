@@ -18,6 +18,7 @@ from pm_agent.data_onboarding.schema import (
     DATA_ONBOARDING_DDL,
     ensure_onboarding_profile_columns,
 )
+from pm_agent.interaction_memory.schema import INTERACTION_MEMORY_DDL
 from pm_agent.current_state_staffing.schema import CURRENT_STATE_STAFFING_DDL
 from pm_agent.database.execution_schema import PHASE3_CANONICAL_DDL
 from pm_agent.database.project_health_schema import (
@@ -2845,6 +2846,7 @@ def main(quiet: bool = False) -> None:
     conn.executescript(WEEKLY_BRIEF_SNAPSHOT_DDL)
     conn.executescript(STAFFING_CAPACITY_POLICY_DDL)
     conn.executescript(STAFFING_CAPACITY_OPERATIONS_DDL)
+    conn.executescript(INTERACTION_MEMORY_DDL)
     install_or_validate_policy(
         conn, table_preexisting=staffing_capacity_policy_preexisting
     )

@@ -76,6 +76,13 @@ You can then ask questions such as:
 - “为这个项目评估 0.6 FTE 的人员安排。”
 - “生成本周 DM brief。”
 
+The agent now pre-reads repo-scoped interaction memory on each natural-language
+turn before selecting the main approved `pm` command. That lets it reuse local
+answer preferences, recurring repo context, and directly relevant follow-up
+reminders without changing the authoritative business-fact path. If interaction
+memory is empty, disabled, or unavailable, the agent falls back to the baseline
+route and may briefly say that local memory was not used.
+
 The agent maps the question to approved structured `pm` commands. Read-only
 queries may run directly. Staffing writes follow
 `assess → propose → preview → explicit confirmation → persist`; the agent must

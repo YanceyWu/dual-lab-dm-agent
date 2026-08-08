@@ -8,6 +8,7 @@ from pm_agent import __version__
 from pm_agent.cli.commands import attention as attention_commands
 from pm_agent.cli.commands import dashboard as dashboard_commands
 from pm_agent.cli.commands import governance, integrations, onboarding, operations, planning, setup, staffing, tool_transport, weekly_brief
+from pm_agent.cli.commands import interaction_memory
 from pm_agent.cli.commands import project_health_config
 from pm_agent.cli.commands import staffing_policy
 
@@ -35,6 +36,7 @@ app.add_typer(attention_commands.attention_app, name="attention")
 app.add_typer(weekly_brief.weekly_brief_app, name="weekly-brief")
 app.add_typer(project_health_config.project_health_app, name="project-health")
 app.add_typer(onboarding.onboarding_app, name="onboarding")
+app.add_typer(interaction_memory.interaction_memory_app, name="interaction-memory")
 
 
 @app.command("version")

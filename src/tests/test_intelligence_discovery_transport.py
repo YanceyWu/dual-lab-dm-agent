@@ -50,6 +50,7 @@ PRODUCTION_USE_CASE_IDS = {
     "contract-continuity-review",
     "delivery-attention-center",
     "delivery-execution-review",
+    "interaction-memory-context",
     "layered-project-health-review",
     "management-attention",
     "project-health-review",
@@ -238,3 +239,24 @@ def test_trace_summary_stays_bounded_and_has_empty_intelligence(isolated_db) -> 
             ).fetchall()
         }
     assert {"facts", "signals", "recommendations"}.isdisjoint(trace_columns)
+
+
+def test_tool_query_rejects_duplicate_param_and_param_stdin() -> None:
+    cli = CliRunner().invoke(
+        app_module.app,
+        [
+            "tool",
+            "query",
+            "project-snapshot-list",
+            "--param",
+            "limit=1",
+            "--param-stdin",
+            "limit",
+        ],
+        input="2\n",
+    )
+
+    assert cli.exit_code == 2
+    payload = json.loads(cli.output)
+    assert payload["status"] == "invalid"
+    assert payload["warnings"] == [{"code": "DUPLICATE_PARAMETER", "field": "limit"}]

@@ -5,6 +5,13 @@ SQLite-backed management use cases through the `pm` CLI and a loopback Dashboard
 VS Code Copilot provides natural-language interpretation through the repository's
 `Delivery Manager` custom agent.
 
+When available, that `Delivery Manager` agent pre-reads
+`interaction-memory-context` on each natural-language turn, then routes to the
+approved `pm` command family and shapes the answer from returned local answer
+preferences, recurring context, and relevant follow-up hints. If interaction
+memory is empty, disabled, or unavailable, the agent falls back to baseline
+routing rather than inventing personalization.
+
 ## Install
 
 Python 3.10 or newer is required.
@@ -100,6 +107,7 @@ Registered use cases cover:
 - `weekly-dm-brief`
 - `weekly-dm-brief-v2`
 - `action-followup`
+- `interaction-memory-context`
 - `connector-status-review`
 - `connector-sync-results`
 - `project-snapshot-list`
@@ -113,6 +121,23 @@ command family.
 `pm tool query` returns structured JSON with evidence, freshness, warnings,
 assumptions, execution metadata, and stable error codes. Missing or stale data
 must not be interpreted as zero, healthy, available, or safe.
+
+For local experimentation with repo-scoped Copilot Chat personalization, the
+package also provides:
+
+```bash
+pm interaction-memory status
+pm interaction-memory demo-seed
+pm interaction-memory inspect
+pm interaction-memory resolve --message "先看下谁还有容量，我准备补本周 brief。"
+cat <<'EOF' | pm tool query interaction-memory-context --param-stdin message
+show "Atlas" $HOME capacity
+EOF
+```
+
+This interaction-memory path is local and non-authoritative: it composes
+working context for one chat turn, but it does not replace existing `pm` facts
+or controlled write flows.
 
 ## Staffing workflow
 

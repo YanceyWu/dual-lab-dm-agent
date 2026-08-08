@@ -15,6 +15,9 @@ from pm_agent.use_cases.execution import (
     UseCaseExecutor,
 )
 from pm_agent.use_cases.hiref_management import HirefManagementService
+from pm_agent.use_cases.interaction_memory_context import (
+    execute_interaction_memory_context,
+)
 from pm_agent.use_cases.management_attention import execute_management_attention
 from pm_agent.use_cases.layered_project_health import execute_layered_project_health_review
 from pm_agent.use_cases.project_health import execute_project_health_review
@@ -199,6 +202,33 @@ use_case_executor.register(
     execute_weekly_dm_brief_v2,
 )
 use_case_executor.register(UseCaseDescriptor(use_case_id="action-followup", purpose="Return open actions requiring follow-up without changing them.", parameter_schema={}), execute_action_followup)
+use_case_executor.register(
+    UseCaseDescriptor(
+        use_case_id="interaction-memory-context",
+        purpose="Resolve repo-scoped Copilot interaction memory and compose bounded turn context without changing authoritative business facts.",
+        parameter_schema={
+            "message": {
+                "type": "string",
+                "required": True,
+                "maximum_length": 2000,
+                "description": "Current user turn to classify and compose context for.",
+            },
+            "project_id": {
+                "type": "string",
+                "required": False,
+                "maximum_length": 128,
+                "description": "Optional stable project scope identifier.",
+            },
+            "repo_root": {
+                "type": "string",
+                "required": False,
+                "maximum_length": 512,
+                "description": "Optional repository root path used when no project_id is available.",
+            },
+        },
+    ),
+    execute_interaction_memory_context,
+)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-status-review", purpose="Return offline connector source and sync freshness without runtime probing.", parameter_schema={"connector": {"type": "string", "required": False, "enum": ["jira", "confluence", "servicenow"], "description": "Optional connector name."}}), execute_connector_status_review)
 use_case_executor.register(UseCaseDescriptor(use_case_id="connector-sync-results", purpose="Return normalized latest local connector sync outcomes without credentials or raw errors.", parameter_schema={"connector": {"type": "string", "required": False, "enum": ["jira", "confluence", "servicenow"], "description": "Optional connector name."}}), execute_connector_sync_results)
 use_case_executor.register(UseCaseDescriptor(use_case_id="project-snapshot-list", purpose="List stored project snapshots through the shared read-only contract.", parameter_schema={"project_id": {"type": "string", "required": False, "maximum_length": 200, "description": "Optional exact project ID."}, "artifact_kind": {"type": "string", "required": False, "maximum_length": 50, "description": "Optional snapshot kind."}, "artifact_state": {"type": "string", "required": False, "maximum_length": 50, "description": "Optional snapshot state."}, "health": {"type": "string", "required": False, "enum": ["green", "amber", "red", "unknown"], "description": "Optional health filter."}, "horizon": {"type": "string", "required": False, "maximum_length": 50, "description": "Optional horizon filter."}, "limit": {"type": "integer", "required": False, "minimum": 1, "maximum": 200, "description": "Maximum snapshots, 1 to 200."}}), execute_project_snapshot_list)

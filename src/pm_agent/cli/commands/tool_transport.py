@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any, Optional
 
 import typer
@@ -37,6 +38,17 @@ def _generic_parameters(values: list[str]) -> dict[str, Any]:
             raise ValueError(f"DUPLICATE_PARAMETER:{key}")
         parameters[key] = _decode_parameter(value)
     return parameters
+
+
+def _stdin_parameter(key: str | None) -> dict[str, Any]:
+    if not key:
+        return {}
+    normalized_key = key.strip()
+    if not normalized_key:
+        raise ValueError("PARAMETER_STDIN_KEY_INVALID")
+    raw_value = sys.stdin.read()
+    value = raw_value[:-1] if raw_value.endswith("\n") else raw_value
+    return {normalized_key: _decode_parameter(value)}
 
 
 def _emit(request: UseCaseRequest | UseCaseResult) -> None:
@@ -92,6 +104,11 @@ def query_use_case(
         "--param",
         help="Generic use-case parameter as key=value; repeatable.",
     ),
+    param_stdin: Optional[str] = typer.Option(
+        None,
+        "--param-stdin",
+        help="Read one generic use-case parameter value from standard input.",
+    ),
     actor: str = typer.Option("copilot", "--actor"),
     correlation_id: Optional[str] = typer.Option(None, "--correlation-id"),
 ):
@@ -105,6 +122,7 @@ def query_use_case(
     )
     try:
         generic = _generic_parameters(param or [])
+        stdin_generic = _stdin_parameter(param_stdin)
     except ValueError as exc:
         code, _, field = str(exc).partition(":")
         _emit(
@@ -120,6 +138,20 @@ def query_use_case(
             )
         )
         return
+    overlap = sorted(set(generic) & set(stdin_generic))
+    if overlap:
+        _emit(
+            UseCaseResult(
+                status="invalid",
+                warnings=[
+                    {"code": "DUPLICATE_PARAMETER", "field": field}
+                    for field in overlap
+                ],
+                execution_metadata=new_execution_metadata(request),
+            )
+        )
+        return
+    generic = {**generic, **stdin_generic}
     fixed = {
         key: value
         for key, value in {
