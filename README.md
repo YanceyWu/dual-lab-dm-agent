@@ -160,9 +160,11 @@ That command generates separate **macOS** and **Windows** usage bundles under
 dependencies above, and each generated bundle is target-specific to its
 configured Python/architecture. Each bundle contains:
 
+- one root landing page that keeps the default story to **install → open in VS Code → use the `Delivery Manager` agent**, with equal `Try demo` and `Use local data` first-run paths;
 - a trimmed workspace with `.github/agents/delivery-manager.agent.md` and
   `.github/copilot-instructions.md`;
 - `src/` runtime sources and starter config templates only;
+- one read-only bundled synthetic demo DB at `demo/sample_pm.db`, generated during the bundle build from the committed synthetic loader path;
 - a platform-specific offline `wheelhouse/`;
 - one-click install/open scripts for VS Code + Copilot entry.
 
