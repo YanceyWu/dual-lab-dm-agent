@@ -3,6 +3,7 @@ var App = {
   _current: "overview",
   _loaded: {},
   _visibleTabs: new Set(["overview"]),
+  _tabRegistry: {},
 
   _surfaceConfig: function () {
     return CONFIG.PRODUCT_SURFACE || {
@@ -10,6 +11,29 @@ var App = {
       visibleTabs: ["overview"],
       tabGroups: {},
     };
+  },
+
+  _surfaceAssemblies: function () {
+    var assemblies = [];
+    if (typeof LegacyDashboardSurface !== "undefined") {
+      assemblies.push(LegacyDashboardSurface);
+    }
+    if (typeof ExperimentalDashboardSurface !== "undefined") {
+      assemblies.push(ExperimentalDashboardSurface);
+    }
+    return assemblies.filter(function (surface) {
+      return surface && Array.isArray(surface.tabs);
+    });
+  },
+
+  _buildTabRegistry: function () {
+    var registry = {};
+    App._surfaceAssemblies().forEach(function (surface) {
+      surface.tabs.forEach(function (entry) {
+        registry[entry.id] = entry;
+      });
+    });
+    App._tabRegistry = registry;
   },
 
   _resolveDefaultTab: function (preferred) {
@@ -70,20 +94,10 @@ var App = {
 
   _load: function (tab) {
     if (!App._visibleTabs.has(tab)) return;
+    var entry = App._tabRegistry[tab];
+    if (!entry || typeof entry.load !== "function") return;
     App._loaded[tab] = true;
-    if (tab === "overview") SectionOverview.load();
-    if (tab === "projects") SectionProjects.load();
-    if (tab === "team") SectionTeam.load();
-    if (tab === "hiref") SectionHiref.load();
-    if (tab === "allocation") SectionAllocation.load();
-    if (tab === "health") SectionHealth.load();
-    if (tab === "attention") SectionIntelligence.loadAttention();
-    if (tab === "weekly-brief") SectionIntelligence.loadWeeklyBrief();
-    if (tab === "capacity") SectionIntelligence.loadCapacity();
-    if (tab === "execution") SectionIntelligence.loadExecution();
-    if (tab === "layered-health") SectionIntelligence.loadLayeredHealth();
-    if (tab === "connectors") SectionIntelligence.loadConnectors();
-    if (tab === "snapshots") SectionIntelligence.loadSnapshots();
+    entry.load();
   },
 
   reload: function () {
@@ -93,6 +107,7 @@ var App = {
 };
 
 document.addEventListener("DOMContentLoaded", function () {
+  App._buildTabRegistry();
   App._applySurface();
   App.navigate(App._current);
 });

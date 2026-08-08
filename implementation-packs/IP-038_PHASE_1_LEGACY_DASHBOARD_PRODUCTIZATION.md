@@ -1,6 +1,6 @@
 # IP-038 — Phase 1 Legacy Dashboard Productization
 
-Status: `OWNER-APPROVED 2026-08-07 — CURRENT WORKING TREE LIMITED TO SLICE 1`
+Status: `OWNER-APPROVED 2026-08-07 — SLICE 1/2/3 ACCEPTED; SLICE 4 AUTHORIZED AS THE NEXT GATE`
 Design: `architecture/17_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION_DESIGN.md`
 Implementation branch: `phase1-legacy-dashboard`
 Baseline: `a6d654a0d2ead6027c1da673fef6d2a2ebcd6e80`
@@ -19,8 +19,9 @@ business capabilities or rewriting the product.
 The owner approved the direction on 2026-08-07. Work may proceed only in the
 ordered slices recorded below, with an owner review gate after each slice.
 
-The current working tree is authorized to implement **Slice 1 only** unless a
-later review explicitly advances to Slice 2 or beyond.
+Slice 1 was later accepted, and the owner later advanced the local working tree
+through **Slice 3**. Slice 2 and Slice 3 are now accepted, and Slice 4 is the
+next authorized gate. Later slices still require separate review.
 
 ## Current local state before Slice 1
 
@@ -82,6 +83,18 @@ Acceptance criteria:
 
 - legacy page contracts no longer depend on mixed view-layer adaptation;
 - degraded-state semantics remain explicit and behavior-preserving.
+
+## Current local state after Slice 3
+
+- the six retained legacy pages now read through bounded page-level providers:
+  Overview, Projects, Team, HIREF, Monthly Plan, and Project Health;
+- provider-owned contracts now cover degraded-state display behavior, fallback
+  gating, page summary/alert/confirmation text, and normalized row/card/table
+  display models for the legacy pages;
+- the Monthly Plan section now renders provider-owned employee/project view
+  models rather than rebuilding allocation severity/detail semantics in the
+  section layer;
+- Slice 4 config and bundle flattening has not started.
 
 ### Slice 4 — Phase 1 config and bundle flattening
 
@@ -156,5 +169,7 @@ changes without requiring data migration or persistent state repair.
 
 ## Next gate
 
-Implement Slice 1 only. After Slice 1 validation and independent review, stop
-for owner review before entering Slice 2.
+Enter Slice 4 with a bounded design/scoping pass for Phase 1 config and bundle
+flattening. Keep the work limited to the external-trial install/launch/default
+onboarding story; do not fold in new business capability, dashboard rewrites,
+or unrelated documentation churn.

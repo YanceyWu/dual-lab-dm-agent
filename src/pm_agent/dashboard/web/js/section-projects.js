@@ -2,29 +2,27 @@ var SectionProjects = {
   load: function () {
     var el = document.getElementById("projects-content");
     el.innerHTML = C.skeleton();
-    Promise.all([DataService.projects(), DataService.projectHealth()])
-      .then(function (results) {
-        var projs = results[0];
-        var healthList = results[1];
-        // Build health lookup by project id
-        var healthMap = {};
-        healthList.forEach(function (h) {
-          healthMap[h.id] = h.health;
-        });
-        // Merge health data into projects
-        projs = projs.map(function (p) {
-          p.health = healthMap[p.id] || null;
-          return p;
-        });
-        var html = projs
+    ProjectsPageProvider.load()
+      .then(function (model) {
+        var html = model.projects
           .map(function (p, i) {
             return C.projectCard(p, i);
           })
           .join("");
-        el.innerHTML = '<div class="proj-grid">' + html + "</div>";
+        var alerts = model.meta.issues
+          .map(function (issue) {
+            return C.alertStrip("i", esc(issue.message), "blue");
+          })
+          .join("");
+        el.innerHTML = (alerts ? '<div class="card mb-4">' + alerts + "</div>" : "")
+          + '<div class="proj-grid">' + html + "</div>";
       })
       .catch(function (err) {
-        el.innerHTML = C.alertStrip("X", "Error: " + err.message, "red");
+        el.innerHTML = C.alertStrip(
+          "X",
+          err.message || "Error loading projects",
+          "red",
+        );
       });
   },
 };

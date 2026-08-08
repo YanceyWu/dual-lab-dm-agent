@@ -143,6 +143,10 @@ body {
 .nav-badge.amber {
   background: var(--amber);
 }
+.nav-badge.muted {
+  background: var(--border);
+  color: var(--text-muted);
+}
 
 .sidebar-footer {
   padding: var(--s3) var(--s4);

@@ -3,8 +3,8 @@ var SectionTeam = {
   load: function() {
     var el = document.getElementById('team-content');
     el.innerHTML = C.skeleton();
-    DataService.employees().then(function(emps) {
-      SectionTeam._data = emps;
+    TeamPageProvider.load().then(function(model) {
+      SectionTeam._data = model.rows;
       el.innerHTML =
         '<div class="filter-bar">'
           + '<span class="filter-label">Filter</span>'
@@ -29,7 +29,7 @@ var SectionTeam = {
         + '</table></div>';
       SectionTeam._render();
     }).catch(function(err) {
-      el.innerHTML = C.alertStrip('X', 'Error: ' + err.message, 'red');
+      el.innerHTML = C.alertStrip('X', err.message || 'Error loading team', 'red');
     });
   },
   _render: function() {
@@ -37,16 +37,10 @@ var SectionTeam = {
     var typ = document.getElementById('t-type').value;
     var lod = document.getElementById('t-load').value;
     var data = SectionTeam._data.filter(function(e) {
-      var matchQ = !q
-        || e.name.toLowerCase().indexOf(q) >= 0
-        || (e.wd_id||'').toLowerCase().indexOf(q) >= 0
-        || (e.projects||[]).some(function(p){ return p.name.toLowerCase().indexOf(q) >= 0; });
+      var matchQ = !q || (e.searchText || "").indexOf(q) >= 0;
       var matchT = !typ || (typ==='stfte' && e.is_contractor) || (typ==='ltfte' && !e.is_contractor);
-      var loadKnown = e.current_state_staffing_state === 'known' && e.load_pct != null;
       var matchL = !lod
-        || (lod==='over'  && loadKnown && e.load_pct > 100)
-        || (lod==='full'  && loadKnown && e.load_pct === 100)
-        || (lod==='avail' && loadKnown && e.load_pct < 100);
+        || e.loadBucket === lod;
       return matchQ && matchT && matchL;
     });
     var rows = data.map(function(e){ return C.staffRow(e); }).join('');

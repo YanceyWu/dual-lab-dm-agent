@@ -1,52 +1,30 @@
 var SectionHiref = {
-  _coverageSubtitle: function(data, fallback) {
-    if (fallback != null) return fallback;
-    return 'Contract coverage ' + humanizeKey(data.contract_coverage_freshness_state || 'unknown').toLowerCase();
-  },
   load: function() {
     var el = document.getElementById('hiref-content');
     el.innerHTML = C.skeleton();
-    DataService.hiref().then(function(data) {
-      var uc = function(u) {
-        return data.expiring_staff.filter(function(x){ return x.urgency===u; }).length;
-      };
-      var assignedFreeSubtitle = (data.assigned_count != null && data.free_count != null)
-        ? data.assigned_count + ' assigned / ' + data.free_count + ' free'
-        : SectionHiref._coverageSubtitle(data, null);
-      var nextHirefValue = data.next_covered_count != null ? data.next_covered_count : 'Unknown';
-      var nextHirefSubtitle = data.next_covered_count != null
-        ? 'Already covered by next HIREF'
-        : SectionHiref._coverageSubtitle(data, null);
-      var mismatchValue = data.mismatch_count != null ? data.mismatch_count : 'Unknown';
-      var mismatchSubtitle = data.mismatch_count != null
-        ? 'HIREF project != actual project'
-        : SectionHiref._coverageSubtitle(data, null);
-      var freeSlotsValue = data.free_count != null ? data.free_count : 'Unknown';
-      var freeSlotsSubtitle = data.free_count != null
-        ? 'Available for assignment'
-        : SectionHiref._coverageSubtitle(data, null);
-      var allRows   = data.all_hiref.map(function(h) { return C.hirefRow(h); }).join('');
-      var staffRows = data.expiring_staff.map(function(e) { return C.staffHirefRow(e); }).join('');
+    HirefPageProvider.load().then(function(model) {
+      var allRows = model.allHiref.map(function(item) { return C.hirefRow(item); }).join('');
+      var staffRows = model.expiringStaff.map(function(item) { return C.staffHirefRow(item); }).join('');
       el.innerHTML =
         '<div class="kpi-grid mb-5">'
-        + C.kpiCard('Total HIREF',   data.total,          assignedFreeSubtitle)
-        + C.kpiCard('Critical <60d', uc('critical'),      'Immediate action required', uc('critical') > 0 ? 'coral' : '')
-        + C.kpiCard('High <90d',     uc('high'),          'Plan renewal soon', uc('high') > 0 ? 'amber' : '')
-        + C.kpiCard('Next HIREF',    nextHirefValue,      nextHirefSubtitle, data.next_covered_count > 0 ? 'info' : '')
-        + C.kpiCard('Mismatch',      mismatchValue,       mismatchSubtitle, data.mismatch_count > 0 ? 'coral' : '')
-        + C.kpiCard('Free Slots',    freeSlotsValue,      freeSlotsSubtitle, 'info')
+        + C.kpiCard('Total HIREF', model.kpis.total.value, model.kpis.total.subtitle)
+        + C.kpiCard('Critical <60d', model.kpis.critical.value, model.kpis.critical.subtitle, model.kpis.critical.variant)
+        + C.kpiCard('High <90d', model.kpis.high.value, model.kpis.high.subtitle, model.kpis.high.variant)
+        + C.kpiCard('Next HIREF', model.kpis.nextHiref.value, model.kpis.nextHiref.subtitle, model.kpis.nextHiref.variant)
+        + C.kpiCard('Mismatch', model.kpis.mismatch.value, model.kpis.mismatch.subtitle, model.kpis.mismatch.variant)
+        + C.kpiCard('Free Slots', model.kpis.freeSlots.value, model.kpis.freeSlots.subtitle, model.kpis.freeSlots.variant)
       + '</div>'
         + '<div class="subtab-bar">'
           + '<button class="subtab-btn active" onclick="SectionHiref._tab(\'staff\',this)">Staff Expiry View</button>'
-          + '<button class="subtab-btn"        onclick="SectionHiref._tab(\'all\',this)">All HIREF Slots</button>'
+          + '<button class="subtab-btn" onclick="SectionHiref._tab(\'all\',this)">All HIREF Slots</button>'
         + '</div>'
         + '<div class="subtab-panel active" id="hs-staff">'
-          + (data.expiring_staff.length
+          + (model.expiringStaffState === 'ready'
             ? '<div class="table-wrap"><table><thead><tr>'
               + '<th>WD ID</th><th>Name</th><th>HIREF ID</th><th>HIREF Project</th>'
               + '<th>Status / Signals</th><th>End Date</th><th>Actual Project / Coverage</th>'
               + '</tr></thead><tbody>' + staffRows + '</tbody></table></div>'
-            : C.alertStrip('OK', 'No staff with HIREF expiring within 180 days', 'green'))
+            : C.alertStrip('i', model.expiringStaffMessage, model.expiringStaffTone))
         + '</div>'
         + '<div class="subtab-panel" id="hs-all">'
           + '<div class="table-wrap"><table><thead><tr>'
@@ -54,7 +32,7 @@ var SectionHiref = {
           + '</tr></thead><tbody>' + allRows + '</tbody></table></div>'
         + '</div>';
     }).catch(function(err) {
-      el.innerHTML = C.alertStrip('X', 'Error: ' + err.message, 'red');
+      el.innerHTML = C.alertStrip('X', err.message || 'Error loading HIREF', 'red');
     });
   },
   _tab: function(which, btn) {

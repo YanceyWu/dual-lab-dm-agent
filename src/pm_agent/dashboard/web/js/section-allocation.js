@@ -5,88 +5,18 @@ var SectionAllocation = {
   load: function () {
     var el = document.getElementById("allocation-content");
     el.innerHTML = C.skeleton();
-    DataService.allocations()
-      .then(function (raw) {
-        SectionAllocation._data = SectionAllocation._pivot(raw);
+    MonthlyPlanPageProvider.load()
+      .then(function (model) {
+        SectionAllocation._data = model;
         SectionAllocation._render(el);
       })
       .catch(function (err) {
-        el.innerHTML = C.alertStrip("X", "Error: " + err.message, "red");
+        el.innerHTML = C.alertStrip(
+          "X",
+          err.message || "Error loading monthly plan",
+          "red",
+        );
       });
-  },
-
-  _pivot: function (raw) {
-    var monthSet = {};
-    var empMap = {},
-      projMap = {};
-    raw.forEach(function (r) {
-      var mkey = r.year + "-" + ("0" + r.month).slice(-2);
-      monthSet[mkey] = 1;
-
-      // Employee map — accumulate totals + per-project breakdown
-      if (!empMap[r.employee_id]) {
-        empMap[r.employee_id] = {
-          id: r.employee_id,
-          name: r.name,
-          wd_id: r.wd_id,
-          is_contractor: r.wd_id && r.wd_id.toString().slice(-1) === "C",
-          months: {},
-          projects: {},
-        };
-      }
-      empMap[r.employee_id].months[mkey] =
-        (empMap[r.employee_id].months[mkey] || 0) + r.allocation;
-      if (!empMap[r.employee_id].projects[r.project_id]) {
-        empMap[r.employee_id].projects[r.project_id] = {
-          name: r.project_name,
-          months: {},
-        };
-      }
-      empMap[r.employee_id].projects[r.project_id].months[mkey] =
-        (empMap[r.employee_id].projects[r.project_id].months[mkey] || 0) +
-        r.allocation;
-
-      // Project map — accumulate totals + per-employee breakdown
-      if (!projMap[r.project_id]) {
-        projMap[r.project_id] = {
-          id: r.project_id,
-          name: r.project_name,
-          months: {},
-          employees: {},
-        };
-      }
-      projMap[r.project_id].months[mkey] =
-        (projMap[r.project_id].months[mkey] || 0) + r.allocation;
-      if (!projMap[r.project_id].employees[r.employee_id]) {
-        projMap[r.project_id].employees[r.employee_id] = {
-          name: r.name,
-          is_contractor: r.wd_id && r.wd_id.toString().slice(-1) === "C",
-          months: {},
-        };
-      }
-      projMap[r.project_id].employees[r.employee_id].months[mkey] =
-        (projMap[r.project_id].employees[r.employee_id].months[mkey] || 0) +
-        r.allocation;
-    });
-
-    var months = Object.keys(monthSet).sort();
-    var by_employee = Object.values(empMap).sort(function (a, b) {
-      return a.name.localeCompare(b.name);
-    });
-    var by_project = Object.values(projMap)
-      .map(function (p) {
-        return {
-          id: p.id,
-          name: p.name,
-          member_count: Object.keys(p.employees).length,
-          months: p.months,
-          employees: p.employees,
-        };
-      })
-      .sort(function (a, b) {
-        return a.name.localeCompare(b.name);
-      });
-    return { months: months, by_employee: by_employee, by_project: by_project };
   },
 
   _render: function (el) {
@@ -124,8 +54,8 @@ var SectionAllocation = {
 
     var content =
       v === "employee"
-        ? SectionAllocation._empTable(d.by_employee, d.months)
-        : SectionAllocation._projTable(d.by_project, d.months);
+        ? SectionAllocation._empTable(d.employeeView, d.months)
+        : SectionAllocation._projTable(d.projectView, d.months);
     el.innerHTML = filterBar + content;
     SectionAllocation._filter();
   },
@@ -180,58 +110,39 @@ var SectionAllocation = {
     );
   },
 
-  // Employee cell: 100% = good (green), <100% = warning (amber), >100% = error (red)
-  _empCell: function (val, sub) {
-    var tdCls = sub ? " alloc-sub-cell" : "";
-    if (!val) return '<td class="alloc-cell' + tdCls + ' empty">—</td>';
-    var v = Math.round(val * 100);
-    var cls =
-      v > 100 ? "e-over" : v === 100 ? "e-ok" : v >= 80 ? "e-warn" : "e-low";
+  _cell: function (cell) {
+    var tdCls = cell.isSub ? " alloc-sub-cell" : "";
     return (
       '<td class="alloc-cell' +
       tdCls +
       " " +
-      cls +
+      (cell.className || "empty") +
       '"><span class="alloc-pill">' +
-      v +
-      "%</span></td>"
-    );
-  },
-
-  // Project cell: show FTE sum, no red for >1 FTE (multiple people is normal)
-  _projCell: function (val, sub) {
-    var tdCls = sub ? " alloc-sub-cell" : "";
-    if (!val) return '<td class="alloc-cell' + tdCls + ' empty">—</td>';
-    var fte = val.toFixed(1);
-    var cls = val === 0 ? "empty" : "p-ok";
-    return (
-      '<td class="alloc-cell' +
-      tdCls +
-      " " +
-      cls +
-      '"><span class="alloc-pill">' +
-      fte +
+      esc(cell.text || "—") +
       "</span></td>"
     );
   },
 
-  // Build a collapsible detail row containing a mini-table of breakdowns
-  // mode: 'employee' (sub rows are projects) | 'project' (sub rows are people)
-  _detailRow: function (key, colSpan, headerLabel, subRows, months, mode) {
+  _legend: function (items) {
+    return (
+      '<div class="alloc-legend-bar">' +
+      (items || [])
+        .map(function (item) {
+          return '<span class="alloc-legend-item ' + item.className + '">' + item.text + "</span>";
+        })
+        .join("") +
+      "</div>"
+    );
+  },
+
+  _detailRow: function (key, colSpan, headerLabel, subRows, months) {
     var subHtml = subRows
       .map(function (sr) {
-        var cells =
-          mode === "project"
-            ? months
-                .map(function (m) {
-                  return SectionAllocation._empCell(sr.months[m], true);
-                })
-                .join("")
-            : months
-                .map(function (m) {
-                  return SectionAllocation._projCell(sr.months[m], true);
-                })
-                .join("");
+        var cells = (sr.cells || [])
+          .map(function (cell) {
+            return SectionAllocation._cell(cell);
+          })
+          .join("");
         return (
           '<tr class="alloc-sub-row">' +
           '<td class="alloc-sub-name-col">' +
@@ -279,33 +190,11 @@ var SectionAllocation = {
     );
   },
 
-  _empTable: function (rows, months) {
+  _empTable: function (view, months) {
     var thead = "<thead>" + SectionAllocation._monthHeader(months) + "</thead>";
-    var unassigned = 0;
     var colSpan = months.length + 2;
-    var legend =
-      '<div class="alloc-legend-bar">' +
-      '<span class="alloc-legend-item e-ok">100% — On target</span>' +
-      '<span class="alloc-legend-item e-warn">&lt;100% or 0% — Under-allocated / Gap</span>' +
-      '<span class="alloc-legend-item e-over">&gt;100% — Overloaded</span>' +
-      "</div>";
-
-    // Build issue summary: employees with ANY month != 100%
-    var issues = { over: [], under: [] };
-    rows.forEach(function (r) {
-      var hasAny = months.some(function (m) {
-        return (r.months[m] || 0) > 0;
-      });
-      if (!hasAny) return;
-      months.forEach(function (m) {
-        var v = Math.round((r.months[m] || 0) * 100);
-        if (v > 100 && issues.over.indexOf(r.name) < 0)
-          issues.over.push(r.name);
-        if (v < 100 && issues.under.indexOf(r.name) < 0)
-          issues.under.push(r.name);
-      });
-    });
-
+    var legend = SectionAllocation._legend(view.legend);
+    var issues = view.issueSummary || { over: [], under: [] };
     var issueBanner = "";
     if (issues.over.length || issues.under.length) {
       var parts = [];
@@ -339,65 +228,30 @@ var SectionAllocation = {
         "</div>";
     }
 
-    var tbody = rows
+    var tbody = (view.rows || [])
       .map(function (r) {
-        var key = "emp-" + r.id;
-        var cells = months
-          .map(function (m) {
-            return SectionAllocation._empCell(r.months[m]);
+        var cells = (r.cells || [])
+          .map(function (cell) {
+            return SectionAllocation._cell(cell);
           })
           .join("");
-        var vals = months.map(function (m) {
-          return r.months[m] || 0;
-        });
-        var avg = vals.length
-          ? Math.round(
-              (vals.reduce(function (a, v) {
-                return a + v;
-              }, 0) /
-                vals.length) *
-                100,
-            )
-          : 0;
-        var hasAny = vals.some(function (v) {
-          return v > 0;
-        });
-        if (!hasAny) unassigned++;
-        var avgCls =
-          avg > 100
-            ? "e-over"
-            : avg === 100
-              ? "e-ok"
-              : avg > 0
-                ? "e-warn"
-                : "e-low";
-
-        // Flag row if any month is not exactly 100% (including 0% gaps)
-        var hasIssue = hasAny && months.some(function (m) {
-          var v = Math.round((r.months[m] || 0) * 100);
-          return v !== 100;
-        });
-
-        var projects = Object.values(r.projects).sort(function (a, b) {
-          return a.name.localeCompare(b.name);
-        });
-        var hasProjects = projects.length > 0;
+        var hasProjects = (r.detailRows || []).length > 0;
 
         var mainRow =
           '<tr class="alloc-row alloc-parent-row' +
-          (hasIssue ? " has-issue" : "") +
+          (r.hasIssue ? " has-issue" : "") +
           '" data-name="' +
           esc(r.name) +
           '" data-key="' +
-          key +
+          r.key +
           '" onclick="SectionAllocation._toggle(\'' +
-          key +
+          r.key +
           "')\">" +
           '<td class="alloc-name-col">' +
           '<button class="alloc-toggle-btn' +
           (hasProjects ? "" : " disabled") +
           '" title="' +
-          (hasProjects ? "Show project breakdown" : "No project data") +
+          esc(r.detailToggleTitle || (hasProjects ? "Show project breakdown" : "No project data")) +
           '"' +
           (hasProjects ? "" : " disabled") +
           '><svg width="8" height="8" viewBox="0 0 8 8"><path d="M2 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
@@ -406,28 +260,27 @@ var SectionAllocation = {
           esc(r.name) +
           "</div>" +
           '<div class="alloc-type-badge ' +
-          (r.is_contractor ? "stfte" : "ltfte") +
+          r.typeClass +
           '">' +
-          (r.is_contractor ? "STFTE" : "LTFTE") +
+          r.typeLabel +
           "</div>" +
           "</div>" +
           "</td>" +
           cells +
           '<td class="alloc-cell alloc-total ' +
-          avgCls +
+          r.totalCell.className +
           '"><span class="alloc-pill">' +
-          avg +
-          "%</span></td>" +
+          r.totalCell.text +
+          "</span></td>" +
           "</tr>";
 
         var detailRow = hasProjects
           ? SectionAllocation._detailRow(
-              key,
+              r.key,
               colSpan,
-              "Project",
-              projects,
+              r.detailHeader,
+              r.detailRows,
               months,
-              "employee",
             )
           : "";
 
@@ -436,10 +289,10 @@ var SectionAllocation = {
       .join("");
 
     var summary =
-      unassigned > 0
+      view.zeroAllocationCount > 0
         ? C.alertStrip(
             "!",
-            unassigned + " employee(s) have no allocations recorded",
+            view.zeroAllocationCount + " employee(s) only have 0% allocation rows in this view",
             "amber",
           )
         : "";
@@ -455,63 +308,32 @@ var SectionAllocation = {
     );
   },
 
-  _projTable: function (rows, months) {
+  _projTable: function (view, months) {
     var thead = "<thead>" + SectionAllocation._monthHeader(months) + "</thead>";
-    var empty = 0;
     var colSpan = months.length + 2;
-    var legend =
-      '<div class="alloc-legend-bar">' +
-      '<span class="alloc-legend-item p-ok">FTE count per month (multiple staff per project is normal)</span>' +
-      "</div>";
-    var tbody = rows
+    var legend = SectionAllocation._legend(view.legend);
+    var tbody = (view.rows || [])
       .map(function (r) {
-        var key = "proj-" + r.id;
-        var cells = months
-          .map(function (m) {
-            return SectionAllocation._projCell(r.months[m]);
+        var cells = (r.cells || [])
+          .map(function (cell) {
+            return SectionAllocation._cell(cell);
           })
           .join("");
-        var vals = months.map(function (m) {
-          return r.months[m] || 0;
-        });
-        var avg = vals.length
-          ? (
-              vals.reduce(function (a, v) {
-                return a + v;
-              }, 0) / vals.length
-            ).toFixed(1)
-          : "0.0";
-        var hasAny = vals.some(function (v) {
-          return v > 0;
-        });
-        if (!hasAny) empty++;
-
-        var employees = Object.values(r.employees)
-          .map(function (e) {
-            return {
-              name: e.name,
-              type: e.is_contractor ? "STFTE" : "LTFTE",
-              months: e.months,
-            };
-          })
-          .sort(function (a, b) {
-            return a.name.localeCompare(b.name);
-          });
-        var hasMembers = employees.length > 0;
+        var hasMembers = (r.detailRows || []).length > 0;
 
         var mainRow =
           '<tr class="alloc-row alloc-parent-row" data-name="' +
           esc(r.name) +
           '" data-key="' +
-          key +
+          r.key +
           '" onclick="SectionAllocation._toggle(\'' +
-          key +
+          r.key +
           "')\">" +
           '<td class="alloc-name-col">' +
           '<button class="alloc-toggle-btn' +
           (hasMembers ? "" : " disabled") +
           '" title="' +
-          (hasMembers ? "Show team members" : "No member data") +
+          esc(r.detailToggleTitle || (hasMembers ? "Show team members" : "No member data")) +
           '"' +
           (hasMembers ? "" : " disabled") +
           '><svg width="8" height="8" viewBox="0 0 8 8"><path d="M2 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
@@ -520,24 +342,23 @@ var SectionAllocation = {
           esc(r.name) +
           "</div>" +
           '<div class="alloc-sub">' +
-          r.member_count +
-          " staff</div>" +
+          r.subLabel +
+          "</div>" +
           "</div>" +
           "</td>" +
           cells +
-          '<td class="alloc-cell alloc-total p-total"><span class="alloc-pill">' +
-          avg +
-          " FTE</span></td>" +
+          '<td class="alloc-cell alloc-total ' + r.totalCell.className + '"><span class="alloc-pill">' +
+          r.totalCell.text +
+          "</span></td>" +
           "</tr>";
 
         var detailRow = hasMembers
           ? SectionAllocation._detailRow(
-              key,
+              r.key,
               colSpan,
-              "Team Member",
-              employees,
+              r.detailHeader,
+              r.detailRows,
               months,
-              "project",
             )
           : "";
 
@@ -546,14 +367,15 @@ var SectionAllocation = {
       .join("");
 
     var summary =
-      empty > 0
+      view.zeroAllocationCount > 0
         ? C.alertStrip(
             "!",
-            empty + " project(s) have no monthly allocations recorded",
+            view.zeroAllocationCount + " project(s) only have 0 FTE rows in this view",
             "amber",
           )
         : "";
     return (
+      legend +
       summary +
       '<div class="table-wrap alloc-table-wrap"><table>' +
       thead +

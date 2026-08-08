@@ -634,14 +634,15 @@ def projects():
 @app.route("/api/employees")
 def employees():
     c = db()
+    contract_publication_freshness = _contract_coverage_publication_freshness()
+    review_counts_available = _contract_review_counts_available_from_publication(
+        contract_publication_freshness
+    )
     result = []
     for member in repository.get_all_members():
         emp = dict(member)
         freshness_state = str(
             emp.get("current_state_staffing_freshness_state") or "unknown"
-        )
-        contract_freshness_state = str(
-            emp.get("contract_coverage_freshness_state") or "unknown"
         )
         project_details = list(emp.pop("current_state_project_details", []))
         emp.pop("current_state_projects", None)
@@ -653,6 +654,7 @@ def employees():
         else None
         )
         emp["is_contractor"] = emp.get("resource_type") == "STFTE"
+        emp["contract_review_counts_available"] = review_counts_available
         emp["projects"] = [
             {
                 "name": item["project_name"],
@@ -673,7 +675,7 @@ def employees():
                 "allocation": round(next_plan["allocation"] * 100),
                 "start_date": next_plan["start_date"]
             }
-        if contract_freshness_state in {"fresh", "stale", "partial"} and emp.get("current_hiref"):
+        if review_counts_available and emp.get("current_hiref"):
             h = c.execute("SELECT start_date, end_date, project FROM hiref WHERE id=?", [emp["current_hiref"]]).fetchone()
             if h:
                 emp["hiref_start_date"] = h["start_date"]
@@ -682,7 +684,7 @@ def employees():
                 d = days_until(h["end_date"])
                 emp["hiref_urgency"] = hiref_urgency(d, bool(emp.get("next_hiref")))
                 emp["hiref_days"]    = d
-        if contract_freshness_state in {"fresh", "stale", "partial"} and emp.get("next_hiref"):
+        if review_counts_available and emp.get("next_hiref"):
             h = c.execute("SELECT start_date, end_date, project FROM hiref WHERE id=?", [emp["next_hiref"]]).fetchone()
             if h:
                 emp["next_hiref_start_date"] = h["start_date"]
@@ -940,6 +942,9 @@ def hiref():
     contract_freshness_state = str(
         contract_publication_freshness.get("state") or "unknown"
     )
+    review_counts_available = _contract_review_counts_available_from_publication(
+        contract_publication_freshness
+    )
     hiref_list = repository.get_hiref_contracts()
     slot_counts_available = _contract_slot_counts_available_from_publication(
         contract_publication_freshness,
@@ -964,9 +969,7 @@ def hiref():
         ),
         "next_covered_count": (
             sum(1 for h in expiring_list if h.get("next_hiref"))
-            if _contract_review_counts_available_from_publication(
-                contract_publication_freshness
-            )
+            if review_counts_available
             else None
         ),
         "mismatch_count": (
@@ -975,11 +978,10 @@ def hiref():
                 for h in expiring_list
                 if h.get("project_alignment_status") == "mismatch"
             )
-            if _contract_review_counts_available_from_publication(
-                contract_publication_freshness
-            )
+            if review_counts_available
             else None
         ),
+        "review_counts_available": review_counts_available,
         "contract_coverage_freshness_state": contract_freshness_state,
         "contract_coverage_freshness_reason": contract_publication_freshness.get(
             "state_reason"

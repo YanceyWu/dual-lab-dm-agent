@@ -1,5 +1,7 @@
 var SectionHealth = {
   _data: null,
+  _meta: null,
+  _summary: null,
   _syncState: {
     busy: false,
     message: "",
@@ -9,40 +11,34 @@ var SectionHealth = {
   load: function () {
     var el = document.getElementById("health-content");
     el.innerHTML = C.skeleton();
-    DataService.projectHealth()
-      .then(function (data) {
-        SectionHealth._data = data;
+    ProjectHealthPageProvider.load()
+      .then(function (model) {
+        SectionHealth._data = model.projects;
+        SectionHealth._meta = model.meta;
+        SectionHealth._summary = model.summary;
         SectionHealth._render(el);
       })
       .catch(function (err) {
-        el.innerHTML = C.alertStrip("X", "Error: " + err.message, "red");
+        el.innerHTML = C.alertStrip(
+          "X",
+          err.message || "Error loading project health",
+          "red",
+        );
       });
   },
 
   _render: function (el) {
     el = el || document.getElementById("health-content");
-    var analyzed = (SectionHealth._data || []).map(SectionHealth._analyzeProject);
-
-    var attentionCount = analyzed.filter(function (item) {
-      return item.pmStatusKey === "escalate" || item.pmStatusKey === "recover";
-    }).length;
-    var syncCount = analyzed.filter(function (item) {
-      return item.pmStatusKey === "sync";
-    }).length;
-    var disagreementCount = analyzed.filter(function (item) {
-      return item.hasDisagreement;
-    }).length;
-    var noBoardCount = analyzed.filter(function (item) {
-      return item.pmStatusKey === "no_board";
-    }).length;
+    var analyzed = SectionHealth._data || [];
+    var summary = SectionHealth._summary || { kpis: {}, alerts: [] };
 
     var kpis =
       '<div class="kpi-row">' +
-      C.kpiCard("Projects Listed", analyzed.length, "active projects or standalone boards", "") +
-      C.kpiCard("Needs Attention", attentionCount, "red / yellow health signals", attentionCount > 0 ? "coral" : "") +
-      C.kpiCard("Need Sync", syncCount, "missing or stale JIRA health", syncCount > 0 ? "amber" : "") +
-      C.kpiCard("Signal Gaps", disagreementCount, "Confluence / JIRA disagreement", disagreementCount > 0 ? "info" : "") +
-      C.kpiCard("No Board Link", noBoardCount, "no mapped JIRA health source", noBoardCount > 0 ? "amber" : "") +
+      C.kpiCard("Projects Listed", summary.kpis.projectsListed.value, summary.kpis.projectsListed.subtitle, summary.kpis.projectsListed.variant) +
+      C.kpiCard("Needs Attention", summary.kpis.needsAttention.value, summary.kpis.needsAttention.subtitle, summary.kpis.needsAttention.variant) +
+      C.kpiCard("Need Sync", summary.kpis.needSync.value, summary.kpis.needSync.subtitle, summary.kpis.needSync.variant) +
+      C.kpiCard("Signal Gaps", summary.kpis.signalGaps.value, summary.kpis.signalGaps.subtitle, summary.kpis.signalGaps.variant) +
+      C.kpiCard("No Board Link", summary.kpis.noBoardLink.value, summary.kpis.noBoardLink.subtitle, summary.kpis.noBoardLink.variant) +
       "</div>";
 
     var actionBar =
@@ -58,30 +54,21 @@ var SectionHealth = {
       "</div>";
 
     var alerts = "";
-    if (attentionCount > 0) {
-      alerts += C.alertStrip(
-        "!",
-        "<strong>" + attentionCount + " project(s)</strong> need PM attention based on current health signals.",
-        "red",
-      );
-    }
-    if (syncCount > 0) {
-      alerts += C.alertStrip(
-        "i",
-        "<strong>" + syncCount + " project(s)</strong> have stale or missing JIRA health and should be synced before using the score.",
-        "amber",
-      );
-    }
-    if (disagreementCount > 0) {
-      alerts += C.alertStrip(
-        "↔",
-        "<strong>" + disagreementCount + " project(s)</strong> show a gap between Confluence and JIRA signals; review before status reporting.",
-        "blue",
-      );
-    }
+    alerts += (summary.alerts || [])
+      .map(function (alert) {
+        return C.alertStrip(alert.icon, alert.message, alert.tone);
+      })
+      .join("");
     if (SectionHealth._syncState.message) {
       var icon = SectionHealth._syncState.tone === "red" ? "X" : SectionHealth._syncState.tone === "green" ? "OK" : "i";
       alerts += C.alertStrip(icon, SectionHealth._syncState.message, SectionHealth._syncState.tone);
+    }
+    if (SectionHealth._meta && SectionHealth._meta.issues && SectionHealth._meta.issues.length) {
+      alerts += SectionHealth._meta.issues
+        .map(function (issue) {
+          return C.alertStrip("i", esc(issue.message), "blue");
+        })
+        .join("");
     }
 
     var sorted = analyzed.slice().sort(function (a, b) {
@@ -127,10 +114,10 @@ var SectionHealth = {
           "</div>" +
           "</td>" +
           '<td class="health-pm-col">' +
-          item.pmStatusBadge +
+          SectionHealth._pmStatusBadge(item.pmStatusKey) +
           '<div class="health-sub-badges">' +
-          (item.confluenceRagBadge || "") +
-          (item.jiraGradeBadge || "") +
+          (item.confRag ? C.ragBadge(item.confRag) : "") +
+          (item.jiraGrade ? C.jiraGrade(item.jiraGrade, item.jiraOverallScore) : "") +
           "</div>" +
           "</td>" +
           '<td class="health-jira-col">' +
@@ -256,146 +243,6 @@ var SectionHealth = {
     if (btn) btn.classList.toggle("expanded", !isOpen);
   },
 
-  _analyzeProject: function (project) {
-    var p = project || {};
-    var health = p.health || null;
-    var jira = (health || {}).jira || {};
-    var confluence = (health || {}).confluence || {};
-    var freshness = (health || {}).freshness || {};
-    var jiraFresh = freshness.jira_health || null;
-    var confFresh = freshness.confluence_status || null;
-    var jiraAgeDays = SectionHealth._ageDays(jira.snapshot_date);
-    var confAgeDays = SectionHealth._ageDays(confluence.snapshot_date);
-    var jiraRiskItems = SectionHealth._safeJson(jira.risks_json, []);
-    var jiraRiskMessages = jiraRiskItems.map(function (risk) {
-      return "[" + (risk.type || "signal") + "] " + (risk.msg || "");
-    });
-    var jiraGrade = jira.overall_grade || "";
-    var confRag = confluence.rag_status || "";
-
-    var hasJiraSnapshot = !!jira.snapshot_date;
-    var hasConfluenceSnapshot = !!confluence.snapshot_date;
-    var hasBoard = !!health;
-    var jiraFreshState = jiraFresh ? jiraFresh.freshness_state : hasJiraSnapshot ? "snapshot_only" : "missing";
-    var confFreshState = confFresh ? confFresh.freshness_state : hasConfluenceSnapshot ? "snapshot_only" : "missing";
-    var jiraNeedsSync =
-      jiraFreshState === "failed" ||
-      jiraFreshState === "stale" ||
-      jiraFreshState === "never_synced" ||
-      (!hasJiraSnapshot && hasBoard);
-    var noJiraData = !hasJiraSnapshot;
-    var noConfluenceData = !hasConfluenceSnapshot;
-
-    var hasDisagreement =
-      (confRag === "RED" && jiraGrade === "GREEN") ||
-      ((confRag === "GREEN" || confRag === "") && jiraGrade === "RED") ||
-      ((confRag === "GREEN" || confRag === "") && jiraGrade === "YELLOW") ||
-      ((confRag === "AMBER" || confRag === "YELLOW") && jiraGrade === "GREEN");
-
-    var reasons = [];
-    if (!hasBoard) {
-      reasons.push("No active JIRA board is linked to this project.");
-    }
-    if (noJiraData && hasBoard) {
-      reasons.push("No JIRA health snapshot is available yet.");
-    }
-    if (jiraNeedsSync && hasJiraSnapshot) {
-      reasons.push(
-        "JIRA health snapshot exists but freshness is `" + jiraFreshState + "`.",
-      );
-    }
-    if (jiraAgeDays != null) {
-      reasons.push("Latest JIRA snapshot is " + jiraAgeDays + " day(s) old.");
-    }
-    if (jiraGrade) {
-      reasons.push("JIRA overall grade is " + jiraGrade + " (" + Math.round(jira.overall_score || 0) + ").");
-    }
-    if (confRag) {
-      reasons.push("Confluence RAG is " + confRag + ".");
-    }
-    if (hasDisagreement) {
-      reasons.push("Confluence and JIRA signals do not align.");
-    }
-    if ((jira.new_bugs_p1p2 || 0) > 0) {
-      reasons.push("There are " + jira.new_bugs_p1p2 + " new P1/P2 bug(s).");
-    }
-    if (jira.unestimated_pct != null && jira.unestimated_pct >= 40) {
-      reasons.push(Math.round(jira.unestimated_pct) + "% of open issues are unestimated.");
-    }
-    jiraRiskMessages.forEach(function (msg) {
-      reasons.push(msg);
-    });
-    if (!reasons.length) {
-      reasons.push("No major risk signal is currently exposed on this project.");
-    }
-
-    var pmStatusKey = "monitor";
-    if (!hasBoard) {
-      pmStatusKey = "no_board";
-    } else if (jiraNeedsSync && noJiraData) {
-      pmStatusKey = "sync";
-    } else if (jiraGrade === "RED" || confRag === "RED") {
-      pmStatusKey = "escalate";
-    } else if (hasDisagreement) {
-      pmStatusKey = "investigate";
-    } else if (
-      jiraGrade === "YELLOW" ||
-      confRag === "YELLOW" ||
-      confRag === "AMBER" ||
-      (jira.new_bugs_p1p2 || 0) > 0 ||
-      ((jira.sprint_completion_pct || 0) > 0 && jira.sprint_completion_pct < 50) ||
-      (jira.unestimated_pct || 0) >= 40
-    ) {
-      pmStatusKey = "recover";
-    } else if (jiraNeedsSync) {
-      pmStatusKey = "sync";
-    }
-
-    var nextAction = "Monitor in weekly governance.";
-    if (pmStatusKey === "no_board") {
-      nextAction = "Link a JIRA board to this project before relying on the health view.";
-    } else if (pmStatusKey === "sync") {
-      nextAction =
-        "Refresh JIRA health before making a PM judgment; current health data is missing or stale.";
-    } else if (pmStatusKey === "escalate") {
-      nextAction =
-        "Escalate with the squad lead this week and confirm blockers, defect impact, and recovery actions.";
-    } else if (pmStatusKey === "investigate") {
-      nextAction =
-        "Review why Confluence and JIRA disagree before the next project status update.";
-    } else if (pmStatusKey === "recover") {
-      nextAction =
-        "Review burndown, estimation coverage, and bug trend with the team and confirm a recovery plan.";
-    }
-
-    return {
-      id: p.id,
-      name: p.name,
-      phase: p.phase,
-      boardId: (health || {}).board_id || "",
-      boardName: (health || {}).board_name || "",
-      boardUrl: (health || {}).board_url || "",
-      jira: jira,
-      confluence: confluence,
-      jiraFreshState: jiraFreshState,
-      confFreshState: confFreshState,
-      jiraAgeDays: jiraAgeDays,
-      confAgeDays: confAgeDays,
-      jiraRiskMessages: jiraRiskMessages,
-      reasons: reasons,
-      hasDisagreement: hasDisagreement,
-      pmStatusKey: pmStatusKey,
-      pmStatusBadge: SectionHealth._pmStatusBadge(pmStatusKey),
-      jiraGradeBadge: jiraGrade ? C.jiraGrade(jiraGrade, jira.overall_score) : "",
-      confluenceRagBadge: confRag ? C.ragBadge(confRag) : "",
-      nextAction: nextAction,
-      healthSummaryText: jira.summary_text || "",
-      confluenceSummary: confluence.summary_text || "",
-      confluenceRisks: confluence.risks_text || "",
-      hasBoard: hasBoard,
-    };
-  },
-
   syncBoard: function (boardId) {
     if (!boardId || SectionHealth._syncState.busy) return;
     SectionHealth._syncState = {
@@ -404,23 +251,31 @@ var SectionHealth = {
       tone: "blue",
     };
     SectionHealth._render();
-    DataService.previewProjectHealthSync(boardId)
-      .then(function (preview) {
-        var names = (preview.targets || []).map(function (item) {
-          return item.board_name;
-        });
-        var confirmed = window.confirm(
-          "Sync " + names.length + " JIRA board(s): " + names.join(", ") +
-          "\\n\\nThis accesses the external network and updates local snapshots. " +
-          "It does not modify remote JIRA data."
-        );
+    ProjectHealthPageProvider.previewBoardSync(boardId)
+      .then(function (previewAction) {
+        if (!previewAction.requiresConfirmation) {
+          return previewAction.autoResult;
+        }
+        var confirmed = window.confirm(previewAction.confirmationMessage);
         if (!confirmed) throw new Error("Sync cancelled before confirmation.");
-        return DataService.confirmProjectHealthSync(preview);
+        return ProjectHealthPageProvider.confirmSync(
+          previewAction,
+          "JIRA sync completed for " + boardId + ".",
+        );
       })
       .then(function (result) {
+        if (!result.refreshed) {
+          SectionHealth._syncState = {
+            busy: false,
+            message: result.message,
+            tone: "green",
+          };
+          SectionHealth._render();
+          return;
+        }
         SectionHealth._syncState = {
           busy: false,
-          message: result.message || ("JIRA sync completed for " + boardId + "."),
+          message: result.message,
           tone: "green",
         };
         SectionHealth.load();
@@ -443,24 +298,31 @@ var SectionHealth = {
       tone: "blue",
     };
     SectionHealth._render();
-    DataService.previewStaleProjectHealthSync()
-      .then(function (preview) {
-        if (!preview.requires_confirmation) return preview;
-        var names = (preview.targets || []).map(function (item) {
-          return item.board_name;
-        });
-        var confirmed = window.confirm(
-          "Sync " + names.length + " stale JIRA board(s): " + names.join(", ") +
-          "\\n\\nThis accesses the external network and updates local snapshots. " +
-          "It does not modify remote JIRA data."
-        );
+    ProjectHealthPageProvider.previewStaleSync()
+      .then(function (previewAction) {
+        if (!previewAction.requiresConfirmation) {
+          return previewAction.autoResult;
+        }
+        var confirmed = window.confirm(previewAction.confirmationMessage);
         if (!confirmed) throw new Error("Sync cancelled before confirmation.");
-        return DataService.confirmProjectHealthSync(preview);
+        return ProjectHealthPageProvider.confirmSync(
+          previewAction,
+          "Stale JIRA sync completed.",
+        );
       })
       .then(function (result) {
+        if (!result.refreshed) {
+          SectionHealth._syncState = {
+            busy: false,
+            message: result.message,
+            tone: "green",
+          };
+          SectionHealth._render();
+          return;
+        }
         SectionHealth._syncState = {
           busy: false,
-          message: result.message || "Stale JIRA sync completed.",
+          message: result.message,
           tone: "green",
         };
         SectionHealth.load();
@@ -501,52 +363,53 @@ var SectionHealth = {
   },
 
   _renderJiraSummary: function (item) {
-    var jira = item.jira || {};
-    if (!jira.snapshot_date) {
+    var summary = item.jiraSummary || {};
+    if (!summary.hasSnapshot) {
       return '<span class="health-na">No JIRA health snapshot</span>';
     }
 
     var lines = [];
-    if (jira.version_name || jira.release_date) {
+    if (summary.versionName || summary.releaseDate) {
       lines.push(
         '<div class="health-metric-main">' +
-          esc(jira.version_name || "Unlabeled release") +
-          (jira.release_date ? '<span class="health-metric-sub"> · ' + esc(jira.release_date) + "</span>" : "") +
+          esc(summary.versionName || "Unlabeled release") +
+          (summary.releaseDate ? '<span class="health-metric-sub"> · ' + esc(summary.releaseDate) + "</span>" : "") +
         "</div>",
       );
     }
-    if (jira.sprint_name) {
-      lines.push('<div class="health-metric-sub">Sprint: ' + esc(jira.sprint_name) + "</div>");
+    if (summary.sprintName) {
+      lines.push('<div class="health-metric-sub">Sprint: ' + esc(summary.sprintName) + "</div>");
     }
     lines.push(
       '<div class="health-metric-sub">SP progress: ' +
-        Math.round(jira.sp_progress_pct || 0) +
-        '% · Sprint completion: ' +
-        Math.round(jira.sprint_completion_pct || 0) +
-        "%</div>",
+        esc(summary.spProgressText || "Unknown") +
+        ' · Sprint completion: ' +
+        esc(summary.sprintCompletionText || "Unknown") +
+        "</div>",
     );
     lines.push(
       '<div class="health-metric-sub">P1/P2 bugs: ' +
-        (jira.new_bugs_p1p2 || 0) +
+        esc(summary.newBugsP1P2Text || "Unknown") +
         " · Total defects: " +
-        (jira.total_defects || 0) +
+        esc(summary.totalDefectsText || "Unknown") +
         "</div>",
     );
-    if (jira.unestimated_pct != null) {
+    if (summary.unestimatedText) {
       lines.push(
         '<div class="health-metric-sub">Unestimated: ' +
-          Math.round(jira.unestimated_pct) +
-          "%</div>",
+          esc(summary.unestimatedText) +
+          "</div>",
       );
     }
     return lines.join("");
   },
 
   _renderSignals: function (item) {
+    var signalSummary = item.signalSummary || {};
     var parts = [];
-    if (item.jiraRiskMessages.length) {
+    if ((signalSummary.riskMessages || []).length) {
       parts.push(
-        item.jiraRiskMessages
+        signalSummary.riskMessages
           .slice(0, 2)
           .map(function (msg) {
             return '<div class="health-signal-line">' + esc(msg) + "</div>";
@@ -554,11 +417,11 @@ var SectionHealth = {
           .join(""),
       );
     }
-    if (item.confluenceSummary) {
+    if (signalSummary.confluenceSummaryAvailable) {
       parts.push(
         '<div class="health-signal-line health-signal-muted">Confluence summary available</div>',
       );
-    } else if (item.confluence.rag_status) {
+    } else if (signalSummary.confluenceRagWithoutSummary) {
       parts.push(
         '<div class="health-signal-line health-signal-muted">Confluence RAG captured without summary block</div>',
       );
@@ -570,30 +433,31 @@ var SectionHealth = {
   },
 
   _renderFreshness: function (item) {
+    var freshness = item.freshnessSummary || {};
     var lines = [];
     lines.push(
       '<div class="health-fresh-row">JIRA ' +
-        SectionHealth._freshnessBadge(item.jiraFreshState) +
+        SectionHealth._freshnessBadge(freshness.jiraState) +
         "</div>",
     );
-    if (item.jira.snapshot_date) {
+    if (freshness.jiraSnapshotDate) {
       lines.push(
         '<div class="health-metric-sub">Snapshot: ' +
-          esc(item.jira.snapshot_date) +
-          (item.jiraAgeDays != null ? " (" + item.jiraAgeDays + "d old)" : "") +
+          esc(freshness.jiraSnapshotDate) +
+          (freshness.jiraAgeDays != null ? " (" + freshness.jiraAgeDays + "d old)" : "") +
           "</div>",
       );
     }
     lines.push(
       '<div class="health-fresh-row">Confluence ' +
-        SectionHealth._freshnessBadge(item.confFreshState) +
+        SectionHealth._freshnessBadge(freshness.confluenceState) +
         "</div>",
     );
-    if (item.confluence.snapshot_date) {
+    if (freshness.confluenceSnapshotDate) {
       lines.push(
         '<div class="health-metric-sub">Snapshot: ' +
-          esc(item.confluence.snapshot_date) +
-          (item.confAgeDays != null ? " (" + item.confAgeDays + "d old)" : "") +
+          esc(freshness.confluenceSnapshotDate) +
+          (freshness.confluenceAgeDays != null ? " (" + freshness.confluenceAgeDays + "d old)" : "") +
           "</div>",
       );
     }
@@ -614,23 +478,6 @@ var SectionHealth = {
     };
     var entry = map[state] || ["Unknown", "badge-muted"];
     return C.badge(entry[0], entry[1]);
-  },
-
-  _safeJson: function (value, fallback) {
-    try {
-      return JSON.parse(value || JSON.stringify(fallback));
-    } catch (err) {
-      return fallback;
-    }
-  },
-
-  _ageDays: function (value) {
-    if (!value) return null;
-    var dateText = value.substring(0, 10);
-    var parsed = new Date(dateText + "T00:00:00");
-    if (isNaN(parsed.getTime())) return null;
-    var now = new Date();
-    return Math.floor((now - parsed) / (1000 * 60 * 60 * 24));
   },
 
   _formatText: function (text) {

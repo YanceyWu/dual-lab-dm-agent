@@ -255,6 +255,7 @@ def test_hiref_dashboard_api_exposes_next_hiref_and_mismatch_context(
     assert response.headers["X-DM-Interface-Contract"] == "legacy-result-projection"
     payload = response.get_json()
     assert payload["contract_coverage_freshness_state"] == "partial"
+    assert payload["review_counts_available"] is True
     assert payload["free_count"] == 1
     assert payload["assigned_count"] == 3
     assert payload["next_covered_count"] == 1
@@ -312,6 +313,9 @@ def test_hiref_counts_stay_suppressed_for_non_contract_partial_coverage(
     summary_response = dashboard_server.app.test_client().get("/api/summary")
     assert summary_response.get_json()["hiref_alerts_60d"] is None
     assert summary_response.get_json()["free_hiref_slots"] is None
+    employees_payload = dashboard_server.app.test_client().get("/api/employees").get_json()
+    assert employees_payload[0]["contract_review_counts_available"] is False
+    assert employees_payload[0].get("hiref_urgency") is None
 
 
 def test_hiref_counts_stay_suppressed_for_timestamp_invalid_partial_coverage(
@@ -336,6 +340,9 @@ def test_hiref_counts_stay_suppressed_for_timestamp_invalid_partial_coverage(
     summary_response = dashboard_server.app.test_client().get("/api/summary")
     assert summary_response.get_json()["hiref_alerts_60d"] is None
     assert summary_response.get_json()["free_hiref_slots"] is None
+    employees_payload = dashboard_server.app.test_client().get("/api/employees").get_json()
+    assert employees_payload[0]["contract_review_counts_available"] is False
+    assert employees_payload[0].get("hiref_urgency") is None
 
 
 def test_hiref_slot_counts_stay_unknown_when_missing_member_can_claim_free_slot(
@@ -384,6 +391,7 @@ def test_hiref_slot_counts_stay_unknown_when_missing_member_can_claim_free_slot(
     client = dashboard_server.app.test_client()
     assert client.get("/api/summary").get_json()["free_hiref_slots"] is None
     hiref_payload = client.get("/api/hiref").get_json()
+    assert hiref_payload["review_counts_available"] is True
     assert hiref_payload["free_count"] is None
     assert hiref_payload["assigned_count"] is None
 

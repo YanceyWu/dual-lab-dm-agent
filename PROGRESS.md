@@ -1,21 +1,20 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-07
-Current branch: `phase1-legacy-dashboard`
-Current HEAD: this branch is an independent local design-review fork created
-from the pushed workbook baseline at
-`a6d654a0d2ead6027c1da673fef6d2a2ebcd6e80` (`Record remote push status`). It
-inherits the accepted local IP-036 sequence through D2
-(`f1ed9557f99d054480cb379fe2f1d41b38504049`), the merged dashboard rollout from
-`f773d84`, and the committed IP-037 Batch A/B/C state already pushed on the
-workbook branch. This session now records the owner-accepted IP-038 Slice 1
-local commit described below. User-owned uncommitted artifacts remain local
-only.
+Last updated: 2026-08-08
+Current branch: `copilot-chat-memory-plan`
+Current HEAD: this branch is a local planning fork created after moving the
+Copilot Chat interaction-memory design commit and the current uncommitted
+working tree off `phase1-legacy-dashboard`. The original
+`phase1-legacy-dashboard` pointer now sits at `4530aa0` (`Implement IP-038
+Slice 1`). This planning branch carries the committed design-spec commit
+`56007f2` plus the uncommitted IP-038 Slice 2/Slice 3 dashboard working-tree batch and the
+uncommitted Copilot Chat interaction-memory MVP batch described below.
+User-owned uncommitted artifacts remain local only.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 1 IS IMPLEMENTED LOCALLY ON phase1-legacy-dashboard: CODE-OWNED PHASE 1 SURFACE DECLARATION, FAIL-CLOSED LEGACY-ONLY DEFAULT DASHBOARD SHELL, BUNDLE-SCOPED PHASE 1 AGENT / README GUIDANCE, AND A COUPLED REHEARSE-RELEASE BASELINE FIX REQUIRED TO KEEP THE D2-COMPATIBLE TOOLING GREEN; NO SLICE 2/3/4 WORK HAS STARTED; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 HAS PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND INDEPENDENT READ-ONLY REVIEW LOCALLY; THE OWNER HAS NOW ACCEPTED SLICE 1 AND THIS SESSION COMMITS IT LOCALLY; NOTHING IS PUSHED; THE NEXT GATE IS A SEPARATE DECISION ON WHETHER TO AUTHORIZE IP-038 SLICE 2`
+Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 3 IS NOW OWNER-ACCEPTED AND COMMITTED LOCALLY ON copilot-chat-memory-plan: THE SIX LEGACY DASHBOARD PAGES READ THROUGH PAGE-LEVEL PROVIDER MODULES THAT OWN PAGE-CONTRACT ADAPTATION, DEGRADED-STATE HANDLING, HEALTH PAGE SUMMARY/CONFIRMATION CONTRACTS, HIREF REVIEW-COUNT GATING, AND MONTHLY-PLAN EMPLOYEE/PROJECT VIEW MODELS; THE NEXT AUTHORIZED GATE IS SLICE 4 PHASE 1 CONFIG AND BUNDLE FLATTENING; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED; THE COPILOT CHAT INTERACTION-MEMORY MVP IS ALSO IMPLEMENTED LOCALLY: ADDITIVE REPO-SCOPED INTERACTION-MEMORY TABLES, A READ-ONLY interaction-memory-context USE CASE, AND pm interaction-memory DEMO/CONTROL COMMANDS NOW COMPOSE BOUNDED TURN CONTEXT WITHOUT CHANGING AUTHORITATIVE PM FACTS; THE Delivery Manager CUSTOM AGENT NOW PRE-READS interaction-memory-context THROUGH A SHELL-SAFE STDIN TRANSPORT BEFORE ROUTING NATURAL-LANGUAGE REQUESTS`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL INDEPENDENT READ-ONLY REVIEW, ARE NOW OWNER-ACCEPTED, AND ARE COMMITTED LOCALLY; SLICE 4 IS THE NEXT AUTHORIZED GATE BUT HAS NOT STARTED IN CODE YET; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE SLICE 4 DESIGN/SCOPING PLUS OWNER TEST/REVIEW OF THE Delivery Manager AGENT PERSONALIZATION PATH`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -89,6 +88,15 @@ belong in Git history and must not be interpreted as current instructions.
 - Read-only management use cases cover workload, project health, management
   attention, contract continuity, weekly brief, actions, connector status,
   connector sync results, and project snapshots.
+- A local repo-scoped Copilot Chat interaction-memory MVP is now implemented on
+  this planning branch through `pm interaction-memory ...` and `pm tool query
+  interaction-memory-context`; it composes one-turn working context from local
+  preference/context/follow-up/strategy rows, but remains non-authoritative and
+  does not replace existing `pm` fact or controlled write paths.
+- The workspace `Delivery Manager` custom agent now pre-reads
+  `interaction-memory-context` on each natural-language turn through a shell-safe
+  stdin transport, then falls back to baseline routing when memory is empty,
+  disabled, scope-unknown, or unavailable.
 - Phase 6 Weekly Brief v2 is promoted as the local baseline: opt-in structured
   composition with explicit snapshot capture preview/confirm; legacy v1
   weekly brief and `pm report` remain unchanged.
@@ -1039,6 +1047,116 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 
 ## Recent change log
 
+### 2026-08-07 — Delivery Manager agent interaction-memory pre-read integrated and reviewed
+
+- Updated `.github/agents/delivery-manager.agent.md` so the workspace
+  `Delivery Manager` custom agent now:
+  - prefers `src/.venv/bin/pm` when the workspace-local executable exists;
+  - pre-reads `interaction-memory-context` on every natural-language request
+    before normal route selection;
+  - passes the raw user turn through the new shell-safe
+    `pm tool query ... --param-stdin message` transport instead of interpolating
+    it into shell quotes;
+  - treats returned interaction memory only as answer-shaping/routing context and
+    never as business facts, evidence, freshness, or write authorization;
+  - fails open to the baseline Delivery Manager routing path when interaction
+    memory is empty, disabled, scope-unknown, unavailable, invalid, or failed.
+- Added `--param-stdin` to the shared structured `pm tool query` transport so
+  Copilot/agent callers can pass one raw parameter value over standard input
+  without shell-quote mutation. Duplicate stdin/generic parameter collisions now
+  return the same bounded invalid result contract as other duplicate parameters.
+- Refined the interaction-memory capability boundary so read-only pre-read does
+  not create tables or write DDL on first chat use:
+  - explicit control/demo flows such as `demo-seed`, `enable`, and `disable`
+    still bootstrap the additive schema when needed;
+  - read-only `status`, `inspect`, and `interaction-memory-context` now fail
+    open with `capability_state=unavailable` plus
+    `INTERACTION_MEMORY_UNAVAILABLE` / `interaction_memory_schema_missing`
+    diagnostics until the schema exists.
+- Corrected the final agent instructions and tests so no remaining Delivery
+  Manager route example falls back to the unsafe
+  `--param message="<current user turn>"` shell form.
+- Validation evidence:
+  - focused pytest: `src/tests/test_delivery_manager_agent.py`
+    `src/tests/test_intelligence_discovery_transport.py`
+    `src/tests/test_interaction_memory_context.py`
+    `src/tests/test_interaction_memory_cli.py` passed;
+  - `make validate` passed;
+  - `make rehearse-release` passed;
+  - final read-only review of the updated batch found one remaining unsafe route
+    example in the Delivery Manager agent table, that defect was corrected, and
+    no further substantive issues remain in the reviewed batch.
+- This Delivery Manager agent integration remains local only on
+  `copilot-chat-memory-plan`; it is not committed or pushed. Unrelated
+  pre-existing IP-038 dashboard changes remain outside this batch.
+
+### 2026-08-07 — Copilot Chat interaction-memory MVP implemented locally and validated
+
+- Added a bounded `pm_agent.interaction_memory` capability with additive local
+  schema, repo/project scope resolution, deterministic demo seed rows,
+  enable/disable audit, inspection/status helpers, and one-turn working-context
+  composition for Copilot Chat.
+- Added the local command surface:
+  - `pm interaction-memory status`
+  - `pm interaction-memory demo-seed`
+  - `pm interaction-memory inspect`
+  - `pm interaction-memory resolve --message ...`
+  - `pm interaction-memory disable`
+  - `pm interaction-memory enable`
+- Added the shared read-only use case `interaction-memory-context`, documented
+  it in `src/README.md`, and added explicit Delivery Manager agent routing in
+  `.github/agents/delivery-manager.agent.md`.
+- The MVP demonstrates the approved "前置读取 + 临时组装" path without trying to
+  mutate hidden Copilot prompts: it resolves local `preference`, `context`,
+  `follow_up`, and `strategy` rows into a bounded `working_context` object for
+  one turn while keeping authoritative business facts in existing deterministic
+  `pm` query/write flows.
+- Independent read-only review first found five accepted defects; all were
+  corrected before this record:
+  - removed full-database integrity scans from the hot `resolve` path while
+    keeping explicit diagnostics on `status` and `inspect`;
+  - kept only the highest-ranked active preference per category in the published
+    `working_context`;
+  - made scope enable/disable audit persist the actual prior/new state in one
+    transaction;
+  - moved additive schema creation off the read-only pre-read path so fresh
+    local DBs fail open with explicit unavailable diagnostics until explicit
+    setup/demo flows initialize the capability;
+  - made `demo-seed` report the actual disabled/enabled scope state after
+    seeding.
+- Validation evidence:
+  - focused pytest: `src/tests/test_interaction_memory_cli.py`
+    `src/tests/test_interaction_memory_context.py`
+    `src/tests/test_intelligence_discovery_transport.py`
+    `src/tests/test_delivery_manager_agent.py` passed;
+  - `make validate` passed;
+  - `make rehearse-release` passed;
+  - final independent read-only review reported: `No significant issues found in
+    the reviewed changes.`
+- This batch remains local only on `copilot-chat-memory-plan`; it is not
+  committed or pushed. Unrelated pre-existing IP-038 dashboard changes remain
+  outside this interaction-memory batch.
+
+### 2026-08-07 — Planning work moved to `copilot-chat-memory-plan` and A-D implementation plan drafted
+
+- Created branch `copilot-chat-memory-plan` from design-spec commit `56007f2`
+  so the Copilot Chat interaction-memory design/planning work and the current
+  local uncommitted state no longer sit on `phase1-legacy-dashboard`.
+- Repointed `phase1-legacy-dashboard` to `4530aa0` (`Implement IP-038 Slice 1`)
+  so the original branch is no longer carrying the new interaction-memory
+  design commit.
+- Added `docs/superpowers/plans/2026-08-07-copilot-chat-memory-implementation-plan.md`
+  as a planning-only A-D sequence covering:
+  - the mandatory host-identity pre-slice gate;
+  - Slice A contract/storage foundation;
+  - Slice B read-path and strategy composition;
+  - Slice C controlled learning and follow-up persistence;
+  - Slice D control surface and operator hardening;
+  - validation, rollback, and explicit stop gates for every slice.
+- No runtime, schema, test, package, connector, or real-data action was
+  performed for this planning batch. The implementation plan is not yet
+  committed; it is currently under local review on `copilot-chat-memory-plan`.
+
 ### 2026-08-07 — Copilot Chat interaction-memory design spec drafted and independently reviewed
 
 - Added `docs/superpowers/specs/2026-08-07-copilot-chat-memory-design.md` as a
@@ -1068,6 +1186,149 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
 - Other pre-existing working-tree changes remain user-owned and are outside this
   design-doc batch. This batch is committed locally only and not pushed.
 
+### 2026-08-08 — Owner accepted IP-038 Slice 3 and authorized the next gate
+
+- The owner completed review of the local Slice 3 legacy page-provider
+  extraction and accepted the implemented Slice 2 + Slice 3 dashboard batch.
+- Acceptance includes the final HIREF page verification after replacing the
+  stale local dashboard process on port `5001` with the current branch instance;
+  the live `/api/hiref` payload now exposes `review_counts_available = true` and
+  the accepted HIREF KPIs render actual counts instead of stale `Unknown`
+  values.
+- Accepted scope remains bounded to the legacy dashboard productization slices
+  already implemented in this working tree:
+  stable/experimental assembly split plus legacy page-provider extraction and
+  degraded-state contract closure.
+- The owner also authorized entry into the next gate: Slice 4 Phase 1 config and
+  bundle flattening. No Slice 4 code change is included in this acceptance
+  entry.
+- Validation / review evidence for the accepted batch remains:
+  - focused dashboard regressions `15 passed, 4 skipped`;
+  - `make validate` → passed (`487 passed, 4 skipped`; repository-tool-tests
+    `34 passed, 19 subtests passed`);
+  - `make rehearse-release` → passed;
+  - final independent read-only matrix review completed with no remaining
+    accepted contract leaks.
+- Commit / push status at the time of this entry:
+  - the accepted Slice 2 + Slice 3 dashboard batch is committed locally from
+    this branch;
+  - nothing is pushed;
+  - unrelated interaction-memory files and the pre-existing dirty
+    `src/sample-data/demo/sample_pm.db` artifact remain outside the dashboard
+    commit scope.
+
+### 2026-08-07 — IP-038 Slice 3 legacy page-provider extraction implemented locally and matrix-closed
+
+- Implemented the authorized Slice 3 legacy page-provider extraction and closed
+  it using a contract-matrix review rather than one-issue-at-a-time fixes:
+  - added page-level provider modules for Overview, Projects, Team, HIREF,
+    Monthly Plan, and Project Health;
+  - moved legacy page-contract adaptation, degraded-state display semantics,
+    provider-owned summaries/alerts/confirmations, and fallback gating out of
+    mixed section/component rendering paths;
+  - added bounded server payload support for
+    `review_counts_available` and `contract_review_counts_available` so Team and
+    HIREF rendering can degrade explicitly instead of inferring certainty;
+  - finished the last large closure by moving Monthly Plan table/view semantics
+    into `provider-allocation.js`, with `section-allocation.js` reduced to
+    rendering provider-owned employee/project view models.
+- Usable functionality after this batch:
+  - the operator-visible Phase 1 surface is still the same six legacy pages;
+  - degraded states across KPI values, subtitles, tones, badges, alerts, empty
+    states, and confirmations are now aligned per page instead of being rebuilt
+    inconsistently in sections/components;
+  - Health page summary cards and sync confirmations, Team/Projects row display,
+    HIREF signal/expiry row display, and Monthly Plan detail-table rendering now
+    consume normalized provider contracts.
+- Impact / compatibility:
+  - no new business capability, connector path, or schema family was added;
+  - no Slice 4 config/bundle flattening work has started;
+  - the working tree still also carries the separate Copilot Chat
+    interaction-memory MVP batch and the pre-existing dirty
+    `src/sample-data/demo/sample_pm.db` artifact remains user-owned and
+    uncommitted.
+- Intentionally unimplemented scope / next gate:
+  - no Slice 4 external-trial config/bundle flattening is present;
+  - no broader dashboard rewrite, experimental page deletion, or legacy API
+    retirement was folded into this batch;
+  - the next gate is owner review of Slice 3 before any commit and before any
+    separate decision on Slice 4.
+- Validation / review evidence:
+  - `src/.venv/bin/python -m pytest -q src/tests/test_dashboard_web_rendering.py src/tests/test_dashboard_capability_rollout.py src/tests/test_hiref_workflow.py`
+    → `15 passed, 4 skipped`;
+  - `src/.venv/bin/python -m ruff check src/pm_agent/dashboard/server.py src/tests/test_dashboard_web_rendering.py src/tests/test_dashboard_capability_rollout.py src/tests/test_hiref_workflow.py`
+    → passed;
+  - `make validate` → passed (`487 passed, 4 skipped`; repository-tool-tests
+    `34 passed, 19 subtests passed`);
+  - `make rehearse-release` → passed;
+  - final independent read-only matrix review over providers, sections,
+    components, and bounded server payload seams found no further contract leaks
+    after the final Health/Monthly Plan closure and lint cleanup.
+- Commit / push status:
+  - Slice 2 plus Slice 3 remain an uncommitted local working-tree batch carried
+    on `copilot-chat-memory-plan`;
+  - nothing is pushed;
+  - the accepted Slice 1 commit `4530aa0` remains the latest local commit on the
+    original `phase1-legacy-dashboard` branch pointer.
+
+### 2026-08-07 — IP-038 Slice 2 stable/experimental dashboard assembly split implemented locally
+
+- After Slice 1 acceptance, the owner explicitly authorized the separate
+  IP-038 Slice 2 batch on `phase1-legacy-dashboard`.
+- Implemented only the authorized Slice 2 assembly split:
+  - added `src/pm_agent/dashboard/web/js/surface-legacy.js` so the six retained
+    legacy tabs now declare their own page-load wiring in one stable assembly
+    module;
+  - added `src/pm_agent/dashboard/web/js/surface-experimental.js` so the
+    retained experimental tabs remain implemented in a separate internal
+    assembly module instead of sharing one mixed loader table with the stable
+    trial surface;
+  - updated `src/pm_agent/dashboard/web/js/app.js` so the shell builds one tab
+    registry from the assemblies that are actually present rather than carrying
+    an inline mixed legacy/experimental `if (tab === ...)` chain;
+  - changed `src/pm_agent/dashboard/web/index.html` to load the separated
+    surface modules explicitly before the shared shell controller;
+  - expanded `src/tests/test_dashboard_capability_rollout.py` to prove the
+    separated assembly files exist, the stable/experimental membership is split
+    correctly, and bootstrap treats the experimental assembly as optional.
+- Corrected one coupled defect found during the required independent review:
+  - the first Slice 2 draft eagerly referenced
+    `ExperimentalDashboardSurface` during startup, which let an
+    experimental-only asset failure break the supported legacy Phase 1 shell;
+    `app.js` now uses explicit `typeof ... !== "undefined"` guards so the
+    legacy shell can initialize independently of the experimental assembly.
+- Usable functionality after this batch:
+  - the operator-visible Phase 1 surface is unchanged;
+  - stable legacy-page wiring is now readable in one dedicated module without
+    reading experimental loader wiring;
+  - retained experimental pages stay internal and reversible instead of being
+    deleted.
+- Impact / compatibility:
+  - no business capability, server route, data contract, schema path, connector
+    path, or bundle scope changed in this slice;
+  - no Slice 3 legacy page-provider extraction or Slice 4 config/bundle
+    flattening work has started;
+  - the pre-existing dirty `src/sample-data/demo/sample_pm.db` artifact remains
+    user-owned and untouched.
+- Validation / review evidence:
+  - `src/.venv/bin/python -m pytest src/tests/test_dashboard_capability_rollout.py tools/tests/test_build_usage_bundle.py`
+    → `9 passed`;
+  - `src/.venv/bin/python -m ruff check src/tests/test_dashboard_capability_rollout.py`
+    → passed;
+  - `git --no-pager diff --check` → passed;
+  - `make validate` → `472 passed, 1 skipped`;
+  - `make rehearse-release` → passed;
+  - final independent read-only review via the code-review agent reported no
+    significant issues after the bootstrap fix.
+- Commit / push status:
+  - Slice 2 remains an uncommitted local working-tree batch on
+    `phase1-legacy-dashboard`;
+  - nothing is pushed;
+  - the accepted Slice 1 commit `4530aa0` remains the latest local commit on the
+    branch.
+- Exact next recommended action:
+  - complete owner review of Slice 2 before committing it and before making any
+    separate decision on whether Slice 3 should be authorized.
 
 ### 2026-08-07 — Owner accepted IP-038 Slice 1 and this session records the local batch commit
 

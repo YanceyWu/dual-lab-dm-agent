@@ -27,30 +27,14 @@ var C = {
     return '<span class="badge ' + e[1] + '">' + e[0] + '</span>';
   },
   hirefSignalBadges: function(item) {
-    var badges = [];
-    if (item.next_hiref || item.assigned_next_hiref) {
-      badges.push(C.badge('Next HIREF Ready', 'badge-info'));
-    } else if (item.reserved_for_next) {
-      badges.push(C.badge('Reserved Next Holder', 'badge-blue'));
-    } else if (item.placeholder_name) {
-      badges.push(C.badge('Placeholder Reserved', 'badge-amber'));
-    }
-
-    if (item.project_alignment_status === 'mismatch') {
-      badges.push(C.badge('Project Mismatch', 'badge-error'));
-    } else if (item.project_alignment_status === 'no_active_assignment') {
-      badges.push(C.badge('No Active Project', 'badge-muted'));
-    }
-
+    var badges = (item.signalBadges || []).map(function(badge) {
+      return C.badge(badge.text, badge.className);
+    });
     return badges.length ? '<div class="badge-row">' + badges.join(' ') + '</div>' : '';
   },
   hirefNextDetail: function(item) {
-    var nextHirefId = item.next_hiref || item.assigned_next_hiref || '';
-    var nextHirefEndDate = item.next_hiref_end_date || item.assigned_next_hiref_end_date || '';
-    if (!nextHirefId) return '';
-    return '<div class="td-muted">Next: ' + nextHirefId
-      + (nextHirefEndDate ? ' → ' + nextHirefEndDate : '')
-      + '</div>';
+    if (!item.nextHirefDetail) return '';
+    return '<div class="td-muted">' + item.nextHirefDetail + '</div>';
   },
   loadBar: function(pct) {
     var cls, label;
@@ -108,44 +92,43 @@ var C = {
   },
   projectCard: function(p, idx) {
     var color = CONFIG.COLORS[idx % CONFIG.COLORS.length];
-    var members = (p.members || []).map(function(m) {
+    var memberRows = p.memberRows || [];
+    var members = memberRows.map(function(m) {
       var pct = fmtPct(m.allocation);
-      var isPlanned = m.assign_status === 'planned';
+      var isPlanned = !!m.isPlanned;
       var nameHtml = m.name + (isPlanned ? '<span class="planned-tag">Planned</span>' : '');
       var rowStyle = isPlanned ? 'opacity:0.65;' : '';
       return '<tr class="member-row" style="' + rowStyle + '">'
         + '<td class="proj-member-name">' + nameHtml + '</td>'
-        + '<td class="proj-member-wd">' + (m.wd_id||'') + '</td>'
+        + '<td class="proj-member-wd">' + (m.wdId||'') + '</td>'
         + '<td class="proj-member-pct" style="color:' + color + '">' + pct + '%</td>'
       + '</tr>';
     }).join('');
-    var memberTable = p.members && p.members.length
+    var memberTable = memberRows.length
       ? '<table class="proj-member-table">'
           + '<tr class="thead-row"><td>Name</td><td>WD ID</td><td style="text-align:right">Alloc</td></tr>'
           + members
         + '</table>'
-      : '<div style="padding:12px 16px;font-size:12px;color:var(--text-muted)">No staff assigned</div>';
+      : '<div style="padding:12px 16px;font-size:12px;color:var(--text-muted)">' + (p.memberTableMessage || 'No staff assigned') + '</div>';
     var milestones = (p.milestones||[]).map(function(m) {
       var n = typeof m === 'string' ? m : (m.name||String(m));
       return C.badge(n, 'badge-navy');
     }).join(' ');
 
     // Health badges from JIRA / Confluence
-    var health = p.health || {};
-    var conf = health.confluence || {};
-    var jira = health.jira || {};
+    var health = p.healthDisplay || {};
     var healthHtml = '';
-    if (conf.rag_status || jira.overall_grade) {
+    if (health.confluenceRag || health.jiraGrade) {
       healthHtml = '<div class="proj-health-bar">';
-      if (conf.rag_status) healthHtml += C.ragBadge(conf.rag_status);
-      if (jira.overall_grade) healthHtml += C.jiraGrade(jira.overall_grade, jira.overall_score);
-      if (jira.sp_progress_pct != null) {
-        var sp = Math.round(jira.sp_progress_pct);
+      if (health.confluenceRag) healthHtml += C.ragBadge(health.confluenceRag);
+      if (health.jiraGrade) healthHtml += C.jiraGrade(health.jiraGrade, health.jiraScore);
+      if (health.sprintProgressPct != null) {
+        var sp = Math.round(health.sprintProgressPct);
         healthHtml += '<span class="proj-sprint-pct">'
           + '<span class="proj-sprint-bar"><span style="width:' + Math.min(sp,100) + '%"></span></span>'
           + sp + '% SP</span>';
       }
-      if (conf.snapshot_date) healthHtml += '<span class="proj-health-date">' + conf.snapshot_date + '</span>';
+      if (health.snapshotDate) healthHtml += '<span class="proj-health-date">' + health.snapshotDate + '</span>';
       healthHtml += '</div>';
     }
 
@@ -166,35 +149,40 @@ var C = {
       + healthHtml
       + (milestones ? '<div class="proj-card-milestones">' + milestones + '</div>' : '')
       + memberTable
-      + '<div class="proj-card-footer">' + (p.members||[]).length + ' staff assigned</div>'
+      + '<div class="proj-card-footer">' + (p.staffingSummaryText || (memberRows.length + ' staff assigned')) + '</div>'
     + '</div>';
   },
   staffRow: function(e) {
-    var projs = (e.projects||[]).map(function(p) {
-      var pct = fmtPct(p.allocation);
+    var projs = (e.projectAssignments||[]).map(function(p) {
+      var pct = p.allocationPct;
       return '<span class="badge badge-navy" style="margin:1px 2px;white-space:normal">'
         + p.name + ' <strong>' + pct + '%</strong></span>';
     }).join(' ');
     var nextHtml = '';
-    if (e.next_assignment) {
-      var na = e.next_assignment;
-      var mo = na.start_date ? na.start_date.substring(0,7) : '';
-      nextHtml = '<div class="next-assign">&#8594; ' + na.name + ' ' + na.allocation + '%'
-        + (mo ? ' from ' + fmtMonth(mo) : '') + '</div>';
+    if (e.nextAssignmentDisplay) {
+      var na = e.nextAssignmentDisplay;
+      nextHtml = '<div class="next-assign">&#8594; ' + na.name + ' ' + na.allocationPct + '%'
+        + (na.startMonth ? ' from ' + na.startMonth : '') + '</div>';
     }
     var hirefCell;
-    if (e.current_hiref) {
-      hirefCell = C.urgencyBadge(e.hiref_urgency||'ok')
-        + '<div class="td-mono" style="margin-top:2px">' + (e.current_hiref||'') + '</div>'
-        + (e.hiref_end_date ? '<div class="td-muted">' + e.hiref_end_date + '</div>' : '');
-    } else if (e.is_contractor) {
+    if (e.hirefDisplayState === 'degraded') {
+      hirefCell = C.badge(e.hirefDisplayMessage || 'Contract coverage unknown', 'badge-muted')
+        + (e.hirefDisplayId
+          ? '<div class="td-mono" style="margin-top:2px">' + (e.hirefDisplayId||'') + '</div>'
+          : '')
+        + (e.hirefDisplayEndDate ? '<div class="td-muted">' + e.hirefDisplayEndDate + '</div>' : '');
+    } else if (e.hirefDisplayState === 'linked') {
+      hirefCell = C.urgencyBadge(e.hirefDisplayUrgency || 'unknown')
+        + '<div class="td-mono" style="margin-top:2px">' + (e.hirefDisplayId||'') + '</div>'
+        + (e.hirefDisplayEndDate ? '<div class="td-muted">' + e.hirefDisplayEndDate + '</div>' : '');
+    } else if (e.hirefDisplayState === 'missing') {
       hirefCell = C.badge('No HIREF','badge-error');
     } else {
       hirefCell = C.badge('N/A','badge-muted');
     }
-    var typeTag = e.is_contractor ? C.badge('STFTE','badge-coral') : C.badge('LTFTE','badge-blue');
-    var loadHtml = (e.current_state_staffing_state === 'known' && e.load_pct != null)
-      ? C.loadBar(e.load_pct)
+    var typeTag = C.badge(e.typeLabel || 'Unknown', e.typeBadgeClass || 'badge-muted');
+    var loadHtml = (e.loadDisplayState === 'known' && e.loadDisplayPct != null)
+      ? C.loadBar(e.loadDisplayPct)
       : C.badge('Unknown','badge-muted');
     return '<tr>'
       + '<td class="td-mono">' + (e.wd_id||e.id||'') + '</td>'
@@ -207,33 +195,34 @@ var C = {
     + '</tr>';
   },
   hirefRow: function(h) {
-    var who = h.assigned_to
-      ? '<span class="td-name">' + h.assigned_to + '</span><div class="td-mono">' + (h.wd_id||'') + '</div>'
-          + (h.actual_project_display && h.actual_project_display !== '-' ? '<div class="td-muted">Actual: ' + h.actual_project_display + '</div>' : '')
-          + C.hirefNextDetail(h)
-      : C.badge('FREE','badge-green')
-          + (h.reserved_for_next ? '<div class="td-muted">Reserved: ' + h.reserved_for_next + '</div>' : '')
-          + (h.placeholder_name ? '<div class="td-muted">Placeholder: ' + h.placeholder_name + '</div>' : '');
+    var who = h.primaryTone
+      ? C.badge(h.primaryText, h.primaryTone)
+      : '<span class="td-name">' + h.primaryText + '</span>';
+    if (h.wdId) who += '<div class="td-mono">' + h.wdId + '</div>';
+    if (h.actualProjectText) who += '<div class="td-muted">' + h.actualProjectText + '</div>';
+    who += C.hirefNextDetail(h);
+    if (h.reservedText) who += '<div class="td-muted">' + h.reservedText + '</div>';
+    if (h.placeholderText) who += '<div class="td-muted">' + h.placeholderText + '</div>';
     return '<tr>'
       + '<td class="td-mono">' + (h.id||'') + '</td>'
       + '<td class="text-sm">' + (h.project||'') + '</td>'
       + '<td>' + C.urgencyBadge(h.urgency) + C.hirefSignalBadges(h) + '</td>'
-      + '<td class="td-mono">' + (h.end_date||'') + '</td>'
+      + '<td class="td-mono">' + (h.endDate||'') + '</td>'
       + '<td>' + who + '</td>'
     + '</tr>';
   },
   staffHirefRow: function(e) {
     return '<tr>'
-      + '<td class="td-mono">' + (e.wd_id||'') + '</td>'
+      + '<td class="td-mono">' + (e.wdId||'') + '</td>'
       + '<td class="td-name">' + (e.name||'') + '</td>'
-      + '<td class="td-mono">' + (e.current_hiref||'') + '</td>'
-      + '<td class="text-sm">' + (e.hiref_project||'') + '</td>'
+      + '<td class="td-mono">' + (e.currentHirefId||'') + '</td>'
+      + '<td class="text-sm">' + (e.hirefProject||'') + '</td>'
       + '<td>' + C.urgencyBadge(e.urgency) + C.hirefSignalBadges(e) + '</td>'
-      + '<td class="td-mono">' + (e.end_date||'') + '</td>'
-      + '<td class="text-sm">' + (e.actual_project||'')
+      + '<td class="td-mono">' + (e.endDate||'') + '</td>'
+      + '<td class="text-sm">' + (e.actualProjectText||'')
           + C.hirefNextDetail(e)
-          + ((e.next_hiref_project && e.next_hiref_project !== (e.hiref_project || ''))
-              ? '<div class="td-muted">Next project: ' + e.next_hiref_project + '</div>'
+          + (e.nextProjectText
+              ? '<div class="td-muted">' + e.nextProjectText + '</div>'
               : '')
         + '</td>'
     + '</tr>';
