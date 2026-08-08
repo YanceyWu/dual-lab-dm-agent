@@ -13,8 +13,8 @@ User-owned uncommitted artifacts remain local only.
 The separate aborted runtime attempt remains excluded and must not be inherited
 as partial work.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 3 IS NOW OWNER-ACCEPTED AND COMMITTED LOCALLY ON copilot-chat-memory-plan: THE SIX LEGACY DASHBOARD PAGES READ THROUGH PAGE-LEVEL PROVIDER MODULES THAT OWN PAGE-CONTRACT ADAPTATION, DEGRADED-STATE HANDLING, HEALTH PAGE SUMMARY/CONFIRMATION CONTRACTS, HIREF REVIEW-COUNT GATING, AND MONTHLY-PLAN EMPLOYEE/PROJECT VIEW MODELS; THE NEXT AUTHORIZED GATE IS SLICE 4 PHASE 1 CONFIG AND BUNDLE FLATTENING; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED; THE COPILOT CHAT INTERACTION-MEMORY MVP IS ALSO IMPLEMENTED LOCALLY: ADDITIVE REPO-SCOPED INTERACTION-MEMORY TABLES, A READ-ONLY interaction-memory-context USE CASE, AND pm interaction-memory DEMO/CONTROL COMMANDS NOW COMPOSE BOUNDED TURN CONTEXT WITHOUT CHANGING AUTHORITATIVE PM FACTS; THE Delivery Manager CUSTOM AGENT NOW PRE-READS interaction-memory-context THROUGH A SHELL-SAFE STDIN TRANSPORT BEFORE ROUTING NATURAL-LANGUAGE REQUESTS`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL INDEPENDENT READ-ONLY REVIEW, ARE NOW OWNER-ACCEPTED, AND ARE COMMITTED LOCALLY; SLICE 4 IS THE NEXT AUTHORIZED GATE BUT HAS NOT STARTED IN CODE YET; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE SLICE 4 DESIGN/SCOPING PLUS OWNER TEST/REVIEW OF THE Delivery Manager AGENT PERSONALIZATION PATH`
+Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 3 IS OWNER-ACCEPTED AND COMMITTED LOCALLY ON copilot-chat-memory-plan, AND SLICE 4 PHASE 1 CONFIG/BUNDLE FLATTENING DESIGN IS NOW IN SCOPING: THE APPROVED DIRECTION IS ONE USAGE BUNDLE, ONE DEFAULT OPEN-IN-VS-CODE ENTRY, AND ONE LANDING PAGE THAT PRESENTS TRY DEMO PLUS USE LOCAL DATA AS EQUAL FIRST-RUN PATHS; NO SLICE 4 RUNTIME CODE CHANGE HAS STARTED YET; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED; THE COPILOT CHAT INTERACTION-MEMORY MVP IS ALSO IMPLEMENTED LOCALLY: ADDITIVE REPO-SCOPED INTERACTION-MEMORY TABLES, A READ-ONLY interaction-memory-context USE CASE, AND pm interaction-memory DEMO/CONTROL COMMANDS NOW COMPOSE BOUNDED TURN CONTEXT WITHOUT CHANGING AUTHORITATIVE PM FACTS; THE Delivery Manager CUSTOM AGENT NOW PRE-READS interaction-memory-context THROUGH A SHELL-SAFE STDIN TRANSPORT BEFORE ROUTING NATURAL-LANGUAGE REQUESTS`
+Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL INDEPENDENT READ-ONLY REVIEW, ARE OWNER-ACCEPTED, AND ARE COMMITTED LOCALLY; SLICE 4 IS NOW THE ACTIVE AUTHORIZED GATE IN DESIGN/SCOPING ONLY; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE SLICE 4 SPEC REVIEW THEN IMPLEMENTATION PLANNING, PLUS OWNER TEST/REVIEW OF THE Delivery Manager AGENT PERSONALIZATION PATH`
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1185,6 +1185,26 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   then a planning-only Slice A implementation plan if separately approved.
 - Other pre-existing working-tree changes remain user-owned and are outside this
   design-doc batch. This batch is committed locally only and not pushed.
+
+### 2026-08-08 — Started IP-038 Slice 4 design/scoping after Slice 3 acceptance
+
+- After the owner accepted Slice 3 and authorized the next gate, started the
+  Slice 4 bounded design/scoping pass for Phase 1 config and bundle flattening.
+- Confirmed these design decisions with the owner before writing the spec:
+  - the only default trial entry remains **VS Code + Delivery Manager agent**;
+  - the landing experience must show **Try demo** and **Use local data** as
+    equal first-run paths;
+  - Slice 4 should keep **one usage bundle**, not split into demo/local-data
+    distributions.
+- Wrote the first Slice 4 spec at
+  `docs/superpowers/specs/2026-08-08-ip-038-slice-4-config-bundle-flattening-design.md`.
+- Current Slice 4 scope remains bounded to generated usage-bundle guidance and
+  related landing/runtime README shaping; no runtime or dashboard behavior
+  change has started in this gate.
+- Commit / push status:
+  - the accepted Slice 2 + Slice 3 dashboard batch is already committed locally;
+  - the Slice 4 design spec is the next local documentation commit;
+  - nothing is pushed.
 
 ### 2026-08-08 — Owner accepted IP-038 Slice 3 and authorized the next gate
 
