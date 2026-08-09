@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from pm_agent.config import settings
+from pm_agent.data_onboarding.source_export import (
+    SourceExportError,
+    failed_export,
+    write_atomically,
+)
 
 REQUIRED_COLUMNS = ("id", "name", "project_key", "base_jql")
 OPTIONAL_COLUMNS = (
@@ -281,6 +286,98 @@ def apply_registry_import(
                 "preserve_evidence_cursors": True,
             },
         },
+    }
+
+
+def export_registry_csv(
+    output: str | Path,
+    *,
+    overwrite: bool = False,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Export editable board mapping facts in the exact registry CSV contract."""
+
+    source_type = "jira-board-registry-csv"
+    connection = sqlite3.connect(_db_path(db_path))
+    try:
+        rows = connection.execute(
+            """
+            SELECT id, name, project_key, base_jql, version_name_pattern,
+                   board_id, board_url, pm_project_id, active,
+                   issues_use_base_jql, notes
+            FROM jira_board_configs
+            ORDER BY id
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return failed_export(source_type, "JIRA_BOARD_REGISTRY_EXPORT_SOURCE_UNAVAILABLE")
+    finally:
+        connection.close()
+
+    try:
+        expected_rows = [_exportable_registry_row(row) for row in rows]
+    except ValueError:
+        return failed_export(source_type, "JIRA_BOARD_REGISTRY_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    fields = [*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS]
+
+    def write(path: Path) -> None:
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(_registry_csv_row(row) for row in expected_rows)
+        fieldnames, exported_rows = load_registry_rows(path)
+        parsed = _parse_rows(fieldnames, exported_rows)
+        preview = preview_registry_import(path, db_path=db_path)
+        if (
+            parsed["status"] == "rejected"
+            or preview["status"] == "rejected"
+            or parsed["rows"] != expected_rows
+        ):
+            raise SourceExportError("JIRA_BOARD_REGISTRY_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    try:
+        target, digest = write_atomically(output, overwrite=overwrite, write=write)
+    except SourceExportError as exc:
+        return failed_export(source_type, str(exc))
+    return {
+        "status": "exported", "source_type": source_type, "output_path": str(target),
+        "sha256": digest, "counts": {"registry_rows": len(expected_rows)}, "warnings": [],
+        "source_identity": {"kind": "local_sqlite", "source_type": source_type},
+    }
+
+
+def _exportable_registry_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    keys = (*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS)
+    source = dict(zip(keys, row, strict=True))
+    for key in REQUIRED_COLUMNS:
+        if not _canonical_required_text(source[key]):
+            raise ValueError("unrepresentable required value")
+    if source["project_key"] != source["project_key"].upper():
+        raise ValueError("parser would normalize project key")
+    for key in ("version_name_pattern", "board_id", "board_url", "pm_project_id", "notes"):
+        if not _canonical_optional_text(source[key]):
+            raise ValueError("parser would normalize optional value")
+    for key in ("active", "issues_use_base_jql"):
+        if not isinstance(source[key], int) or isinstance(source[key], bool) or source[key] not in {0, 1}:
+            raise ValueError("noncanonical boolean")
+    return source
+
+
+def _canonical_required_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value == value.strip()
+
+
+def _canonical_optional_text(value: object) -> bool:
+    return value is None or (
+        isinstance(value, str) and bool(value) and value == value.strip()
+    )
+
+
+def _registry_csv_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: "" if row[key] is None else row[key]
+        for key in (*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS)
     }
 
 

@@ -43,7 +43,9 @@ class HardRules(BaseSettings):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Runtime configuration belongs to the shipped ``src`` root, not to
+        # whichever directory happened to launch the CLI or Dashboard.
+        env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )

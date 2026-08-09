@@ -1,19 +1,199 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-08
-Current branch: `yanceywu-manulife-ip-038-slice-4-flattening`
-Current HEAD: this worktree branch was renamed from the earlier planning fork
-that carried the accepted local state on top of `copilot-chat-memory-plan`.
-That accepted base already included the owner-accepted IP-038 Slice 2/Slice 3
-dashboard batch plus the separate uncommitted Copilot Chat interaction-memory
-MVP batch described below. This branch now also includes the committed
-IP-038 Slice 4 config/bundle flattening batch described in this log.
-User-owned uncommitted artifacts remain local only.
-The separate aborted runtime attempt remains excluded and must not be inherited
-as partial work.
+Last updated: 2026-08-09
+Current branch: `codex/remote-package-20260808`
+Current HEAD: `8fb8aa26c604b1405ed34045556897da1f40a168`, imported locally on
+2026-08-08 from the supplied remote-development ZIP without overwriting the
+prior `codex/usability-r1-r2` branch. This merge baseline contains the
+owner-accepted IP-038 Slice 2/Slice 3 dashboard batch, the committed IP-038
+Slice 4 config/bundle flattening batch, and the separately committed Copilot
+Chat interaction-memory MVP lineage. Presence in this merge commit does not
+constitute owner acceptance or promotion of interaction memory. The source
+package's dirty demo database, untracked Slice 3 draft, `.venv`, caches, build
+artifacts, and macOS metadata were not imported into the tracked baseline. The
+local untracked reviewer prompt and `remote_package/` remain user-owned.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-038 PHASE 1 LEGACY DASHBOARD PRODUCTIZATION SLICE 4 CONFIG/BUNDLE FLATTENING IS NOW IMPLEMENTED LOCALLY IN A BOUNDED BATCH: tools/build_usage_bundle.py NOW EMITS ONE TRIAL LANDING PAGE WITH EQUAL TRY DEMO / USE LOCAL DATA PATHS, BUILDS A READ-ONLY demo/sample_pm.db FROM THE COMMITTED SYNTHETIC LOADER PATH, COPIES IT TO src/.dm-demo/sample_pm.db DURING INSTALL, MUTATES/PRESERVES src/.env THROUGH A GENERATED INSTALL HELPER, AND RECORDS bundle-manifest.json PROVENANCE WITH demo_db_source=generated_from_synthetic_loader; README / RELEASE bundle guidance and focused bundle tests now match that contract; NO DASHBOARD RUNTIME FEATURE OR INTERACTION-MEMORY CODE CHANGE WAS MADE IN THIS BATCH; THE PRE-EXISTING DIRTY src/sample-data/demo/sample_pm.db ARTIFACT REMAINS USER-OWNED AND EXCLUDED FROM THIS SCOPE; THE SEPARATE COPILOT CHAT INTERACTION-MEMORY MVP DESCRIBED BELOW REMAINS LOCAL AND UNCHANGED`
-Gate status: `THE IP-036 LOCAL BASELINE THROUGH D2 REMAINS COMMITTED AND OWNER-ACCEPTED; THE PUSHED IP-037 BATCH A/B/C COMBINED RESULT REMAINS THE IMPLEMENTED BASELINE ON THE WORKBOOK BRANCH; IP-038 AND ITS DESIGN ARE OWNER-APPROVED; SLICE 1 IS OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 2 PLUS SLICE 3 ARE OWNER-ACCEPTED AND COMMITTED LOCALLY; SLICE 4 IMPLEMENTATION HAS PASSED FOCUSED BUNDLE TESTS, A TARGETED REAL BUNDLE BUILD, make validate, make rehearse-release, AND A FINAL INDEPENDENT READ-ONLY REVIEW WITH NO REMAINING SIGNIFICANT FINDINGS, AND IS NOW COMMITTED LOCALLY ON THIS BRANCH; THE COPILOT CHAT INTERACTION-MEMORY MVP PLUS THE Delivery Manager AGENT PRE-READ INTEGRATION HAVE PASSED FOCUSED VALIDATION, make validate, make rehearse-release, AND FINAL READ-ONLY REVIEW, BUT ARE NOT YET OWNER-ACCEPTED OR COMMITTED; NOTHING IS PUSHED; THE NEXT GATES ARE OWNER DECISION ON WHETHER TO MERGE/PUSH THE SLICE 4 BATCH, THEN A SEPARATE OWNER DECISION ON THE INTERACTION-MEMORY / PERSONALIZATION PATH`
+Current implementation item: `IP-039 WORKBOOK PORTABILITY AND LOCAL-DATA ISOLATION HAS CORRECTIVE FINDINGS IMPLEMENTED IN THE UNCOMMITTED WORKING TREE AND IS PENDING RE-REVIEW: core export uses the latest completed Workbook source run for its original Setup horizon and Capacity input identity, reads source facts only, retains open-HIREF allocations, and prevents a non-overwrite race. Setup rejects local-to-demo before any health query and reports marker-write failures as repairable partial state. The prior isolated synthetic smoke remains evidence only; re-review is required before acceptance.`
+Gate status: `IP-038 remains the locally validated lean-bundle baseline. The owner has authorized only IP-039 implementation, focused/full validation, synthetic bundle smoke, and independent Sol review. Focused IP-039 validation and the complete isolated synthetic bundle smoke are passing; full validation/rehearsal and independent review remain pending. Do not commit, push, tag, release, deploy, access connectors/real data, or enter any later product slice. Dashboard remains limited to six Legacy pages and interaction memory remains non-authoritative.`
+
+### 2026-08-09 — IP-039 auxiliary source-export correction
+
+- The export boundary is now explicit: source export contains only facts that a
+  user/Copilot may later edit and re-import. Derived staffing, capacity
+  publications, health/snapshot content, freshness, sync history, audit rows,
+  and execution traces are excluded and must be regenerated after import.
+- Added `pm onboarding export-source --source-type ... --output ...` for the
+  existing `project-profile-workbook`, `jira-board-registry-csv`, and
+  `confluence-page-registry-csv` contracts. Owner-specific readers export only
+  `project_profiles` joined to project identity, `jira_board_configs`, and
+  non-global `confluence_pages`, respectively. Confluence sync timestamps and
+  content summaries are deliberately blank; JIRA retains only contract-defined
+  local mapping fields, never derived data-source/evidence configuration.
+- Exports are same-directory temporary writes with explicit overwrite only,
+  create-if-absent protection for the no-overwrite path, structured one-line
+  JSON metadata, and focused export-to-existing-handler preview coverage. The
+  lean bundle now carries `sources/` templates, synthetic samples, guide, and
+  Copilot route alongside the existing workbook kit.
+- Focused auxiliary validation: `35 passed` across source export, project
+  profile, registry onboarding, and bundle-builder tests; targeted Ruff and
+  `git diff --check` passed. These changes remain uncommitted and require the
+  independent IP-039 read-only review; no full validation/rehearsal, commit,
+  push, release, connector access, or real-data action occurred.
+- Accepted auxiliary review correction: before success, each Project Profile,
+  JIRA registry, and Confluence registry exporter now validates its
+  same-directory temporary artifact through its existing owner parser/preview
+  path and compares normalized parsed facts with the selected source facts.
+  Malformed/unrepresentable project-profile JSON/priority/focus values,
+  noncanonical JIRA boolean/text values, and Confluence rows that would be
+  collapsed or defaulted by the importer fail closed before final replacement
+  with source-specific safe error codes. Focused correction suite: `38 passed`;
+  targeted Ruff and `git diff --check` pass. No commit/push/release action.
+
+### 2026-08-09 — IP-039 second-review corrective implementation
+
+- Moved workbook export's workforce and capacity completeness logic behind new
+  public read contracts owned by `workforce_planning_import` and
+  `resource_intelligence`. The workbook owner composes current publication
+  identity, selected-plan canonical allocation values (including explicit
+  zero), manifest member-specific periods, and a capacity snapshot bound to
+  that workforce publication/plan; it no longer reads either capability's
+  private audit, coverage, derivation, or observation tables.
+- Capacity export now uses only manifest member-specific periods, validates
+  all three commitment kinds across coverage, observations, and derivations,
+  and applies the capacity capability's shared dynamic freshness rule. Missing,
+  stale, mixed-generation, scope-mismatch, or conflicting state fails closed.
+- Focused synthetic validation: `122 passed` across workbook onboarding,
+  workforce planning import, resource capacity import, data onboarding, and
+  usage-bundle builder tests; targeted Ruff and `git diff --check` passed.
+  Added actual public-contract, CLI single-JSON-line, explicit-zero,
+  stale-capacity, multi-active-plan, and staggered-member-period coverage.
+- The earlier isolated smoke is not final evidence for this correction.
+  Independent read-only re-review remains required before owner acceptance.
+  No commit, push, tag, release, deployment, connector access, or real data.
+
+### 2026-08-09 — IP-039 third-review corrective implementation
+
+- `workforce_planning_import.current_export_snapshot` now returns separately
+  loaded and manifest-complete canonical member/project records. Export retains
+  a valid member whose effective range has no horizon period, allocation, or
+  capacity row; the CLI still emits one JSON line.
+- `workbook_onboarding.hiref_bridge.export_snapshot` now owns HIREF request,
+  open-demand allocation, next-HIREF integrity, evidence generation, and
+  corruption failure handling. Workbook service only consumes that contract.
+  A real two-plan workforce publication now requires explicit selection.
+- Focused synthetic validation is `130 passed`; targeted Ruff and
+  `git diff --check` pass. These third-review findings are fixed but await the
+  final independent read-only review. Earlier smoke remains non-final evidence;
+  no commit/push/release/connector/real-data action occurred.
+
+### 2026-08-09 — IP-039 fourth-review corrective implementation
+
+- Current-state staffing and contract coverage now own fresh, detail-complete
+  public export snapshots. Workbook export consumes only public contracts and
+  fails closed on member/project scope, canonical field, as-of, or revision
+  disagreement rather than trusting publication report summaries.
+- Workforce manifest now carries validated `planning_horizon.start_month` and
+  `end_month`; exports use that authoritative horizon. A legacy current
+  publication without it returns `WORKBOOK_EXPORT_WORKFORCE_HORIZON_UNAVAILABLE`.
+- Focused synthetic validation: `126 passed` across workbook, workforce,
+  current-state, contract-coverage, data-onboarding, and builder surfaces;
+  targeted Ruff and `git diff --check` pass. Fourth-review findings are fixed
+  pending final independent read-only review. No external action occurred.
+
+### 2026-08-09 — IP-039 fifth-review compatibility correction
+
+- Reverted the generic workforce v1 manifest horizon extension. Workbook export
+  metadata is now stored only in the existing onboarding preview payload and
+  read through a data-onboarding public generation/link context. Historical or
+  unlinked data fails closed; no schema change was introduced.
+- Focused compatibility regression remains in progress; no completion claim,
+  commit, push, release, connector, or real-data action is made.
+
+### 2026-08-09 — IP-039 core source-facts export correction
+
+- Corrected the export boundary: Team/Project + Capacity/HIREF workbook export
+  now reads maintained source facts only. It no longer requires or serializes
+  current-state staffing, contract coverage, workforce/capacity publications,
+  freshness, generation links, snapshots, derivations, or audit state.
+- `workforce_planning_import` exposes canonical member/project/active-plan/
+  monthly-allocation source facts; `resource_intelligence` reconstructs
+  optional Capacity rows from its retained completed input package. The prior
+  onboarding generation/link context reader was removed. HIREF requests,
+  member references, and open demand remain source facts in the existing bridge.
+- Focused synthetic validation: `62 passed` across workbook onboarding and
+  workforce planning tests; touched-module Ruff and `git diff --check` passed.
+  These changes remain uncommitted and await independent read-only review. No
+  full validation/rehearsal/build, commit, push, release, connector, or real-
+  data action occurred.
+
+### 2026-08-09 — IP-039 source-context corrective implementation
+
+- Core workbook export now uses only the newest completed Workbook onboarding
+  source receipt for the selected plan as its authoritative source envelope. The retained
+  onboarding preview JSON records the original Setup start/end months and the
+  exact optional Capacity package identifier/row count; no schema or import
+  contract changed.
+- A newer valid Workbook input with zero Capacity rows exports zero Capacity
+  rows and never falls back to an older capacity import. Missing or corrupt
+  referenced Capacity input fails closed. Historical direct/import data without
+  an authoritative Workbook horizon returns `WORKBOOK_EXPORT_HORIZON_UNAVAILABLE`;
+  a corrupt/incomplete newest receipt returns
+  `WORKBOOK_EXPORT_SOURCE_CONTEXT_INVALID` without fallback.
+  Equal receipt timestamps use SQLite insertion order; boolean Capacity row
+  counts are rejected as invalid source context.
+  Allocations, including open-HIREF demand, and Capacity facts outside that
+  retained range fail closed rather than widening the Setup horizon.
+- Members are exported only when their stored status is exactly `active` or
+  `inactive`; non-representable facts return
+  `WORKBOOK_EXPORT_MEMBER_STATUS_UNSUPPORTED`. Removed the temporary derived
+  export readers from current-state staffing, contract coverage, workforce, and
+  resource capacity; the core path has no publication/freshness/derivation gate.
+- Focused synthetic validation: `65 passed` across workbook onboarding and
+  workforce planning import. Targeted Ruff passes. `git diff --check` was
+  rerun after an EOF correction and is pending its final command result. No
+  full validation/rehearsal/build, commit, push, release, connector, or real-
+  data action occurred. Independent re-review remains required.
+
+### 2026-08-09 — IP-039 final lean bundle artifact
+
+- Built the fresh explicit artifact
+  `dist/ip039-source-facts-final-20260809/delivery-manager-usage-lean-v0.2.0rc1.zip`
+  from the current dirty reviewed tree. SHA-256:
+  `d50d7b38efb8e5c19991fa45b6640a9c77d5933c093dd8b3efae8ca1b2275268`;
+  size: `641756` bytes.
+- Archive/manifest inspection confirms one `src/`, root `README.md`, only the
+  Delivery Manager agent plus Copilot instructions, workbook and source kits,
+  and a read-only synthetic demo DB. No prompt files, `src/configs`,
+  wheelhouse/artifacts, `remote_package`, development docs, or real data were
+  present. Setup preflight returned `ready_to_install`; selector-only helper
+  calls cannot run before setup creates `src/.env` and returned
+  `SETUP_ENV_MISSING`, without modifying the demo DB.
+- Existing bundle-inclusive focused evidence remains `38 passed`; no builder
+  source changed after that validation. Archive inspection and `git diff --check`
+  completed; `make validate` still has no terminal result and online install
+  remains blocked by `package_index_unavailable`. No commit, push, tag, or
+  release occurred.
+
+### 2026-08-09 — IP-039 integration correction and synthetic smoke
+
+- The core source export now recognizes legacy HIREF request project-ID storage
+  and maps legacy member level labels to the unchanged v1 numeric range. A
+  source `STFTE` row lacking current HIREF/end-date facts now fails before any
+  output with `WORKBOOK_EXPORT_STFTE_HIREF_REQUIRED`, rather than degrading to
+  a generic write failure. The generated workbook guide/Copilot routing says
+  to correct maintained source facts through preview/confirm and retry; it must
+  not invent a HIREF or change resource type.
+- The demo deliberately includes one STFTE-without-current-HIREF Legacy alert;
+  its source export correctly fails closed. A separate valid bundled workbook
+  completed demo-to-local isolation, local import, local core export, and
+  preview/confirm into a second isolated database; demo hashes stayed unchanged.
+  Export now preserves actual Allocation/Capacity month coverage instead of
+  widening the re-import horizon from project dates.
+- Focused post-correction validation: `72 passed` across workbook/source-export
+  and bundle tests; touched-module Ruff and `git diff --check` passed. Release
+  rehearsal passed. Full `make validate` was invoked but the execution host
+  ended it during runtime tests without a terminal result; do not treat it as
+  passing. No commit, push, release, connector, or real-data action occurred.
 Git state: Team/Project + Capacity workbook onboarding v1 remains committed
 locally at `bc208d7`. IP-034 Structured Data Onboarding Framework Batch A is
 committed locally at `58e1733`. The owner-approved Batch B design / pack
@@ -1045,6 +1225,467 @@ installation plus isolated bootstrap, upgrade, integrity, and rollback.
   action remain separately gated.
 
 ## Recent change log
+
+### 2026-08-09 — Post-D2 legacy-storage cleanup candidates recorded as design only
+
+- Owner requested that `assignments` and similar objects whose canonical
+  authority has moved but whose legacy dependencies remain be placed into a
+  later bounded cleanup design.
+- Owner subsequently clarified the target outcome: cleanup must be exhaustive,
+  not limited to the initially named tables. A fresh isolated bootstrap
+  inventory found 110 application tables and 2 views. LSC-0 now requires a
+  one-row-per-object owner/writer/reader/clean-import/audit/upgrade/rollback
+  disposition, plus an inventory of compatibility columns, indexes, seeded
+  rows, old migration branches, and package/rehearsal-only dependencies.
+- Every object proven `delete-ready` must receive a separately authorized,
+  capability-owned LSC-R cleanup slice; `unknown-blocked` objects remain, and
+  unrelated deletions may not be combined into one broad rewrite.
+- Updated the IP-036 architecture and implementation handoff with a design-only
+  `LSC-0` through `LSC-5C` candidate sequence. `assignments` is explicitly not
+  delete-ready: staffing proposal confirmation still writes planned rows,
+  legacy resource-planning confirmation can write active rows, Dashboard reads
+  planned rows, and bootstrap/demo compatibility code still references it.
+- Recorded the retained HIREF projection family (`hiref`,
+  `staffing_placeholders`, `placeholder_monthly_allocations`, employee contract
+  mirrors, and dormant source rows) as a separate later contract/migration
+  program rather than combining it with assignment cleanup.
+- Explicitly excluded `employee_external_ids`, `staffing_proposals`, canonical
+  workforce planning/capacity storage, project profiles/snapshots, and other
+  capability-owned tables from empty-table-driven deletion.
+- This is pure architecture/implementation-pack/progress documentation. It does
+  not authorize LSC-0 implementation, runtime/schema/data/test changes, D3, new
+  business behavior, connectors/real data, commit, push, merge, tag, release,
+  or deployment. Exact next action is owner review of the candidate register;
+  any LSC slice requires separate named authorization.
+- Documentation validation: `git diff --check` passed; focused LSC/reference,
+  non-candidate, scope, and gate scans passed. A separate read-only review found
+  and corrected two design-boundary issues before closure: future packs must
+  name a cohesive capability owner rather than place rules in bootstrap/generic
+  repository code, and HIREF publication, reader migration, and deletion are
+  now separated as LSC-5A/5B/5C. No runtime tests, `make validate`, or
+  `make rehearse-release` were required for this pure documentation-only batch.
+- The exhaustive-cleanup clarification was validated against a newly initialized
+  isolated SQLite database at `/tmp`; only schema names/counts were inspected,
+  with no repository or user database mutation and no business records read.
+- Commit/push status: these three documentation edits remain uncommitted inside
+  the pre-existing dirty working tree; no staging, commit, or push occurred.
+
+### 2026-08-08 — IP-038 lean Copilot-first corrective implementation complete pending review
+
+- `tools/build_usage_bundle.py` now owns one platform-neutral lean package:
+  exact root allowlisting, filtered metadata, one root README, generated
+  Copilot surfaces/setup helpers, synthetic demo provenance, and manifest
+  hashes. It ships no embedded Python, venv, wheelhouse, artifacts, duplicate
+  `src`, secondary README, or VS Code launcher.
+- `pm_agent.config` now loads the runtime-root `src/.env` independently of
+  caller cwd. `src/runtime-requirements.lock` pins the Python 3.12 pilot graph.
+  Generated setup preflight/install is explicit-intent only, retry-safe, and
+  sanitizes package-index failure categories; it preserves existing onboarding,
+  connector, data, schema, Dashboard, and controlled-write boundaries.
+- Evidence: focused builder/config tests 7/7 passed; real lean bundle built
+  (595850 bytes, SHA-256 `a7d62953c23260b7a85fcafad90f1e023473f7f66dbef91607252646af2b5ecc`);
+  isolated Python 3.12 online demo install, root-cwd config and two query
+  smokes, and Dashboard test-client smoke passed; `make rehearse-release`
+  passed. `make validate` passed repository-boundary, synthetic-samples, and
+  documented-use-cases stages twice, but its host session was reclaimed during
+  runtime tests before final completion; do not treat it as passed.
+- Module owner/dependencies: builder -> standard library, release metadata,
+  surface manifest, synthetic loader; config -> existing settings/path rules;
+  generated setup -> local venv/pip only. No commit or push. Exact next action:
+  independent Sol read-only review and a fresh complete `make validate` run.
+
+### 2026-08-08 — IP-038 review corrections in progress
+
+- Independent review required preservation of the maintained agent contract.
+  The generated agent now injects only a cross-platform Python 3.12 setup gate
+  and otherwise reuses the maintained full agent contract, including stdin-safe
+  interaction memory and controlled write boundaries. Manifest now records Git
+  revision and dirty identity; local initialization calls the existing empty DB
+  bootstrap after scaffold.
+- No schema, connector, real-data, remote package, user prompt, commit, or
+  push change. Exact next action: complete corrective validation and repeat
+  independent review.
+
+### 2026-08-08 — IP-038 setup-health correction evidence
+
+- Setup marker validation now binds the exact runtime lock hash and requires
+  `pm version`, configuration validation, workload, and Project Health smokes
+  before reporting an installation healthy; marker publication is atomic.
+  Demo copy is temp-file/replace based with SHA-256 and SQLite integrity checks.
+  The builder fails closed when explicitly named legacy macOS/Windows bundle
+  candidates remain in its output directory.
+- Focused tests passed 12/12, Ruff and diff hygiene passed, a lean ZIP built at
+  600152 bytes (SHA-256 `cf898bd7db86ab285ed091430b415387268c608d7234be8d9442ad18069c4508`),
+  isolated Python 3.12 demo install passed, and `make rehearse-release` passed.
+  Complete post-correction `make validate` remains required before acceptance.
+
+### 2026-08-08 — IP-038 second review correction
+
+- Generated agent now rewrites maintained runtime references to bundle-local
+  `.venv/bin/pm`, declares the Windows `.venv\\Scripts\\pm.exe` alternative,
+  forbids bare-PM fallback, and gives explicit preflight/install/repair mode
+  commands. First install runs the same configuration and read-only smokes
+  before marker publication.
+- Focused agent/builder tests passed 4/4 after this correction and rehearsal
+  passed. A default output build correctly failed closed because explicitly
+  named prior macOS/Windows builder artifacts are present; they were not
+  removed. Exact next action: owner decides whether those named artifacts may
+  be removed or moved before a default-dist lean build.
+
+### 2026-08-08 — IP-038 isolated final bundle evidence
+
+- Isolated output build passed without touching default `dist`: ZIP
+  `/private/tmp/dm-lean-final2.t1OjIT/delivery-manager-usage-lean-v0.2.0rc1.zip`,
+  600395 bytes, SHA-256
+  `af7caba4a1c24e4313086a49736db88e079bc6d29ff9e7d999138591d587d5f6`.
+  Focused tests 12/12, Ruff, diff hygiene, and rehearsal passed. `make validate`
+  again passed preflight stages and reached runtime 58% before host session
+  reclamation, so no final success claim is made.
+
+### 2026-08-08 — IP-038 setup-helper dynamic verification correction
+
+- The generated `scripts/setup.py` and `scripts/install-helper.py` now expose
+  importable preflight, health, command-runner, install, marker, and
+  initialization functions, while retaining their existing CLI, JSON states,
+  sanitized error categories, and explicit-repair semantics. The bounded seams
+  permit offline dynamic verification without downloading packages.
+- New generated-bundle regressions prove: all required smokes succeed before
+  atomic setup-marker publication; a smoke failure yields only
+  `smoke_validation_failed` and no marker; an independently verified existing
+  environment is reused; partial state needs explicit repair and can recover;
+  local mode creates an empty SQLite database; and demo staging is temporary,
+  atomically replaced, SHA-256 matched, and SQLite-integrity checked.
+- Focused bundle/database-path/release-engineering tests passed 21/21; targeted
+  Ruff and `git diff --check` passed. No schema, connector, real-data, remote
+  package, user prompt, commit, or push change. Exact next action: repeat the
+  independent Sol read-only review and complete a fresh `make validate` run
+  before requesting owner acceptance.
+
+### 2026-08-09 — IP-038 third review correction
+
+- Generated bundle instructions now select only the root virtualenv executable
+  for the current OS and stop if it is absent: `.venv\\Scripts\\pm.exe` on
+  Windows or `.venv/bin/pm` on macOS/Linux. No PATH executable fallback or
+  Windows-to-Unix path substitution remains in the generated agent.
+- Setup rechecks the actual selected Python version during install. Demo env
+  selector updates use a same-directory temporary file plus atomic replacement;
+  explicit repair may restore an invalid/truncated `src/.env` from the bundled
+  example before retrying. Staged-runtime cwd coverage now imports the copied
+  runtime module and proves both cwd paths select `selected.db`, while process
+  environment still wins.
+- Generated-helper tests now cover JSON-only `main()` states, version gate,
+  Windows selection, env-write failure, and repair. Exact next action remains
+  focused validation plus an independent read-only review; no owner acceptance,
+  commit, or push is implied.
+
+### 2026-08-09 — IP-038 fourth review correction and validation closure
+
+- Generated agent command examples now use shell-neutral `<workspace-pm>`
+  templates with separate POSIX and PowerShell executable forms. POSIX heredoc
+  guidance is not presented as a Windows command; Windows raw-turn transport
+  requires Python-subprocess or terminal-automation stdin rather than putting
+  the user turn in command history or arguments.
+- Setup network classification is now limited to pip dependency installation;
+  config, tool, and initialization failures retain their own sanitized codes.
+  Malformed markers and runner `OSError` produce one JSON partial-install
+  result without a traceback.
+- Focused bundle/database-path/release-engineering regressions passed 27/27;
+  targeted Ruff and diff hygiene passed. Main-agent validation evidence is
+  complete: `make validate` passed 493 runtime tests, 47 repository-tool tests
+  plus 19 subtests and all 9 checks; `make rehearse-release` passed. Next gate:
+  independent Sol read-only review, then owner acceptance. No commit or push.
+
+### 2026-08-09 — IP-038 fifth review correction
+
+- The generated interaction-memory pre-read again preserves the maintained
+  answer-preference, routing-tie-break, follow-up, strategy-flag,
+  known-project-id, and non-authority constraints while changing only the
+  platform executable/stdin transport guidance. Absolute install-helper paths
+  now classify initialization failures deterministically.
+- Final recorded validation evidence is `make validate`: 493 runtime tests, 49
+  repository-tool tests plus 19 subtests and all 9 checks; rehearsal passed.
+  The sixth review found P1/P2 issues; correction is applied and final
+  independent no-finding re-review remains pending before owner acceptance. Do
+  not enter additional implementation or any external action. No commit or
+  push.
+
+### 2026-08-09 — IP-038 sixth review correction
+
+- Setup guidance now states that missing or unsupported Python produces only
+  user-reviewable guidance: no automatic brew/winget/choco/apt invocation, no
+  admin/sudo request, no machine-wide Python modification, and no global
+  package installation.
+- The implementation pack now reflects the current gate. The sixth review
+  found P1/P2; correction is applied, and one final no-finding independent Sol
+  re-review remains pending before owner acceptance. No additional
+  implementation or external action is authorized.
+
+### 2026-08-09 — IP-038 final candidate package built
+
+- Seventh independent Sol read-only review found no P0-P2 findings. Final
+  evidence: focused regression 27/27; `make validate` 493 runtime tests, 49
+  repository-tool tests plus 19 subtests and all 9 checks; and
+  `make rehearse-release` passed.
+- Built the lean candidate without touching the existing
+  `dist/dm-usage-bundles/` contents:
+  `/Users/yanceywu/Documents/AI DM Workspace/dist/dm-usage-lean-candidate/delivery-manager-usage-lean-v0.2.0rc1.zip`
+  (601432 bytes; SHA-256
+  `4d58faa91e44573f2995302089bbb6c875c08ba18fb03c50f69e069646820a7d`).
+  ZIP inspection verified one root, exact root allowlist, root-only README,
+  required Copilot/setup/lock/demo files, no launcher/cache/metadata/venv/
+  wheelhouse/artifacts/duplicate-source folder, and manifest payload hashes.
+- Exact next gate: owner local test and acceptance only. No commit, push,
+  release, deployment, connector, or real-data action occurred.
+
+### 2026-08-08 — Owner accepted the lean bundle design and authorized implementation
+
+- The owner accepted the bounded IP-038 lean Copilot-first bundle corrective
+  design and authorized its implementation. No wider Dashboard, connector,
+  importer, schema, real-data, embedded-Python, offline-wheelhouse, release, or
+  external action is authorized.
+- Luna is unavailable in the active environment, so implementation must use the
+  already-authorized `gpt-5.6-terra` sub-agent with `medium` reasoning effort.
+  Sol remains limited to design, scope control, and independent read-only review.
+- The owner also established a repository validation rule for pure
+  documentation-only batches: use `git diff --check`, focused
+  reference/scope/continuity scans, and read-only doc review instead of runtime
+  tests, `make validate`, or `make rehearse-release`. Agent prompts, generated
+  runtime text, configuration, command templates, and mixed code/doc batches
+  remain behavioral and require impact-appropriate validation.
+- Exact next action: implement only the accepted corrective design with Terra
+  medium, complete focused tests plus required full validation/rehearsal, then
+  perform an independent Sol read-only review and stop for owner acceptance.
+
+### 2026-08-08 — Lean Copilot-first bundle corrective design completed
+
+- Added the bounded IP-038 corrective design at
+  `docs/superpowers/specs/2026-08-08-ip-038-lean-copilot-first-bundle-correction-design.md`
+  after inspecting the real builder, generated package, config resolver,
+  Copilot agent contracts, onboarding registry wrappers, and focused tests.
+- The selected design emits one platform-neutral lean ZIP with one README,
+  no embedded Python/venv/wheelhouse/artifacts/open launcher, an exact root
+  allowlist, filtered metadata, a repository-controlled Python 3.12 runtime
+  lock, and a Copilot-invoked deterministic setup helper.
+- It corrects cwd-dependent `src/.env` loading, preserves the six-page Legacy
+  Dashboard while allowing newer Copilot read-only routes, restores bounded
+  memory pre-read after installation, and guides the existing JIRA/Confluence
+  onboarding profile-save/preview/confirm flows without changing importer or
+  connector semantics.
+- Named owners are the existing bundle builder, `pm_agent.config`, generated
+  setup helper, and generated Copilot instruction surfaces. No schema,
+  bootstrap DDL, Dashboard page/provider, domain service, connector, or real
+  data change is included.
+- Validation requires focused tests, a real lean build, isolated Python 3.12
+  online installation, demo/root-cwd smoke checks, `make validate`,
+  `make rehearse-release`, and an independent Sol read-only review.
+- Design-gate validation passed `make validate`: 491 runtime tests, 38
+  repository-tool tests plus 19 subtests, repository-boundary and synthetic
+  sample checks, documented-use-case consistency, Ruff, compilation, diff
+  hygiene, and wheel/sdist build. Sol design self-review found no P0-P2 scope,
+  data-boundary, write-control, or reversibility issue. Runtime-focused checks,
+  real lean-bundle build, online-install rehearsal, `make rehearse-release`, and
+  independent implementation review remain mandatory after implementation.
+- No runtime/source/test implementation was started. Exact next action: owner
+  accepts, revises, or rejects this design. Only explicit acceptance may start
+  the bounded implementation with Luna-high or Terra-medium.
+
+### 2026-08-08 — Owner selected a lean, dependency-on-demand distribution
+
+- The default DM distribution must remain small. Do not embed Python, a virtual
+  environment, `wheelhouse/`, Playwright, or the complete dependency set in the
+  user package.
+- Users open the extracted folder in VS Code and select the GitHub Copilot
+  `Delivery Manager` agent. Copilot then performs a deterministic preflight,
+  gives clear Python/dependency installation guidance, and invokes the bounded
+  install/initialization path only after the user explicitly requests it.
+- The first-run contract must check and explain at least platform/architecture,
+  supported Python version, executable discovery, network or approved package
+  index availability, permissions, current install state, and the exact next
+  recovery action. Failures must be bounded, sanitized, and safely retryable;
+  partial setup must not be reported as success.
+- The lean package should contain one user-facing README, the Copilot workspace
+  configuration, application/runtime sources or the selected minimal install
+  artifact, synthetic demo seed/database as approved, configuration templates,
+  and internal deterministic setup helpers. Remove user-facing
+  `open-in-vscode`, redundant `artifacts/`, offline `wheelhouse/`, accidental
+  directories, `.DS_Store`, and duplicate guidance.
+- This decision replaces the proposed self-contained Python-runtime direction
+  for the default bundle. An offline or embedded-runtime variant would require
+  a new explicit owner decision; do not build one by default.
+- Exact next action: incorporate the lean dependency-on-demand contract into the
+  bounded packaging-correction design. Define Copilot preflight/install states,
+  failure contracts, supported Python versions, package-index assumptions, and
+  clean retry/rollback behavior before authorizing implementation.
+
+### 2026-08-08 — Owner selected a VS Code-first, Copilot-driven first-run flow
+
+- End users normally open the extracted distribution folder directly in VS
+  Code. The product must not require or foreground a separate
+  `open-in-vscode` command or launcher.
+- After opening the folder, the user selects the bundled GitHub Copilot
+  `Delivery Manager` agent and asks it to install and initialize the local
+  runtime. Copilot is the first-run operator interface as well as the normal
+  query/update interface.
+- The final user-facing sequence is therefore: extract package -> open folder
+  in VS Code -> select `Delivery Manager` -> explicitly request install/init ->
+  choose synthetic demo or approved local-data onboarding -> use Copilot for
+  queries and controlled updates, with Legacy Dashboard as a supporting view.
+- Internal deterministic install/bootstrap helpers may remain, but they should
+  live behind the Copilot route rather than appear as a user-facing open
+  command. Installation and initialization must report exact status and errors;
+  they must not access connectors or real data implicitly. Business-data writes
+  retain their existing preview/confirm controls.
+- Exact next action: include this flow in the bounded packaging-correction
+  design together with the cwd-independent database fix, bundle allowlist and
+  cleanup, self-contained-runtime decision, Copilot read-only/memory contract,
+  and conversational JIRA/Confluence onboarding. Do not implement until the
+  design is reviewed and separately authorized.
+
+### 2026-08-08 — First local bundle feedback diagnosed; packaging correction is required
+
+- The owner began testing the macOS usage bundle and reported four issues:
+  confusing duplicate-looking `src` / `src 2` and README locations; Dashboard
+  launch from the bundle root selecting an empty database; Dashboard UI that
+  appeared older than expected; and uncertainty about `artifacts/` and
+  `wheelhouse/`.
+- Read-only inspection confirmed a P1 launch-contract defect. The installer
+  writes `src/.env` and the demo DB to `src/.dm-demo/sample_pm.db`, while
+  `SettingsConfigDict(env_file=".env")` resolves the env file from the process
+  working directory. Running `pm dashboard serve` from the bundle root ignores
+  `src/.env`, falls back to `data/pm.db`, resolves that under the runtime source
+  root, and allows SQLite to create an empty database. The immediate test
+  workaround is to launch from `src/`; the release fix must make config loading
+  independent of the caller's current directory and add focused root/src launch
+  regression tests.
+- The ZIP itself contains one intended `src/` plus one unintended empty
+  `src 2/`. The builder does not declare `src 2/`; its validation checks required
+  and prohibited entries but does not enforce an exact root allowlist. The
+  source of the extra directory remains `UNKNOWN`, but the release builder must
+  exclude/reject it deterministically. This joins the previously found
+  `.DS_Store` exclusion gap.
+- The two README files are intentional in the current builder (root landing
+  guide plus `src/README.md` runtime guide), but the tester found the split
+  confusing. Treat consolidation into one primary root user guide as packaging
+  usability work. `wheelhouse/` is required for offline installation.
+  `artifacts/` is intentionally emitted by the current builder but the installer
+  uses editable `src/` plus `wheelhouse/`; its wheel/sdist copies are redundant
+  for the end-user flow and should be removed or moved behind an internal
+  boundary in the correction design.
+- SHA-256 comparison confirms the packaged Dashboard `index.html`, CSS,
+  `app.js`, stable-surface JS, and server source exactly match the current
+  checkout. The reported older-looking page is therefore not caused by stale
+  files in the ZIP. Whether it is the intentional Legacy-only presentation, an
+  already-running older server, or browser state remains `UNKNOWN`; reproduce
+  on a clean port after the database-launch workaround and collect only a
+  sanitized screenshot/description if it persists.
+- No source or runtime code was changed during diagnosis. Exact next action:
+  prepare a bounded packaging-correction design covering cwd-independent env/DB
+  resolution, exact bundle root allowlisting, `.DS_Store` exclusion, README and
+  artifacts simplification, and the already-recorded Copilot read-only/memory
+  prompt mismatch. Implementation requires separate owner authorization and a
+  Luna-high or Terra-medium sub-agent, followed by focused validation and an
+  independent Sol review.
+
+### 2026-08-08 — Local distribution test bundles built; review found a surface-contract mismatch
+
+- Under the owner-authorized model policy, a `gpt-5.6-terra` sub-agent with
+  `medium` reasoning built the existing repository usage bundles without
+  changing source or documentation. The macOS arm64 / Python 3.12 and Windows
+  amd64 / Python 3.12 ZIPs were generated under `dist/dm-usage-bundles/`.
+- Focused bundle tests passed 7/7. Both ZIP integrity checks, manifests,
+  offline wheelhouses, read-only synthetic demo provenance, six-page Legacy
+  Dashboard manifest, Copilot agent presence, and synthetic-data boundary
+  checks passed. An isolated writable demo copy returned `success` for
+  `team-workload-overview` and `project-health-review`.
+- Independent Sol read-only review found a significant known mismatch with the
+  owner's newer Copilot-first distribution decision: the generated bundle
+  agent still carries the older Phase 1 trial prompt and explicitly refuses
+  newer read-only capabilities. It also omits the development agent's
+  interaction-memory pre-read. The bundles are therefore suitable only as
+  current-baseline installation, Legacy Dashboard, and onboarding feedback
+  packages; they are not release candidates for the newly approved
+  conversational surface.
+- The review also found `.DS_Store` files copied into the bundle from ignored
+  local directories. This is packaging hygiene debt and must be excluded in a
+  separately authorized corrective batch before a release candidate is
+  accepted.
+- No connector or real-data access occurred. Public PyPI access was used only
+  to download the target-specific offline wheelhouses after the sandboxed DNS
+  attempt failed. No commit, push, tag, promotion, or release was performed.
+- Exact next action: the owner may use the current macOS package for feedback.
+  Before creating a release candidate, complete a bounded design/review and
+  separately authorized Terra implementation to align the generated Copilot
+  agent with newer read-only routes and memory policy, and exclude `.DS_Store`.
+
+### 2026-08-08 — Owner fixed the agent model role split
+
+- Code implementation and corrective execution in this repository prefers a
+  `gpt-5.6-luna` sub-agent with `high` reasoning effort. If Luna is unavailable,
+  the owner explicitly authorizes `gpt-5.6-terra` with `medium` reasoning effort
+  as the fallback implementation model.
+- `gpt-5.6-sol` is limited to inspection, design, scoping, decision recording,
+  and independent read-only review; it must not author implementation batches.
+- The active Codex environment currently exposes `gpt-5.6-sol` and
+  `gpt-5.6-terra`, so an explicitly authorized implementation batch may proceed
+  through a Terra-high sub-agent when Luna remains unavailable.
+- This model split does not alter any existing owner gate, validation/review
+  requirement, portable-data boundary, write control, or release authority.
+
+### 2026-08-08 — Owner fixed the Copilot-first distribution boundary
+
+- The next DM distribution is conversation-first: users primarily query and
+  request controlled updates through the GitHub Copilot `Delivery Manager`
+  agent; Dashboard is a supporting visualization and result-verification
+  surface.
+- The Dashboard publishes only the six Phase 1 legacy pages: Overview,
+  Projects, Team, HIREF, Monthly Plan, and Project Health. Newer Dashboard
+  pages remain implemented but hidden from the distributed default surface.
+- The owner explicitly selected the less restrictive conversational boundary:
+  Copilot may continue to expose newer read-only capabilities even when their
+  Dashboard pages are not published. This decision does not expand write
+  authority; all writes retain explicit user intent and
+  propose/preview/confirm/persist controls.
+- Current gap: JIRA and Confluence registry onboarding remains a technical CSV
+  plus CLI `profile save -> preview -> confirm` workflow and is not yet a
+  first-class conversational route in the Delivery Manager agent. Treat this
+  as an existing-capability usability issue, not a new business capability.
+- Interaction memory remains aligned with the desired long-term intelligence
+  direction but is non-authoritative and not yet owner-accepted or promoted.
+  Do not make it a release claim or allow it to trigger business writes.
+- Exact next action: prepare one bounded design/review slice for the
+  Copilot-first demo/distribution contract and conversational guidance over the
+  existing JIRA/Confluence onboarding commands. Do not implement until that
+  design is reviewed and separately authorized.
+
+### 2026-08-08 — Remote ZIP baseline imported and revalidated locally
+
+- Inspected the supplied handoff and ZIP without overlaying the existing
+  checkout. The archive checksum is
+  `61db113ee0c0caa561f3b13eff8295aaf1904f11e0777a13b0cbf322784f3f2d`,
+  its compressed-data integrity check passed, and its commit `8fb8aa2` descends
+  from the prior local baseline `998ed37`.
+- Imported only Git commit/history into `codex/remote-package-20260808`.
+  Excluded the source package's dirty `src/sample-data/demo/sample_pm.db`,
+  untracked Slice 3 draft, broken absolute-path `.venv`, caches, `dist/`, and
+  `__MACOSX` metadata from the tracked baseline. Existing local untracked
+  `prompts/INTERNAL_FEATURE_EFFECTIVENESS_REVIEWER.md` and `remote_package/`
+  remain untouched and user-owned.
+- Revalidated the exact imported code in an isolated extraction with the local
+  pinned Python runtime: `make validate` passed 491 runtime tests, 38 repository
+  tool tests plus 19 subtests, repository-boundary and synthetic-sample checks,
+  documented-use-case consistency, Ruff, compilation, diff check, and package
+  build. `make rehearse-release` passed wheel installation, isolated clean
+  bootstrap, database upgrade, integrity, and rollback.
+- Read-only takeover review found no blocking code or portability issue in the
+  tracked commit. The archive's Git config enabled a non-portable fsmonitor and
+  emitted `daemon terminated` noise, and its bundled virtual environment points
+  to a missing remote absolute Python path; neither was imported as product
+  state. The merge baseline commits interaction-memory code but does not change
+  its unaccepted/unpromoted governance status.
+- No code capability, schema, connector, real-data path, release, merge, tag, or
+  push was added by this takeover. Exact next action: the owner names one bounded
+  development lane; treat any interaction-memory acceptance/promotion decision
+  separately and do not infer it from presence in HEAD.
 
 ### 2026-08-07 — Delivery Manager agent interaction-memory pre-read integrated and reviewed
 

@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from pm_agent.config import settings
+from pm_agent.data_onboarding.source_export import (
+    SourceExportError,
+    failed_export,
+    write_atomically,
+)
 
 REQUIRED_COLUMNS = ("id", "board_id")
 OPTIONAL_COLUMNS = (
@@ -194,6 +199,103 @@ def apply_registry_import(
             },
         },
     }
+
+
+def export_registry_csv(
+    output: str | Path,
+    *,
+    overwrite: bool = False,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Export editable page mappings, never connector content or sync timestamps."""
+
+    source_type = "confluence-page-registry-csv"
+    connection = sqlite3.connect(_db_path(db_path))
+    try:
+        rows = connection.execute(
+            """
+            SELECT id, board_id, title, page_type
+            FROM confluence_pages
+            WHERE board_id != 'global'
+            ORDER BY board_id, id
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return failed_export(source_type, "CONFLUENCE_PAGE_REGISTRY_EXPORT_SOURCE_UNAVAILABLE")
+    finally:
+        connection.close()
+
+    try:
+        expected_rows = [_exportable_registry_row(row) for row in rows]
+        if len({row["board_id"] for row in expected_rows}) != len(expected_rows):
+            raise ValueError("multiple pages would collapse into one board mapping")
+    except ValueError:
+        return failed_export(source_type, "CONFLUENCE_PAGE_REGISTRY_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    fields = [*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS]
+
+    def write(path: Path) -> None:
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(_registry_csv_row(row) for row in expected_rows)
+        fieldnames, exported_rows = load_registry_rows(path)
+        parsed = _parse_rows(fieldnames, exported_rows)
+        preview = preview_registry_import(path, db_path=db_path)
+        if (
+            parsed["status"] == "rejected"
+            or preview["status"] == "rejected"
+            or parsed["rows"] != expected_rows
+            or len(_desired_pages(parsed["rows"])) != len(expected_rows)
+        ):
+            raise SourceExportError("CONFLUENCE_PAGE_REGISTRY_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    try:
+        target, digest = write_atomically(output, overwrite=overwrite, write=write)
+    except SourceExportError as exc:
+        return failed_export(source_type, str(exc))
+    return {
+        "status": "exported", "source_type": source_type, "output_path": str(target),
+        "sha256": digest, "counts": {"registry_rows": len(expected_rows)}, "warnings": [],
+        "source_identity": {"kind": "local_sqlite", "source_type": source_type},
+    }
+
+
+def _exportable_registry_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    page_id, board_id, title, page_type = row
+    if (
+        not _canonical_required_text(page_id)
+        or not _canonical_required_text(board_id)
+        or board_id == "global"
+        or not _canonical_optional_text(title)
+        or not _canonical_required_text(page_type)
+    ):
+        raise ValueError("unrepresentable page mapping")
+    return {
+        "id": page_id,
+        "board_id": board_id,
+        "title": title or "",
+        "page_type": page_type,
+        # These optional import columns are intentionally emitted blank: they
+        # are connector-derived content/timestamps, never re-import source facts.
+        "last_synced": "",
+        "last_modified": "",
+        "content_summary": "",
+    }
+
+
+def _canonical_required_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value == value.strip()
+
+
+def _canonical_optional_text(value: object) -> bool:
+    return value is None or (
+        isinstance(value, str) and bool(value) and value == value.strip()
+    )
+
+
+def _registry_csv_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {key: row[key] for key in (*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS)}
 
 
 def _parse_rows(fieldnames: list[str], rows: list[dict[str, str]]) -> dict[str, Any]:

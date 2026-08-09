@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,85 @@ from pm_agent.workbook_onboarding.models import ValidatedWorkbook
 from pm_agent.workbook_onboarding.repository import connection
 
 SOURCE_SYSTEM = "workbook_onboarding"
+
+
+def export_snapshot(
+    *, plan_version_id: str, member_ids: list[str], db_path: str | Path | None = None
+) -> dict[str, Any]:
+    """Expose the retained HIREF bridge as one complete export contract.
+
+    Workbook orchestration must not reach into legacy bridge tables.  This
+    owner validates that requests, member next-HIREF references, and open
+    demand allocations describe one internally consistent bridge generation.
+    """
+    with connection(db_path) as database:
+        requests = database.execute(
+            "SELECT id,project,request_type,start_date,end_date,notes FROM hiref ORDER BY id"
+        ).fetchall()
+        request_ids = {str(row["id"]) for row in requests}
+        project_ids = {
+            str(row["id"])
+            for row in database.execute("SELECT id FROM projects").fetchall()
+        }
+        if member_ids:
+            placeholders = ",".join("?" for _ in member_ids)
+            members = database.execute(
+                f"SELECT id,next_hiref FROM employees WHERE id IN ({placeholders}) ORDER BY id",
+                member_ids,
+            ).fetchall()
+        else:
+            members = []
+        if [str(row["id"]) for row in members] != sorted(member_ids):
+            raise ValueError("WORKBOOK_EXPORT_HIREF_MEMBERS_INCOMPLETE")
+        open_demand = database.execute(
+            """SELECT pma.project_id,pma.year,pma.month,pma.allocation,sp.hiref_id,
+                      sp.status,sp.source_system
+               FROM placeholder_monthly_allocations pma
+               JOIN staffing_placeholders sp ON sp.placeholder_id=pma.placeholder_id
+               WHERE pma.plan_version_id=? ORDER BY sp.hiref_id,pma.project_id,pma.year,pma.month""",
+            [plan_version_id],
+        ).fetchall()
+    next_hiref = {str(row["id"]): str(row["next_hiref"] or "") for row in members}
+    referenced = {value for value in next_hiref.values() if value}
+    referenced.update(str(row["hiref_id"] or "") for row in open_demand)
+    if "" in referenced or not referenced <= request_ids:
+        raise ValueError("WORKBOOK_EXPORT_HIREF_REFERENCE_INCOMPLETE")
+    if any(
+        str(row["status"]) != "planned" or str(row["source_system"]) != SOURCE_SYSTEM
+        for row in open_demand
+    ):
+        raise ValueError("WORKBOOK_EXPORT_HIREF_OPEN_DEMAND_INVALID")
+    request_rows = []
+    for row in requests:
+        project = str(row["project"])
+        if " (" in project and project.endswith(")"):
+            project_id = project.rsplit(" (", 1)[1][:-1]
+        else:
+            # Older synthetic/legacy source rows retain the canonical project
+            # ID directly. This is a storage compatibility representation of
+            # the same user-maintained HIREF fact, not a derived projection.
+            project_id = project
+        if project_id not in project_ids:
+            raise ValueError("WORKBOOK_EXPORT_HIREF_REQUEST_PROJECT_INVALID")
+        request_rows.append([
+            str(row["id"]), project_id, str(row["request_type"]),
+            str(row["start_date"]), str(row["end_date"]), str(row["notes"] or ""),
+        ])
+    open_rows = [
+        ["", str(row["project_id"]), f"{int(row['year']):04d}-{int(row['month']):02d}",
+         float(row["allocation"]), str(row["hiref_id"])]
+        for row in open_demand
+    ]
+    material = {"member_next_hiref": next_hiref, "requests": request_rows, "open_demand": open_rows}
+    generation = hashlib.sha256(
+        json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {
+        "member_next_hiref": next_hiref,
+        "hiref_requests": request_rows,
+        "open_demand_allocations": open_rows,
+        "evidence": {"bridge_generation": generation, "plan_version_id": plan_version_id},
+    }
 
 
 def build_hiref_bridge_payload(

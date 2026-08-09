@@ -125,6 +125,10 @@ pm onboarding profile save --profile-key jira-registry --source-type jira-board-
 pm onboarding profile save --profile-key confluence-registry --source-type confluence-page-registry-csv --file /approved/path/confluence_pages.csv
 pm onboarding profile save --profile-key project-profiles --source-type project-profile-workbook --file /approved/path/project_profiles.xlsx
 pm onboarding profile save --profile-key change-requests --source-type servicenow-change-request-csv --file /approved/path/servicenow_change_requests.csv
+pm onboarding export-workbook --output /approved/path/current_planning.xlsx
+pm onboarding export-source --source-type project-profile-workbook --output /approved/path/project_profiles.xlsx
+pm onboarding export-source --source-type jira-board-registry-csv --output /approved/path/jira_board_configs.csv
+pm onboarding export-source --source-type confluence-page-registry-csv --output /approved/path/confluence_pages.csv
 pm onboarding preview --profile-key fy26-q4
 pm onboarding confirm --run-id <onboarding-run-id>
 pm onboarding run show --run-id <onboarding-run-id>
@@ -138,6 +142,10 @@ milestone, Project Health re-import, JIRA board registry CSV, Confluence page
 registry CSV, project-profile workbook, and ServiceNow change-request CSV file
 sources. No standalone retained-source import script remains supported or shipped
 as a product entrypoint.
+Source exports contain only editable source facts. After an edited source is
+previewed and explicitly confirmed, the runtime recomputes derived staffing,
+health, freshness, snapshots, and audit state; those derived records are never
+included in a source export.
 
 The complete package command and configuration guide is in `src/README.md`.
 
@@ -155,25 +163,26 @@ boundary, synthetic-data, and package checks. The second installs the built
 wheel into a temporary target and rehearses database upgrade and rollback using
 synthetic data.
 
-To assemble **end-user DM usage bundles** for offline local distribution, run:
+To assemble the **end-user online-locked lean usage bundle**, run:
 
 ```bash
 python3 -m pip install -r tools/validation-requirements.txt
 make build-usage-bundles
 ```
 
-That command generates separate **macOS** and **Windows** usage bundles under
-`dist/dm-usage-bundles/`. The build requires the pinned release-tool
-dependencies above, and each generated bundle is target-specific to its
-configured Python/architecture. Each bundle contains:
+That command generates one platform-neutral lean usage bundle under
+`dist/dm-usage-bundles/`. It contains no Python runtime, virtual environment,
+wheelhouse, or build artifacts. Each bundle contains:
 
-- one root landing page that keeps the default story to **install → open in VS Code → use the `Delivery Manager` agent**, with equal `Try demo` and `Use local data` first-run paths;
+- one root README that directs the user to open the folder in VS Code, select
+  `Delivery Manager`, and explicitly ask Copilot to install and initialize;
 - a trimmed workspace with `.github/agents/delivery-manager.agent.md` and
   `.github/copilot-instructions.md`;
 - `src/` runtime sources and starter config templates only;
+- a `workbook/` preparation kit with the supported header-only template, a
+  synthetic valid sample, and bundle-relative Copilot-first guidance;
 - one read-only bundled synthetic demo DB at `demo/sample_pm.db`, generated during the bundle build from the committed synthetic loader path;
-- a platform-specific offline `wheelhouse/`;
-- one-click install/open scripts for VS Code + Copilot entry.
+- a fully pinned Python 3.12 runtime lock and Copilot-invoked local setup helper.
 
 The generated bundles are local artifacts for distribution and must not be
 committed back to the repository.

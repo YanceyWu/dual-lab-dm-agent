@@ -8,9 +8,13 @@ from pathlib import Path
 
 import pytest
 from openpyxl import Workbook
+from typer.testing import CliRunner
 
+from pm_agent.cli.app import app
+from pm_agent.config import settings
 from pm_agent.database import repository as legacy_repository
 from pm_agent.database.bootstrap import main as init_db
+from pm_agent.data_onboarding import service as data_onboarding_service
 from pm_agent.resource_intelligence.read_model import get_effective_capacity
 from pm_agent.use_cases import hiref_management_service
 from pm_agent.workbook_onboarding.parser import (
@@ -27,16 +31,42 @@ from pm_agent.workbook_onboarding.presets import (
     validate_preset_registry,
 )
 from pm_agent.workbook_onboarding.service import (
+    export_current_state_workbook,
     import_workbook,
     preview_workbook_import,
 )
 from pm_agent.workbook_onboarding import service as workbook_service
+from pm_agent.workbook_onboarding.hiref_bridge import export_snapshot as hiref_export_snapshot
 from pm_agent.workbook_onboarding.repository import (
     advance_profile_revision,
     resolve_plan_identity,
 )
 from pm_agent.workbook_onboarding.validator import validate_workbook
 from pm_agent.workforce_planning_import import repository as workforce_repository
+from pm_agent.workforce_planning_import.read_model import source_export_snapshot
+
+runner = CliRunner()
+
+
+def _onboard_workbook(
+    path: Path, *, db_path: Path, profile_key: str | None = None
+) -> dict[str, object]:
+    """Publish a workbook through the supported profile/preview/confirm path."""
+    profile_key = profile_key or f"export-{path.stem}"
+    saved = data_onboarding_service.save_source_profile(
+        profile_key=profile_key,
+        source_type="workbook",
+        source_locator=str(path),
+        db_path=db_path,
+    )
+    assert saved["status"] == "saved"
+    preview = data_onboarding_service.preview_source_profile(profile_key, db_path=db_path)
+    assert preview["status"] == "previewed", preview
+    confirmed = data_onboarding_service.confirm_onboarding_run(
+        str(preview["run_id"]), db_path=db_path
+    )
+    assert confirmed["status"] == "completed", confirmed
+    return confirmed
 
 
 def _write_workbook(
@@ -366,6 +396,496 @@ def test_preview_workbook_explicit_default_preset_matches_implicit_default(
     assert implicit["capacity_package"] == explicit["capacity_package"]
 
 
+def test_export_current_state_workbook_is_atomic_metadata_only_and_roundtrips(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _baseline_workbook(
+        tmp_path / "export-source.xlsx", include_capacity=True
+    )
+    imported = _onboard_workbook(source, db_path=isolated_db)
+    assert imported["status"] == "completed"
+
+    output = tmp_path / "planning-export.xlsx"
+    result = export_current_state_workbook(output, db_path=isolated_db)
+
+    assert result["status"] == "success"
+    assert result["output_path"] == str(output.resolve())
+    assert result["sha256"]
+    assert result["counts"]["capacity"] == 1
+    parsed = parse_workbook(output)
+    assert parsed.setup_rows[0].plan_version_name == "FY26 Q4 Baseline"
+    assert (parsed.setup_rows[0].start_month, parsed.setup_rows[0].end_month) == (
+        "2026-09", "2026-09"
+    )
+    assert export_current_state_workbook(output, db_path=isolated_db)["warnings"] == [
+        "WORKBOOK_EXPORT_OUTPUT_EXISTS"
+    ]
+    assert export_current_state_workbook(output, db_path=isolated_db, overwrite=True)[
+        "status"
+    ] == "success"
+
+
+def test_export_rejects_racing_target_without_overwrite(
+    isolated_db: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "race-source.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    output = tmp_path / "race.xlsx"
+
+    def racing_link(source: Path, destination: Path) -> None:
+        destination.write_bytes(b"racing-owner")
+        raise FileExistsError
+
+    monkeypatch.setattr(workbook_service.os, "link", racing_link)
+    result = export_current_state_workbook(output, db_path=isolated_db)
+
+    assert result == {"status": "failed", "warnings": ["WORKBOOK_EXPORT_OUTPUT_EXISTS"]}
+    assert output.read_bytes() == b"racing-owner"
+
+
+def test_export_uses_source_owner_snapshots_and_cli_emits_one_json_line(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "public-contract.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+
+    output = tmp_path / "cli-export.xlsx"
+    result = runner.invoke(app, ["onboarding", "export-workbook", "--output", str(output)])
+    assert result.exit_code == 0, result.output
+    assert len(result.output.strip().splitlines()) == 1
+    payload = json.loads(result.output)
+    assert payload["status"] == "success"
+    assert payload["evidence"]["plan_version_id"]
+    assert payload["evidence"]["capacity_source"] is not None
+
+
+def test_export_maps_legacy_member_level_labels_to_v1_levels(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "legacy-level.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("UPDATE employees SET level='senior' WHERE id='WD100001'")
+    output = tmp_path / "legacy-level-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db)["status"] == "success"
+    assert parse_workbook(output).members[0].level == 7
+
+
+def test_export_rejects_stfte_source_without_current_hiref_before_writing(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "missing-hiref.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute(
+            "UPDATE employees SET resource_type='STFTE',current_hiref='',billing_end_date='' WHERE id='WD100001'"
+        )
+    output = tmp_path / "missing-hiref-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_STFTE_HIREF_REQUIRED"]
+    }
+    assert not output.exists()
+
+
+def test_export_ignores_stale_or_mismatched_derived_publications(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "stale-export.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("UPDATE resource_capacity_observations SET observed_at='2000-01-01T00:00:00+00:00'")
+        database.execute("DELETE FROM current_state_staffing_members")
+        database.execute("DELETE FROM contract_coverage_members")
+        database.execute("UPDATE data_onboarding_publication_links SET domain_publication_id='wrong-publication' WHERE capability_key='contract_coverage'")
+    result = export_current_state_workbook(tmp_path / "stale.xlsx", db_path=isolated_db)
+    assert result["status"] == "success"
+
+
+def test_export_uses_latest_workbook_capacity_generation_even_when_empty(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    first = _baseline_workbook(tmp_path / "capacity-a.xlsx", include_capacity=True)
+    assert _onboard_workbook(first, db_path=isolated_db)["status"] == "completed"
+    second = _baseline_workbook(tmp_path / "capacity-b.xlsx", include_capacity=False)
+    confirmed = _onboard_workbook(second, db_path=isolated_db)
+    assert confirmed["status"] == "completed", confirmed
+    with sqlite3.connect(isolated_db) as database:
+        database.execute(
+            "UPDATE data_onboarding_runs SET completed_at='2026-08-09T00:00:00+00:00', "
+            "created_at='2026-08-09T00:00:00+00:00' WHERE source_type='workbook'"
+        )
+    exported = export_current_state_workbook(tmp_path / "capacity-b-export.xlsx", db_path=isolated_db)
+    assert exported["status"] == "success"
+    assert exported["counts"]["capacity"] == 0
+
+
+def test_export_rejects_boolean_capacity_row_count(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "boolean-row-count.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        preview = json.loads(database.execute(
+            "SELECT source_preview_json FROM data_onboarding_runs WHERE source_type='workbook'"
+        ).fetchone()[0])
+        preview["workbook_export_metadata"]["capacity"]["row_count"] = True
+        database.execute(
+            "UPDATE data_onboarding_runs SET source_preview_json=?", [json.dumps(preview)]
+        )
+    assert export_current_state_workbook(
+        tmp_path / "boolean-row-count-export.xlsx", db_path=isolated_db
+    ) == {"status": "failed", "warnings": ["WORKBOOK_EXPORT_SOURCE_CONTEXT_INVALID"]}
+
+
+def test_export_fails_closed_when_current_capacity_source_is_missing(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "capacity-old.xlsx", include_capacity=True),
+        db_path=isolated_db, profile_key="capacity-currentness",
+    )["status"] == "completed"
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "capacity-current.xlsx", include_capacity=True),
+        db_path=isolated_db, profile_key="capacity-currentness",
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        preview = json.loads(database.execute(
+            """SELECT source_preview_json FROM data_onboarding_runs
+               WHERE source_type='workbook' AND status='completed'
+               ORDER BY completed_at DESC,created_at DESC,rowid DESC LIMIT 1"""
+        ).fetchone()[0])
+        package_id = preview["workbook_export_metadata"]["capacity"]["package_id"]
+        database.execute(
+            "DELETE FROM resource_capacity_import_sessions WHERE package_id=?", [package_id]
+        )
+    output = tmp_path / "missing-capacity-source.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_CAPACITY_SOURCE_MISSING"]
+    }
+    assert not output.exists()
+
+
+def test_export_fails_closed_when_current_capacity_source_is_corrupt(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "capacity-corrupt.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute(
+            "UPDATE resource_capacity_import_sessions SET package_json='{}' WHERE status='completed'"
+        )
+    output = tmp_path / "corrupt-capacity-source.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID"]
+    }
+    assert not output.exists()
+
+
+def test_export_rejects_semantically_valid_tampered_capacity_package(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "capacity-fingerprint.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        raw = database.execute(
+            "SELECT package_json FROM resource_capacity_import_sessions WHERE status='completed'"
+        ).fetchone()[0]
+        package = json.loads(raw)
+        package["observations"][0]["fraction"] = 0.25
+        database.execute(
+            "UPDATE resource_capacity_import_sessions SET package_json=? WHERE status='completed'",
+            [json.dumps(package)],
+        )
+    assert export_current_state_workbook(
+        tmp_path / "tampered-capacity.xlsx", db_path=isolated_db
+    ) == {"status": "failed", "warnings": ["WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID"]}
+
+
+def test_export_preserves_authoritative_setup_horizon_with_sparse_facts(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _baseline_workbook(
+        tmp_path / "sparse-horizon.xlsx", include_capacity=False,
+        start_month="2026-09", end_month="2026-12",
+        allocations=[["WD100001", "RP-PROJ-001", "2026-09", 0.5]],
+    )
+    assert _onboard_workbook(source, db_path=isolated_db)["status"] == "completed"
+    output = tmp_path / "sparse-horizon-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db)["status"] == "success"
+    parsed = parse_workbook(output)
+    assert (parsed.setup_rows[0].start_month, parsed.setup_rows[0].end_month) == (
+        "2026-09", "2026-12"
+    )
+
+
+def test_export_rejects_member_status_not_representable_by_v1(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "member-status.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("UPDATE employees SET status='on_leave' WHERE id='WD100001'")
+    output = tmp_path / "member-status-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_MEMBER_STATUS_UNSUPPORTED"]
+    }
+    assert not output.exists()
+
+
+def test_export_rejects_multiple_active_plans_without_selector(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "ambiguous-export.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute(
+            """INSERT INTO plan_versions(plan_version_id,version_name,scenario_type,as_of_date,version_status)
+               VALUES ('plan-other-active','Other active','baseline','2026-08-15','active')"""
+        )
+    assert export_current_state_workbook(tmp_path / "ambiguous.xlsx", db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_ACTIVE_PLAN_AMBIGUOUS"]
+    }
+    selected = export_current_state_workbook(
+        tmp_path / "out-of-scope.xlsx", plan_version_id="plan-other-active", db_path=isolated_db
+    )
+    assert selected == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_HORIZON_UNAVAILABLE"]
+    }
+
+
+def test_export_preserves_staggered_member_periods_without_cartesian_capacity(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _baseline_workbook(
+        tmp_path / "staggered.xlsx",
+        start_month="2026-09",
+        end_month="2026-10",
+        members=[
+            ["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-09-01", "2026-09-30"],
+            ["WD100002", "Blair Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-10-01", None],
+        ],
+        allocations=[
+            ["WD100001", "RP-PROJ-001", "2026-09", 0.5],
+            ["WD100002", "RP-PROJ-001", "2026-10", 0.5],
+        ],
+        capacity_rows=[
+            ["WD100001", "2026-09", 0.0, 0.0, 0.0],
+            ["WD100002", "2026-10", 0.0, 0.0, 0.0],
+        ],
+    )
+    imported = _onboard_workbook(source, db_path=isolated_db)
+    assert imported["status"] == "completed", imported
+    output = tmp_path / "staggered-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db)["status"] == "success"
+    parsed = parse_workbook(output)
+    assert {(row.member_key, row.month) for row in parsed.capacity_rows} == {
+        ("WD100001", "2026-09"), ("WD100002", "2026-10")
+    }
+
+
+def test_export_keeps_manifest_member_without_a_horizon_period(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _write_workbook(
+        tmp_path / "outside-horizon.xlsx",
+        setup_rows=[["FY26 Q4 Baseline", "2026-08-15", "2026-09", "2026-12"]],
+        member_rows=[["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2027-01-01", None]],
+        project_rows=[["RP-PROJ-001", "Project Atlas", "active", 2, "2026-09-01", "2026-12-31"]],
+        allocation_rows=[], capacity_rows=[],
+    )
+    imported = _onboard_workbook(source, db_path=isolated_db)
+    assert imported["status"] == "completed", imported
+    output = tmp_path / "outside-horizon-export.xlsx"
+    result = runner.invoke(app, ["onboarding", "export-workbook", "--output", str(output)])
+    assert result.exit_code == 0, result.output
+    assert len(result.output.strip().splitlines()) == 1
+    assert json.loads(result.output)["status"] == "success"
+    parsed = parse_workbook(output)
+    assert (parsed.setup_rows[0].start_month, parsed.setup_rows[0].end_month) == ("2026-09", "2026-12")
+    assert [member.member_key for member in parsed.members] == ["WD100001"]
+    assert parsed.allocations == []
+    assert parsed.capacity_rows == []
+
+
+def test_export_succeeds_when_derived_tables_are_absent(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "publication-mismatch.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("DELETE FROM current_state_staffing_members")
+        database.execute("DELETE FROM current_state_staffing_assignments")
+        database.execute("DELETE FROM contract_coverage_members")
+        database.execute("DELETE FROM resource_capacity_publications")
+    output = tmp_path / "source-only.xlsx"
+    exported = export_current_state_workbook(output, db_path=isolated_db)
+    assert exported["status"] == "success"
+    assert validate_workbook(parse_workbook(output)).workbook is not None
+
+
+@pytest.mark.parametrize("replacement", ["{}", '{"workbook_export_metadata": {}}'])
+def test_export_rejects_newest_corrupt_source_receipt_without_fallback(
+    replacement: str,
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "older-valid.xlsx", include_capacity=True),
+        db_path=isolated_db, profile_key="corrupt-source-context",
+    )["status"] == "completed"
+    assert _onboard_workbook(
+        _baseline_workbook(tmp_path / "newer-valid.xlsx", include_capacity=True),
+        db_path=isolated_db, profile_key="corrupt-source-context",
+    )["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute(
+            """UPDATE data_onboarding_runs SET source_preview_json=?
+               WHERE run_id=(SELECT run_id FROM data_onboarding_runs
+                 WHERE source_type='workbook' AND status='completed'
+                 ORDER BY completed_at DESC,created_at DESC,rowid DESC LIMIT 1)""",
+            [replacement],
+        )
+    assert export_current_state_workbook(tmp_path / "legacy.xlsx", db_path=isolated_db) == {
+        "status": "failed", "warnings": ["WORKBOOK_EXPORT_SOURCE_CONTEXT_INVALID"]
+    }
+
+
+def test_export_direct_import_without_onboarding_context_fails_closed(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    assert import_workbook(
+        _baseline_workbook(tmp_path / "legacy-direct.xlsx", include_capacity=True),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    assert export_current_state_workbook(
+        tmp_path / "legacy-direct-export.xlsx", db_path=isolated_db
+    ) == {"status": "failed", "warnings": ["WORKBOOK_EXPORT_HORIZON_UNAVAILABLE"]}
+
+
+def test_export_previews_and_retains_open_hiref_demand(
+    isolated_db: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    init_db(quiet=True)
+    assert _onboard_workbook(
+        _baseline_workbook(
+            tmp_path / "source-roundtrip.xlsx", include_capacity=True,
+            members=[["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-09-01", None, "HIREF-NEXT-001"]],
+            allocations=[["WD100001", "RP-PROJ-001", "2026-09", 0.5], [None, "RP-PROJ-001", "2026-09", 0.2, "HIREF-OPEN-001"]],
+            extra_sheets={"HIREF Requests": [
+                ["HIREF-NEXT-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", "next"],
+                ["HIREF-OPEN-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", "open"],
+            ]},
+        ),
+        db_path=isolated_db,
+    )["status"] == "completed"
+    output = tmp_path / "source-roundtrip-export.xlsx"
+    assert export_current_state_workbook(output, db_path=isolated_db)["status"] == "success"
+    assert preview_workbook_import(output, db_path=isolated_db)["status"] == "previewed"
+    parsed = parse_workbook(output)
+    assert [(row.hiref_id, row.project_key, row.allocation) for row in parsed.allocations if row.hiref_id] == [
+        ("HIREF-OPEN-001", "RP-PROJ-001", 0.2)
+    ]
+    roundtrip_db = tmp_path / "roundtrip.db"
+    monkeypatch.setattr(settings, "database_path", str(roundtrip_db))
+    init_db(quiet=True)
+    assert import_workbook(output, db_path=roundtrip_db)["status"] == "completed"
+    with sqlite3.connect(roundtrip_db) as database:
+        assert database.execute(
+            "SELECT COUNT(*) FROM placeholder_monthly_allocations"
+        ).fetchone()[0] == 1
+
+
+def test_hiref_bridge_export_snapshot_fails_closed_when_request_is_corrupted(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _baseline_workbook(
+        tmp_path / "hiref-corruption.xlsx", include_capacity=True,
+        members=[["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-09-01", None, "HIREF-NEXT-001"]],
+        allocations=[["WD100001", "RP-PROJ-001", "2026-09", 0.5], [None, "RP-PROJ-001", "2026-09", 0.2, "HIREF-OPEN-001"]],
+        extra_sheets={"HIREF Requests": [
+            ["HIREF-NEXT-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", "next"],
+            ["HIREF-OPEN-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", "open"],
+        ]},
+    )
+    assert import_workbook(source, db_path=isolated_db)["status"] == "completed"
+    workforce = source_export_snapshot(db_path=isolated_db)
+    bridge = hiref_export_snapshot(
+        plan_version_id=workforce["plan_version"]["plan_version_id"],
+        member_ids=[row["id"] for row in workforce["members"]], db_path=isolated_db,
+    )
+    assert bridge["open_demand_allocations"][0][-1] == "HIREF-OPEN-001"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("DELETE FROM hiref WHERE id='HIREF-OPEN-001'")
+    with pytest.raises(ValueError, match="WORKBOOK_EXPORT_HIREF_REFERENCE_INCOMPLETE"):
+        hiref_export_snapshot(
+            plan_version_id=workforce["plan_version"]["plan_version_id"],
+            member_ids=[row["id"] for row in workforce["members"]], db_path=isolated_db,
+        )
+
+
+def test_hiref_bridge_export_snapshot_accepts_legacy_project_id_storage(
+    isolated_db: Path, tmp_path: Path
+) -> None:
+    init_db(quiet=True)
+    source = _baseline_workbook(
+        tmp_path / "hiref-legacy-project-id.xlsx", include_capacity=True,
+        members=[["WD100001", "Alex Example", "LTFTE", "active", None, None, "Engineer", 7, "2026-09-01", None, "HIREF-NEXT-001"]],
+        extra_sheets={"HIREF Requests": [
+            ["HIREF-NEXT-001", "RP-PROJ-001", "new", "2026-09-01", "2026-12-31", "next"],
+        ]},
+    )
+    assert import_workbook(source, db_path=isolated_db)["status"] == "completed"
+    with sqlite3.connect(isolated_db) as database:
+        database.execute("UPDATE hiref SET project='RP-PROJ-001' WHERE id='HIREF-NEXT-001'")
+    workforce = source_export_snapshot(db_path=isolated_db)
+    snapshot = hiref_export_snapshot(
+        plan_version_id=workforce["plan_version"]["plan_version_id"],
+        member_ids=[row["id"] for row in workforce["members"]], db_path=isolated_db,
+    )
+    assert snapshot["hiref_requests"][0][1] == "RP-PROJ-001"
+
+
 def test_preview_workbook_rejects_unknown_mapping_preset_id(
     isolated_db: Path, tmp_path: Path
 ) -> None:
@@ -593,7 +1113,7 @@ def test_import_workbook_preserves_explicit_zero_and_missing_capacity_unknown(
 
 
 def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
-    isolated_db: Path, tmp_path: Path
+    isolated_db: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     init_db(quiet=True)
     workbook_path = _baseline_workbook(
@@ -612,6 +1132,12 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
             ["WD100002", "RP-PROJ-003", "2026-09", 0.8, None],
             [None, "RP-PROJ-002", "2026-10", 0.5, "HIREF-OPEN-001"],
         ],
+        capacity_rows=[
+            ["WD100001", "2026-09", 0.0, 0.0, 0.0],
+            ["WD100001", "2026-10", 0.0, 0.0, 0.0],
+            ["WD100002", "2026-09", 0.0, 0.0, 0.0],
+            ["WD100002", "2026-10", 0.0, 0.0, 0.0],
+        ],
         start_month="2026-09",
         end_month="2026-10",
         extra_sheets={
@@ -624,17 +1150,9 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
         },
     )
 
-    result = import_workbook(workbook_path, db_path=isolated_db)
+    result = _onboard_workbook(workbook_path, db_path=isolated_db)
 
     assert result["status"] == "completed"
-    assert result["hiref_bridge_result"]["report"] == {
-        "member_next_hiref_rows": 2,
-        "hiref_slot_rows": 4,
-        "placeholder_rows": 1,
-        "placeholder_allocation_rows": 1,
-    }
-    assert result["counts"]["hiref_request_rows"] == 4
-    assert result["counts"]["hiref_slot_rows"] == 4
 
     with sqlite3.connect(isolated_db) as connection:
         next_hiref = connection.execute(
@@ -676,6 +1194,30 @@ def test_import_workbook_supports_hiref_bridge_sections_in_current_onboarding(
         10,
         0.5,
     )
+
+    exported = tmp_path / "hiref-bridge-export.xlsx"
+    assert export_current_state_workbook(exported, db_path=isolated_db)["status"] == "success"
+    parsed_export = parse_workbook(exported)
+    assert any(
+        row.member_key is None and row.hiref_id == "HIREF-OPEN-001"
+        for row in parsed_export.allocations
+    )
+    second_db = tmp_path / "hiref-roundtrip.db"
+    monkeypatch.setattr(settings, "database_path", str(second_db))
+    init_db(quiet=True)
+    roundtrip = _onboard_workbook(exported, db_path=second_db)
+    assert roundtrip["status"] == "completed"
+    with sqlite3.connect(second_db) as connection:
+        assert connection.execute(
+            "SELECT next_hiref FROM employees WHERE id='WD100002'"
+        ).fetchone() == ("HIREF-CEDAR-NEXT",)
+        assert connection.execute(
+            "SELECT hiref_id FROM staffing_placeholders"
+        ).fetchone() == ("HIREF-OPEN-001",)
+        assert connection.execute(
+            "SELECT allocation FROM placeholder_monthly_allocations"
+        ).fetchone() == (0.5,)
+        assert connection.execute("SELECT COUNT(*) FROM hiref").fetchone() == (4,)
 
     summary = hiref_management_service.summary(days=90)
     placeholders = hiref_management_service.placeholders()

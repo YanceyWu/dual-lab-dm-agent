@@ -1,6 +1,6 @@
 # IP-038 — Phase 1 Legacy Dashboard Productization
 
-Status: `OWNER-APPROVED 2026-08-07 — SLICE 1/2/3 ACCEPTED; SLICE 4 AUTHORIZED AS THE NEXT GATE`
+Status: `SLICE 1/2/3 ACCEPTED; SLICE 4 IS HISTORICAL IMPORTED BASELINE; OWNER-AUTHORIZED LEAN COPILOT-FIRST CORRECTIVE IMPLEMENTATION IS COMPLETE PENDING FINAL INDEPENDENT REVIEW AND OWNER ACCEPTANCE`
 Design: `architecture/17_PHASE_1_LEGACY_DASHBOARD_PRODUCTIZATION_DESIGN.md`
 Implementation branch: `phase1-legacy-dashboard`
 Baseline: `a6d654a0d2ead6027c1da673fef6d2a2ebcd6e80`
@@ -19,9 +19,12 @@ business capabilities or rewriting the product.
 The owner approved the direction on 2026-08-07. Work may proceed only in the
 ordered slices recorded below, with an owner review gate after each slice.
 
-Slice 1 was later accepted, and the owner later advanced the local working tree
-through **Slice 3**. Slice 2 and Slice 3 are now accepted, and Slice 4 is the
-next authorized gate. Later slices still require separate review.
+Slice 1 through Slice 3 were accepted. Slice 4 is retained only as historical
+baseline context. The owner separately authorized the bounded lean
+Copilot-first corrective implementation described in
+`docs/superpowers/specs/2026-08-08-ip-038-lean-copilot-first-bundle-correction-design.md`;
+it is pending final independent review and owner acceptance. Later slices still
+require separate review.
 
 ## Current local state before Slice 1
 
@@ -94,7 +97,8 @@ Acceptance criteria:
 - the Monthly Plan section now renders provider-owned employee/project view
   models rather than rebuilding allocation severity/detail semantics in the
   section layer;
-- Slice 4 config and bundle flattening has not started.
+- Slice 4 is historical baseline context; the authorized lean corrective
+  implementation is the active review item.
 
 ### Slice 4 — Phase 1 config and bundle flattening
 
@@ -169,7 +173,10 @@ changes without requiring data migration or persistent state repair.
 
 ## Next gate
 
-Enter Slice 4 with a bounded design/scoping pass for Phase 1 config and bundle
-flattening. Keep the work limited to the external-trial install/launch/default
-onboarding story; do not fold in new business capability, dashboard rewrites,
-or unrelated documentation churn.
+The owner-authorized lean Copilot-first corrective implementation and its
+focused/full validation are complete. The current next gate is one final
+no-finding independent Sol read-only re-review, followed by owner acceptance.
+Do not automatically enter additional implementation, a new business
+capability, Dashboard redesign, connector execution, real data, embedded
+Python, offline wheelhouse, push, tag, promotion, release, or any other
+external action.

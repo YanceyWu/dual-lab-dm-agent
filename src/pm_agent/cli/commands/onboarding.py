@@ -7,6 +7,7 @@ import json
 import typer
 
 from pm_agent.data_onboarding import service
+from pm_agent.data_onboarding.source_export import export_source
 from pm_agent.data_onboarding.registry import list_source_types
 from pm_agent.workbook_onboarding.presets import (
     get_workbook_preset,
@@ -14,6 +15,7 @@ from pm_agent.workbook_onboarding.presets import (
     serialize_workbook_preset,
     serialize_workbook_preset_summary,
 )
+from pm_agent.workbook_onboarding.service import export_current_state_workbook
 
 _SUPPORTED_SOURCE_TYPES_HELP = ", ".join(list_source_types())
 
@@ -50,6 +52,7 @@ _TERMINAL_STATUSES = {
     "completed",
     "partially_completed",
     "already_completed",
+    "exported",
     "retryable",
     "in_progress",
 }
@@ -212,6 +215,34 @@ def onboarding_confirm(
         _emit(_failed(str(exc)))
         return
     _emit(result)
+
+
+@onboarding_app.command("export-workbook")
+def export_workbook(
+    output: str = typer.Option(..., "--output", help="Explicit .xlsx output path."),
+    plan_version_id: str = typer.Option("", "--plan-version-id", help="Optional explicit active plan version ID."),
+    overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing output only when explicitly requested."),
+) -> None:
+    """Export complete current planning state as the supported workbook v1 contract."""
+
+    _emit(
+        export_current_state_workbook(
+            output,
+            plan_version_id=plan_version_id or None,
+            overwrite=overwrite,
+        )
+    )
+
+
+@onboarding_app.command("export-source")
+def export_source_artifact(
+    source_type: str = typer.Option(..., "--source-type", help="Editable source type to export."),
+    output: str = typer.Option(..., "--output", help="Explicit .xlsx or .csv output path."),
+    overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing output only when explicitly requested."),
+) -> None:
+    """Export one supported editable source artifact; derived data is excluded."""
+
+    _emit(export_source(source_type, output, overwrite=overwrite))
 
 
 @run_app.command("show")

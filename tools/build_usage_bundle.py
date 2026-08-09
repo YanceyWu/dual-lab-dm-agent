@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build platform-specific Delivery Manager usage bundles."""
+"""Build the lean, Copilot-first Delivery Manager distribution bundle."""
 
 from __future__ import annotations
 
@@ -7,255 +7,61 @@ import argparse
 import hashlib
 import json
 import re
-import sqlite3
 import shutil
+import sqlite3
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
-from validate_release import REPO_ROOT, build_package, package_version
+from openpyxl import Workbook
+
+from validate_release import REPO_ROOT, package_version
 
 sys.path.insert(0, str(REPO_ROOT / "src"))
-
-from pm_agent.dashboard.surface_manifest import (  # noqa: E402
+from pm_agent.dashboard.surface_manifest import (
     PHASE1_LEGACY_DASHBOARD_TRIAL,
     visible_tab_labels,
-)
+)  # noqa: E402
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "dist" / "dm-usage-bundles"
+BUNDLE_NAME = "delivery-manager-usage-lean"
 BUNDLE_MANIFEST = "bundle-manifest.json"
 DEMO_DB_SOURCE = "generated_from_synthetic_loader"
-SHIPPED_DEMO_DB = Path("demo/sample_pm.db")
-WRITABLE_DEMO_DB = Path("src/.dm-demo/sample_pm.db")
-ENV_PATH = Path("src/.env")
-CANONICAL_DEMO_DATABASE_PATH = ".dm-demo/sample_pm.db"
-
-ROOT_SOURCE_FILES = (
-    Path(".github/prompts/dm-workload.prompt.md"),
-)
-SRC_SOURCE_FILES = (
+ROOT_ALLOWLIST = {
+    "README.md",
+    ".gitignore",
+    ".github",
+    "demo",
+    "scripts",
+    "sources",
+    "src",
+    "workbook",
+    BUNDLE_MANIFEST,
+}
+SRC_FILES = (
     Path("src/pyproject.toml"),
     Path("src/.env.example"),
+    Path("src/runtime-requirements.lock"),
 )
-SRC_SOURCE_DIRECTORIES = (
-    Path("src/pm_agent"),
-    Path("src/configs"),
-    Path("src/scripts"),
-)
-EXCLUDED_SCRIPT_NAMES = {
-    "load_sample_data.py",
-    "seed.py",
-    "seed_demo_evidence.py",
-}
-PROHIBITED_ROOT_ENTRIES = {
-    "AGENTS.md",
-    "PROGRESS.md",
-    "ROADMAP.md",
-    "architecture",
-    "docs",
-    "implementation-packs",
-    "implementation-reports",
-    "prompts",
-    "research-input",
-    "standards",
-    "templates",
-    "tools",
-}
-PROHIBITED_SRC_ENTRIES = {
-    "tests",
-    "sample-data",
-}
-PHASE1_LEGACY_PAGES = visible_tab_labels(PHASE1_LEGACY_DASHBOARD_TRIAL)
-PHASE1_LEGACY_PAGES_TEXT = ", ".join(PHASE1_LEGACY_PAGES)
+SRC_DIRECTORIES = (Path("src/pm_agent"), Path("src/scripts"))
+EXCLUDED_SCRIPT_NAMES = {"load_sample_data.py", "seed.py", "seed_demo_evidence.py"}
+IGNORED_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".venv"}
+PAGES = ", ".join(visible_tab_labels(PHASE1_LEGACY_DASHBOARD_TRIAL))
 
 
 @dataclass(frozen=True)
 class BundleArtifacts:
-    wheel: Path
-    sdist: Path
     demo_db: Path
 
 
-@dataclass(frozen=True)
-class BundleTarget:
-    key: str
-    display_name: str
-    pip_platform: str
-    python_version: str
-    abi: str
-    install_script: str
-    open_script: str
-
-    @property
-    def python_tag(self) -> str:
-        return self.python_version.replace(".", "")
-
-    @property
-    def architecture(self) -> str:
-        if "arm64" in self.pip_platform:
-            return "arm64"
-        if "x86_64" in self.pip_platform:
-            return "x86_64"
-        if "amd64" in self.pip_platform:
-            return "amd64"
-        return self.pip_platform.replace(".", "_")
-
-    @property
-    def platform_label(self) -> str:
-        return f"{self.display_name} ({self.architecture})"
-
-    @property
-    def architecture_aliases(self) -> tuple[str, ...]:
-        if self.architecture == "arm64":
-            return ("arm64", "aarch64")
-        if self.architecture == "x86_64":
-            return ("x86_64", "amd64")
-        if self.architecture == "amd64":
-            return ("amd64", "x86_64")
-        return (self.architecture,)
-
-    @property
-    def bundle_name(self) -> str:
-        return (
-            f"delivery-manager-usage-{self.key}-{self.architecture}-py{self.python_tag}"
-            f"-v{package_version()}"
-        )
-
-    @property
-    def archive_name(self) -> str:
-        return f"{self.bundle_name}.zip"
-
-
-def default_targets() -> dict[str, BundleTarget]:
-    return {
-        "macos": BundleTarget(
-            key="macos",
-            display_name="macOS",
-            pip_platform="macosx_11_0_arm64",
-            python_version="3.12",
-            abi="cp312",
-            install_script="scripts/install.command",
-            open_script="scripts/open-in-vscode.command",
-        ),
-        "windows": BundleTarget(
-            key="windows",
-            display_name="Windows",
-            pip_platform="win_amd64",
-            python_version="3.12",
-            abi="cp312",
-            install_script="scripts/install.cmd",
-            open_script="scripts/open-in-vscode.cmd",
-        ),
-    }
-
-
-def parse_build_requirements() -> tuple[str, ...]:
-    pyproject = (REPO_ROOT / "src/pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(
-        r"(?ms)^\[build-system\].*?^requires\s*=\s*\[(.*?)\]",
-        pyproject,
-    )
-    if not match:
-        raise RuntimeError("BUILD_SYSTEM_REQUIRES_NOT_FOUND")
-    return tuple(re.findall(r'"([^"]+)"', match.group(1)))
-
-
-BUILD_REQUIREMENTS = parse_build_requirements()
-
-
 def parse_args() -> argparse.Namespace:
-    defaults = default_targets()
     parser = argparse.ArgumentParser(
-        description="Build offline Delivery Manager usage bundles for local distribution."
+        description="Build a lean Delivery Manager usage bundle."
     )
-    parser.add_argument(
-        "--platform",
-        action="append",
-        choices=tuple(defaults),
-        dest="platforms",
-        help="Platform bundle to build. Defaults to both macos and windows.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=DEFAULT_OUTPUT_DIR,
-        help="Directory that will receive the generated bundle folders and zips.",
-    )
-    parser.add_argument(
-        "--macos-platform",
-        default=defaults["macos"].pip_platform,
-        help="pip target platform tag for the macOS bundle.",
-    )
-    parser.add_argument(
-        "--macos-python-version",
-        default=defaults["macos"].python_version,
-        help="Target Python version for the macOS bundle, e.g. 3.12.",
-    )
-    parser.add_argument(
-        "--macos-abi",
-        default=defaults["macos"].abi,
-        help="Target Python ABI for the macOS bundle, e.g. cp312.",
-    )
-    parser.add_argument(
-        "--windows-platform",
-        default=defaults["windows"].pip_platform,
-        help="pip target platform tag for the Windows bundle.",
-    )
-    parser.add_argument(
-        "--windows-python-version",
-        default=defaults["windows"].python_version,
-        help="Target Python version for the Windows bundle, e.g. 3.12.",
-    )
-    parser.add_argument(
-        "--windows-abi",
-        default=defaults["windows"].abi,
-        help="Target Python ABI for the Windows bundle, e.g. cp312.",
-    )
-    parser.add_argument(
-        "--skip-wheelhouse",
-        action="store_true",
-        help="Skip pip download. Useful for dry runs and repository tests.",
-    )
-    parser.add_argument(
-        "--skip-archive",
-        action="store_true",
-        help="Leave the bundle folders unzipped.",
-    )
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--skip-archive", action="store_true")
     return parser.parse_args()
-
-
-def configured_targets(args: argparse.Namespace) -> list[BundleTarget]:
-    requested = args.platforms or ["macos", "windows"]
-    defaults = default_targets()
-    result: list[BundleTarget] = []
-    for name in requested:
-        if name == "macos":
-            result.append(
-                BundleTarget(
-                    key="macos",
-                    display_name="macOS",
-                    pip_platform=args.macos_platform,
-                    python_version=args.macos_python_version,
-                    abi=args.macos_abi,
-                    install_script=defaults["macos"].install_script,
-                    open_script=defaults["macos"].open_script,
-                )
-            )
-        else:
-            result.append(
-                BundleTarget(
-                    key="windows",
-                    display_name="Windows",
-                    pip_platform=args.windows_platform,
-                    python_version=args.windows_python_version,
-                    abi=args.windows_abi,
-                    install_script=defaults["windows"].install_script,
-                    open_script=defaults["windows"].open_script,
-                )
-            )
-    return result
 
 
 def ensure_clean_dir(path: Path) -> None:
@@ -269,510 +75,319 @@ def copy_file(source: Path, destination: Path) -> None:
     shutil.copy2(source, destination)
 
 
+def ignored(path: Path) -> bool:
+    return (
+        path.name == ".DS_Store"
+        or path.name.startswith("._")
+        or any(part in IGNORED_PARTS for part in path.parts)
+        or path.suffix in {".pyc", ".pyo", ".db", ".sqlite", ".sqlite3"}
+    )
+
+
 def copy_directory(source: Path, destination: Path) -> None:
-    destination.mkdir(parents=True, exist_ok=True)
     for path in source.rglob("*"):
-        if "__pycache__" in path.parts:
+        if ignored(path):
             continue
-        relative = path.relative_to(source)
-        target = destination / relative
+        target = destination / path.relative_to(source)
         if path.is_dir():
             target.mkdir(parents=True, exist_ok=True)
-            continue
-        if source.name == "scripts" and path.name in EXCLUDED_SCRIPT_NAMES:
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, target)
-
-
-def build_bundle_root_readme(target: BundleTarget) -> str:
-    install_command = target.install_script
-    open_command = target.open_script
-    return f"""# Delivery Manager Trial Bundle ({target.platform_label})
-
-This bundle is the **Phase 1 local Delivery Manager trial**: install it, open it
-in VS Code, and use the `Delivery Manager` workspace agent. The supported
-Dashboard UI in this bundle remains the legacy Phase 1 surface:
-{PHASE1_LEGACY_PAGES_TEXT}.
-
-## Before first use
-
-1. Install **Python {target.python_version}** for **{target.platform_label}**.
-2. Install **VS Code** plus **GitHub Copilot / Copilot Chat**.
-3. If you want the open script to work, make sure the `code` command is
-   available.
-
-## Install locally
-
-Run:
-
-```text
-{install_command}
-```
-
-The install script creates `.venv`, performs an **offline** install from
-`wheelhouse/`, scaffolds `src/.env` on first install, and prepares the bundled
-demo DB at `src/.dm-demo/sample_pm.db`.
-
-## Open in VS Code
-
-Run:
-
-```text
-{open_command}
-```
-
-After VS Code opens this folder, open Copilot Chat and select the workspace
-agent named `Delivery Manager`.
-
-## Choose your first run path
-
-Choose **Try demo** for the fastest synthetic first run, or choose **Use local
-data** when you are ready to point the runtime at an approved local database.
-
-### Try demo
-
-**When to choose it:** you want a working trial immediately with the bundled
-synthetic database.
-
-**Do this:** install the bundle, open it in VS Code, keep
-`DATABASE_PATH=.dm-demo/sample_pm.db` in `src/.env`, and optionally run:
-
-```bash
-pm dashboard serve
-```
-
-**Then:** ask the `Delivery Manager` agent questions such as “当前哪些同事还有可用容量？”
-or “未来 90 天哪些同事的 HIREF 即将到期？”. To reset demo mode while you are still
-using it, delete `src/.dm-demo/sample_pm.db` and rerun `{install_command}`.
-
-### Use local data
-
-**When to choose it:** you want the trial workspace to use an approved local
-database instead of the bundled synthetic demo.
-
-**Do this:** edit `src/.env` so it says `DATABASE_PATH=data/pm.db`, then run:
-
-```bash
-pm init
-pm config validate
-pm connector validate --portable
-```
-
-**Then:** continue with the `Structured data onboarding` section in
-`src/README.md`, use the approved `pm onboarding profile save → preview →
-confirm` flow, and return to the `Delivery Manager` agent for runtime guidance.
-
-## Boundary
-
-- Keep real configuration, credentials, local databases, exports, and logs only
-  on the approved work computer.
-- Do not treat this bundle as a development repository; source, test, and
-  release changes belong in the maintained development checkout.
-"""
-
-
-def build_bundle_runtime_readme(target: BundleTarget) -> str:
-    return f"""# Local Delivery Manager Runtime
-
-This is the trimmed runtime workspace included in the {target.platform_label}
-Delivery Manager usage bundle. It is intended for **local operation**, not
-feature development.
-
-The default Dashboard trial surface is limited to the legacy pages:
-{PHASE1_LEGACY_PAGES_TEXT}.
-
-## Install from the bundle root
-
-Run the bundle install script instead of manual package commands:
-
-```text
-../{target.install_script}
-```
-
-The install script creates a local virtual environment, installs dependencies
-offline from `../wheelhouse/`, scaffolds `src/.env` on first install with
-`pm init --skip-db`, copies the bundled read-only demo DB into
-`src/.dm-demo/sample_pm.db`, and sets demo mode in `src/.env` as:
-
-```dotenv
-DATABASE_PATH={CANONICAL_DEMO_DATABASE_PATH}
-```
-
-Re-running install preserves an existing writable demo DB copy and never
-silently switches a non-demo `DATABASE_PATH` back to demo mode.
-
-## Switch from demo to local data
-
-To stop using the bundled demo and move into approved local-data onboarding:
-
-1. Edit `src/.env` so it contains `DATABASE_PATH=data/pm.db`.
-2. Run `pm init`.
-3. Run `pm config validate`.
-4. Run `pm connector validate --portable`.
-5. Continue with `Structured data onboarding` below.
-
-## Operator commands
-
-```bash
-pm version
-pm config validate
-pm connector validate --portable
-pm dashboard serve
-```
-
-Read-only and controlled-write behavior is still governed by the workspace
-Copilot instructions and the `Delivery Manager` custom agent.
-
-## Structured data onboarding
-
-After you have switched `DATABASE_PATH` to `data/pm.db`, initialized it with
-`pm init`, and passed `pm config validate` plus
-`pm connector validate --portable`, onboard approved local sources through the
-supported profile flow:
-
-1. save an approved source file with `pm onboarding profile save ...`;
-2. inspect it with `pm onboarding profile show --profile-key <profile-key>` when
-   needed;
-3. preview it with `pm onboarding preview --profile-key <profile-key>`;
-4. confirm it with `pm onboarding confirm --run-id <run-id>`;
-5. inspect the completed run with `pm onboarding run show --run-id <run-id>`.
-
-Example commands:
-
-```bash
-pm onboarding profile save --profile-key fy26-q4 --source-type workbook --file /approved/path/team-project-capacity.xlsx
-pm onboarding preview --profile-key fy26-q4
-pm onboarding confirm --run-id <onboarding-run-id>
-pm onboarding run show --run-id <onboarding-run-id>
-```
-
-## Runtime contents
-
-- `pm_agent/` — CLI, use cases, deterministic rules, connectors, database, Dashboard
-- `configs/` — starter configuration templates
-- `scripts/` — supported local import and sync entrypoints
-
-## Boundary
-
-- Keep operational paths, endpoints, credentials, databases, exports, logs, and
-  connector payloads in ignored local files only.
-- Do not add tests, sample data, or development tooling back into this bundle.
-"""
-
-
-def build_bundle_gitignore() -> str:
-    return """# Local runtime state
-.venv/
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-
-# Local workspace secrets and runtime files
-src/.env
-src/.auth/
-src/backups/
-src/data/
-src/.dm-demo/
-src/data-feed/
-src/exports/
-src/logs/
-src/.venv/
-src/__pycache__/
-src/pm_agent/__pycache__/
-src/pm_agent/**/*.pyc
-"""
-
-
-def build_bundle_copilot_instructions() -> str:
-    return f"""# Delivery Manager usage workspace instructions
-
-Use the workspace `Delivery Manager` custom agent for normal Delivery Manager
-operations. This bundle is an operator workspace, not a development repository.
-The default operator entry is: install from the bundle root, open this workspace
-in VS Code, and use the `Delivery Manager` agent. The bundled Phase 1 trial
-surface is the legacy Dashboard pages only:
-{PHASE1_LEGACY_PAGES_TEXT}.
-
-For DM operations:
-
-- use only the structured commands and routing defined in
-  `.github/agents/delivery-manager.agent.md`;
-- treat returned JSON, evidence, freshness, warnings, and execution metadata as
-  the sole factual basis;
-- never inspect SQLite, connector configuration, raw exports, or human-formatted
-  legacy output;
-- never infer missing facts as zero, healthy, available, valid, or safe;
-- run live connector probes or syncs only after an explicit request;
-- keep staffing writes within propose, preview, explicit confirmation, persist.
-
-For repository or source-code changes:
-
-- do not modify the runtime inside this bundle;
-- escalate the change back to the maintained development repository instead of
-  editing this workspace as if it were a dev checkout.
-"""
-
-
-def build_bundle_delivery_manager_agent() -> str:
-    return f"""---
-name: Delivery Manager
-description: Operate the local Delivery Manager legacy Dashboard trial through approved deterministic commands.
-argument-hint: Ask about team workload, project status, HIREF, or the legacy dashboard.
-tools:
-  - execute/runInTerminal
-agents: []
-user-invocable: true
-disable-model-invocation: true
-target: vscode
----
-
-# Delivery Manager operating agent
-
-Act as the user's Delivery Manager decision-support assistant after they install
-this bundle, open it in VS Code, and select the bundled `Delivery Manager`
-workspace agent.
-
-The supported Phase 1 Dashboard UI in this bundle is the legacy Dashboard. It
-currently exposes:
-{PHASE1_LEGACY_PAGES_TEXT}.
-
-Use the local `pm` commands as the authoritative source of facts. Deterministic
-code owns filtering, calculations, validation, freshness, and persistence. Do
-not inspect SQLite, configuration, credentials, raw exports, connector payloads,
-or human-formatted legacy CLI output.
-
-## Direct routing
-
-Route known requests directly. Do not run `pm tool list` or `describe` first
-when the mapping and required parameters are already clear.
-
-| User intent | Approved command |
-| --- | --- |
-| Current workload, current team capacity, or who may have room | `pm tool query team-workload-overview [--team "<exact team>"]` |
-| Legacy project status or project health | `pm tool query project-health-review [--project <exact-project-id>]` |
-| HIREF expiry or continuity risk | `pm tool query contract-continuity-review [--days <1-365>]` |
-| Validate bundle setup before using the dashboard | `pm config validate` then `pm connector validate --portable` |
-| Start or reopen the legacy Dashboard trial UI | `pm dashboard serve` |
-
-Ask only for missing decision-critical parameters. Do not invent an exact team,
-project ID, or time period. If a safe unfiltered query is supported and useful,
-run it instead of asking unnecessarily.
-
-## Legacy Dashboard workflow
-
-Use the dashboard itself as the primary operator surface for the full Phase 1
-legacy experience. In particular:
-
-- use the Overview, Projects, Team, HIREF, Monthly Plan, and Project Health
-  pages for the supported trial workflow;
-- if a user asks about the Projects list or Monthly Plan page specifically,
-  direct them back to the legacy Dashboard rather than inventing a hidden CLI
-  route;
-- if the dashboard appears empty or stale, use `pm config validate`,
-  `pm connector validate --portable`, and `pm dashboard serve` as the minimum
-  troubleshooting path before discussing unsupported surfaces.
-
-## Trial-surface boundary
-
-The bundled trial surface does **not** promote experimental or later-phase
-features. If the user asks about Management Attention, Action Follow-up, legacy
-Weekly DM brief, Weekly Brief v2, Attention Center, capacity heatmaps,
-execution review, layered health, connector review, or snapshots, state that
-those surfaces are outside the current Phase 1 bundle scope and return to the
-legacy Dashboard trial workflows.
-
-## Result handling
-
-Use the structured JSON result as the sole factual basis. State the conclusion
-first, then cite the material evidence, freshness, assumptions, warnings, and
-execution ID when returned.
-
-If status is `partial`, `unknown`, `unavailable`, `invalid`, or `failed`, say so
-plainly. Never reinterpret missing data as zero, healthy, available, or safe.
-Do not calculate authoritative availability, HIREF coverage, rankings, or
-health in prose.
-
-This agent is for operating the bundled trial product. If the user asks to
-modify source code, architecture, tests, or repository configuration, explain
-that they should switch to the maintained development repository.
-"""
+        elif not (source.name == "scripts" and path.name in EXCLUDED_SCRIPT_NAMES):
+            copy_file(path, target)
+
+
+def copy_bundle_pyproject(destination: Path) -> None:
+    """Remove the development README metadata because lean bundles ship one root README."""
+    source = (REPO_ROOT / "src/pyproject.toml").read_text(encoding="utf-8")
+    write_text(
+        destination, re.sub(r'^readme = "README\.md"\n', "", source, flags=re.MULTILINE)
+    )
+
+
+def text(lines: list[str]) -> str:
+    return "\n".join(lines) + "\n"
+
+
+def build_readme() -> str:
+    return text(
+        [
+            "# Delivery Manager",
+            "",
+            "Open this extracted folder in VS Code, open Copilot Chat, select the workspace agent **Delivery Manager**, and say **安装并初始化**.",
+            "The agent checks Python 3.12, explains the planned local installation, and runs it only after your explicit request.",
+            "Dependencies download through existing user pip configuration; this lean bundle contains no Python runtime or wheelhouse.",
+            "",
+            "After installation, choose **Try demo** for supplied synthetic data or **Use local data** to scaffold an empty local workspace.",
+            "For workbook onboarding, start with `workbook/WORKBOOK_GUIDE.md`; it links the preparation template and synthetic sample.",
+            "For project profiles and local JIRA/Confluence mappings, use `sources/SOURCES_GUIDE.md`; it includes exact templates and synthetic samples.",
+            f"The supported Dashboard UI is limited to: {PAGES}.",
+            "",
+            "Do not run setup scripts manually unless Copilot directs a recovery action. Installation never accesses connectors or real data.",
+        ]
+    )
+
+
+def build_gitignore() -> str:
+    return text(
+        [
+            ".venv/",
+            ".dm-setup-state.json",
+            "*.db",
+            "*.db-journal",
+            "*.db-shm",
+            "*.db-wal",
+            "src/.env",
+            "src/.auth/",
+            "src/backups/",
+            "src/data/",
+            "src/.dm-demo/",
+            "src/data-feed/",
+            "src/exports/",
+            "src/logs/",
+            "src/__pycache__/",
+        ]
+    )
+
+
+def build_workbook_guide() -> str:
+    return text(
+        [
+            "# Team/Project + Capacity workbook",
+            "",
+            "Prepare a local workbook from `team_project_capacity_workbook_template.xlsx`. `team_project_capacity_workbook_sample.xlsx` is a synthetic valid example only; do not replace its anonymous IDs with real data in a shared bundle.",
+            "",
+            "Use these exact sheets and headers: Setup (`plan_version_name`, `as_of_date`, `start_month`, `end_month`); Members (`member_key`, `display_name`, `fte_type`, `status`, `current_hiref_id`, `hiref_end_date`, `role`, `level`, `effective_start`, `effective_end`, `next_hiref_id`); Projects (`project_key`, `display_name`, `status`, `priority`, `start_date`, `target_end`); Allocations (`member_key`, `project_key`, `month`, `allocation`, `hiref_id`); Capacity (`member_key`, `month`, `leave_fraction`, `bau_fraction`, `non_project_fraction`). `HIREF Requests` is optional and has `hiref_id`, `project_key`, `request_type`, `start_date`, `end_date`, `notes`.",
+            "",
+            "Required fields: Setup needs plan_version_name/start_month/end_month (as_of_date optional); Members need member_key/display_name/fte_type/status (role, level, dates and HIREF fields optional except STFTE needs current_hiref_id plus hiref_end_date); Projects need project_key/display_name/status/priority (dates optional); Allocations need project_key/month/allocation and exactly one of member_key or hiref_id; Capacity needs every listed field; each HIREF Request needs hiref_id/project_key/request_type/start_date/end_date (notes optional). Use stable anonymous identifiers for member/project keys. Dates use `YYYY-MM-DD`; months use `YYYY-MM`; fractions are decimals from 0 to 1 (for example 0.5, not 50%). Members are `active` or `inactive`; projects are `planning`, `active`, or `done`; fte_type is LTFTE or STFTE; level is 5-10 when supplied; priority is 1-5. Allocation/capacity months must be inside Setup and member effective ranges; effective starts are month-first and ends month-last; allocation and each fraction are 0-1; the three Capacity fractions total no more than 1. Do not add columns or rename sheets/headers.",
+            "",
+            "Copilot-first flow: ask Copilot to switch to local data first if you tried demo; then save a workbook profile, preview it, inspect the returned JSON, and explicitly confirm only after you approve the preview. Example route: `<workspace-pm> onboarding profile save --profile-key local-plan --source-type workbook --file <local-workbook-path>`, then `<workspace-pm> onboarding preview --profile-key local-plan`, then `<workspace-pm> onboarding confirm --run-id <run-id>`.",
+            "",
+            "To export a complete current planning snapshot, ask Copilot to run `<workspace-pm> onboarding export-workbook --output <explicit-local-xlsx-path>`. It reports path, hash, counts, plan, warnings, and evidence metadata only; it never opens or quotes workbook contents. Existing output paths are protected unless `--overwrite` is explicitly requested.",
+            "If export returns `WORKBOOK_EXPORT_STFTE_HIREF_REQUIRED`, do not invent a HIREF or change the member type. Ask Copilot to help identify the local STFTE source row, then update its maintained current HIREF ID, HIREF end date, and matching HIREF Request through the normal preview/confirm flow before retrying export.",
+        ]
+    )
+
+
+def build_sources_guide() -> str:
+    return text(
+        [
+            "# Auxiliary source files",
+            "",
+            "These files are editable user source facts, not a database backup. Do not add connector snapshots, health results, freshness values, audit history, credentials, or raw connector content.",
+            "",
+            "`project_profiles_template.xlsx` and `project_profiles_sample.xlsx` use worksheet `Project Profiles`; retain the first four rows and exact headers. `Team Size` is accepted by the existing format but is not exported because it is not a maintained project-profile fact. Fill `Project ID` with an existing stable project ID. Milestones use one `date | name` item per line; risks use one `risk | high|medium|low` item per line; stakeholders are comma-separated.",
+            "",
+            "`jira_board_registry_template.csv` and `jira_board_configs.sample.csv` use `id,name,project_key,base_jql` plus the documented optional local mapping fields. `board_url` is preserved only when it is already a maintained local mapping. Never place credentials in this CSV.",
+            "",
+            "`confluence_page_registry_template.csv` and `confluence_pages.sample.csv` use `id,board_id` plus optional title/page type fields. Keep `last_synced`, `last_modified`, and `content_summary` blank in locally prepared files; they are not reusable source facts.",
+            "",
+            "Copilot-first flow: ask Copilot to export with `<workspace-pm> onboarding export-source --source-type <project-profile-workbook|jira-board-registry-csv|confluence-page-registry-csv> --output <explicit-local-path>`. To import an edited file, use profile save, preview, inspect the returned JSON, then explicit confirm. Exports never overwrite an existing path unless `--overwrite` is explicitly requested.",
+        ]
+    )
+
+
+def write_project_profile_template(path: Path) -> None:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Project Profiles"
+    worksheet.append(["Project profiles"])
+    worksheet.append(["Header-only user-source template"])
+    worksheet.append([None] * 12)
+    worksheet.append(
+        [
+            "Project Name", "Team Size", "Phase", "Phase Detail", "Priority",
+            "Focus", "Objective", "Milestones", "Risks", "Stakeholders",
+            "Special Rules", "Project ID",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(path)
+
+
+def write_registry_templates(source_dir: Path) -> None:
+    write_text(
+        source_dir / "jira_board_registry_template.csv",
+        "id,name,project_key,base_jql,version_name_pattern,board_id,board_url,pm_project_id,active,issues_use_base_jql,notes\n",
+    )
+    write_text(
+        source_dir / "confluence_page_registry_template.csv",
+        "id,board_id,title,page_type,last_synced,last_modified,content_summary\n",
+    )
+
+
+def build_instructions() -> str:
+    return text(
+        [
+            "# Delivery Manager usage workspace instructions",
+            "",
+            "Use the workspace `Delivery Manager` agent. This is an operator bundle, not a development checkout.",
+            "Before setup, follow that agent's guidance; do not attempt business queries, interaction-memory commands, SQLite access, or source edits.",
+            "After setup, use only structured commands and returned JSON as the factual basis. Do not inspect configuration, credentials, raw exports, or connector payloads.",
+            "Live connector probes require an explicit user request and writes retain propose, preview, explicit confirmation, then persist.",
+        ]
+    )
+
+
+def build_agent() -> str:
+    setup_gate = text(
+        [
+            "## Bundle setup gate",
+            "",
+            f"The visible Dashboard remains the six legacy pages: {PAGES}.",
+            "Before the workspace-local executable exists, do not pre-read interaction memory or run a business command.",
+            "Discover Python 3.12 without hardcoding python3: Windows tries `py -3.12` then `python`; macOS/Linux tries `python3.12`, `python3`, then `python`, validating major/minor.",
+            "Reuse the selected interpreter for all `scripts/setup.py --bundle-root .` calls. Report `python_missing` when no candidate exists and `python_unsupported` only after detecting a non-3.12 candidate.",
+            "For `python_missing` or `python_unsupported`, provide only user-reviewable Python 3.12 installation guidance. Never automatically invoke brew, winget, choco, apt, or another system package manager; never request admin/sudo, modify machine-wide Python, or install global packages.",
+            "Run `<selected-python> scripts/setup.py --bundle-root . --preflight` first. Explain online locked dependency installation and wait for an explicit request to install; `partial_install` requires explicit repair.",
+            "Ask the user to choose demo or local. Only after an explicit request to install and authorization run `<selected-python> scripts/setup.py --bundle-root . --install --mode demo|local`; only after explicit repair authorization run the same command with `--repair`.",
+            "For an explicit request to switch from demo to local data, run `<selected-python> scripts/setup.py --bundle-root . --install --mode local`; do this before any onboarding preview or confirm. Local-to-demo switching is unsupported.",
+            "After setup, `<workspace-pm>` means exactly the selected workspace executable: `.venv\\Scripts\\pm.exe` on Windows or `.venv/bin/pm` on macOS/Linux. If it is absent, stop and return setup guidance; never use a PATH fallback.",
+            "For normal commands, POSIX may run `.venv/bin/pm ...`; PowerShell may run `& .\\.venv\\Scripts\\pm.exe ...`. Every `<workspace-pm> ...` example below is an abstract template, not a bare executable fallback.",
+            "After setup, use the workspace-local executable and preserve all maintained interaction-memory stdin safety, read-only routes, and controlled preview/confirm/token boundaries below.",
+            "For explicit JIRA/Confluence registry onboarding, ask only for local file path and anonymous profile key. Do not open or summarize raw CSV. Use `jira-board-registry-csv` or `confluence-page-registry-csv` profile save, preview, then exact explicit confirm; never sync implicitly.",
+            "For workbook preparation, direct users to `workbook/WORKBOOK_GUIDE.md`, `workbook/team_project_capacity_workbook_template.xlsx`, and the synthetic sample. For a requested current-state export, run `<workspace-pm> onboarding export-workbook --output <explicit-local-xlsx-path>` and report returned metadata only; never open or quote workbook cells. If it returns `WORKBOOK_EXPORT_STFTE_HIREF_REQUIRED`, explain that the maintained STFTE source is incomplete; guide the user to preview/confirm a factual current HIREF ID, end date, and matching HIREF Request, then retry. Never invent a HIREF or silently change the resource type.",
+            "For editable project profiles or JIRA/Confluence mappings, use `sources/SOURCES_GUIDE.md`. For an explicit source export, run `<workspace-pm> onboarding export-source --source-type <exact-supported-source-type> --output <explicit-local-path>`; report metadata only, then use the existing profile save → preview → explicit confirm route after the user edits the file.",
+            "",
+        ]
+    )
+    maintained = (REPO_ROOT / ".github/agents/delivery-manager.agent.md").read_text(
+        encoding="utf-8"
+    )
+    pre_read_start = maintained.index("## Interaction-memory pre-read")
+    pre_read_end = maintained.index("## Direct routing")
+    pre_read = text(
+        [
+            "## Interaction-memory pre-read",
+            "",
+            "After setup, pre-read `interaction-memory-context` for each natural-language request using `<workspace-pm>`. This local aid remains non-authoritative and must not trigger writes.",
+            "",
+            "On macOS/Linux, use the POSIX executable and pass the exact user turn only through standard input:",
+            "",
+            "```bash",
+            "cat <<'EOF' | .venv/bin/pm tool query interaction-memory-context --param-stdin message",
+            "<exact user turn>",
+            "EOF",
+            "```",
+            "",
+            "On Windows PowerShell, use `& .\\.venv\\Scripts\\pm.exe`. Do not place raw user text in a command, command history, or a `--param` argument. Copilot must invoke that executable through a Python `subprocess.run(..., input=<user turn>, text=True)` call or terminal automation that supplies stdin directly; the command-line arguments contain only `tool query interaction-memory-context --param-stdin message`.",
+            "",
+            "Add `--param project_id=<exact-project-id>` only when that project ID is already known from the current request or prior approved result context. Do not invent `project_id` or `repo_root`.",
+            "",
+            "Use the returned interaction-memory result only as a local chat aid:",
+            "",
+            "1. `working_context.answer_preferences` may shape answer language and answer order;",
+            "2. `working_context.routing_hints` may break ties only among routes already supported by the explicit user request;",
+            "3. `working_context.follow_up_hints` may surface one directly relevant reminder;",
+            "4. `working_context.strategy_flags` may reduce repetitive clarification only when existing context already answers it.",
+            "",
+            "Interaction memory must not change the authoritative business path. Do not let it override a clear business intent, invent parameters, IDs, time periods, teams, or connector names, treat memory rows as business facts/evidence/freshness, or trigger propose/preview/confirm/persist without the user's explicit request.",
+            "",
+            "If the selected workspace executable is absent, stop and return setup guidance. If the result is empty, disabled, scope-unknown, unknown, unavailable, invalid, or failed, continue with baseline routing.",
+            "",
+        ]
+    )
+    maintained = maintained[:pre_read_start] + pre_read + maintained[pre_read_end:]
+    maintained = maintained.replace("src/.venv/bin/pm", "<workspace-pm>")
+    maintained = maintained.replace(
+        "otherwise use `pm`", "otherwise stop and return setup guidance"
+    )
+    maintained = maintained.replace("`pm ", "`<workspace-pm> ")
+    maintained = maintained.replace("`pm`", "`<workspace-pm>`")
+    maintained = re.sub(r"(?m)^pm (?=\w)", "<workspace-pm> ", maintained)
+    maintained = maintained.replace(
+        "When executing the CLI in this repository, prefer",
+        "When executing the CLI in this bundle, use `<workspace-pm>`; do not fall back to another executable.",
+    )
+    return maintained.replace(
+        "# Delivery Manager operating agent",
+        "# Delivery Manager operating agent\n\n" + setup_gate,
+        1,
+    )
 
 
 def build_install_helper() -> str:
-    return f"""#!/usr/bin/env python3
+    return r"""#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
+import hashlib
+import os
 import shutil
+import sqlite3
 from pathlib import Path
 
-CANONICAL_DEMO_DATABASE_PATH = {CANONICAL_DEMO_DATABASE_PATH!r}
-ENV_RELATIVE_PATH = {ENV_PATH.as_posix()!r}
-SHIPPED_DEMO_DB = {SHIPPED_DEMO_DB.as_posix()!r}
-WRITABLE_DEMO_DB = {WRITABLE_DEMO_DB.as_posix()!r}
+
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).digest()
 
 
-class InstallHelperError(RuntimeError):
-    pass
+def verify_sqlite(path, connect=sqlite3.connect):
+    with connect(path) as connection:
+        if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+            raise RuntimeError("SETUP_DEMO_INTEGRITY_INVALID")
 
 
-def _remove_path(path: Path) -> None:
-    if not path.exists():
-        return
-    if path.is_dir():
-        shutil.rmtree(path)
-        return
-    path.unlink()
+def configure_demo(root, copier=shutil.copyfile, replace=os.replace, connect=sqlite3.connect):
+    source, target = root / "demo/sample_pm.db", root / "src/.dm-demo/sample_pm.db"
+    if not source.is_file():
+        raise RuntimeError("SETUP_DEMO_SOURCE_MISSING")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not target.exists():
+        temporary = target.with_name(target.name + ".tmp")
+        try:
+            copier(source, temporary)
+            if sha256(source) != sha256(temporary):
+                raise RuntimeError("SETUP_DEMO_HASH_INVALID")
+            verify_sqlite(temporary, connect)
+            replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+    verify_sqlite(target, connect)
 
 
-def _normalize_database_path(raw_value: str) -> str:
-    value = raw_value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {{'"', "'"}}:
-        value = value[1:-1]
-    return value.strip()
-
-
-def _read_env(env_path: Path) -> tuple[str, list[str], int, str]:
-    try:
-        content = env_path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise InstallHelperError(f"INSTALL_HELPER_ENV_READ_FAILED: {{env_path}}: {{exc}}") from exc
-
-    lines = content.splitlines(keepends=True)
-    matches: list[tuple[int, str]] = []
-    for index, line in enumerate(lines):
-        candidate = line.lstrip()
-        if candidate.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        if key.strip() == "DATABASE_PATH":
-            matches.append((index, value))
-    if not matches:
-        raise InstallHelperError(
-            "INSTALL_HELPER_DATABASE_PATH_MISSING: src/.env must contain exactly one DATABASE_PATH entry."
-        )
+def configure(root, mode, **dependencies):
+    env = root / "src/.env"
+    if not env.is_file():
+        raise RuntimeError("SETUP_ENV_MISSING")
+    if mode == "local":
+        lines = env.read_text(encoding="utf-8").splitlines()
+        matches = [i for i, line in enumerate(lines) if line.strip().startswith("DATABASE_PATH=")]
+        if len(matches) != 1:
+            raise RuntimeError("SETUP_DATABASE_PATH_INVALID")
+        lines[matches[0]] = "DATABASE_PATH=data/pm.db"
+        write_env_selector(env, lines, dependencies.get("replace", os.replace))
+        return "SETUP_LOCAL_SELECTOR_READY: local database selected; no connector or source file was read."
+    configure_demo(root, **dependencies)
+    lines = env.read_text(encoding="utf-8").splitlines()
+    matches = [i for i, line in enumerate(lines) if line.strip().startswith("DATABASE_PATH=")]
     if len(matches) != 1:
-        raise InstallHelperError(
-            "INSTALL_HELPER_DATABASE_PATH_DUPLICATE: src/.env contains duplicate DATABASE_PATH entries."
-        )
-    index, value = matches[0]
-    return content, lines, index, value
+        raise RuntimeError("SETUP_DATABASE_PATH_INVALID")
+    lines[matches[0]] = "DATABASE_PATH=.dm-demo/sample_pm.db"
+    write_env_selector(env, lines, dependencies.get("replace", os.replace))
+    return "SETUP_DEMO_READY: synthetic demo selected."
 
 
-def _resolve_database_path(src_root: Path, raw_value: str) -> Path:
-    normalized = _normalize_database_path(raw_value)
-    candidate = Path(normalized)
-    if not candidate.is_absolute():
-        candidate = src_root / candidate
-    return candidate.resolve(strict=False)
-
-
-def _copy_demo_db(source: Path, destination: Path) -> bool:
-    if destination.exists():
-        return False
+def write_env_selector(env, lines, replace=os.replace):
+    temporary = env.with_name(env.name + ".tmp")
     try:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = destination.with_name(destination.name + ".tmp")
-        if temp_path.exists():
-            _remove_path(temp_path)
-        shutil.copyfile(source, temp_path)
-        temp_path.replace(destination)
-        return True
-    except OSError as exc:
-        temp_path = destination.with_name(destination.name + ".tmp")
-        if temp_path.exists():
-            _remove_path(temp_path)
-        raise InstallHelperError(
-            f"INSTALL_HELPER_DEMO_COPY_FAILED: could not copy {{source}} to {{destination}}: {{exc}}"
-        ) from exc
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        replace(temporary, env)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
-def _write_env(env_path: Path, original_content: str, lines: list[str], line_index: int, new_value: str) -> None:
-    line_ending = "\\r\\n" if "\\r\\n" in original_content else "\\n"
-    updated_lines = list(lines)
-    updated_lines[line_index] = f"DATABASE_PATH={{new_value}}{{line_ending}}"
-    updated_content = "".join(updated_lines)
-    if updated_content and not updated_content.endswith(("\\n", "\\r\\n")):
-        updated_content += line_ending
-    temp_path = env_path.with_name(env_path.name + ".tmp")
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--bundle-root", required=True)
+    parser.add_argument("--mode", choices=("demo", "local"), required=True)
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
     try:
-        temp_path.write_text(updated_content, encoding="utf-8")
-        temp_path.replace(env_path)
-    except OSError as exc:
-        if temp_path.exists():
-            _remove_path(temp_path)
-        raise InstallHelperError(
-            f"INSTALL_HELPER_ENV_WRITE_FAILED: could not update {{env_path}}: {{exc}}"
-        ) from exc
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Finalize Delivery Manager bundle install state.")
-    parser.add_argument("--bundle-root", required=True, help="Absolute path to the installed bundle root.")
-    parser.add_argument(
-        "--first-install",
-        action="store_true",
-        help="Allow the helper to rewrite the freshly scaffolded starter DATABASE_PATH to demo mode.",
-    )
-    args = parser.parse_args()
-
-    bundle_root = Path(args.bundle_root).resolve()
-    env_path = bundle_root / ENV_RELATIVE_PATH
-    shipped_demo_db = bundle_root / SHIPPED_DEMO_DB
-    writable_demo_db = bundle_root / WRITABLE_DEMO_DB
-    src_root = bundle_root / "src"
-
-    if not shipped_demo_db.is_file():
-        raise SystemExit(
-            f"INSTALL_HELPER_DEMO_SOURCE_MISSING: bundled demo DB is missing at {{shipped_demo_db}}."
-        )
-    try:
-        with shipped_demo_db.open("rb"):
-            pass
-    except OSError as exc:
-        raise SystemExit(
-            f"INSTALL_HELPER_DEMO_SOURCE_UNREADABLE: could not read {{shipped_demo_db}}: {{exc}}"
-        )
-
-    created_demo_copy = False
-    try:
-        original_content, lines, line_index, raw_database_path = _read_env(env_path)
-        current_database_path = _resolve_database_path(src_root, raw_database_path)
-        canonical_demo_path = writable_demo_db.resolve(strict=False)
-        should_set_demo_mode = args.first_install or current_database_path == canonical_demo_path
-        created_demo_copy = _copy_demo_db(shipped_demo_db, writable_demo_db)
-        if should_set_demo_mode:
-            _write_env(
-                env_path,
-                original_content,
-                lines,
-                line_index,
-                CANONICAL_DEMO_DATABASE_PATH,
-            )
-            print(
-                "Install helper: writable demo DB "
-                f"{{'created' if created_demo_copy else 'preserved'}} at {{writable_demo_db}}."
-            )
-            print(
-                f"Install helper: src/.env now uses DATABASE_PATH={{CANONICAL_DEMO_DATABASE_PATH}}."
-            )
-            return
-        print(
-            "Install helper: writable demo DB "
-            f"{{'created' if created_demo_copy else 'preserved'}} at {{writable_demo_db}}."
-        )
-        print(
-            "Install helper: preserved existing non-demo DATABASE_PATH in src/.env; "
-            "the workspace stays in local-data mode."
-        )
-    except InstallHelperError as exc:
-        if created_demo_copy and writable_demo_db.exists():
-            writable_demo_db.unlink()
-        raise SystemExit(str(exc)) from exc
+        print(configure(Path(args.bundle_root).resolve(), args.mode))
+    except RuntimeError as error:
+        raise SystemExit(str(error))
 
 
 if __name__ == "__main__":
@@ -780,158 +395,305 @@ if __name__ == "__main__":
 """
 
 
-def build_install_script(target: BundleTarget) -> str:
-    if target.key == "macos":
-        return f"""#!/bin/bash
-set -euo pipefail
+def build_setup_helper() -> str:
+    return r"""#!/usr/bin/env python3
+from __future__ import annotations
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PYTHON_BIN="${{PYTHON_BIN:-python3}}"
-
-if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
-  echo "Python {target.python_version} was not found. Install it first."
-  exit 1
-fi
-
-"$PYTHON_BIN" - <<'PY'
-import platform
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import sqlite3
+import subprocess
 import sys
-expected = "{target.python_version}"
-actual = sys.version_info[:2]
-required = tuple(int(part) for part in expected.split("."))
-machine = platform.machine().lower()
-allowed = {target.architecture_aliases!r}
-if actual != required:
-    raise SystemExit(
-        f"This bundle expects Python {{expected}}, found "
-        f"{{actual[0]}}.{{actual[1]}}."
+from pathlib import Path
+
+MARKER = ".dm-setup-state.json"
+SMOKE_COMMANDS = (
+    ("version",),
+    ("config", "validate"),
+    ("tool", "query", "team-workload-overview"),
+    ("tool", "query", "project-health-review"),
+)
+
+
+def emit(state, **extra):
+    print(json.dumps({"state": state, **extra}, sort_keys=True))
+
+
+def pm_path(root):
+    return root / ".venv" / ("Scripts/pm.exe" if sys.platform == "win32" else "bin/pm")
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def command_result(command, root):
+    return subprocess.run(command, cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+
+
+def healthy(root, runner=command_result):
+    marker, lock, pm = root / MARKER, root / "src/runtime-requirements.lock", pm_path(root)
+    if not (marker.is_file() and lock.is_file() and pm.is_file()):
+        return False
+    try:
+        state = json.loads(marker.read_text(encoding="utf-8"))
+        assert state["lock_sha256"] == digest(lock)
+        assert state["mode"] in {"demo", "local"}
+    except (OSError, TypeError, ValueError, KeyError, AssertionError):
+        return False
+    try:
+        return all(runner([str(pm), *command], root).returncode == 0 for command in SMOKE_COMMANDS)
+    except OSError:
+        return False
+
+
+def installed_mode(root):
+    # Read a coherent selector without executing runtime smoke commands.
+    marker, lock, pm, env = root / MARKER, root / "src/runtime-requirements.lock", pm_path(root), root / "src/.env"
+    if not (marker.is_file() and lock.is_file() and pm.is_file() and env.is_file()):
+        return None
+    try:
+        state = json.loads(marker.read_text(encoding="utf-8"))
+        mode = state["mode"]
+        if mode not in {"demo", "local"} or state["lock_sha256"] != digest(lock):
+            return None
+        selector = next((line.strip() for line in env.read_text(encoding="utf-8").splitlines() if line.strip().startswith("DATABASE_PATH=")), "")
+        expected = ".dm-demo/sample_pm.db" if mode == "demo" else "data/pm.db"
+        return mode if selector == f"DATABASE_PATH={expected}" else None
+    except (OSError, TypeError, ValueError, KeyError):
+        return None
+
+
+def selected_mode(root):
+    # Return the configured mode without starting the runtime.
+    env = root / "src/.env"
+    try:
+        selectors = [line.strip() for line in env.read_text(encoding="utf-8").splitlines() if line.strip().startswith("DATABASE_PATH=")]
+    except OSError:
+        return None
+    if selectors == ["DATABASE_PATH=data/pm.db"]:
+        return "local"
+    if selectors == ["DATABASE_PATH=.dm-demo/sample_pm.db"]:
+        return "demo"
+    return None
+
+
+def preflight(root, runner=command_result, version=None, skip_runtime_smoke=False):
+    version = sys.version_info[:2] if version is None else version
+    if tuple(version) != (3, 12):
+        return ("python_unsupported", {"required": "3.12", "detected": f"{version[0]}.{version[1]}"})
+    try:
+        probe = root / ".dm-write-probe"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+    except OSError:
+        return ("failed", {"code": "workspace_not_writable"})
+    # An explicit demo-to-local switch must not run the normal health probes
+    # while ``.env`` still selects the writable demo database.  Those queries
+    # record execution traces, so they are writes in practice.  The marker and
+    # selector check below is deliberately read-only and is enough to identify
+    # the requested transition; ``install`` then initializes and smokes local.
+    if skip_runtime_smoke:
+        existing_mode = installed_mode(root)
+        if existing_mode is not None:
+            return ("already_installed", {"mode": existing_mode})
+    if healthy(root, runner):
+        marker_mode = json.loads((root / MARKER).read_text(encoding="utf-8"))["mode"]
+        selector = (root / "src/.env").read_text(encoding="utf-8") if (root / "src/.env").is_file() else ""
+        expected = ".dm-demo/sample_pm.db" if marker_mode == "demo" else "data/pm.db"
+        if f"DATABASE_PATH={expected}" != next((line.strip() for line in selector.splitlines() if line.strip().startswith("DATABASE_PATH=")), ""):
+            return ("partial_install", {"code": "mode_selector_mismatch", "repair": "request explicit repair"})
+        return ("already_installed", {"mode": marker_mode})
+    env, demo = root / "src/.env", root / "src/.dm-demo/sample_pm.db"
+    if env.is_file() and ".dm-demo/sample_pm.db" in env.read_text(encoding="utf-8") and not demo.is_file():
+        return ("partial_install", {"code": "demo_selector_missing_target", "repair": "request explicit repair"})
+    if (root / MARKER).exists() or (root / ".venv").exists():
+        return ("partial_install", {"repair": "request explicit repair"})
+    return ("ready_to_install", {})
+
+
+def run(command, root, runner=command_result):
+    try:
+        result = runner(command, root)
+    except OSError:
+        raise RuntimeError("command_execution_failed") from None
+    if result.returncode:
+        detail = (getattr(result, "stderr", "") or "").lower()
+        if "config" in command:
+            raise RuntimeError("configuration_validation_failed")
+        if "tool" in command:
+            raise RuntimeError("smoke_validation_failed")
+        if any(Path(str(part)).name == "install-helper.py" for part in command) or "init" in command:
+            raise RuntimeError("initialization_failed")
+        if "pip" in command and "install" in command and ("name resolution" in detail or "connection" in detail or "network" in detail):
+            raise RuntimeError("package_index_unavailable")
+        raise RuntimeError("dependency_install_failed")
+
+
+def initialize_mode(root, python, mode, runner=command_result):
+    run([str(python), str(root / "scripts/install-helper.py"), "--bundle-root", str(root), "--mode", mode], root, runner)
+
+
+def verify_local_database(root):
+    env = root / "src/.env"
+    selector = next((line.strip() for line in env.read_text(encoding="utf-8").splitlines() if line.strip().startswith("DATABASE_PATH=")), "")
+    if selector != "DATABASE_PATH=data/pm.db":
+        raise RuntimeError("local_database_selector_invalid")
+    database = root / "src/data/pm.db"
+    if not database.is_file():
+        raise RuntimeError("local_database_missing")
+    with sqlite3.connect(database) as connection:
+        if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+            raise RuntimeError("local_database_integrity_invalid")
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if not {"employees", "projects", "plan_versions", "monthly_allocations"}.issubset(tables):
+        raise RuntimeError("local_database_schema_incomplete")
+
+
+def remove_partial(root, remover=shutil.rmtree):
+    remover(root / ".venv", ignore_errors=True)
+    (root / MARKER).unlink(missing_ok=True)
+
+
+def write_marker(root, mode, replace=os.replace):
+    state = {"python": "3.12", "mode": mode, "lock_sha256": digest(root / "src/runtime-requirements.lock")}
+    temporary = root / (MARKER + ".tmp")
+    try:
+        temporary.write_text(json.dumps(state) + "\n", encoding="utf-8")
+        replace(temporary, root / MARKER)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def restore_env(root, replace=os.replace):
+    env, example = root / "src/.env", root / "src/.env.example"
+    temporary = env.with_name(env.name + ".tmp")
+    try:
+        temporary.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
+        replace(temporary, env)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def valid_env(root):
+    env = root / "src/.env"
+    return env.is_file() and sum(line.strip().startswith("DATABASE_PATH=") for line in env.read_text(encoding="utf-8").splitlines()) == 1
+
+
+def install(root, mode, runner=command_result, initializer=initialize_mode, repair=False, version=None):
+    if selected_mode(root) == "local" and mode == "demo":
+        return ("failed", {"code": "local_to_demo_unsupported"})
+    existing_mode = installed_mode(root)
+    if existing_mode == "local" and mode == "demo":
+        return ("failed", {"code": "local_to_demo_unsupported"})
+    if existing_mode == "demo" and mode == "local":
+        # Do not call ``healthy`` here: its read-only-looking tool queries can
+        # append execution traces to the currently selected demo database.
+        try:
+            python = root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+            initializer(root, python, mode, runner)
+            run([str(pm_path(root)), "init"], root, runner)
+            verify_local_database(root)
+            for command in SMOKE_COMMANDS[1:]:
+                run([str(pm_path(root)), *command], root, runner)
+        except RuntimeError as error:
+            return ("partial_install", {"code": str(error), "repair": "request explicit repair"})
+        try:
+            write_marker(root, mode)
+        except OSError:
+            return ("partial_install", {"code": "setup_marker_write_failed", "repair": "request explicit repair"})
+        return ("already_installed", {"mode": mode})
+    state, detail = preflight(root, runner, version=version)
+    if state == "already_installed":
+        validated_mode = detail.get("mode")
+        if validated_mode == mode:
+            return ("already_installed", {"mode": mode})
+    if state == "partial_install" and not repair:
+        return (state, detail)
+    if state not in ("ready_to_install", "partial_install"):
+        return (state, detail)
+    if repair:
+        remove_partial(root)
+        if not valid_env(root):
+            restore_env(root)
+    try:
+        run([sys.executable, "-m", "venv", str(root / ".venv")], root, runner)
+        python = root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+        run([str(python), "-m", "pip", "install", "--disable-pip-version-check", "-r", str(root / "src/runtime-requirements.lock")], root, runner)
+        run([str(python), "-m", "pip", "install", "--no-deps", "--no-build-isolation", "--editable", str(root / "src")], root, runner)
+        run([str(pm_path(root)), "version"], root, runner)
+        if not (root / "src/.env").exists():
+            run([str(pm_path(root)), "init", "--skip-db"], root, runner)
+        initializer(root, python, mode, runner)
+        if mode == "local":
+            run([str(pm_path(root)), "init"], root, runner)
+            verify_local_database(root)
+        for command in SMOKE_COMMANDS[1:]:
+            run([str(pm_path(root)), *command], root, runner)
+    except RuntimeError as error:
+        return ("partial_install", {"code": str(error), "repair": "request explicit repair"})
+    try:
+        write_marker(root, mode)
+    except OSError:
+        return ("partial_install", {"code": "setup_marker_write_failed", "repair": "request explicit repair"})
+    return ("already_installed", {"mode": mode})
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--bundle-root", required=True)
+    parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--install", action="store_true")
+    parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--mode", choices=("demo", "local"))
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    root = Path(args.bundle_root).resolve()
+    if args.install and args.mode == "demo" and selected_mode(root) == "local":
+        emit("failed", code="local_to_demo_unsupported")
+        return 0
+    # This is the only command-path exception to normal health validation.
+    # It prevents the demo-selected runtime from being queried before the
+    # local selector is atomically installed by ``install``.
+    switching_demo_to_local = (
+        args.install and args.mode == "local" and installed_mode(root) == "demo"
     )
-if machine not in allowed:
-    raise SystemExit(
-        "This bundle was built for {target.platform_label}, found architecture "
-        f"{{machine}}."
-    )
-PY
-
-"$PYTHON_BIN" -m venv "$ROOT/.venv"
-"$ROOT/.venv/bin/python" -m pip install \
-  --no-index \
-  --find-links "$ROOT/wheelhouse" \
-  {' '.join(BUILD_REQUIREMENTS)}
-"$ROOT/.venv/bin/python" -m pip install \
-  --no-index \
-  --find-links "$ROOT/wheelhouse" \
-  --no-build-isolation \
-  --editable "$ROOT/src"
-
-FIRST_INSTALL=0
-if [ ! -f "$ROOT/src/.env" ]; then
-  "$ROOT/.venv/bin/pm" init --skip-db
-  FIRST_INSTALL=1
-fi
-
-HELPER_ARGS=(
-  "$ROOT/scripts/install-helper.py"
-  --bundle-root "$ROOT"
-)
-if [ "$FIRST_INSTALL" -eq 1 ]; then
-  HELPER_ARGS+=(--first-install)
-fi
-"$ROOT/.venv/bin/python" "${{HELPER_ARGS[@]}}"
-
-echo
-echo "Installation complete."
-echo "Next: run $ROOT/{target.open_script}"
-"""
-    windows_probe = (
-        "import platform,sys; "
-        f"raise SystemExit(0 if sys.version_info[:2] == ({target.python_version.replace('.', ', ')}) "
-        f"and platform.machine().lower() in {target.architecture_aliases!r} else 1)"
-    )
-    windows_open_script = target.open_script.replace("/", "\\")
-    return f"""@echo off
-setlocal
-set "ROOT=%~dp0.."
-for %%I in ("%ROOT%") do set "ROOT=%%~fI"
-
-where py >nul 2>nul
-if errorlevel 1 goto :python_executable_check
-py -{target.python_version} -c "{windows_probe}" >nul 2>nul
-if not errorlevel 1 set "PYTHON=py -{target.python_version}" & goto :python_ready
-
-:python_executable_check
-where python >nul 2>nul
-if errorlevel 1 goto :python_not_found
-python -c "{windows_probe}" >nul 2>nul
-if not errorlevel 1 set "PYTHON=python" & goto :python_ready
-
-:python_not_found
-echo Python {target.python_version} for {target.platform_label} was not found. Install it first.
-exit /b 1
-
-:python_ready
-%PYTHON% -m venv "%ROOT%\\.venv" || exit /b 1
-"%ROOT%\\.venv\\Scripts\\python.exe" -m pip install --no-index --find-links "%ROOT%\\wheelhouse" {' '.join(BUILD_REQUIREMENTS)} || exit /b 1
-"%ROOT%\\.venv\\Scripts\\python.exe" -m pip install --no-index --find-links "%ROOT%\\wheelhouse" --no-build-isolation --editable "%ROOT%\\src" || exit /b 1
-set "HELPER_FLAG="
-if not exist "%ROOT%\\src\\.env" (
-  "%ROOT%\\.venv\\Scripts\\pm.exe" init --skip-db || exit /b 1
-  set "HELPER_FLAG=--first-install"
-)
-"%ROOT%\\.venv\\Scripts\\python.exe" "%ROOT%\\scripts\\install-helper.py" --bundle-root "%ROOT%" %HELPER_FLAG% || exit /b 1
-
-echo.
-echo Installation complete.
-echo Next: run %ROOT%\\{windows_open_script}
-"""
+    state, detail = preflight(root, skip_runtime_smoke=switching_demo_to_local)
+    if args.preflight or not args.install:
+        emit(state, **detail)
+        return 0
+    if state == "partial_install" and not args.repair:
+        emit(state, **detail)
+        return 0
+    if state == "already_installed":
+        state, detail = install(root, args.mode, repair=args.repair)
+        emit(state, **detail)
+        return 0
+    if state != "ready_to_install" and not (state == "partial_install" and args.repair):
+        emit(state, **detail)
+        return 0
+    if not args.mode:
+        emit("failed", code="initialization_mode_required")
+        return 0
+    state, detail = install(root, args.mode, repair=args.repair)
+    emit(state, **detail)
+    return 0
 
 
-def build_open_script(target: BundleTarget) -> str:
-    if target.key == "macos":
-        return """#!/bin/bash
-set -euo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-
-if command -v code >/dev/null 2>&1; then
-  code "$ROOT"
-  exit 0
-fi
-
-if [ -d "/Applications/Visual Studio Code.app" ]; then
-  open -a "Visual Studio Code" "$ROOT"
-  exit 0
-fi
-
-echo "VS Code was not found. Open this folder manually in VS Code:"
-echo "  $ROOT"
-exit 1
-"""
-    return """@echo off
-setlocal
-set "ROOT=%~dp0.."
-for %%I in ("%ROOT%") do set "ROOT=%%~fI"
-
-where code >nul 2>nul
-if %ERRORLEVEL%==0 (
-  code "%ROOT%"
-  exit /b 0
-)
-
-if exist "%LocalAppData%\\Programs\\Microsoft VS Code\\Code.exe" (
-  start "" "%LocalAppData%\\Programs\\Microsoft VS Code\\Code.exe" "%ROOT%"
-  exit /b 0
-)
-
-echo VS Code was not found. Open this folder manually in VS Code:
-echo   %ROOT%
-exit /b 1
+if __name__ == "__main__":
+    raise SystemExit(main())
 """
 
 
 def write_text(path: Path, content: str, executable: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content.rstrip() + "\n", encoding="utf-8")
+    path.write_text(content, encoding="utf-8")
     if executable:
         path.chmod(0o755)
 
@@ -940,16 +702,13 @@ def make_read_only(path: Path) -> None:
     path.chmod(path.stat().st_mode & ~0o222)
 
 
-def build_artifacts(artifact_dir: Path) -> BundleArtifacts:
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    wheel, sdist = build_package(artifact_dir)
-    demo_dir = artifact_dir / "demo-db"
-    demo_dir.mkdir(parents=True, exist_ok=True)
-    demo_db = demo_dir / "sample_pm.db"
+def build_artifacts(directory: Path) -> BundleArtifacts:
+    directory.mkdir(parents=True, exist_ok=True)
+    demo_db = directory / "sample_pm.db"
     subprocess.run(
         [
             sys.executable,
-            str(REPO_ROOT / "src" / "scripts" / "load_sample_data.py"),
+            str(REPO_ROOT / "src/scripts/load_sample_data.py"),
             "--db",
             str(demo_db),
             "--force",
@@ -957,54 +716,10 @@ def build_artifacts(artifact_dir: Path) -> BundleArtifacts:
         cwd=REPO_ROOT,
         check=True,
     )
-    if not demo_db.is_file():
-        raise RuntimeError("BUNDLE_DEMO_DB_NOT_CREATED")
-    with demo_db.open("rb") as handle:
-        if handle.read(16) != b"SQLite format 3\x00":
-            raise RuntimeError("BUNDLE_DEMO_DB_INVALID_HEADER")
     with sqlite3.connect(demo_db) as connection:
-        integrity = connection.execute("PRAGMA integrity_check;").fetchone()
-    if integrity != ("ok",):
-        raise RuntimeError("BUNDLE_DEMO_DB_INTEGRITY_FAILED")
-    return BundleArtifacts(wheel=wheel, sdist=sdist, demo_db=demo_db)
-
-
-def download_wheelhouse(
-    project_wheel: Path,
-    wheelhouse_dir: Path,
-    target: BundleTarget,
-    build_requirements: Iterable[str],
-) -> None:
-    wheelhouse_dir.mkdir(parents=True, exist_ok=True)
-    base_command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "download",
-        "--disable-pip-version-check",
-        "--dest",
-        str(wheelhouse_dir),
-        "--only-binary=:all:",
-        "--platform",
-        target.pip_platform,
-        "--implementation",
-        "cp",
-        "--python-version",
-        target.python_tag,
-        "--abi",
-        target.abi,
-    ]
-    subprocess.run(
-        [*base_command, str(project_wheel)],
-        check=True,
-        cwd=REPO_ROOT,
-    )
-    for requirement in build_requirements:
-        subprocess.run(
-            [*base_command, requirement],
-            check=True,
-            cwd=REPO_ROOT,
-        )
+        if connection.execute("PRAGMA integrity_check;").fetchone() != ("ok",):
+            raise RuntimeError("BUNDLE_DEMO_DB_INTEGRITY_FAILED")
+    return BundleArtifacts(demo_db=demo_db)
 
 
 def sha256(path: Path) -> str:
@@ -1015,234 +730,189 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def bundle_file_records(bundle_dir: Path) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
-    for path in sorted(bundle_dir.rglob("*"), key=lambda item: item.as_posix()):
-        if not path.is_file() or path.name == BUNDLE_MANIFEST:
-            continue
-        records.append(
-            {
-                "path": path.relative_to(bundle_dir).as_posix(),
-                "sha256": sha256(path),
-            }
-        )
-    return records
-
-
-def validate_bundle_tree(
-    bundle_dir: Path,
-    target: BundleTarget,
-    *,
-    require_wheelhouse: bool,
-) -> None:
-    required_files = {
-        Path("README.md"),
-        Path(".gitignore"),
-        Path(".github/agents/delivery-manager.agent.md"),
-        Path(".github/copilot-instructions.md"),
-        Path(".github/prompts/dm-workload.prompt.md"),
-        Path("src/README.md"),
-        Path("src/pyproject.toml"),
-        Path("src/.env.example"),
-        Path("demo/sample_pm.db"),
-        Path(target.install_script),
-        Path(target.open_script),
-        Path("scripts/install-helper.py"),
-        Path("artifacts"),
-        Path("src/pm_agent"),
-        Path("src/configs"),
-        Path("src/scripts"),
-        Path("wheelhouse"),
-    }
-    missing = [
-        item.as_posix()
-        for item in sorted(required_files, key=lambda entry: entry.as_posix())
-        if not (bundle_dir / item).exists()
+def records(bundle_dir: Path) -> list[dict[str, str]]:
+    return [
+        {"path": item.relative_to(bundle_dir).as_posix(), "sha256": sha256(item)}
+        for item in sorted(bundle_dir.rglob("*"))
+        if item.is_file() and item.name != BUNDLE_MANIFEST
     ]
+
+
+def validate_bundle_tree(bundle_dir: Path) -> None:
+    unknown = {item.name for item in bundle_dir.iterdir()} - ROOT_ALLOWLIST
+    if unknown:
+        raise RuntimeError(f"BUNDLE_UNKNOWN_ROOT:{','.join(sorted(unknown))}")
+    required = {
+        "README.md",
+        ".gitignore",
+        ".github/agents/delivery-manager.agent.md",
+        ".github/copilot-instructions.md",
+        "demo/sample_pm.db",
+        "workbook/team_project_capacity_workbook_template.xlsx",
+        "workbook/team_project_capacity_workbook_sample.xlsx",
+        "workbook/WORKBOOK_GUIDE.md",
+        "sources/SOURCES_GUIDE.md",
+        "sources/project_profiles_template.xlsx",
+        "sources/project_profiles_sample.xlsx",
+        "sources/jira_board_registry_template.csv",
+        "sources/jira_board_configs.sample.csv",
+        "sources/confluence_page_registry_template.csv",
+        "sources/confluence_pages.sample.csv",
+        "scripts/setup.py",
+        "scripts/install-helper.py",
+        "src/pyproject.toml",
+        "src/.env.example",
+        "src/runtime-requirements.lock",
+        "src/pm_agent",
+        "src/scripts",
+    }
+    missing = [entry for entry in sorted(required) if not (bundle_dir / entry).exists()]
     if missing:
-        raise RuntimeError(f"BUNDLE_MISSING_FILES:{', '.join(missing)}")
-
-    for entry in PROHIBITED_ROOT_ENTRIES:
-        if (bundle_dir / entry).exists():
-            raise RuntimeError(f"BUNDLE_CONTAINS_DEV_ENTRY:{entry}")
-    for entry in PROHIBITED_SRC_ENTRIES:
-        if (bundle_dir / "src" / entry).exists():
-            raise RuntimeError(f"BUNDLE_CONTAINS_DEV_SRC_ENTRY:{entry}")
-
-    for script_name in EXCLUDED_SCRIPT_NAMES:
-        if (bundle_dir / "src" / "scripts" / script_name).exists():
-            raise RuntimeError(f"BUNDLE_CONTAINS_SYNTHETIC_SCRIPT:{script_name}")
-
-    wheelhouse_files = sorted((bundle_dir / "wheelhouse").glob("*.whl"))
-    if require_wheelhouse and not wheelhouse_files:
-        raise RuntimeError("BUNDLE_WHEELHOUSE_EMPTY")
-
-    install_script = (bundle_dir / target.install_script).read_text(encoding="utf-8")
-    if (
-        "--editable" not in install_script
-        or "wheelhouse" not in install_script
-        or "install-helper.py" not in install_script
-        or "--skip-db" not in install_script
+        raise RuntimeError(f"BUNDLE_MISSING_FILES:{','.join(missing)}")
+    for item in bundle_dir.rglob("*"):
+        if (
+            item.name == ".DS_Store"
+            or item.name.startswith("._")
+            or any(part in IGNORED_PARTS for part in item.parts)
+        ):
+            raise RuntimeError(f"BUNDLE_METADATA_LEAK:{item.relative_to(bundle_dir)}")
+    for entry in (
+        "src/README.md",
+        "artifacts",
+        "wheelhouse",
+        "src/tests",
+        "src/sample-data",
+        "src/configs",
+        ".github/prompts/dm-workload.prompt.md",
     ):
-        raise RuntimeError("BUNDLE_INSTALL_SCRIPT_INVALID")
-
-    open_script = (bundle_dir / target.open_script).read_text(encoding="utf-8")
-    if "VS Code" not in open_script and "code " not in open_script:
-        raise RuntimeError("BUNDLE_OPEN_SCRIPT_INVALID")
+        if (bundle_dir / entry).exists():
+            raise RuntimeError(f"BUNDLE_FORBIDDEN_ENTRY:{entry}")
 
 
-def write_manifest(
-    bundle_dir: Path,
-    target: BundleTarget,
-    *,
-    offline_wheelhouse_included: bool,
-) -> None:
+def write_manifest(bundle_dir: Path) -> None:
+    source_identity = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    dirty = (
+        subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        != ""
+    )
     payload = {
         "bundle_name": bundle_dir.name,
         "product_version": package_version(),
+        "python_requirement": "3.12",
+        "dependency_mode": "online_locked",
         "demo_db_source": DEMO_DB_SOURCE,
-        "platform": {
-            "key": target.key,
-            "display_name": target.display_name,
-            "architecture": target.architecture,
-            "pip_platform": target.pip_platform,
-            "python_version": target.python_version,
-            "abi": target.abi,
-        },
         "copilot_agent": "Delivery Manager",
-        "install_script": target.install_script,
-        "open_script": target.open_script,
-        "offline_wheelhouse_included": offline_wheelhouse_included,
-        "files": bundle_file_records(bundle_dir),
+        "source_identity": {"revision": source_identity, "dirty": dirty},
+        "files": records(bundle_dir),
     }
-    write_text(bundle_dir / BUNDLE_MANIFEST, json.dumps(payload, indent=2, sort_keys=True))
+    write_text(
+        bundle_dir / BUNDLE_MANIFEST,
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+    )
 
 
-def stage_bundle_tree(
-    bundle_dir: Path,
-    target: BundleTarget,
-    artifacts: BundleArtifacts,
-) -> None:
+def stage_bundle_tree(bundle_dir: Path, artifacts: BundleArtifacts) -> None:
     ensure_clean_dir(bundle_dir)
-
-    for relative in ROOT_SOURCE_FILES:
-        copy_file(REPO_ROOT / relative, bundle_dir / relative)
-    for relative in SRC_SOURCE_FILES:
-        copy_file(REPO_ROOT / relative, bundle_dir / relative)
-    for relative in SRC_SOURCE_DIRECTORIES:
-        copy_directory(REPO_ROOT / relative, bundle_dir / relative)
-
-    write_text(bundle_dir / "README.md", build_bundle_root_readme(target))
-    write_text(bundle_dir / ".gitignore", build_bundle_gitignore())
-    write_text(
-        bundle_dir / ".github/agents/delivery-manager.agent.md",
-        build_bundle_delivery_manager_agent(),
+    for source in SRC_FILES:
+        if source.name == "pyproject.toml":
+            copy_bundle_pyproject(bundle_dir / source)
+        else:
+            copy_file(REPO_ROOT / source, bundle_dir / source)
+    for source in SRC_DIRECTORIES:
+        copy_directory(REPO_ROOT / source, bundle_dir / source)
+    write_text(bundle_dir / "README.md", build_readme())
+    write_text(bundle_dir / ".gitignore", build_gitignore())
+    write_text(bundle_dir / ".github/agents/delivery-manager.agent.md", build_agent())
+    write_text(bundle_dir / ".github/copilot-instructions.md", build_instructions())
+    copy_file(
+        REPO_ROOT / "templates/team_project_capacity_workbook_template.xlsx",
+        bundle_dir / "workbook/team_project_capacity_workbook_template.xlsx",
     )
-    write_text(
-        bundle_dir / ".github/copilot-instructions.md",
-        build_bundle_copilot_instructions(),
+    copy_file(
+        REPO_ROOT / "src/sample-data/excel/team_project_capacity_workbook_hiref_sample.xlsx",
+        bundle_dir / "workbook/team_project_capacity_workbook_sample.xlsx",
     )
-    write_text(
-        bundle_dir / "src/README.md",
-        build_bundle_runtime_readme(target),
+    write_text(bundle_dir / "workbook/WORKBOOK_GUIDE.md", build_workbook_guide())
+    source_dir = bundle_dir / "sources"
+    write_text(source_dir / "SOURCES_GUIDE.md", build_sources_guide())
+    write_project_profile_template(source_dir / "project_profiles_template.xlsx")
+    copy_file(
+        REPO_ROOT / "src/sample-data/excel/project_profiles_sample.xlsx",
+        source_dir / "project_profiles_sample.xlsx",
     )
-    copy_file(artifacts.demo_db, bundle_dir / SHIPPED_DEMO_DB)
-    make_read_only(bundle_dir / SHIPPED_DEMO_DB)
-    write_text(
-        bundle_dir / target.install_script,
-        build_install_script(target),
-        executable=target.key == "macos",
+    write_registry_templates(source_dir)
+    copy_file(
+        REPO_ROOT / "src/sample-data/csv/jira_board_configs.sample.csv",
+        source_dir / "jira_board_configs.sample.csv",
     )
-    write_text(
-        bundle_dir / target.open_script,
-        build_open_script(target),
-        executable=target.key == "macos",
+    copy_file(
+        REPO_ROOT / "src/sample-data/csv/confluence_pages.sample.csv",
+        source_dir / "confluence_pages.sample.csv",
     )
+    copy_file(artifacts.demo_db, bundle_dir / "demo/sample_pm.db")
+    make_read_only(bundle_dir / "demo/sample_pm.db")
+    write_text(bundle_dir / "scripts/setup.py", build_setup_helper(), executable=True)
     write_text(
         bundle_dir / "scripts/install-helper.py",
         build_install_helper(),
-        executable=target.key == "macos",
+        executable=True,
     )
-    (bundle_dir / "wheelhouse").mkdir(parents=True, exist_ok=True)
-
-    artifact_dir = bundle_dir / "artifacts"
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    for artifact in (artifacts.wheel, artifacts.sdist):
-        copy_file(artifact, artifact_dir / artifact.name)
-
-    validate_bundle_tree(
-        bundle_dir,
-        target,
-        require_wheelhouse=False,
-    )
-    write_manifest(
-        bundle_dir,
-        target,
-        offline_wheelhouse_included=False,
-    )
+    validate_bundle_tree(bundle_dir)
+    write_manifest(bundle_dir)
 
 
 def archive_bundle(bundle_dir: Path) -> Path:
-    archive_base = bundle_dir.parent / bundle_dir.name
-    archive_path = Path(
+    return Path(
         shutil.make_archive(
-            str(archive_base),
+            str(bundle_dir.parent / bundle_dir.name),
             "zip",
             root_dir=bundle_dir.parent,
             base_dir=bundle_dir.name,
         )
     )
-    return archive_path
 
 
 def build_bundles(args: argparse.Namespace) -> list[Path]:
-    output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    artifact_cache = output_dir / ".build-artifacts"
-    ensure_clean_dir(artifact_cache)
-    artifacts = build_artifacts(artifact_cache)
-
-    archives: list[Path] = []
-    for target in configured_targets(args):
-        bundle_dir = output_dir / target.bundle_name
+    output = args.output_dir.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    legacy_candidates = [
+        item.name
+        for item in output.iterdir()
+        if item.name.startswith(
+            ("delivery-manager-usage-macos-", "delivery-manager-usage-windows-")
+        )
+    ]
+    if legacy_candidates:
+        raise RuntimeError(
+            "BUNDLE_LEGACY_CANDIDATES_PRESENT:" + ",".join(sorted(legacy_candidates))
+        )
+    work = output / ".build-artifacts"
+    ensure_clean_dir(work)
+    try:
+        bundle = output / f"{BUNDLE_NAME}-v{package_version()}"
+        stage_bundle_tree(bundle, build_artifacts(work))
+        if args.skip_archive:
+            return []
+        archive = archive_bundle(bundle)
         print(
-            f"\n==> staging {target.platform_label} bundle "
-            f"({target.pip_platform}, python {target.python_version}, {target.abi})",
-            flush=True,
+            f"archive={archive} sha256={sha256(archive)} bytes={archive.stat().st_size}"
         )
-        stage_bundle_tree(
-            bundle_dir,
-            target,
-            artifacts,
-        )
-        if not args.skip_wheelhouse:
-            print("   downloading offline wheelhouse", flush=True)
-            download_wheelhouse(
-                artifacts.wheel,
-                bundle_dir / "wheelhouse",
-                target,
-                BUILD_REQUIREMENTS,
-            )
-            validate_bundle_tree(bundle_dir, target, require_wheelhouse=True)
-            write_manifest(
-                bundle_dir,
-                target,
-                offline_wheelhouse_included=True,
-            )
-        if not args.skip_archive:
-            archive = archive_bundle(bundle_dir)
-            archives.append(archive)
-            print(f"   archived to {archive}", flush=True)
-        else:
-            print(f"   left unpacked at {bundle_dir}", flush=True)
-    shutil.rmtree(artifact_cache)
-    return archives
-
-
-def main() -> None:
-    build_bundles(parse_args())
+        return [archive]
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 if __name__ == "__main__":
-    main()
+    build_bundles(parse_args())

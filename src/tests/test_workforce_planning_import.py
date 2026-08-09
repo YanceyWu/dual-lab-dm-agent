@@ -13,6 +13,7 @@ import pytest
 from pm_agent.database import repository as legacy_repository
 from pm_agent.database.bootstrap import main as init_db
 from pm_agent.workforce_planning_import import repository as import_repository
+from pm_agent.workforce_planning_import.read_model import source_export_snapshot
 from pm_agent.workforce_planning_import.service import confirm_import, preview_import
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,7 @@ def _package() -> dict[str, object]:
 
 def _business_key_package() -> dict[str, object]:
     package = _package()
+    package["package_id"] = "package-workbook-synthetic-r1"
     package["dataset_marker"] = "WORKBOOK_ONBOARDING_V1"
     package["package_id"] = "package-workbook-fy26-q4-baseline"
     package["source_id"] = "source-workbook-team-project-capacity"
@@ -233,34 +235,51 @@ def test_preview_confirm_publishes_complete_audited_package(isolated_db: Path) -
     with sqlite3.connect(isolated_db) as connection:
         connection.row_factory = sqlite3.Row
         allocations = connection.execute(
-            """
-            SELECT employee_id,allocation FROM monthly_allocations
-            ORDER BY employee_id
-            """
+            """SELECT employee_id,allocation FROM monthly_allocations
+               ORDER BY employee_id"""
         ).fetchall()
         audit = {
-            "sessions": connection.execute(
-                "SELECT COUNT(*) FROM workforce_planning_import_sessions"
-            ).fetchone()[0],
-            "attempts": connection.execute(
-                "SELECT COUNT(*) FROM workforce_planning_import_attempts"
-            ).fetchone()[0],
-            "runs": connection.execute(
-                "SELECT COUNT(*) FROM workforce_planning_import_runs"
-            ).fetchone()[0],
-            "coverage": connection.execute(
-                "SELECT COUNT(*) FROM monthly_project_allocation_coverage"
-            ).fetchone()[0],
+            "sessions": connection.execute("SELECT COUNT(*) FROM workforce_planning_import_sessions").fetchone()[0],
+            "attempts": connection.execute("SELECT COUNT(*) FROM workforce_planning_import_attempts").fetchone()[0],
+            "runs": connection.execute("SELECT COUNT(*) FROM workforce_planning_import_runs").fetchone()[0],
+            "coverage": connection.execute("SELECT COUNT(*) FROM monthly_project_allocation_coverage").fetchone()[0],
         }
     assert [(row["employee_id"], row["allocation"]) for row in allocations] == [
-        ("member-synthetic-001", 0.5),
-        ("member-synthetic-001", 0.0),
-        ("member-synthetic-002", 0.0),
-        ("member-synthetic-002", 0.0),
-        ("member-synthetic-003", 0.6),
-        ("member-synthetic-003", 0.6),
+        ("member-synthetic-001", 0.5), ("member-synthetic-001", 0.0),
+        ("member-synthetic-002", 0.0), ("member-synthetic-002", 0.0),
+        ("member-synthetic-003", 0.6), ("member-synthetic-003", 0.6),
     ]
     assert audit == {"sessions": 1, "attempts": 1, "runs": 4, "coverage": 6}
+
+
+def test_source_export_snapshot_requires_explicit_selector_for_two_active_plans(
+    isolated_db: Path,
+) -> None:
+    init_db(quiet=True)
+    package = _package()
+    package["package_id"] = "package-workbook-synthetic-r1"
+    other_plan = "plan-synthetic-forecast-002"
+    package["plan_versions"].append({
+        "plan_version_id": other_plan, "version_name": "Synthetic Forecast",
+        "scenario_type": "forecast", "as_of_date": "2026-08-01", "status": "active",
+    })
+    package["manifest"]["plan_version_ids"].append(other_plan)
+    extra_keys = []
+    extra_allocations = []
+    for key in package["manifest"]["allocation_keys"]:
+        replacement = {**key, "plan_version_id": other_plan}
+        extra_keys.append(replacement)
+    for allocation in package["monthly_allocations"]:
+        extra_allocations.append({**allocation, "plan_version_id": other_plan})
+    package["manifest"]["allocation_keys"].extend(extra_keys)
+    package["monthly_allocations"].extend(extra_allocations)
+    preview = preview_import(package, db_path=isolated_db)
+    assert confirm_import(preview["session_id"], db_path=isolated_db)["status"] == "completed"
+    with pytest.raises(ValueError, match="WORKBOOK_EXPORT_ACTIVE_PLAN_AMBIGUOUS"):
+        source_export_snapshot(db_path=isolated_db)
+    snapshot = source_export_snapshot(plan_version_id=other_plan, db_path=isolated_db)
+    assert snapshot["plan_version"]["plan_version_id"] == other_plan
+    assert snapshot["allocations"]
 
 
 def test_identical_replay_is_idempotent_without_duplicate_audit_attempt(isolated_db: Path) -> None:

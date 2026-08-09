@@ -59,13 +59,13 @@ def test_distribution_bundle_workflow_is_documented() -> None:
 
     assert "make build-usage-bundles" in readme
     assert "dist/dm-usage-bundles/" in readme
-    assert "offline `wheelhouse/`" in readme
-    assert "equal `Try demo` and `Use local data` first-run paths" in readme
+    assert "no Python runtime, virtual environment,\nwheelhouse, or build artifacts" in readme
+    assert "Copilot-invoked local setup helper" in readme
     assert "tools/validation-requirements.txt" in readme
     assert "make build-usage-bundles" in release_doc
-    assert "platform-specific offline usage bundles" in release_doc
-    assert "equal `Try demo` and `Use local data` first-run paths" in release_doc
-    assert "arm64-targeted" in release_doc
+    assert "one platform-neutral lean usage bundle" in release_doc
+    assert "no\nembedded Python, virtual environment, wheelhouse" in release_doc
+    assert "explicitly install and initialize" in release_doc
 
 
 def test_validation_dependencies_and_lint_rules_are_pinned() -> None:

@@ -15,6 +15,7 @@ from pm_agent.workforce_planning_import.read_model import dependency_snapshot
 
 PACKAGE_SCHEMA_VERSION = "resource-capacity-import-v1"
 COMMITMENT_KINDS = ("leave", "bau", "non_project")
+CAPACITY_FRESHNESS_MAX_AGE_HOURS = 720
 SOURCE_AUTHORITY = {
     "leave": {"source-synthetic-leave", "source-workbook-capacity-leave"},
     "bau": {"source-synthetic-bau", "source-workbook-capacity-bau"},
@@ -32,6 +33,23 @@ _TOP_FIELDS = {
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def capacity_observations_are_fresh(
+    observed_at: list[str], *, assessment_time: str | None = None
+) -> bool:
+    """Apply the capacity capability's one freshness rule at its own clock.
+
+    Readers use this public helper rather than recreating the 720-hour rule.
+    ``assessment_time`` is retained for deterministic import derivation tests;
+    ordinary readers deliberately evaluate against the capability clock.
+    """
+    clock = datetime.fromisoformat(assessment_time or _now())
+    return not any(
+        (clock - datetime.fromisoformat(value)).total_seconds()
+        > CAPACITY_FRESHNESS_MAX_AGE_HOURS * 3600
+        for value in observed_at
+    )
 
 
 def _json(value: Any) -> str:
@@ -299,7 +317,6 @@ def preview_import(payload: object, *, db_path: str | Path | None = None) -> dic
 
 def _derive(package: dict[str, Any], dependency: dict[str, Any]) -> list[dict[str, Any]]:
     observations = {_key(o): o for o in package["observations"]}
-    assessment = datetime.fromisoformat(package["assessment_time"])
     results = []
     for fact in dependency["periods"]:
         identity = (fact["member_id"], fact["year"], fact["month"])
@@ -307,8 +324,10 @@ def _derive(package: dict[str, Any], dependency: dict[str, Any]) -> list[dict[st
         fractions = {kind: by_kind[kind]["fraction"] for kind in COMMITMENT_KINDS}
         deduction = round(sum(fractions.values()), 10)
         planned = fact["planned_project_allocation"]
-        stale = any((assessment - datetime.fromisoformat(o["observed_at"])).total_seconds() > 720 * 3600
-                    for o in by_kind.values())
+        stale = not capacity_observations_are_fresh(
+            [str(observation["observed_at"]) for observation in by_kind.values()],
+            assessment_time=package["assessment_time"],
+        )
         state, reason = "known", "complete_fresh_evidence"
         if fact["state"] != "known" or fact["employment_status"] != "active":
             state, reason = "unknown", "workforce_or_allocation_not_active_complete"

@@ -8,7 +8,107 @@ from pathlib import Path
 from typing import Any
 
 from pm_agent.config import settings
+from pm_agent.resource_intelligence.service import (
+    COMMITMENT_KINDS,
+    _fingerprint,
+    validate_package,
+)
 from pm_agent.workforce_planning_import.read_model import project_allocation_snapshot
+
+
+def source_capacity_export_snapshot(
+    *, plan_version_id: str, capacity_context: dict[str, Any],
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Return Capacity facts from the authoritative Workbook source generation.
+
+    Capacity publications, observations, freshness and derivations are runtime
+    products.  The import session's package is the retained source contract and
+    is sufficient to recreate those products after a workbook re-import.
+    """
+    row_count = capacity_context.get("row_count")
+    package_id = capacity_context.get("package_id")
+    if type(row_count) is not int or row_count < 0:
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID")
+    if row_count == 0:
+        if package_id is not None:
+            raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID")
+        return {"facts": [], "source": None}
+    if not isinstance(package_id, str) or not package_id:
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_MISSING")
+    database = sqlite3.connect(Path(db_path or settings.database_path))
+    database.row_factory = sqlite3.Row
+    try:
+        session = database.execute(
+            """SELECT session_id,package_id,package_fingerprint,package_json
+               FROM resource_capacity_import_sessions
+               WHERE status='completed' AND package_id=?
+               ORDER BY completed_at DESC,created_at DESC LIMIT 1""",
+            [package_id],
+        ).fetchone()
+    finally:
+        database.close()
+
+    if session is None:
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_MISSING")
+    try:
+        stored_package = json.loads(str(session["package_json"]))
+        stored_observations = stored_package.get("observations")
+        if not isinstance(stored_observations, list):
+            raise ValueError
+        package = validate_package({
+            **stored_package,
+            "observations": [
+                {key: value for key, value in observation.items() if key != "fingerprint"}
+                for observation in stored_observations
+            ],
+        })
+    except (AttributeError, TypeError, ValueError, json.JSONDecodeError):
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID") from None
+    if (
+        str(package.get("package_id") or "") != package_id
+        or str(session["package_id"]) != package_id
+        or str(package.get("plan_version_id") or "") != plan_version_id
+        or _fingerprint(package) != str(session["package_fingerprint"])
+    ):
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID")
+    try:
+        observations = package["observations"]
+        by_period: dict[tuple[str, int, int], dict[str, float]] = {}
+        for observation in observations:
+            identity = (
+                str(observation["member_id"]), int(observation["year"]),
+                int(observation["month"]),
+            )
+            kind = str(observation["commitment_kind"])
+            if kind not in COMMITMENT_KINDS or observation.get("value_state") != "known":
+                raise ValueError
+            fraction = float(observation["fraction"])
+            if not 0.0 <= fraction <= 1.0 or kind in by_period.setdefault(identity, {}):
+                raise ValueError
+            by_period[identity][kind] = fraction
+        if any(set(values) != set(COMMITMENT_KINDS) for values in by_period.values()):
+            raise ValueError
+        if len(by_period) != row_count:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("WORKBOOK_EXPORT_CAPACITY_SOURCE_INVALID") from None
+    facts = [
+        {
+            "member_id": member_id, "year": year, "month": month,
+            "leave_fraction": values["leave"], "bau_fraction": values["bau"],
+            "non_project_fraction": values["non_project"],
+        }
+        for (member_id, year, month), values in sorted(by_period.items())
+    ]
+    return {
+        "facts": facts,
+        "source": {
+            "session_id": str(session["session_id"]),
+            "package_id": str(session["package_id"]),
+            "package_fingerprint": str(session["package_fingerprint"]),
+        },
+    }
 
 
 def list_effective_capacity(

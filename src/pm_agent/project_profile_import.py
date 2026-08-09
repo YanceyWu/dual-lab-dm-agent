@@ -11,6 +11,11 @@ from typing import Any
 import openpyxl
 
 from pm_agent.config import settings
+from pm_agent.data_onboarding.source_export import (
+    SourceExportError,
+    failed_export,
+    write_atomically,
+)
 
 WORKSHEET_NAME = "Project Profiles"
 EXPECTED_HEADERS = (
@@ -162,6 +167,92 @@ def apply_project_profile_import(
         "counts": plan["counts"],
         "payload": plan["payload"],
         "report": report,
+    }
+
+
+def export_project_profile_workbook(
+    output: str | Path,
+    *,
+    overwrite: bool = False,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Export only editable project-profile facts in the existing workbook shape."""
+
+    source_type = "project-profile-workbook"
+    connection = sqlite3.connect(_db_path(db_path))
+    try:
+        rows = connection.execute(
+            """
+            SELECT p.id, p.name, pp.phase, pp.phase_detail, pp.priority_tier,
+                   pp.is_focus, pp.objective, pp.milestones, pp.key_risks,
+                   pp.stakeholders, pp.special_rules
+            FROM project_profiles pp
+            JOIN projects p ON p.id = pp.project_id
+            ORDER BY p.id
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return failed_export(source_type, "PROJECT_PROFILE_EXPORT_SOURCE_UNAVAILABLE")
+    finally:
+        connection.close()
+
+    try:
+        expected_rows = [_exportable_profile_row(row) for row in rows]
+    except ValueError:
+        return failed_export(source_type, "PROJECT_PROFILE_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    def write(path: Path) -> None:
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = WORKSHEET_NAME
+        worksheet.append(["Project profiles"])
+        worksheet.append(["Exported user-maintained source facts"])
+        worksheet.append([None] * len(EXPECTED_HEADERS))
+        worksheet.append(list(EXPECTED_HEADERS))
+        for row in expected_rows:
+            worksheet.append(
+                [
+                    row["project_name"],
+                    "",
+                    row["phase"],
+                    row["phase_detail"],
+                    row["priority_tier"],
+                    "Y" if row["is_focus"] else "",
+                    row["objective"],
+                    _milestones_text(row["milestones"]),
+                    _risks_text(row["key_risks"]),
+                    _stakeholders_text(row["stakeholders"]),
+                    row["special_rules"],
+                    row["project_id"],
+                ]
+            )
+        workbook.save(path)
+        preview = preview_project_profile_import(path, db_path=db_path)
+        plan = _build_import_plan(path, db_path=db_path)
+        actual_rows = [
+            _profile_facts_from_candidate(candidate)
+            for candidate in plan["actionable_rows"]
+        ]
+        expected_facts = [_profile_facts_from_export(row) for row in expected_rows]
+        if (
+            preview["status"] == "rejected"
+            or len(actual_rows) != len(expected_facts)
+            or actual_rows != expected_facts
+        ):
+            raise SourceExportError("PROJECT_PROFILE_EXPORT_SOURCE_UNREPRESENTABLE")
+
+    try:
+        target, digest = write_atomically(output, overwrite=overwrite, write=write)
+    except SourceExportError as exc:
+        return failed_export(source_type, str(exc))
+    return {
+        "status": "exported",
+        "source_type": source_type,
+        "output_path": str(target),
+        "sha256": digest,
+        "counts": {"project_profiles": len(rows)},
+        "warnings": [],
+        "source_identity": {"kind": "local_sqlite", "source_type": source_type},
     }
 
 
@@ -426,6 +517,140 @@ def _json_or_empty(value: object) -> object:
         return json.loads(str(value))
     except json.JSONDecodeError:
         return value
+
+
+def _json_list(value: object) -> list[object]:
+    decoded = _json_or_empty(value)
+    return decoded if isinstance(decoded, list) else []
+
+
+def _milestones_text(value: object) -> str:
+    return "\n".join(
+        f"{item.get('date', '')} | {item.get('name', '')}".strip()
+        for item in _json_list(value)
+        if isinstance(item, dict)
+    )
+
+
+def _risks_text(value: object) -> str:
+    return "\n".join(
+        f"{item.get('risk', '')} | {item.get('level', 'medium')}".strip()
+        for item in _json_list(value)
+        if isinstance(item, dict)
+    )
+
+
+def _stakeholders_text(value: object) -> str:
+    return ", ".join(str(item) for item in _json_list(value) if str(item).strip())
+
+
+def _exportable_profile_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    project_id, project_name, phase, phase_detail, priority_tier, is_focus, objective, milestones, risks, stakeholders, special_rules = row
+    if (
+        not isinstance(project_id, str)
+        or not project_id.strip()
+        or (project_name is not None and not _canonical_text(project_name))
+        or not _canonical_text(phase)
+        or not isinstance(priority_tier, int)
+        or isinstance(priority_tier, bool)
+        or priority_tier not in {1, 2, 3}
+        or not isinstance(is_focus, int)
+        or isinstance(is_focus, bool)
+        or is_focus not in {0, 1}
+    ):
+        raise ValueError("unrepresentable project profile")
+    return {
+        "project_id": project_id,
+        "project_name": project_name or project_id,
+        "phase": str(phase),
+        "phase_detail": _optional_canonical_text(phase_detail),
+        "priority_tier": priority_tier,
+        "is_focus": is_focus,
+        "objective": _optional_canonical_text(objective),
+        "milestones": _strict_json_list(milestones, {"date", "name"}),
+        "key_risks": _strict_json_list(risks, {"risk", "level"}),
+        "stakeholders": _strict_stakeholders(stakeholders),
+        "special_rules": _optional_canonical_text(special_rules),
+    }
+
+
+def _canonical_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value == value.strip()
+
+
+def _optional_canonical_text(value: object) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str) or value != value.strip() or value.lower() == "none":
+        raise ValueError("unrepresentable text")
+    return value
+
+
+def _strict_json_list(value: object, required_keys: set[str]) -> list[dict[str, str]]:
+    if value is None or value == "":
+        return []
+    if not isinstance(value, str):
+        raise ValueError("unrepresentable JSON")
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise ValueError("malformed JSON") from exc
+    if not isinstance(decoded, list):
+        raise ValueError("malformed JSON")
+    result: list[dict[str, str]] = []
+    for item in decoded:
+        if (
+            not isinstance(item, dict)
+            or set(item) != required_keys
+            or any(not _canonical_text(item[key]) for key in required_keys)
+            or any("|" in item[key] or "\n" in item[key] for key in required_keys)
+        ):
+            raise ValueError("unrepresentable JSON")
+        if required_keys == {"risk", "level"} and item["level"] not in {"high", "medium", "low"}:
+            raise ValueError("unrepresentable risk")
+        result.append({key: item[key] for key in required_keys})
+    return result
+
+
+def _strict_stakeholders(value: object) -> list[str]:
+    if value is None or value == "":
+        return []
+    if not isinstance(value, str):
+        raise ValueError("unrepresentable stakeholders")
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise ValueError("malformed stakeholders") from exc
+    if not isinstance(decoded, list) or any(
+        not _canonical_text(item) or "," in item for item in decoded
+    ):
+        raise ValueError("unrepresentable stakeholders")
+    return list(decoded)
+
+
+def _profile_facts_from_export(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: row[key]
+        for key in (
+            "project_id", "phase", "phase_detail", "priority_tier", "is_focus",
+            "objective", "milestones", "key_risks", "stakeholders", "special_rules",
+        )
+    }
+
+
+def _profile_facts_from_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "project_id": candidate["project_id"],
+        "phase": candidate["phase"],
+        "phase_detail": candidate["phase_detail"],
+        "priority_tier": candidate["priority_tier"],
+        "is_focus": candidate["is_focus"],
+        "objective": candidate["objective"],
+        "milestones": candidate["milestones"],
+        "key_risks": candidate["key_risks"],
+        "stakeholders": candidate["stakeholders"],
+        "special_rules": candidate["special_rules"],
+    }
 
 
 def _db_path(db_path: str | Path | None) -> Path:

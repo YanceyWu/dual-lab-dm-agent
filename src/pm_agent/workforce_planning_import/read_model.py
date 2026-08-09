@@ -14,6 +14,74 @@ from typing import Any
 from pm_agent.config import settings
 
 
+def source_export_snapshot(
+    *, plan_version_id: str | None = None, db_path: str | Path | None = None
+) -> dict[str, Any]:
+    """Return maintained planning source facts for a portable workbook.
+
+    This contract intentionally reads the canonical user-maintained tables,
+    rather than a workforce publication or its coverage/audit projections.
+    Publications are derived after import and must not determine whether a
+    valid source workbook can be exported.
+    """
+    database = sqlite3.connect(Path(db_path or settings.database_path))
+    database.row_factory = sqlite3.Row
+    try:
+        active_plans = database.execute(
+            """SELECT plan_version_id,version_name,as_of_date
+               FROM plan_versions WHERE version_status='active'
+               ORDER BY plan_version_id"""
+        ).fetchall()
+        selected = list(active_plans)
+        if plan_version_id:
+            selected = [row for row in selected if row["plan_version_id"] == plan_version_id]
+        if not selected:
+            raise ValueError("WORKBOOK_EXPORT_ACTIVE_PLAN_NOT_FOUND")
+        if len(selected) != 1:
+            raise ValueError("WORKBOOK_EXPORT_ACTIVE_PLAN_AMBIGUOUS")
+        plan = selected[0]
+
+        members = database.execute(
+            """SELECT id,name,resource_type,status,role,level,metadata,
+                      current_hiref,billing_end_date,next_hiref
+               FROM employees ORDER BY id"""
+        ).fetchall()
+        projects = database.execute(
+            """SELECT id,name,status,priority,start_date,target_end
+               FROM projects ORDER BY id"""
+        ).fetchall()
+        if not members:
+            raise ValueError("WORKBOOK_EXPORT_SOURCE_MEMBERS_MISSING")
+        if not projects:
+            raise ValueError("WORKBOOK_EXPORT_SOURCE_PROJECTS_MISSING")
+        allocations = database.execute(
+            """SELECT employee_id,project_id,year,month,allocation
+               FROM monthly_allocations WHERE plan_version_id=?
+               ORDER BY employee_id,project_id,year,month""",
+            [plan["plan_version_id"]],
+        ).fetchall()
+        member_ids = {str(row["id"]) for row in members}
+        project_ids = {str(row["id"]) for row in projects}
+        if any(
+            str(row["employee_id"]) not in member_ids
+            or str(row["project_id"]) not in project_ids
+            for row in allocations
+        ):
+            raise ValueError("WORKBOOK_EXPORT_SOURCE_ALLOCATION_REFERENCES_INCOMPLETE")
+        return {
+            "plan_version": {
+                "plan_version_id": str(plan["plan_version_id"]),
+                "version_name": str(plan["version_name"]),
+                "as_of_date": str(plan["as_of_date"] or ""),
+            },
+            "members": [dict(row) for row in members],
+            "projects": [dict(row) for row in projects],
+            "allocations": [dict(row) for row in allocations],
+        }
+    finally:
+        database.close()
+
+
 def dependency_snapshot(
     periods: list[dict[str, int | str]],
     plan_version_id: str,
