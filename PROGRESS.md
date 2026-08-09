@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-09
 Current branch: `codex/remote-package-20260808`
-Current HEAD: `8fb8aa26c604b1405ed34045556897da1f40a168`, imported locally on
+Imported baseline: `8fb8aa26c604b1405ed34045556897da1f40a168`, imported locally on
 2026-08-08 from the supplied remote-development ZIP without overwriting the
 prior `codex/usability-r1-r2` branch. This merge baseline contains the
 owner-accepted IP-038 Slice 2/Slice 3 dashboard batch, the committed IP-038
@@ -13,8 +13,22 @@ package's dirty demo database, untracked Slice 3 draft, `.venv`, caches, build
 artifacts, and macOS metadata were not imported into the tracked baseline. The
 local untracked reviewer prompt and `remote_package/` remain user-owned.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-039 WORKBOOK PORTABILITY AND LOCAL-DATA ISOLATION HAS CORRECTIVE FINDINGS IMPLEMENTED IN THE UNCOMMITTED WORKING TREE AND IS PENDING RE-REVIEW: core export uses the latest completed Workbook source run for its original Setup horizon and Capacity input identity, reads source facts only, retains open-HIREF allocations, and prevents a non-overwrite race. Setup rejects local-to-demo before any health query and reports marker-write failures as repairable partial state. The prior isolated synthetic smoke remains evidence only; re-review is required before acceptance.`
-Gate status: `IP-038 remains the locally validated lean-bundle baseline. The owner has authorized only IP-039 implementation, focused/full validation, synthetic bundle smoke, and independent Sol review. Focused IP-039 validation and the complete isolated synthetic bundle smoke are passing; full validation/rehearsal and independent review remain pending. Do not commit, push, tag, release, deploy, access connectors/real data, or enter any later product slice. Dashboard remains limited to six Legacy pages and interaction memory remains non-authoritative.`
+Current implementation item: `IP-039 WORKBOOK PORTABILITY AND LOCAL-DATA ISOLATION IS IMPLEMENTED, FOCUSED-VALIDATED, INDEPENDENTLY REVIEWED WITH NO REMAINING P0-P2, AND PUSHED IN IMPLEMENTATION COMMIT f72a9bf TO origin/codex/remote-package-20260808. Core export contains user-maintained source facts only; system-derived data is regenerated. The reviewed lean ZIP is ready for owner local testing.`
+Gate status: `Owner local package testing and feedback are the exact next gate. Full make validate still lacks a terminal result because the host reclaimed its long runtime-test session; do not infer a full pass. Do not tag, release, deploy, merge to main, access connectors/real data, or enter a later product slice without separate authorization. Dashboard remains limited to six Legacy pages and interaction memory remains non-authoritative.`
+
+### 2026-08-09 — Session implementation commit and remote push
+
+- Staged only the bounded IP-038/IP-039 lean packaging, source-facts export,
+  local-data isolation, tests, design/pack, report, and continuity files. Kept
+  `AGENTS.md`, the separate IP-036/architecture edits, the untracked internal
+  reviewer prompt, and `remote_package/` outside the commit.
+- Created implementation commit `f72a9bf` (`Ship lean source export bundle and
+  local isolation`) and pushed it to
+  `origin/codex/remote-package-20260808`; the local branch now tracks that
+  remote branch.
+- No tag, release, deployment, merge to `main`, connector access, or real-data
+  action occurred. The final distribution ZIP remains a local ignored artifact
+  for owner testing and was not added to Git.
 
 ### 2026-08-09 — IP-039 auxiliary source-export correction
 
