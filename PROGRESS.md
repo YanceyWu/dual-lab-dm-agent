@@ -1,7 +1,8 @@
 # DM Agent Evolution Progress
 
-Last updated: 2026-08-09
-Current branch: `codex/remote-package-20260808`
+Last updated: 2026-08-12
+Current branch: `codex/import-release-build-20260811` (isolated documentation
+worktree; no release-package code has been imported)
 Imported baseline: `8fb8aa26c604b1405ed34045556897da1f40a168`, imported locally on
 2026-08-08 from the supplied remote-development ZIP without overwriting the
 prior `codex/usability-r1-r2` branch. This merge baseline contains the
@@ -13,8 +14,37 @@ package's dirty demo database, untracked Slice 3 draft, `.venv`, caches, build
 artifacts, and macOS metadata were not imported into the tracked baseline. The
 local untracked reviewer prompt and `remote_package/` remain user-owned.
 Package version: `0.2.0rc1`
-Current implementation item: `IP-039 WORKBOOK PORTABILITY AND LOCAL-DATA ISOLATION IS IMPLEMENTED, FOCUSED-VALIDATED, INDEPENDENTLY REVIEWED WITH NO REMAINING P0-P2, AND PUSHED IN IMPLEMENTATION COMMIT f72a9bf TO origin/codex/remote-package-20260808. Core export contains user-maintained source facts only; system-derived data is regenerated. The reviewed lean ZIP is ready for owner local testing.`
-Gate status: `Owner local package testing and feedback are the exact next gate. Full make validate still lacks a terminal result because the host reclaimed its long runtime-test session; do not infer a full pass. Do not tag, release, deploy, merge to main, access connectors/real data, or enter a later product slice without separate authorization. Dashboard remains limited to six Legacy pages and interaction memory remains non-authoritative.`
+Current implementation item: `NO RUNTIME IMPLEMENTATION. Current work is a
+documentation-only product audit and development-team handoff package. The
+four-file governance pack is under TPO review and has not replaced the root
+AGENTS.md or changed the DM release Agent.`
+Gate status: `TPO review of docs/handoff-document is the exact next gate. Do
+not adopt the proposed AGENTS.md at repository root, modify the DM Agent,
+select a Golden Path, change runtime/schema/package behavior, merge, tag,
+release, deploy, or access connectors/real data without separate authorization.
+Only the documentation commit and branch push authorized on 2026-08-12 may
+proceed in this turn.`
+
+### 2026-08-11 — Development-team handoff governance package
+
+- Created exactly four proposed handoff documents under
+  `docs/handoff-document/`: development `AGENTS.md`, engineering rules,
+  development workflow, and architecture governance. They map the existing
+  repository rules and decisions into a smaller operational package.
+- Explicitly separated the future root development `AGENTS.md` from the
+  maintained and generated DM release Agent. No current Agent file or runtime
+  instruction was modified.
+- Removed the superseded, uncommitted single-file governance consolidation
+  draft so that the handoff has one review surface.
+- Documentation structure, final-newline, trailing-whitespace, reference,
+  portability, and read-only consistency checks passed. No runtime tests were
+  required because executable behavior, schema, data contracts, package
+  contents, and operational commands did not change.
+- On 2026-08-12 the Owner authorized committing and pushing this documentation
+  branch. The four handoff documents, four product-audit documents, and this
+  continuity update are the complete intended commit scope. No PR, merge, tag,
+  release, deployment, connector access, or real-data action is authorized.
+  After the push, the exact next action remains TPO review only.
 
 ### 2026-08-09 — Session implementation commit and remote push
 
